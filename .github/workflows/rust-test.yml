@@ -1,0 +1,14 @@
+name: Rust - Test
+on: [ pull_request ]
+jobs:
+  rust-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Update Rust
+        run: rustup update
+      - name: Build Rust project
+        run: cargo build --release
+      - name: Test Rust project
+        run: cargo test --release

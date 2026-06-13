@@ -1,0 +1,33 @@
+name: Rust - Lint
+on: [ pull_request ]
+jobs:
+  rust-lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Filter
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - '**/Cargo.lock'
+              - '**/Cargo.toml'
+              - '**/*.rs'
+              - '.github/workflows/rust-lint.yml'
+      - name: Update Rust
+        if: steps.filter.outputs.rust == 'true'
+        run: rustup update
+      - name: Add Clippy
+        if: steps.filter.outputs.rust == 'true'
+        run: rustup component add clippy
+      - name: Build Rust project
+        if: steps.filter.outputs.rust == 'true'
+        run: cargo build
+      - name: Rust Format check
+        if: steps.filter.outputs.rust == 'true'
+        run: cargo fmt -- --check
+      - name: Rust Clippy check
+        if: steps.filter.outputs.rust == 'true'
+        run: cargo clippy -- -D warnings
