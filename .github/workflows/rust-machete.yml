@@ -1,0 +1,20 @@
+name: Rust - Cargo Machete
+on: [ pull_request ]
+jobs:
+  rust-cargo-machete:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Filter
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - '**/Cargo.lock'
+              - '**/Cargo.toml'
+              - '.github/workflows/machete.yml'
+      - name: Machete
+        if: steps.filter.outputs.rust == 'true'
+        uses: bnjbvr/cargo-machete@main
