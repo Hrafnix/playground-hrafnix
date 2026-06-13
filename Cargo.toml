@@ -11,6 +11,15 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 publish = false
 
+[workspace.dependencies]
+blake3 = "1.8.5"
+parking_lot = "0.12.5"
+serde = { version = "1.0.228", features = ["derive", "rc"] }
+serde_json = "1.0.150"
+rustc-hash = "2.1.2"
+
+shareable_string = { path = "crates/shareable_string" }
+
 [workspace.lints.rust]
 deprecated-safe = { level = "deny", priority = -1 }
 future-incompatible = { level = "deny", priority = -1 }
