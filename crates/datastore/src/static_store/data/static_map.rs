@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
-/// Represents a map of properties in the static store.
+/// Represents a map of parameter in the static store.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StaticMap {
     /// The definition of the map.

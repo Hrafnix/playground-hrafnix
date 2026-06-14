@@ -1,7 +1,7 @@
 //! Demonstrates basic usage of the datastore crate.
 //!
 //! Creates a [`Store`], defines an [`ObjectDefinition`] with string and number
-//! properties, adds an object instance, and reads/writes values through
+//! parameters, adds an object instance, and reads/writes values through
 //! proxy-based access using the [`store_key!`] macro.
 use datastore::prelude::*;
 
@@ -10,15 +10,15 @@ fn main() {
     let store = Store::new(Default::default());
 
     // 2. Define an Object Structure
-    // An Object is a collection of named properties.
+    // An Object is a collection of named parameters.
     let mut user_def = ObjectDefinition::builder("User Profile");
-    user_def.insert(
-        store_key!("username"),
-        PropertyDefinition::new("The user's unique name", BasicDefinition::new_string("")),
+    user_def.insert_parameter(
+        parameter_key!("p_username"),
+        ItemDefinition::new("The user's unique name", BasicDefinition::new_string("")),
     );
-    user_def.insert(
-        store_key!("age"),
-        PropertyDefinition::new("The user's age", BasicDefinition::new_number("0")),
+    user_def.insert_parameter(
+        parameter_key!("p_age"),
+        ItemDefinition::new("The user's age", BasicDefinition::new_number("0")),
     );
 
     let def = user_def.finish();
@@ -30,8 +30,10 @@ fn main() {
     // 4. Access Data via Proxies
     // The proxy provides a way to interact with data in the store.
     let mut user_proxy = store.object("user_123").unwrap();
-    let mut username_proxy = user_proxy.basic(store_key!("username")).unwrap();
-    let mut age_proxy = user_proxy.basic(store_key!("age")).unwrap();
+    let mut username_proxy = user_proxy
+        .parameter_basic(store_key!("p_username"))
+        .unwrap();
+    let mut age_proxy = user_proxy.parameter_basic(store_key!("p_age")).unwrap();
 
     // 5. Update Data
     // Changes are made to the proxy first, then pushed to the store.
@@ -43,7 +45,7 @@ fn main() {
 
     // 6. Observe Changes
     // If another handle to the same data exists, it can observe changes.
-    let mut observer_proxy = store.basic(&path!("user_123/username")).unwrap();
+    let mut observer_proxy = store.basic(&path!("user_123" / "p_username")).unwrap();
 
     // We update the data via another proxy.
     username_proxy.set_value("john doe updated");

@@ -43,21 +43,21 @@ fn main() {
 
     // Define the main Object structure
     let mut builder = ObjectDefinition::builder("Example Object");
-    builder.insert(
-        store_key!("basic_prop"),
-        PropertyDefinition::new("Basic Property", BasicDefinition::new_string("Basic")),
+    builder.insert_parameter(
+        parameter_key!("p_basic_prop"),
+        ItemDefinition::new("Basic parameter", BasicDefinition::new_string("Basic")),
     );
-    builder.insert(
-        store_key!("table_prop"),
-        PropertyDefinition::new("Table Property", table_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_table_prop"),
+        ItemDefinition::new("Table parameter", table_def.clone()),
     );
-    builder.insert(
-        store_key!("struct_prop"),
-        PropertyDefinition::new("Struct Property", struct_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_struct_prop"),
+        ItemDefinition::new("Struct parameter", struct_def.clone()),
     );
-    builder.insert(
-        store_key!("map_prop"),
-        PropertyDefinition::new("Map Property", map_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_map_prop"),
+        ItemDefinition::new("Map parameter", map_def.clone()),
     );
     let object_def = builder.finish();
 
@@ -69,20 +69,26 @@ fn main() {
     // 4. Populate the data.
     let mut object_proxy = store.object("example_item").unwrap();
 
-    // Set Basic property
-    let mut basic = object_proxy.basic(store_key!("basic_prop")).unwrap();
+    // Set Basic parameter
+    let mut basic = object_proxy
+        .parameter_basic(store_key!("p_basic_prop"))
+        .unwrap();
     basic.set_value("Hello, Static Store!");
     basic.push().unwrap();
 
-    // Set Table property
-    let mut table = object_proxy.table(store_key!("table_prop")).unwrap();
+    // Set Table parameter
+    let mut table = object_proxy
+        .parameter_table(store_key!("p_table_prop"))
+        .unwrap();
     table.append_row();
     table.set_cell(0, "col_1", "Row 0, Col 1").unwrap();
     table.set_cell(0, "col_2", "42").unwrap();
     table.push().unwrap();
 
-    // Set Struct property
-    let struct_container = object_proxy.container(store_key!("struct_prop")).unwrap();
+    // Set Struct parameter
+    let struct_container = object_proxy
+        .parameter_container(store_key!("p_struct_prop"))
+        .unwrap();
     let mut s_field_1 = store
         .basic(
             &struct_container
@@ -105,8 +111,10 @@ fn main() {
     s_field_2.set_value("123");
     s_field_2.push().unwrap();
 
-    // Set Map property
-    let map_container = object_proxy.container(store_key!("map_prop")).unwrap();
+    // Set Map parameter
+    let map_container = object_proxy
+        .parameter_container(store_key!("p_map_prop"))
+        .unwrap();
     let entry_proxy = map_container
         .insert_map_entry(store_key!("entry_1"))
         .unwrap();
@@ -142,7 +150,7 @@ fn main() {
 
     // 7. Accessing data in StaticStore
     if let Some(obj) = static_store.get("example_item") {
-        if let Some(prop) = obj.get("basic_prop") {
+        if let Some(prop) = obj.get_parameter("p_basic_prop") {
             if let Some(basic) = prop.get_basic() {
                 println!("\nDirect access to basic_prop: {}", basic.value().as_str());
             }

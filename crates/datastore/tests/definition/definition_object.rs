@@ -1,41 +1,42 @@
-use datastore::definition::{BasicDefinition, ObjectDefinition, PropertyDefinition};
+use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition};
+use datastore::key::ParameterKey;
 use datastore::store_key;
 
 #[test]
 fn test_object_definition_basic() {
-    // Why: Test object definition creation and properties.
+    // Why: Test object definition creation and parameter.
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("prop1"),
-        PropertyDefinition::new("P1", BasicDefinition::new_string("D1")),
+    builder.insert_parameter(
+        ParameterKey::new("p_prop1".into()).unwrap(),
+        ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
     );
     let obj_def = builder.finish();
 
     assert_eq!(obj_def.description().as_ref(), "Test Object");
-    assert_eq!(obj_def.count(), 1);
-    assert!(obj_def.contains_key(store_key!("prop1")));
-    assert!(obj_def.contains_key_str("prop1"));
+    assert_eq!(obj_def.parameter_count(), 1);
+    assert!(obj_def.parameter_contains_key(store_key!("p_prop1")));
+    assert!(obj_def.parameter_contains_key_str("p_prop1"));
 }
 
 #[test]
 fn test_object_definition_equality() {
-    // Why: Test that two object definitions with the same properties are considered equal and ref equal.
+    // Why: Test that two object definitions with the same parameter are considered equal and ref equal.
     let def_1 = ObjectDefinition::builder("Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("P1", BasicDefinition::new_string("D1")),
+        .with_parameter_inserted(
+            ParameterKey::new("p_prop1".into()).unwrap(),
+            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
         )
         .finish();
     let def_2 = ObjectDefinition::builder("Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("P1", BasicDefinition::new_string("D1")),
+        .with_parameter_inserted(
+            ParameterKey::new("p_prop1".into()).unwrap(),
+            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
         )
         .finish();
     let def_3 = ObjectDefinition::builder("Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("P1", BasicDefinition::new_string("D2")),
+        .with_parameter_inserted(
+            ParameterKey::new("p_prop1".into()).unwrap(),
+            ItemDefinition::new("P1", BasicDefinition::new_string("D2")),
         )
         .finish();
 

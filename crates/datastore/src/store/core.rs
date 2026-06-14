@@ -2,6 +2,7 @@ use crate::StoreError;
 use crate::definition::ObjectDefinition;
 use crate::key::StoreKey;
 use crate::path::StorePath;
+use crate::prelude::{ParameterKey, VariableKey};
 use crate::static_store::StaticStore;
 use crate::store::data::{Basic, Container, ContainerItem, Object, Table};
 use crate::store::traits::{CommonStoreTraitInternal, TreePrint};
@@ -170,7 +171,12 @@ impl Store {
         let object = self.internal.get_object(key.clone())?;
         let definition = object.definition().clone();
 
-        let keys = object.keys();
+        let mut parameter_keys: Vec<ParameterKey> = definition.parameter_keys().cloned().collect();
+        parameter_keys.sort();
+
+        let mut variable_keys: Vec<VariableKey> = definition.variable_keys().cloned().collect();
+        variable_keys.sort();
+
         let object_hash = object.hash_container().clone();
         let last_sync_hash = object.current_shared_hash();
 
@@ -181,7 +187,8 @@ impl Store {
             store_path.clone(),
             self.clone(),
             definition,
-            keys,
+            parameter_keys,
+            variable_keys,
             object_hash,
             last_sync_hash,
         ))
@@ -231,11 +238,12 @@ impl Store {
 
             match item {
                 ContainerItem::Container(c) => current_container = Some(c),
-                _ => return Err(StoreError::PropertyNotFound),
+                _ => return Err(StoreError::SchemaMismatch("Expected container".to_string())),
             }
         }
 
-        current_container.ok_or(StoreError::PropertyNotFound)
+        current_container
+            .ok_or_else(|| StoreError::SchemaMismatch("Expected container".to_string()))
     }
 
     /// Returns a `ContainerProxy` for the specified path.
@@ -263,7 +271,7 @@ impl Store {
         if let ContainerItem::Table(table) = item {
             Ok(TableProxy::new(store_path.clone(), self.clone(), table))
         } else {
-            Err(StoreError::PropertyNotFound)
+            Err(StoreError::SchemaMismatch("Expected table".to_string()))
         }
     }
 
@@ -295,7 +303,9 @@ impl Store {
         if let ContainerItem::Basic(basic) = item {
             Ok(BasicProxy::new(store_path.clone(), self.clone(), basic))
         } else {
-            Err(StoreError::PropertyNotFound)
+            Err(StoreError::SchemaMismatch(
+                "Expected basic value".to_string(),
+            ))
         }
     }
 
@@ -461,7 +471,7 @@ impl Store {
             if let Some(object) = objects.get_mut(&laundered_key)
                 && object.definition() == static_object.definition()
             {
-                object.update_from_static(static_object.items())?;
+                object.update_from_static(static_object.parameters(), static_object.variables())?;
                 continue;
             }
 

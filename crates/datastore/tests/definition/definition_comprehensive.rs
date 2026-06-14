@@ -6,12 +6,12 @@
 //! [`MapDefinition`], [`TableDefinition`], [`ChoiceDefinition`], and
 //! [`FileDefinition`].
 use datastore::definition::{
-    BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition, MapDefinition,
-    ObjectDefinition, PropertyDefinition, PropertyDefinitionType, StructDefinition,
-    StructItemDefinition, TableDefinition,
+    BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition, ItemDefinition,
+    ItemDefinitionType, MapDefinition, ObjectDefinition, StructDefinition, StructItemDefinition,
+    TableDefinition,
 };
 use datastore::key::StoreKey;
-use datastore::store_key;
+use datastore::{parameter_key, store_key};
 use shareable_string::SharedStringStore;
 
 #[test]
@@ -102,39 +102,39 @@ fn test_map_definition_comprehensive() {
 }
 
 #[test]
-fn test_property_definition_comprehensive() {
+fn test_parameter_definition_comprehensive() {
     let basic_def = BasicDefinition::new_string("Basic");
-    let prop_def = PropertyDefinition::new("Prop Desc", basic_def);
+    let prop_def = ItemDefinition::new("Prop Desc", basic_def);
     assert_eq!(prop_def.description_ref().as_ref(), "Prop Desc");
-    assert!(matches!(
-        prop_def.item_type(),
-        PropertyDefinitionType::Basic(_)
-    ));
+    assert!(matches!(prop_def.item_type(), ItemDefinitionType::Basic(_)));
 }
 
 #[test]
 fn test_object_definition_comprehensive() {
     let obj_def = ObjectDefinition::builder("Obj Desc")
-        .with_inserted(
-            store_key!("p1"),
-            PropertyDefinition::new("P1", BasicDefinition::new_string("D1")),
+        .with_parameter_inserted(
+            parameter_key!("p_p1"),
+            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
         )
-        .with_inserted(
-            store_key!("p2"),
-            PropertyDefinition::new("P2", BasicDefinition::new_number("D2")),
+        .with_parameter_inserted(
+            parameter_key!("p_p2"),
+            ItemDefinition::new("P2", BasicDefinition::new_number("D2")),
         )
         .finish();
 
     assert_eq!(obj_def.description_ref().as_ref(), "Obj Desc");
-    assert_eq!(obj_def.count(), 2);
-    assert!(obj_def.contains_key_str("p1"));
-    assert!(obj_def.get_str("p2").is_some());
+    assert_eq!(obj_def.parameter_count(), 2);
+    assert!(obj_def.parameter_contains_key_str("p_p1"));
+    assert!(obj_def.parameter_get_str("p_p2").is_some());
 
-    let keys: Vec<String> = obj_def.keys().map(|k| k.as_ref().to_string()).collect();
-    assert!(keys.contains(&"p1".to_string()));
-    assert!(keys.contains(&"p2".to_string()));
+    let keys: Vec<String> = obj_def
+        .parameter_keys()
+        .map(|k| k.as_ref().to_string())
+        .collect();
+    assert!(keys.contains(&"p_p1".to_string()));
+    assert!(keys.contains(&"p_p2".to_string()));
 
-    let iter_count = obj_def.iter().count();
+    let iter_count = obj_def.parameter_iter().count();
     assert_eq!(iter_count, 2);
 }
 
@@ -170,16 +170,16 @@ fn test_launder_comprehensive() {
     let laundered_map = map_def.launder(&store);
     assert_eq!(laundered_map.description(), map_def.description());
 
-    // Test PropertyDefinition launder
-    let prop_def = PropertyDefinition::new("Prop", basic_def);
+    // Test ItemDefinition launder
+    let prop_def = ItemDefinition::new("Prop", basic_def);
     let laundered_prop = prop_def.launder(&store);
     assert_eq!(laundered_prop.description(), prop_def.description());
 
     // Test ObjectDefinition launder
     let obj_def = ObjectDefinition::builder("Obj")
-        .with_inserted(store_key!("prop"), prop_def)
+        .with_parameter_inserted(parameter_key!("p_prop"), prop_def)
         .finish();
     let laundered_obj = obj_def.launder(&store);
     assert_eq!(laundered_obj.description(), obj_def.description());
-    assert!(laundered_obj.contains_key("prop"));
+    assert!(laundered_obj.parameter_contains_key("p_prop"));
 }

@@ -6,7 +6,7 @@ use datastore::store_key;
 
 #[test]
 fn test_struct_all_basic_definition() {
-    // Why: Test struct definition creation and properties.
+    // Why: Test struct definition creation and parameter.
     let struct_def = StructDefinition::new(
         "A struct",
         vec![
@@ -15,7 +15,7 @@ fn test_struct_all_basic_definition() {
         ],
     );
 
-    // Check the various properties of the struct definition.
+    // Check the various parameter of the struct definition.
     assert_eq!(struct_def.description().as_ref(), "A struct");
     assert_eq!(struct_def.count(), 2);
 
@@ -50,7 +50,7 @@ fn test_struct_all_basic_definition() {
 
 #[test]
 fn test_struct_all_table_definition() {
-    // Why: Test struct definition creation and properties.
+    // Why: Test struct definition creation and parameter.
     let struct_def = StructDefinition::new(
         "A struct",
         vec![
@@ -65,7 +65,7 @@ fn test_struct_all_table_definition() {
         ],
     );
 
-    // Check the various properties of the struct definition.
+    // Check the various parameter of the struct definition.
     assert_eq!(struct_def.description().as_ref(), "A struct");
     assert_eq!(struct_def.count(), 2);
 
@@ -98,7 +98,7 @@ fn test_struct_all_table_definition() {
 
 #[test]
 fn test_struct_mixed_definition() {
-    // Why: Test struct definition creation and properties.
+    // Why: Test struct definition creation and parameter.
     let struct_def = StructDefinition::new(
         "A struct",
         vec![
@@ -116,7 +116,7 @@ fn test_struct_mixed_definition() {
         ],
     );
 
-    // Check the various properties of the struct definition.
+    // Check the various parameter of the struct definition.
     assert_eq!(struct_def.description().as_ref(), "A struct");
     assert_eq!(struct_def.count(), 2);
 
@@ -150,7 +150,7 @@ fn test_struct_mixed_definition() {
 
 #[test]
 fn test_struct_definition_equality() {
-    // Why: Test that two struct definitions with the same properties are considered equal and ref equal.
+    // Why: Test that two struct definitions with the same parameter are considered equal and ref equal.
     let struct_def_1 = StructDefinition::new(
         "A struct",
         vec![

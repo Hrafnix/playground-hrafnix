@@ -38,17 +38,17 @@ fn main() {
     // 5. Create an Object with these components
     let builder = ObjectDefinition::builder("Company Data");
     let company_def = builder
-        .with_inserted(
-            store_key!("hq_address"),
-            PropertyDefinition::new("Headquarters", address_def),
+        .with_parameter_inserted(
+            parameter_key!("p_hq_address"),
+            ItemDefinition::new("Headquarters", address_def),
         )
-        .with_inserted(
-            store_key!("branches"),
-            PropertyDefinition::new("Branch Offices", contacts_def),
+        .with_parameter_inserted(
+            parameter_key!("p_branches"),
+            ItemDefinition::new("Branch Offices", contacts_def),
         )
-        .with_inserted(
-            store_key!("stock"),
-            PropertyDefinition::new("Warehouse Stock", inventory_def),
+        .with_parameter_inserted(
+            parameter_key!("p_stock"),
+            ItemDefinition::new("Warehouse Stock", inventory_def),
         )
         .finish();
 
@@ -59,9 +59,9 @@ fn main() {
     let mut company_proxy = store.object("my_company").unwrap();
     let company_key = "my_company";
 
-    // Access the 'hq_address' struct
+    // Access the 'p_hq_address' struct
     // We can now use the 'path!' macro for more ergonomic path construction.
-    let street_path = path!(company_key / "hq_address" / "street");
+    let street_path = path!(company_key / "p_hq_address" / "street");
 
     let mut street_proxy = store.basic(&street_path).unwrap();
     street_proxy.set_value("123 Main St");
@@ -71,7 +71,9 @@ fn main() {
 
     // 7. Interact with the Map
     // Maps allows inserting new entries that follow the defined Struct schema.
-    let branches_proxy = company_proxy.container(store_key!("branches")).unwrap();
+    let branches_proxy = company_proxy
+        .parameter_container(store_key!("p_branches"))
+        .unwrap();
 
     // Insert a new branch "london"
     branches_proxy
@@ -81,7 +83,7 @@ fn main() {
     // Now we can access the 'london' branch fields using a tuple for ergonomics.
     let london_city_path: StorePath = (
         store_key!("my_company"),
-        store_key!("branches"),
+        store_key!("p_branches"),
         store_key!("london"),
         store_key!("city"),
     )
@@ -97,7 +99,9 @@ fn main() {
     );
 
     // 8. Interact with the Table
-    let mut table_proxy = company_proxy.table(store_key!("stock")).unwrap();
+    let mut table_proxy = company_proxy
+        .parameter_table(store_key!("p_stock"))
+        .unwrap();
 
     // Add some rows
     table_proxy.append_row();

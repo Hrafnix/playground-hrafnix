@@ -1,6 +1,6 @@
 use crate::StoreError;
-use crate::definition::PropertyDefinition;
-use crate::key::StoreKey;
+use crate::definition::ItemDefinition;
+use crate::key::{ParameterKey, VariableKey};
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
@@ -10,7 +10,8 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ObjectDefinitionBuilder {
     description: ShareableString,
-    properties: BTreeMap<StoreKey, PropertyDefinition>,
+    parameter: BTreeMap<ParameterKey, ItemDefinition>,
+    variables: BTreeMap<VariableKey, ItemDefinition>,
 }
 
 impl ObjectDefinitionBuilder {
@@ -18,117 +19,178 @@ impl ObjectDefinitionBuilder {
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
-            properties: BTreeMap::new(),
+            parameter: BTreeMap::new(),
+            variables: BTreeMap::new(),
         }
     }
 
-    /// Returns a new builder with properties inherited from an existing `ObjectDefinition`.
+    /// Returns a new builder with parameter inherited from an existing `ObjectDefinition`.
     ///
-    /// This method will overwrite existing properties with the same keys.
+    /// This method will overwrite existing parameter with the same keys.
     pub fn with_inherited(mut self, definition: ObjectDefinition) -> Self {
-        self.properties.extend(
+        self.parameter.extend(
             definition
-                .properties
+                .parameter
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone())),
+        );
+        self.variables.extend(
+            definition
+                .variables
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone())),
         );
         self
     }
 
-    /// Returns a new builder with properties inherited from an existing `ObjectDefinition`,
+    /// Returns a new builder with parameter inherited from an existing `ObjectDefinition`,
     /// checking for conflicts.
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::PropertyConflict` if any property key already exists in the builder.
+    /// Returns `StoreError::ParameterConflict` if any parameter key already exists in the builder.
+    /// Returns `StoreError::VariableConflict` if any variable key already exists in the builder.
     pub fn with_inherited_checked(
         mut self,
         definition: ObjectDefinition,
     ) -> Result<Self, StoreError> {
-        for (key, _) in definition.properties.iter() {
-            if self.properties.contains_key(key) {
-                return Err(StoreError::PropertyConflict(key.key.clone()));
+        for (key, _) in definition.parameter.iter() {
+            if self.parameter.contains_key(key) {
+                return Err(StoreError::ParameterConflict(key.key.clone()));
             }
         }
-        self.properties.extend(
+        for (key, _) in definition.variables.iter() {
+            if self.variables.contains_key(key) {
+                return Err(StoreError::VariableConflict(key.key.clone()));
+            }
+        }
+        self.parameter.extend(
             definition
-                .properties
+                .parameter
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone())),
+        );
+        self.variables.extend(
+            definition
+                .variables
                 .iter()
                 .map(|(k, v)| (k.clone(), v.clone())),
         );
         Ok(self)
     }
 
-    /// Returns a new builder with properties inherited from another builder.
+    /// Returns a new builder with parameter and variables inherited from another builder.
     ///
-    /// This method will overwrite existing properties with the same keys.
+    /// This method will overwrite existing parameter and variables with the same keys.
     pub fn with_inherited_from_builder(mut self, builder: ObjectDefinitionBuilder) -> Self {
-        self.properties.extend(builder.properties);
+        self.parameter.extend(builder.parameter);
+        self.variables.extend(builder.variables);
         self
     }
 
-    /// Returns a new builder with properties inherited from another builder, checking for conflicts.
+    /// Returns a new builder with parameter inherited from another builder, checking for conflicts.
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::PropertyConflict` if any property key already exists in the builder.
+    /// Returns `StoreError::ParameterConflict` if any parameter key already exists in the builder.
+    /// Returns `StoreError::VariableConflict` if any variable key already exists in the builder.
     pub fn with_inherited_from_builder_checked(
         mut self,
         builder: ObjectDefinitionBuilder,
     ) -> Result<Self, StoreError> {
-        for (key, _) in builder.properties.iter() {
-            if self.properties.contains_key(key) {
-                return Err(StoreError::PropertyConflict(key.key.clone()));
+        for (key, _) in builder.parameter.iter() {
+            if self.parameter.contains_key(key) {
+                return Err(StoreError::ParameterConflict(key.key.clone()));
             }
         }
-        self.properties.extend(builder.properties);
+        self.parameter.extend(builder.parameter);
+        for (key, _) in builder.variables.iter() {
+            if self.variables.contains_key(key) {
+                return Err(StoreError::VariableConflict(key.key.clone()));
+            }
+        }
+        self.variables.extend(builder.variables);
         Ok(self)
     }
 
-    /// Returns a new builder with the property inserted.
+    /// Returns a new builder with the parameter inserted.
     ///
-    /// This method will overwrite existing properties with the same keys.
-    pub fn with_inserted<K: Into<StoreKey>>(
+    /// This method will overwrite existing parameter with the same keys.
+    pub fn with_parameter_inserted<K: Into<ParameterKey>>(
         mut self,
         key: K,
-        property: PropertyDefinition,
+        parameter: ItemDefinition,
     ) -> Self {
-        self.insert(key, property);
+        self.insert_parameter(key, parameter);
         self
     }
 
-    /// Inserts a property into the current builder.
+    /// Inserts a parameter into the current builder.
     ///
-    /// This method will overwrite existing properties with the same keys.
-    pub fn insert<K: Into<StoreKey>>(&mut self, key: K, property: PropertyDefinition) {
-        self.properties.insert(key.into(), property);
+    /// This method will overwrite existing parameter with the same keys.
+    pub fn insert_parameter<K: Into<ParameterKey>>(&mut self, key: K, parameter: ItemDefinition) {
+        let key = key.into();
+        self.parameter.insert(key, parameter);
     }
 
-    /// Returns a new builder with the property removed.
-    pub fn without<S: Into<ShareableString>>(mut self, key: S) -> Self {
-        self.properties.remove(&key.into());
+    /// Returns a new builder with the parameter removed.
+    pub fn without_parameter<S: Into<ShareableString>>(mut self, key: S) -> Self {
+        self.remove_parameter(key);
         self
     }
 
-    /// Removes a property from the current builder.
-    pub fn remove<S: Into<ShareableString>>(&mut self, key: S) {
-        self.properties.remove(&key.into());
+    /// Removes a parameter from the current builder.
+    pub fn remove_parameter<S: Into<ShareableString>>(&mut self, key: S) {
+        self.parameter.remove(&key.into());
+    }
+
+    /// Returns a new builder with the variable inserted.
+    ///
+    /// This method will overwrite existing variables with the same keys.
+    pub fn with_variable_inserted<K: Into<VariableKey>>(
+        mut self,
+        key: K,
+        variable: ItemDefinition,
+    ) -> Self {
+        self.insert_variable(key, variable);
+        self
+    }
+
+    /// Inserts a variable into the current builder.
+    ///
+    /// This method will overwrite existing variables with the same keys.
+    pub fn insert_variable<K: Into<VariableKey>>(&mut self, key: K, variable: ItemDefinition) {
+        let key = key.into();
+        self.variables.insert(key, variable);
+    }
+
+    /// Returns a new builder with the variable removed.
+    pub fn without_variable<S: Into<ShareableString>>(mut self, key: S) -> Self {
+        self.remove_variable(key);
+        self
+    }
+
+    /// Removes a variable from the current builder.
+    pub fn remove_variable<S: Into<ShareableString>>(&mut self, key: S) {
+        self.variables.remove(&key.into());
     }
 
     /// Builds the `ObjectDefinition`.
     pub fn finish(self) -> ObjectDefinition {
         ObjectDefinition {
             description: self.description,
-            properties: Arc::new(self.properties),
+            parameter: Arc::new(self.parameter),
+            variables: Arc::new(self.variables),
         }
     }
 }
 
-/// Definition for an object, which is a collection of named properties.
+/// Definition for an object, which is a collection of named parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ObjectDefinition {
     description: ShareableString,
-    properties: Arc<BTreeMap<StoreKey, PropertyDefinition>>,
+    parameter: Arc<BTreeMap<ParameterKey, ItemDefinition>>,
+    variables: Arc<BTreeMap<VariableKey, ItemDefinition>>,
 }
 
 impl ObjectDefinition {
@@ -137,13 +199,14 @@ impl ObjectDefinition {
         ObjectDefinitionBuilder::new(description)
     }
 
-    /// Returns a new `ObjectDefinitionBuilder` initialized with the properties of this definition.
+    /// Returns a new `ObjectDefinitionBuilder` initialized with the parameter of this definition.
     ///
-    /// The new builder will have the specified description and a copy of the current properties.
+    /// The new builder will have the specified description and a copy of the current parameter.
     pub fn new_inherit<S: Into<ShareableString>>(&self, description: S) -> ObjectDefinitionBuilder {
         ObjectDefinitionBuilder {
             description: description.into(),
-            properties: BTreeMap::clone(&self.properties),
+            parameter: BTreeMap::clone(&self.parameter),
+            variables: BTreeMap::clone(&self.variables),
         }
     }
 
@@ -157,47 +220,88 @@ impl ObjectDefinition {
         &self.description
     }
 
-    /// Returns the number of properties in the object.
-    pub fn count(&self) -> usize {
-        self.properties.len()
+    /// Returns the number of parameter in the object.
+    pub fn parameter_count(&self) -> usize {
+        self.parameter.len()
     }
 
-    /// Returns true if the object contains a property with the specified key.
-    pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
-        self.properties.contains_key(&key.into())
+    /// Returns true if the object contains a parameter with the specified key.
+    pub fn parameter_contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
+        self.parameter.contains_key(&key.into())
     }
 
-    /// Returns a reference to the property definition for the specified key.
-    pub fn get<S: Into<StoreKey>>(&self, key: S) -> Option<&PropertyDefinition> {
-        self.properties.get(&key.into())
+    /// Returns true if the object contains a parameter with the specified key string.
+    pub fn parameter_contains_key_str(&self, key: &str) -> bool {
+        self.parameter.contains_key(key)
     }
 
-    /// Returns a reference to the property definition for the specified key string.
-    pub fn get_str(&self, key: &str) -> Option<&PropertyDefinition> {
-        self.properties.get(key)
+    /// Returns a reference to the parameter definition for the specified key.
+    pub fn parameter_get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinition> {
+        self.parameter.get(&key.into())
     }
 
-    /// Returns an iterator over the keys of the properties.
-    pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
-        self.properties.keys()
+    /// Returns a reference to the parameter definition for the specified key string.
+    pub fn parameter_get_str(&self, key: &str) -> Option<&ItemDefinition> {
+        self.parameter.get(key)
     }
 
-    /// Returns true if the object contains a property with the specified key string.
-    pub fn contains_key_str(&self, key: &str) -> bool {
-        self.properties.contains_key(key)
+    /// Returns an iterator over the keys of the parameter.
+    pub fn parameter_keys(&self) -> impl Iterator<Item = &ParameterKey> {
+        self.parameter.keys()
     }
 
-    /// Returns an iterator over the property definitions.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &PropertyDefinition)> {
-        self.properties.iter()
+    /// Returns an iterator over the parameter definitions.
+    pub fn parameter_iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemDefinition)> {
+        self.parameter.iter()
+    }
+
+    /// Returns the number of variables in the object.
+    pub fn variable_count(&self) -> usize {
+        self.variables.len()
+    }
+
+    /// Returns true if the object contains a variable with the specified key.
+    pub fn variable_contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
+        self.variables.contains_key(&key.into())
+    }
+
+    /// Returns true if the object contains a variable with the specified key string.
+    pub fn variable_contains_key_str(&self, key: &str) -> bool {
+        self.variables.contains_key(key)
+    }
+
+    /// Returns a reference to the variable definition for the specified key.
+    pub fn variable_get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinition> {
+        self.variables.get(&key.into())
+    }
+
+    /// Returns a reference to the variable definition for the specified key string.
+    pub fn variable_get_str(&self, key: &str) -> Option<&ItemDefinition> {
+        self.variables.get(key)
+    }
+
+    /// Returns an iterator over the keys of the variables.
+    pub fn variable_keys(&self) -> impl Iterator<Item = &VariableKey> {
+        self.variables.keys()
+    }
+
+    /// Returns an iterator over the variable definitions.
+    pub fn variable_iter(&self) -> impl Iterator<Item = (&VariableKey, &ItemDefinition)> {
+        self.variables.iter()
     }
 
     /// Returns a new `ObjectDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
-            properties: Arc::new(
-                self.properties
+            parameter: Arc::new(
+                self.parameter
+                    .iter()
+                    .map(|(k, v)| (k.launder(store), v.launder(store)))
+                    .collect(),
+            ),
+            variables: Arc::new(
+                self.variables
                     .iter()
                     .map(|(k, v)| (k.launder(store), v.launder(store)))
                     .collect(),

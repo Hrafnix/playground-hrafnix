@@ -1,14 +1,12 @@
-use datastore::definition::{
-    BasicDefinition, ObjectDefinition, PropertyDefinition, TableDefinition,
-};
+use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition, TableDefinition};
 use datastore::store::Store;
-use datastore::{StoreError, path, store_key};
+use datastore::{StoreError, parameter_key, path, store_key};
 use shareable_string::SharedStringStore;
 use std::collections::BTreeMap;
 
 #[test]
 fn test_proxy_table() {
-    // Why: General test of Table property proxy functionality, including creation, getting/setting value, push/pull, and expiry behavior.
+    // Why: General test of Table parameter proxy functionality, including creation, getting/setting value, push/pull, and expiry behavior.
     let store = Store::new(SharedStringStore::new());
 
     // 1. Create Object Definition
@@ -23,9 +21,9 @@ fn test_proxy_table() {
         ],
     );
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("catalog"),
-        PropertyDefinition::new("Catalog", table_definition.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_catalog"),
+        ItemDefinition::new("Catalog", table_definition.clone()),
     );
     let obj_def = builder.finish();
 
@@ -35,8 +33,8 @@ fn test_proxy_table() {
 
     assert_eq!(obj_proxy.description().as_ref(), "Test Object");
 
-    // 3. Get Basic Property Proxy
-    let mut table_proxy = obj_proxy.table(store_key!("catalog")).unwrap();
+    // 3. Get Basic parameter Proxy
+    let mut table_proxy = obj_proxy.parameter_table(store_key!("p_catalog")).unwrap();
     assert_eq!(table_proxy.row_count(), 0);
     assert_eq!(
         table_proxy.remove_row(0).err(),
@@ -49,7 +47,7 @@ fn test_proxy_table() {
         "Test Object"
     );
     assert_eq!(table_definition, table_proxy.definition());
-    assert_eq!(table_proxy.path(), path!("object" / "catalog"));
+    assert_eq!(table_proxy.path(), path!("object" / "p_catalog"));
     assert_eq!(table_proxy.description(), "Price List");
     assert_eq!(table_proxy.pull(), Ok(()));
 
@@ -139,16 +137,16 @@ fn test_proxy_table_print() {
         ],
     );
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("catalog"),
-        PropertyDefinition::new("Catalog", table_definition.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_catalog"),
+        ItemDefinition::new("Catalog", table_definition.clone()),
     );
     let obj_def = builder.finish();
 
     let obj_key = store_key!("object");
     let mut obj_proxy = store.create_object(obj_key, &obj_def).unwrap();
 
-    let mut table_proxy = obj_proxy.table(store_key!("catalog")).unwrap();
+    let mut table_proxy = obj_proxy.parameter_table(store_key!("p_catalog")).unwrap();
     table_proxy.insert_row(0);
     table_proxy
         .set_row(0, BTreeMap::from([("cost", "5.0"), ("item", "Pie")]))
@@ -156,6 +154,6 @@ fn test_proxy_table_print() {
 
     assert_eq!(
         format!("{}", table_proxy),
-        "catalog: [Table, 1 rows] (Price List)\n    └── Row 0\n        ├── cost: 5.0\n        └── item: Pie\n"
+        "p_catalog: [Table, 1 rows] (Price List)\n    └── Row 0\n        ├── cost: 5.0\n        └── item: Pie\n"
     )
 }
