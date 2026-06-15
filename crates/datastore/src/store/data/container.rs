@@ -1,7 +1,7 @@
 use crate::StoreError;
 use crate::definition::{MapDefinition, StructDefinition, StructItemDefinition};
 use crate::key::StoreKey;
-use crate::static_store::data::{StaticMap, StaticProperty, StaticStruct, StaticStructItem};
+use crate::static_store::data::{ItemParameter, StaticMap, StaticStruct, StaticStructItem};
 use crate::store::{Basic, CommonStoreTraitInternal, StoreHashContainer, Table, TreePrint};
 use rustc_hash::FxHashMap;
 use shareable_string::SharedStringStore;
@@ -18,50 +18,50 @@ pub(crate) enum ContainerItem {
 }
 
 impl ContainerItem {
-    /// Returns `true` if this item's type and definition match the given [`StaticProperty`].
+    /// Returns `true` if this item's type and definition match the given [`ItemParameter`].
     /// Used to determine whether an in-place update is safe before calling [`update_from_static`].
-    pub(crate) fn matches_static(&self, static_property: &StaticProperty) -> bool {
-        match (self, static_property) {
-            (ContainerItem::Basic(b), StaticProperty::Basic(sb)) => {
+    pub(crate) fn matches_static(&self, static_parameter: &ItemParameter) -> bool {
+        match (self, static_parameter) {
+            (ContainerItem::Basic(b), ItemParameter::Basic(sb)) => {
                 b.definition() == sb.definition()
             }
-            (ContainerItem::Table(t), StaticProperty::Table(st)) => {
+            (ContainerItem::Table(t), ItemParameter::Table(st)) => {
                 t.definition() == st.definition()
             }
-            (ContainerItem::Container(c), StaticProperty::Struct(ss)) => {
+            (ContainerItem::Container(c), ItemParameter::Struct(ss)) => {
                 matches!(c.definition(), ContainerDefinition::Struct(def) if def == ss.definition())
             }
-            (ContainerItem::Container(c), StaticProperty::Map(sm)) => {
+            (ContainerItem::Container(c), ItemParameter::Map(sm)) => {
                 matches!(c.definition(), ContainerDefinition::Map(def) if def == sm.definition())
             }
             _ => false,
         }
     }
 
-    /// Updates this item in-place from the given [`StaticProperty`].
+    /// Updates this item in-place from the given [`ItemParameter`].
     ///
     /// # Errors
     ///
-    /// Returns [`StoreError::SchemaMismatch`] if the item type does not match the static property.
+    /// Returns [`StoreError::SchemaMismatch`] if the item type does not match the static parameter.
     /// Call [`matches_static`] first to verify compatibility.
     pub(crate) fn update_from_static(
         &mut self,
-        static_property: &StaticProperty,
+        static_parameter: &ItemParameter,
     ) -> Result<(), StoreError> {
-        match (self, static_property) {
-            (ContainerItem::Basic(b), StaticProperty::Basic(sb)) => {
+        match (self, static_parameter) {
+            (ContainerItem::Basic(b), ItemParameter::Basic(sb)) => {
                 b.update_from_static(sb);
                 Ok(())
             }
-            (ContainerItem::Table(t), StaticProperty::Table(st)) => {
+            (ContainerItem::Table(t), ItemParameter::Table(st)) => {
                 t.update_from_static(st);
                 Ok(())
             }
-            (ContainerItem::Container(c), StaticProperty::Struct(ss)) => {
+            (ContainerItem::Container(c), ItemParameter::Struct(ss)) => {
                 c.update_from_static_struct(ss.items());
                 Ok(())
             }
-            (ContainerItem::Container(c), StaticProperty::Map(sm)) => {
+            (ContainerItem::Container(c), ItemParameter::Map(sm)) => {
                 c.update_from_static_map(sm.items());
                 Ok(())
             }
@@ -88,13 +88,13 @@ impl From<&StaticStruct> for ContainerItem {
     }
 }
 
-impl From<&StaticProperty> for ContainerItem {
-    fn from(static_property: &StaticProperty) -> Self {
-        match static_property {
-            StaticProperty::Basic(b) => ContainerItem::Basic(Basic::from(b)),
-            StaticProperty::Table(t) => ContainerItem::Table(Table::from(t)),
-            StaticProperty::Struct(s) => ContainerItem::Container(Container::from(s)),
-            StaticProperty::Map(m) => ContainerItem::Container(Container::from(m)),
+impl From<&ItemParameter> for ContainerItem {
+    fn from(static_parameter: &ItemParameter) -> Self {
+        match static_parameter {
+            ItemParameter::Basic(b) => ContainerItem::Basic(Basic::from(b)),
+            ItemParameter::Table(t) => ContainerItem::Table(Table::from(t)),
+            ItemParameter::Struct(s) => ContainerItem::Container(Container::from(s)),
+            ItemParameter::Map(m) => ContainerItem::Container(Container::from(m)),
         }
     }
 }
@@ -263,7 +263,7 @@ impl Container {
         self.items
             .get(key.as_ref())
             .cloned()
-            .ok_or(StoreError::PropertyNotFound)
+            .ok_or(StoreError::ParameterNotFound)
     }
 
     /// Sets the item for the given key and updates the hash.
@@ -273,7 +273,7 @@ impl Container {
         item: ContainerItem,
     ) -> Result<(), StoreError> {
         if self.locked && !self.items.contains_key(key) {
-            return Err(StoreError::PropertyNotFound);
+            return Err(StoreError::ParameterNotFound);
         }
         self.items.insert(key.clone(), item);
         self.update_shared_hash();

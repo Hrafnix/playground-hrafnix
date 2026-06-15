@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::sync::Arc;
 
-/// Definition for a file-based property.
+/// Definition for a file-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileDefinition {
     extension_filter: ShareableString,
@@ -34,7 +34,7 @@ impl FileDefinition {
     }
 }
 
-/// Definition for a choice-based property.
+/// Definition for a choice-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceDefinition {
     choices: Vec<ShareableString>,
@@ -89,7 +89,7 @@ impl BasicDefinitionType {
     }
 }
 
-/// Definition for a basic property (String, Number, File, or Choice).
+/// Definition for a basic parameter (String, Number, File, or Choice).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BasicDefinition {
     description: ShareableString,
@@ -202,7 +202,7 @@ impl BasicDefinition {
         )
     }
 
-    /// Returns the description of the property.
+    /// Returns the description of the parameter.
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -212,7 +212,7 @@ impl BasicDefinition {
         self.item_type.as_ref()
     }
 
-    /// Returns the default value of the property.
+    /// Returns the default value of the parameter.
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }

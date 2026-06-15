@@ -50,6 +50,11 @@ impl ShareableString {
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.data, &other.data)
     }
+
+    /// Checks if the string starts with the given prefix.
+    pub fn starts_with(&self, prefix: &str) -> bool {
+        self.as_str().starts_with(prefix)
+    }
 }
 
 impl Borrow<str> for ShareableString {

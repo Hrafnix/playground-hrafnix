@@ -1,16 +1,16 @@
 //! Integration tests for store serialization and deserialization (save / load).
 //!
 //! Verifies that a [`Store`] can be serialized to JSON and reloaded without
-//! data loss, covering basic properties, nested structs, maps, tables, choice
+//! data loss, covering basic parameters, nested structs, maps, tables, choice
 //! definitions, and file references.  Also checks that the BLAKE3 content hash
 //! is stable across a round-trip.
 use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, FileDefinition, MapDefinition, ObjectDefinition,
-    PropertyDefinition, StructDefinition, StructItemDefinition, TableDefinition,
+    BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
+    ObjectDefinition, StructDefinition, StructItemDefinition, TableDefinition,
 };
 use datastore::path::StorePath;
 use datastore::store::Store;
-use datastore::store_key;
+use datastore::{parameter_key, store_key};
 use shareable_string::SharedStringStore;
 use std::fs;
 
@@ -19,14 +19,14 @@ fn test_save_load_file() {
     let store = Store::new(SharedStringStore::new());
     let obj_key = store_key!("my_object");
     let def = ObjectDefinition::builder("My Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("A string")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("A string")),
         )
         .finish();
 
     let _proxy = store.create_object(obj_key.clone(), &def).unwrap();
-    let prop_path = StorePath::new(obj_key).with_segment(store_key!("prop1"));
+    let prop_path = StorePath::new(obj_key).with_segment(store_key!("p_prop1"));
 
     {
         let mut basic = store.basic(&prop_path).unwrap();
@@ -61,7 +61,7 @@ fn test_save_load_file() {
     // Check data consistency
     let loaded_basic = loaded_store
         .basic(&prop_path)
-        .expect("Could not find property in loaded store");
+        .expect("Could not find parameter in loaded store");
     assert_eq!(loaded_basic.value().as_str(), "Saved data");
 
     // Check hash consistency
@@ -109,24 +109,24 @@ fn test_save_load_comprehensive() {
 
     // 2. Define Object with all types
     let obj_def = ObjectDefinition::builder("Comprehensive Object")
-        .with_inserted(
-            store_key!("p_string"),
-            PropertyDefinition::new("String", BasicDefinition::new_string("S")),
+        .with_parameter_inserted(
+            parameter_key!("p_string"),
+            ItemDefinition::new("String", BasicDefinition::new_string("S")),
         )
-        .with_inserted(
-            store_key!("p_number"),
-            PropertyDefinition::new("Number", BasicDefinition::new_number("N")),
+        .with_parameter_inserted(
+            parameter_key!("p_number"),
+            ItemDefinition::new("Number", BasicDefinition::new_number("N")),
         )
-        .with_inserted(
-            store_key!("p_file"),
-            PropertyDefinition::new(
+        .with_parameter_inserted(
+            parameter_key!("p_file"),
+            ItemDefinition::new(
                 "File",
                 BasicDefinition::new_file("F", FileDefinition::new("*.txt")),
             ),
         )
-        .with_inserted(
-            store_key!("p_choice"),
-            PropertyDefinition::new(
+        .with_parameter_inserted(
+            parameter_key!("p_choice"),
+            ItemDefinition::new(
                 "Choice",
                 BasicDefinition::new_choice(
                     "C",
@@ -134,15 +134,15 @@ fn test_save_load_comprehensive() {
                 ),
             ),
         )
-        .with_inserted(
-            store_key!("p_struct"),
-            PropertyDefinition::new("Struct", struct_def),
+        .with_parameter_inserted(
+            parameter_key!("p_struct"),
+            ItemDefinition::new("Struct", struct_def),
         )
-        .with_inserted(
-            store_key!("p_table"),
-            PropertyDefinition::new("Table", table_def),
+        .with_parameter_inserted(
+            parameter_key!("p_table"),
+            ItemDefinition::new("Table", table_def),
         )
-        .with_inserted(store_key!("p_map"), PropertyDefinition::new("Map", map_def))
+        .with_parameter_inserted(parameter_key!("p_map"), ItemDefinition::new("Map", map_def))
         .finish();
 
     let obj_key: datastore::key::StoreKey = store_key!("comp_obj").into();
@@ -151,32 +151,32 @@ fn test_save_load_comprehensive() {
     // 3. Populate data
     // p_string
     {
-        let mut p = obj_proxy.basic(store_key!("p_string")).unwrap();
+        let mut p = obj_proxy.parameter_basic(store_key!("p_string")).unwrap();
         p.set_value("Hello String");
         p.push().unwrap();
     }
     // p_number
     {
-        let mut p = obj_proxy.basic(store_key!("p_number")).unwrap();
+        let mut p = obj_proxy.parameter_basic(store_key!("p_number")).unwrap();
         p.set_value("12345");
         p.push().unwrap();
     }
     // p_file
     {
-        let mut p = obj_proxy.basic(store_key!("p_file")).unwrap();
+        let mut p = obj_proxy.parameter_basic(store_key!("p_file")).unwrap();
         p.set_value("test.txt");
         p.push().unwrap();
     }
     // p_choice
     {
-        let mut p = obj_proxy.basic(store_key!("p_choice")).unwrap();
+        let mut p = obj_proxy.parameter_basic(store_key!("p_choice")).unwrap();
         p.set_value("B");
         p.push().unwrap();
     }
     // p_struct -> s_basic
     {
         let path = obj_proxy
-            .container(store_key!("p_struct"))
+            .parameter_container(store_key!("p_struct"))
             .unwrap()
             .path()
             .clone()
@@ -188,7 +188,7 @@ fn test_save_load_comprehensive() {
     // p_struct -> s_table
     {
         let path = obj_proxy
-            .container(store_key!("p_struct"))
+            .parameter_container(store_key!("p_struct"))
             .unwrap()
             .path()
             .clone()
@@ -201,14 +201,14 @@ fn test_save_load_comprehensive() {
     }
     // p_table
     {
-        let mut p = obj_proxy.table(store_key!("p_table")).unwrap();
+        let mut p = obj_proxy.parameter_table(store_key!("p_table")).unwrap();
         p.append_row();
         p.set_cell(0, "col_str", "Table Row").unwrap();
         p.push().unwrap();
     }
     // p_map
     {
-        let map_container = obj_proxy.container(store_key!("p_map")).unwrap();
+        let map_container = obj_proxy.parameter_container(store_key!("p_map")).unwrap();
         let item_key = store_key!("entry_1");
         let entry_proxy = map_container.insert_map_entry(item_key).unwrap();
         let path = entry_proxy.path();
@@ -232,7 +232,7 @@ fn test_save_load_comprehensive() {
 
     assert_eq!(
         loaded_obj
-            .basic(store_key!("p_string"))
+            .parameter_basic(store_key!("p_string"))
             .unwrap()
             .value()
             .as_ref(),
@@ -240,7 +240,7 @@ fn test_save_load_comprehensive() {
     );
     assert_eq!(
         loaded_obj
-            .basic(store_key!("p_number"))
+            .parameter_basic(store_key!("p_number"))
             .unwrap()
             .value()
             .as_ref(),
@@ -248,7 +248,7 @@ fn test_save_load_comprehensive() {
     );
     assert_eq!(
         loaded_obj
-            .basic(store_key!("p_file"))
+            .parameter_basic(store_key!("p_file"))
             .unwrap()
             .value()
             .as_ref(),
@@ -256,7 +256,7 @@ fn test_save_load_comprehensive() {
     );
     assert_eq!(
         loaded_obj
-            .basic(store_key!("p_choice"))
+            .parameter_basic(store_key!("p_choice"))
             .unwrap()
             .value()
             .as_ref(),

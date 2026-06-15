@@ -8,9 +8,9 @@ use std::sync::Arc;
 /// The definition of an item within a struct.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum StructItemDefinition {
-    /// A basic property.
+    /// A basic parameter.
     Basic(BasicDefinition),
-    /// A table property.
+    /// A table parameter.
     Table(TableDefinition),
 }
 
@@ -48,7 +48,7 @@ impl PartialEq<StructItemDefinition> for &StructItemDefinition {
     }
 }
 
-/// Definition for a structured property, which is a collection of named `StructItemDefinition`s.
+/// Definition for a structured parameter, which is a collection of named `StructItemDefinition`s.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StructDefinition {
     description: ShareableString,

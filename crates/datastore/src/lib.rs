@@ -25,7 +25,7 @@
 //!
 //! // 1. Define your data structure
 //! let mut builder = ObjectDefinition::builder("My Object");
-//! builder.insert(store_key!("name"), PropertyDefinition::new("User Name", BasicDefinition::new_string("Name")));
+//! builder.insert_parameter(parameter_key!("p_name"), ItemDefinition::new("User Name", BasicDefinition::new_string("Name")));
 //! let def = builder.finish();
 //!
 //! // 2. Create a store and add an object
@@ -34,7 +34,7 @@
 //!
 //! // 3. Access data via a proxy
 //! let mut user_proxy = store.object("user_1").unwrap();
-//! let mut name_proxy = user_proxy.basic("name").unwrap();
+//! let mut name_proxy = user_proxy.parameter_basic("p_name").unwrap();
 //!
 //! name_proxy.set_value("Alice");
 //! name_proxy.push().unwrap();
@@ -42,7 +42,7 @@
 //! assert_eq!(name_proxy.value().as_str(), "Alice");
 //!
 //! // You can also access data directly via paths
-//! let mut name_proxy_direct = store.basic(&path!("user_1" / "name")).unwrap();
+//! let mut name_proxy_direct = store.basic(&path!("user_1" / "p_name")).unwrap();
 //! assert_eq!(name_proxy_direct.value().as_str(), "Alice");
 //! ```
 
@@ -69,12 +69,16 @@ pub enum StoreError {
     KeyEmpty,
     /// The key contains an invalid character.
     KeyInvalidCharacter(String),
+    /// The key is missing the required prefix (e.g. `p_` for parameter keys, `v_` for variable keys).
+    KeyInvalidPrefix(String),
     /// The requested object was not found.
     ObjectNotFound,
     /// An object with the specified key already exists.
     ObjectKeyAlreadyExists,
-    /// The requested property was not found.
-    PropertyNotFound,
+    /// The requested parameter was not found.
+    ParameterNotFound,
+    /// The requested variable was not found.
+    VariableNotFound,
     /// The proxy has expired or is no longer valid.
     ExpiredProxy,
     /// The key was not found in the map.
@@ -91,8 +95,10 @@ pub enum StoreError {
     RedoNotAvailable,
     /// Failed to serialize or deserialize the store state.
     SerializationError(String),
-    /// A property conflict occurred during inheritance.
-    PropertyConflict(ShareableString),
+    /// A parameter conflict occurred during inheritance.
+    ParameterConflict(ShareableString),
+    /// A variable conflict occurred during inheritance.
+    VariableConflict(ShareableString),
     /// A schema mismatch occurred during update or conversion.
     SchemaMismatch(String),
     /// Nested containers are not supported in this context.
@@ -110,9 +116,15 @@ impl Display for StoreError {
                 "Invalid key: '{}'. Keys must only contain a-z, 0-9 and _",
                 s
             ),
+            StoreError::KeyInvalidPrefix(s) => write!(
+                f,
+                "Invalid key: '{}'. Key is missing the required prefix",
+                s
+            ),
             StoreError::ObjectNotFound => write!(f, "Object not found"),
             StoreError::ObjectKeyAlreadyExists => write!(f, "Object key already exists"),
-            StoreError::PropertyNotFound => write!(f, "Property not found"),
+            StoreError::ParameterNotFound => write!(f, "Parameter not found"),
+            StoreError::VariableNotFound => write!(f, "Variable not found"),
             StoreError::ExpiredProxy => write!(f, "Proxy is invalid"),
             StoreError::KeyNotFound => write!(f, "Key not found"),
             StoreError::InvalidPath => write!(f, "Invalid path"),
@@ -121,7 +133,8 @@ impl Display for StoreError {
             StoreError::UndoNotAvailable => write!(f, "Undo not available"),
             StoreError::RedoNotAvailable => write!(f, "Redo not available"),
             StoreError::SerializationError(s) => write!(f, "Serialization error: {}", s),
-            StoreError::PropertyConflict(s) => write!(f, "Property conflict: {}", s),
+            StoreError::ParameterConflict(s) => write!(f, "Parameter conflict: {}", s),
+            StoreError::VariableConflict(s) => write!(f, "Variable conflict: {}", s),
             StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {}", s),
             StoreError::NestedContainerNotSupported => {
                 write!(f, "Nested containers are not supported in this context")

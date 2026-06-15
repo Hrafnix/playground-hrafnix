@@ -4,12 +4,12 @@
 //! covering all container kinds (`StaticBasic`, `StaticStruct`, `StaticTable`)
 //! and ensuring that data fidelity is maintained across the round-trip.
 use datastore::definition::{
-    BasicDefinition, MapDefinition, ObjectDefinition, PropertyDefinition, TableDefinition,
+    BasicDefinition, ItemDefinition, MapDefinition, ObjectDefinition, TableDefinition,
 };
 use datastore::path::StorePath;
 use datastore::static_store::{StaticBasic, StaticStruct, StaticStructItem, StaticTable};
 use datastore::store::Store;
-use datastore::store_key;
+use datastore::{parameter_key, store_key};
 use shareable_string::SharedStringStore;
 use std::collections::BTreeMap;
 
@@ -81,14 +81,14 @@ fn test_store_to_static() {
     let store = Store::new(SharedStringStore::new());
     let obj_key = store_key!("my_object");
     let def = ObjectDefinition::builder("My Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("A string")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("A string")),
         )
         .finish();
 
     let _proxy = store.create_object(obj_key.clone(), &def).unwrap();
-    let prop_path = StorePath::new(obj_key).with_segment(store_key!("prop1"));
+    let prop_path = StorePath::new(obj_key).with_segment(store_key!("p_prop1"));
 
     {
         let mut basic = store.basic(&prop_path).unwrap();
@@ -106,13 +106,13 @@ fn test_store_to_static() {
         .get("my_object")
         .expect("Object not found in static store");
     let prop = obj
-        .get("prop1")
-        .expect("Property not found in static store");
+        .get_parameter("p_prop1")
+        .expect("parameter not found in static store");
 
     if let Some(basic) = prop.get_basic() {
         assert_eq!(basic.value().as_str(), "Static data");
     } else {
-        panic!("Property is not a StaticBasic");
+        panic!("parameter is not a StaticBasic");
     }
 
     // Verify tree print doesn't crash
@@ -124,14 +124,14 @@ fn test_static_to_store_roundtrip() {
     let store = Store::new(SharedStringStore::new());
     let obj_key = store_key!("my_object");
     let def = ObjectDefinition::builder("My Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("A string")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("A string")),
         )
         .finish();
 
     let _proxy = store.create_object(obj_key.clone(), &def).unwrap();
-    let prop_path = datastore::path::StorePath::new(obj_key).with_segment(store_key!("prop1"));
+    let prop_path = datastore::path::StorePath::new(obj_key).with_segment(store_key!("p_prop1"));
 
     {
         let mut basic = store.basic(&prop_path).unwrap();
@@ -160,15 +160,15 @@ fn test_update_from_static() {
     let store = Store::new(string_store.clone());
     let obj_key = store_key!("my_object");
     let def = ObjectDefinition::builder("My Test Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("Initial")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("Initial")),
         )
         .finish();
 
     let mut proxy = store.create_object(obj_key.clone(), &def).unwrap();
     {
-        let mut basic = proxy.basic(store_key!("prop1")).unwrap();
+        let mut basic = proxy.parameter_basic(store_key!("p_prop1")).unwrap();
         basic.set_value("Initial");
         basic.push().unwrap();
     }
@@ -182,7 +182,8 @@ fn test_update_from_static() {
     {
         let mut basic = store
             .basic(
-                &datastore::path::StorePath::new(obj_key.clone()).with_segment(store_key!("prop1")),
+                &datastore::path::StorePath::new(obj_key.clone())
+                    .with_segment(store_key!("p_prop1")),
             )
             .unwrap();
         basic.set_value("Updated");
@@ -194,7 +195,11 @@ fn test_update_from_static() {
     store.sync_from_static(&static_store).unwrap();
     proxy.sync().unwrap();
     assert_eq!(
-        proxy.basic(store_key!("prop1")).unwrap().value().as_str(),
+        proxy
+            .parameter_basic(store_key!("p_prop1"))
+            .unwrap()
+            .value()
+            .as_str(),
         "Initial"
     );
 
@@ -204,7 +209,11 @@ fn test_update_from_static() {
 
     // Verify that the proxy still works and reflects the update
     assert_eq!(
-        proxy.basic(store_key!("prop1")).unwrap().value().as_str(),
+        proxy
+            .parameter_basic(store_key!("p_prop1"))
+            .unwrap()
+            .value()
+            .as_str(),
         "Updated"
     );
     assert_eq!(
@@ -219,18 +228,18 @@ fn test_update_from_static_definition_mismatch() {
     let obj_key = store_key!("my_object");
 
     let def1 = ObjectDefinition::builder("Def 1")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("Initial")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("Initial")),
         )
         .finish();
 
     let _proxy1 = store.create_object(obj_key.clone(), &def1).unwrap();
 
     let def2 = ObjectDefinition::builder("Def 2")
-        .with_inserted(
-            store_key!("prop2"),
-            PropertyDefinition::new("Property 2", BasicDefinition::new_number("0")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop2"),
+            ItemDefinition::new("parameter 2", BasicDefinition::new_number("0")),
         )
         .finish();
 
@@ -247,24 +256,24 @@ fn test_update_from_static_definition_mismatch() {
     assert_eq!(obj_keys[0].as_str(), obj_key.as_str());
 
     let mut proxy = store.object(obj_key.clone()).unwrap();
-    assert!(proxy.basic(store_key!("prop2")).is_ok());
-    assert!(proxy.basic(store_key!("prop1")).is_err());
+    assert!(proxy.parameter_basic(store_key!("p_prop2")).is_ok());
+    assert!(proxy.parameter_basic(store_key!("p_prop1")).is_err());
 }
 
 #[test]
-fn test_update_from_static_does_not_remove_missing_properties() {
+fn test_update_from_static_removes_parameter_on_definition_mismatch() {
     let store = Store::new(SharedStringStore::new());
 
-    // Object: Has two properties
+    // Object: Has two parameters
     let obj_key = store_key!("my_object");
     let def = ObjectDefinition::builder("My Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("Initial")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("Initial")),
         )
-        .with_inserted(
-            store_key!("prop2"),
-            PropertyDefinition::new("Property 2", BasicDefinition::new_string("Stay")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop2"),
+            ItemDefinition::new("parameter 2", BasicDefinition::new_string("Stay")),
         )
         .finish();
     store.create_object(obj_key.clone(), &def).unwrap();
@@ -273,16 +282,16 @@ fn test_update_from_static_does_not_remove_missing_properties() {
     // Create a static store with the same object but ONLY prop1 (updated)
     let other_store = Store::new(SharedStringStore::new());
     let def_updated = ObjectDefinition::builder("My Object")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("Updated")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("Updated")),
         )
         .finish();
     let mut other_proxy = other_store
         .create_object(obj_key.clone(), &def_updated)
         .unwrap();
     {
-        let mut prop1_proxy = other_proxy.basic(store_key!("prop1")).unwrap();
+        let mut prop1_proxy = other_proxy.parameter_basic(store_key!("p_prop1")).unwrap();
         prop1_proxy.set_value("Updated");
         prop1_proxy.push().unwrap();
     }
@@ -294,11 +303,11 @@ fn test_update_from_static_does_not_remove_missing_properties() {
 
     // Verify prop1 was updated
     let mut proxy = store.object(obj_key.clone()).unwrap();
-    let prop1_proxy = proxy.basic(store_key!("prop1")).unwrap();
+    let prop1_proxy = proxy.parameter_basic(store_key!("p_prop1")).unwrap();
     assert_eq!(prop1_proxy.value().as_str(), "Updated");
 
-    // Verify prop2 still exists and was removed
-    assert!(proxy.basic(store_key!("prop2")).is_err());
+    // Verify prop2 was removed due to the definition mismatch
+    assert!(proxy.parameter_basic(store_key!("p_prop2")).is_err());
 }
 
 #[test]
@@ -308,9 +317,9 @@ fn test_update_from_static_does_not_remove_missing_objects() {
     // Object 1: Will be in both
     let obj_key1 = store_key!("object1");
     let def1 = ObjectDefinition::builder("Object 1")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("Initial")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("Initial")),
         )
         .finish();
     store.create_object(obj_key1.clone(), &def1).unwrap();
@@ -318,9 +327,9 @@ fn test_update_from_static_does_not_remove_missing_objects() {
     // Object 2: Only in original store, NOT in static store
     let obj_key2 = store_key!("object2");
     let def2 = ObjectDefinition::builder("Object 2")
-        .with_inserted(
-            store_key!("prop2"),
-            PropertyDefinition::new("Property 2", BasicDefinition::new_string("Stay")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop2"),
+            ItemDefinition::new("parameter 2", BasicDefinition::new_string("Stay")),
         )
         .finish();
     store.create_object(obj_key2.clone(), &def2).unwrap();
@@ -330,15 +339,15 @@ fn test_update_from_static_does_not_remove_missing_objects() {
     // Create a static store that only has object1 (updated)
     let other_store = Store::new(SharedStringStore::new());
     let def1_updated = ObjectDefinition::builder("Object 1")
-        .with_inserted(
-            store_key!("prop1"),
-            PropertyDefinition::new("Property 1", BasicDefinition::new_string("Updated")),
+        .with_parameter_inserted(
+            parameter_key!("p_prop1"),
+            ItemDefinition::new("parameter 1", BasicDefinition::new_string("Updated")),
         )
         .finish();
     let mut other_proxy = other_store
         .create_object(obj_key1.clone(), &def1_updated)
         .unwrap();
-    let mut prop1_proxy = other_proxy.basic(store_key!("prop1")).unwrap();
+    let mut prop1_proxy = other_proxy.parameter_basic(store_key!("p_prop1")).unwrap();
     prop1_proxy.set_value("Updated");
     prop1_proxy.push().unwrap();
     let static_store = other_store.to_static().unwrap();
@@ -351,12 +360,12 @@ fn test_update_from_static_does_not_remove_missing_objects() {
     // Verify object1 was updated
     let mut proxy1 = store.object(obj_key1.clone()).unwrap();
     // No need to pull because we created a NEW proxy from the store
-    let prop1_proxy = proxy1.basic(store_key!("prop1")).unwrap();
+    let prop1_proxy = proxy1.parameter_basic(store_key!("p_prop1")).unwrap();
     assert_eq!(prop1_proxy.value().as_str(), "Updated");
 
     // Verify object2 still exists
     let mut proxy2 = store.object(obj_key2.clone()).unwrap();
-    assert!(proxy2.basic(store_key!("prop2")).is_ok());
+    assert!(proxy2.parameter_basic(store_key!("p_prop2")).is_ok());
 
     // Verify both keys are present
     let obj_keys = store.object_keys().unwrap();
@@ -399,16 +408,16 @@ fn test_static_map_with_structs() {
     let map_def = MapDefinition::new("A Map", struct_def);
 
     let def = ObjectDefinition::builder("Object with Map")
-        .with_inserted(
-            store_key!("my_map"),
-            PropertyDefinition::new("My Map", map_def),
+        .with_parameter_inserted(
+            parameter_key!("p_my_map"),
+            ItemDefinition::new("My Map", map_def),
         )
         .finish();
 
     let mut proxy = store.create_object(obj_key.clone(), &def).unwrap();
 
     {
-        let map_proxy = proxy.container(store_key!("my_map")).unwrap();
+        let map_proxy = proxy.parameter_container(store_key!("p_my_map")).unwrap();
         let s_proxy = map_proxy.insert_map_entry(store_key!("key1")).unwrap();
         let s_path = s_proxy.path();
         let mut b_proxy = store
@@ -422,7 +431,7 @@ fn test_static_map_with_structs() {
 
     // Verify static map access
     let obj = static_store.get("my_object").unwrap();
-    let map_prop = obj.get("my_map").unwrap();
+    let map_prop = obj.get_parameter("p_my_map").unwrap();
     let static_map = map_prop.get_map().unwrap();
 
     let static_struct = static_map.get("key1").unwrap();
@@ -440,7 +449,7 @@ fn test_static_map_with_structs() {
     other_store.sync_from_static(&static_store).unwrap();
 
     let s_path = datastore::path::StorePath::new(store_key!("my_object"))
-        .with_segment(store_key!("my_map"))
+        .with_segment(store_key!("p_my_map"))
         .with_segment(store_key!("key1"));
     let b_path = s_path.clone().with_segment(store_key!("s_prop"));
     let b_proxy = other_store.basic(&b_path).unwrap();
@@ -483,21 +492,21 @@ fn test_static_store_all_types() {
 
     // Define Object structure
     let mut builder = ObjectDefinition::builder("Example Object");
-    builder.insert(
-        store_key!("basic_prop"),
-        PropertyDefinition::new("Basic Property", BasicDefinition::new_string("Basic")),
+    builder.insert_parameter(
+        parameter_key!("p_basic_prop"),
+        ItemDefinition::new("Basic parameter", BasicDefinition::new_string("Basic")),
     );
-    builder.insert(
-        store_key!("table_prop"),
-        PropertyDefinition::new("Table Property", table_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_table_prop"),
+        ItemDefinition::new("Table parameter", table_def.clone()),
     );
-    builder.insert(
-        store_key!("struct_prop"),
-        PropertyDefinition::new("Struct Property", struct_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_struct_prop"),
+        ItemDefinition::new("Struct parameter", struct_def.clone()),
     );
-    builder.insert(
-        store_key!("map_prop"),
-        PropertyDefinition::new("Map Property", map_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_map_prop"),
+        ItemDefinition::new("Map parameter", map_def.clone()),
     );
     let object_def = builder.finish();
 
@@ -509,25 +518,31 @@ fn test_static_store_all_types() {
     // Populate the data
     let mut object_proxy = store.object("example_item").unwrap();
 
-    // Set Basic property
+    // Set Basic parameter
     {
-        let mut basic = object_proxy.basic(store_key!("basic_prop")).unwrap();
+        let mut basic = object_proxy
+            .parameter_basic(store_key!("p_basic_prop"))
+            .unwrap();
         basic.set_value("Hello, Static Store!");
         basic.push().unwrap();
     }
 
-    // Set Table property
+    // Set Table parameter
     {
-        let mut table = object_proxy.table(store_key!("table_prop")).unwrap();
+        let mut table = object_proxy
+            .parameter_table(store_key!("p_table_prop"))
+            .unwrap();
         table.append_row();
         table.set_cell(0, "col_1", "Row 0, Col 1").unwrap();
         table.set_cell(0, "col_2", "42").unwrap();
         table.push().unwrap();
     }
 
-    // Set Struct property
+    // Set Struct parameter
     {
-        let struct_container = object_proxy.container(store_key!("struct_prop")).unwrap();
+        let struct_container = object_proxy
+            .parameter_container(store_key!("p_struct_prop"))
+            .unwrap();
         let mut s_field_1 = store
             .basic(
                 &struct_container
@@ -551,9 +566,11 @@ fn test_static_store_all_types() {
         s_field_2.push().unwrap();
     }
 
-    // Set Map property
+    // Set Map parameter
     {
-        let map_container = object_proxy.container(store_key!("map_prop")).unwrap();
+        let map_container = object_proxy
+            .parameter_container(store_key!("p_map_prop"))
+            .unwrap();
         let entry_proxy = map_container
             .insert_map_entry(store_key!("entry_1"))
             .unwrap();
@@ -594,7 +611,7 @@ fn test_static_store_all_types() {
 
     // Basic
     assert_eq!(
-        obj.get("basic_prop")
+        obj.get_parameter("p_basic_prop")
             .unwrap()
             .get_basic()
             .unwrap()
@@ -604,7 +621,11 @@ fn test_static_store_all_types() {
     );
 
     // Table
-    let table = obj.get("table_prop").unwrap().get_table().unwrap();
+    let table = obj
+        .get_parameter("p_table_prop")
+        .unwrap()
+        .get_table()
+        .unwrap();
     assert_eq!(
         table.cell_by_name(0, "col_1").unwrap().as_str(),
         "Row 0, Col 1"
@@ -612,7 +633,11 @@ fn test_static_store_all_types() {
     assert_eq!(table.cell_by_name(0, "col_2").unwrap().as_str(), "42");
 
     // Struct
-    let r_struct = obj.get("struct_prop").unwrap().get_struct().unwrap();
+    let r_struct = obj
+        .get_parameter("p_struct_prop")
+        .unwrap()
+        .get_struct()
+        .unwrap();
     if let StaticStructItem::Basic(b) = r_struct.get("field_1").unwrap() {
         assert_eq!(b.value().as_str(), "Struct Value");
     } else {
@@ -620,7 +645,7 @@ fn test_static_store_all_types() {
     }
 
     // Map
-    let map = obj.get("map_prop").unwrap().get_map().unwrap();
+    let map = obj.get_parameter("p_map_prop").unwrap().get_map().unwrap();
     let entry_struct = map.get("entry_1").unwrap();
     if let StaticStructItem::Basic(b) = entry_struct.get("field_2").unwrap() {
         assert_eq!(b.value().as_str(), "456");
@@ -636,14 +661,16 @@ fn test_static_store_all_types() {
     let mut rest_obj_proxy = restored_store.object("example_item").unwrap();
     assert_eq!(
         rest_obj_proxy
-            .basic(store_key!("basic_prop"))
+            .parameter_basic(store_key!("p_basic_prop"))
             .unwrap()
             .value()
             .as_str(),
         "Hello, Static Store!"
     );
 
-    let rest_table_proxy = rest_obj_proxy.table(store_key!("table_prop")).unwrap();
+    let rest_table_proxy = rest_obj_proxy
+        .parameter_table(store_key!("p_table_prop"))
+        .unwrap();
     assert_eq!(
         rest_table_proxy
             .row(0)
@@ -654,7 +681,9 @@ fn test_static_store_all_types() {
         "Row 0, Col 1"
     );
 
-    let rest_struct_container = rest_obj_proxy.container(store_key!("struct_prop")).unwrap();
+    let rest_struct_container = rest_obj_proxy
+        .parameter_container(store_key!("p_struct_prop"))
+        .unwrap();
     let rest_s_field_1 = restored_store
         .basic(
             &rest_struct_container
@@ -665,7 +694,9 @@ fn test_static_store_all_types() {
         .unwrap();
     assert_eq!(rest_s_field_1.value().as_str(), "Struct Value");
 
-    let rest_map_container = rest_obj_proxy.container(store_key!("map_prop")).unwrap();
+    let rest_map_container = rest_obj_proxy
+        .parameter_container(store_key!("p_map_prop"))
+        .unwrap();
     let rest_m_path = rest_map_container
         .path()
         .clone()

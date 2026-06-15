@@ -3,45 +3,45 @@ use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::sync::Arc;
 
-/// The type of property definition.
+/// The type of item definition.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum PropertyDefinitionType {
-    /// A basic property (String, Number, etc.).
+pub enum ItemDefinitionType {
+    /// A basic item (String, Number, etc.).
     Basic(BasicDefinition),
-    /// A structured property.
+    /// A structured item.
     Struct(StructDefinition),
-    /// A table property.
+    /// A table item.
     Table(TableDefinition),
-    /// A map property.
+    /// A map item.
     Map(MapDefinition),
 }
 
-impl From<BasicDefinition> for PropertyDefinitionType {
+impl From<BasicDefinition> for ItemDefinitionType {
     fn from(definition: BasicDefinition) -> Self {
-        PropertyDefinitionType::Basic(definition)
+        ItemDefinitionType::Basic(definition)
     }
 }
 
-impl From<StructDefinition> for PropertyDefinitionType {
+impl From<StructDefinition> for ItemDefinitionType {
     fn from(definition: StructDefinition) -> Self {
-        PropertyDefinitionType::Struct(definition)
+        ItemDefinitionType::Struct(definition)
     }
 }
 
-impl From<TableDefinition> for PropertyDefinitionType {
+impl From<TableDefinition> for ItemDefinitionType {
     fn from(definition: TableDefinition) -> Self {
-        PropertyDefinitionType::Table(definition)
+        ItemDefinitionType::Table(definition)
     }
 }
 
-impl From<MapDefinition> for PropertyDefinitionType {
+impl From<MapDefinition> for ItemDefinitionType {
     fn from(definition: MapDefinition) -> Self {
-        PropertyDefinitionType::Map(definition)
+        ItemDefinitionType::Map(definition)
     }
 }
 
-impl PropertyDefinitionType {
-    /// Returns a new `PropertyDefinitionType` with strings laundered through the provided store.
+impl ItemDefinitionType {
+    /// Returns a new `ItemDefinitionType` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             Self::Basic(def) => Self::Basic(def.launder(store)),
@@ -52,29 +52,29 @@ impl PropertyDefinitionType {
     }
 }
 
-impl PartialEq<&PropertyDefinitionType> for PropertyDefinitionType {
-    fn eq(&self, other: &&PropertyDefinitionType) -> bool {
+impl PartialEq<&ItemDefinitionType> for ItemDefinitionType {
+    fn eq(&self, other: &&ItemDefinitionType) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<PropertyDefinitionType> for &PropertyDefinitionType {
-    fn eq(&self, other: &PropertyDefinitionType) -> bool {
+impl PartialEq<ItemDefinitionType> for &ItemDefinitionType {
+    fn eq(&self, other: &ItemDefinitionType) -> bool {
         *self == other
     }
 }
 
-/// Definition for a property, including its type and metadata like description and visibility.
+/// Definition for a item, including its type and metadata like description and visibility.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PropertyDefinition {
+pub struct ItemDefinition {
     description: ShareableString,
-    item_type: Arc<PropertyDefinitionType>,
+    item_type: Arc<ItemDefinitionType>,
     gui_visibility: bool,
 }
 
-impl PropertyDefinition {
-    /// Creates a new `PropertyDefinition` with a description and type.
-    pub fn new<S: Into<ShareableString>, P: Into<PropertyDefinitionType>>(
+impl ItemDefinition {
+    /// Creates a new `ItemDefinition` with a description and type.
+    pub fn new<S: Into<ShareableString>, P: Into<ItemDefinitionType>>(
         description: S,
         item_type: P,
     ) -> Self {
@@ -85,8 +85,8 @@ impl PropertyDefinition {
         }
     }
 
-    /// Creates a new `PropertyDefinition` that is invisible in the GUI.
-    pub fn new_gui_invisible<S: Into<ShareableString>, P: Into<PropertyDefinitionType>>(
+    /// Creates a new `ItemDefinition` that is invisible in the GUI.
+    pub fn new_gui_invisible<S: Into<ShareableString>, P: Into<ItemDefinitionType>>(
         description: S,
         item_type: P,
     ) -> Self {
@@ -97,17 +97,17 @@ impl PropertyDefinition {
         }
     }
 
-    /// Returns the description of the property.
+    /// Returns the description of the item.
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the type definition.
-    pub fn item_type(&self) -> &PropertyDefinitionType {
+    pub fn item_type(&self) -> &ItemDefinitionType {
         self.item_type.as_ref()
     }
 
-    /// Returns whether the property is visible in the GUI.
+    /// Returns whether the item is visible in the GUI.
     pub fn is_gui_visible(&self) -> bool {
         self.gui_visibility
     }
@@ -117,7 +117,7 @@ impl PropertyDefinition {
         &self.description
     }
 
-    /// Returns a new `PropertyDefinition` with strings laundered through the provided store.
+    /// Returns a new `ItemDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -127,14 +127,14 @@ impl PropertyDefinition {
     }
 }
 
-impl PartialEq<&PropertyDefinition> for PropertyDefinition {
-    fn eq(&self, other: &&PropertyDefinition) -> bool {
+impl PartialEq<&ItemDefinition> for ItemDefinition {
+    fn eq(&self, other: &&ItemDefinition) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<PropertyDefinition> for &PropertyDefinition {
-    fn eq(&self, other: &PropertyDefinition) -> bool {
+impl PartialEq<ItemDefinition> for &ItemDefinition {
+    fn eq(&self, other: &ItemDefinition) -> bool {
         *self == other
     }
 }

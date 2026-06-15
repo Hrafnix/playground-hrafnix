@@ -1,24 +1,24 @@
 use crate::StoreError;
-use crate::definition::PropertyDefinition;
+use crate::definition::ItemDefinition;
 use crate::static_store::data::{StaticBasic, StaticMap, StaticStruct, StaticTable};
 use crate::store::TreePrint;
 use crate::store::data::{ContainerDefinition, ContainerItem};
 use serde::{Deserialize, Serialize};
 
-/// Represents a property value in the static store.
+/// Represents a parameter value in the static store.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StaticProperty {
-    /// A basic property.
+pub enum ItemParameter {
+    /// A basic parameter.
     Basic(StaticBasic),
-    /// A table property.
+    /// A table parameter.
     Table(StaticTable),
-    /// A struct property.
+    /// A struct parameter.
     Struct(StaticStruct),
-    /// A map property.
+    /// A map parameter.
     Map(StaticMap),
 }
 
-impl TryFrom<ContainerItem> for StaticProperty {
+impl TryFrom<ContainerItem> for ItemParameter {
     type Error = StoreError;
 
     fn try_from(item: ContainerItem) -> Result<Self, Self::Error> {
@@ -33,26 +33,26 @@ impl TryFrom<ContainerItem> for StaticProperty {
     }
 }
 
-impl StaticProperty {
-    /// Returns the property definition.
-    pub fn definition(&self) -> PropertyDefinition {
+impl ItemParameter {
+    /// Returns the parameter definition.
+    pub fn definition(&self) -> ItemDefinition {
         match self {
-            StaticProperty::Basic(b) => {
-                PropertyDefinition::new(b.definition().description(), b.definition().clone())
+            ItemParameter::Basic(b) => {
+                ItemDefinition::new(b.definition().description(), b.definition().clone())
             }
-            StaticProperty::Table(t) => {
-                PropertyDefinition::new(t.definition().description(), t.definition().clone())
+            ItemParameter::Table(t) => {
+                ItemDefinition::new(t.definition().description(), t.definition().clone())
             }
-            StaticProperty::Struct(s) => {
-                PropertyDefinition::new(s.definition().description(), s.definition().clone())
+            ItemParameter::Struct(s) => {
+                ItemDefinition::new(s.definition().description(), s.definition().clone())
             }
-            StaticProperty::Map(m) => {
-                PropertyDefinition::new(m.definition().description(), m.definition().clone())
+            ItemParameter::Map(m) => {
+                ItemDefinition::new(m.definition().description(), m.definition().clone())
             }
         }
     }
 
-    /// Returns the pre-calculated BLAKE3 hash of the property.
+    /// Returns the pre-calculated BLAKE3 hash of the parameter.
     pub fn hash(&self) -> [u8; 32] {
         match self {
             Self::Basic(b) => b.hash(),
@@ -62,7 +62,7 @@ impl StaticProperty {
         }
     }
 
-    /// Returns the basic value if this property is a basic property.
+    /// Returns the basic value if this parameter is a basic parameter.
     pub fn get_basic(&self) -> Option<&StaticBasic> {
         match self {
             Self::Basic(b) => Some(b),
@@ -70,7 +70,7 @@ impl StaticProperty {
         }
     }
 
-    /// Returns the table value if this property is a table property.
+    /// Returns the table value if this parameter is a table parameter.
     pub fn get_table(&self) -> Option<&StaticTable> {
         match self {
             Self::Table(t) => Some(t),
@@ -78,7 +78,7 @@ impl StaticProperty {
         }
     }
 
-    /// Returns the struct value if this property is a struct property.
+    /// Returns the struct value if this parameter is a struct parameter.
     pub fn get_struct(&self) -> Option<&StaticStruct> {
         match self {
             Self::Struct(s) => Some(s),
@@ -86,7 +86,7 @@ impl StaticProperty {
         }
     }
 
-    /// Returns the map value if this property is a map property.
+    /// Returns the map value if this parameter is a map parameter.
     pub fn get_map(&self) -> Option<&StaticMap> {
         match self {
             Self::Map(m) => Some(m),
@@ -95,7 +95,7 @@ impl StaticProperty {
     }
 }
 
-impl TreePrint for StaticProperty {
+impl TreePrint for ItemParameter {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

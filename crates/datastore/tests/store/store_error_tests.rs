@@ -25,8 +25,8 @@ fn test_store_error_display() {
         "Object key already exists"
     );
     assert_eq!(
-        format!("{}", StoreError::PropertyNotFound),
-        "Property not found"
+        format!("{}", StoreError::ParameterNotFound),
+        "Parameter not found"
     );
     assert_eq!(format!("{}", StoreError::ExpiredProxy), "Proxy is invalid");
     assert_eq!(format!("{}", StoreError::KeyNotFound), "Key not found");
@@ -51,9 +51,9 @@ fn test_store_error_display() {
     assert_eq!(
         format!(
             "{}",
-            StoreError::PropertyConflict(ShareableString::from("conflict"))
+            StoreError::ParameterConflict(ShareableString::from("conflict"))
         ),
-        "Property conflict: conflict"
+        "Parameter conflict: conflict"
     );
     assert_eq!(
         format!("{}", StoreError::MissingSchema("schema".to_string())),
@@ -97,12 +97,12 @@ fn test_store_error_partial_eq() {
         StoreError::SerializationError("b".to_string())
     );
     assert_eq!(
-        StoreError::PropertyConflict(ShareableString::from("c")),
-        StoreError::PropertyConflict(ShareableString::from("c"))
+        StoreError::ParameterConflict(ShareableString::from("c")),
+        StoreError::ParameterConflict(ShareableString::from("c"))
     );
     assert_ne!(
-        StoreError::PropertyConflict(ShareableString::from("a")),
-        StoreError::PropertyConflict(ShareableString::from("b"))
+        StoreError::ParameterConflict(ShareableString::from("a")),
+        StoreError::ParameterConflict(ShareableString::from("b"))
     );
     assert_eq!(
         StoreError::SchemaMismatch("x".to_string()),
@@ -139,7 +139,7 @@ fn test_store_error_clone() {
     let err = StoreError::SerializationError("oops".to_string());
     assert_eq!(err.clone(), err);
 
-    let err = StoreError::PropertyConflict(ShareableString::from("field"));
+    let err = StoreError::ParameterConflict(ShareableString::from("field"));
     assert_eq!(err.clone(), err);
 
     let err = StoreError::SchemaMismatch("bad".to_string());
@@ -168,8 +168,8 @@ fn test_store_error_debug() {
         "ObjectKeyAlreadyExists"
     );
     assert_eq!(
-        format!("{:?}", StoreError::PropertyNotFound),
-        "PropertyNotFound"
+        format!("{:?}", StoreError::ParameterNotFound),
+        "ParameterNotFound"
     );
     assert_eq!(format!("{:?}", StoreError::ExpiredProxy), "ExpiredProxy");
     assert_eq!(format!("{:?}", StoreError::KeyNotFound), "KeyNotFound");
@@ -194,9 +194,9 @@ fn test_store_error_debug() {
     assert_eq!(
         format!(
             "{:?}",
-            StoreError::PropertyConflict(ShareableString::from("conflict"))
+            StoreError::ParameterConflict(ShareableString::from("conflict"))
         ),
-        format!("PropertyConflict({:?})", ShareableString::from("conflict"))
+        format!("ParameterConflict({:?})", ShareableString::from("conflict"))
     );
     assert_eq!(
         format!("{:?}", StoreError::MissingSchema("s".to_string())),

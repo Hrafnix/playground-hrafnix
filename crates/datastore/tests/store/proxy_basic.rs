@@ -1,19 +1,19 @@
-use datastore::definition::{BasicDefinition, ObjectDefinition, PropertyDefinition};
+use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition};
 use datastore::store::Store;
-use datastore::{StoreError, path, store_key};
+use datastore::{StoreError, parameter_key, path, store_key};
 use shareable_string::SharedStringStore;
 
 #[test]
 fn test_proxy_basic() {
-    // Why: General test of basic property proxy functionality, including creation, getting/setting value, push/pull, and expiry behavior.
+    // Why: General test of basic parameter proxy functionality, including creation, getting/setting value, push/pull, and expiry behavior.
     let store = Store::new(SharedStringStore::new());
 
     // 1. Create Object Definition
     let basic_definition = BasicDefinition::new_string("The name");
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("name"),
-        PropertyDefinition::new("Name", basic_definition.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_name"),
+        ItemDefinition::new("Name", basic_definition.clone()),
     );
     let obj_def = builder.finish();
 
@@ -23,12 +23,12 @@ fn test_proxy_basic() {
 
     assert_eq!(obj_proxy.description().as_ref(), "Test Object");
 
-    // 3. Get Basic Property Proxy
-    let mut name_proxy = obj_proxy.basic(store_key!("name")).unwrap();
+    // 3. Get Basic parameter Proxy
+    let mut name_proxy = obj_proxy.parameter_basic(store_key!("p_name")).unwrap();
     assert_eq!(name_proxy.value().as_ref(), "");
     assert_eq!(name_proxy.definition(), basic_definition);
     assert_eq!(basic_definition, name_proxy.definition());
-    assert_eq!(name_proxy.path(), path!("my_object" / "name"));
+    assert_eq!(name_proxy.path(), path!("my_object" / "p_name"));
     assert_eq!(name_proxy.description(), "The name");
     assert_eq!(name_proxy.pull(), Ok(()));
 
@@ -74,17 +74,17 @@ fn test_proxy_basic_print() {
 
     let basic_definition = BasicDefinition::new_string("The name");
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("name"),
-        PropertyDefinition::new("Name", basic_definition.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_name"),
+        ItemDefinition::new("Name", basic_definition.clone()),
     );
     let obj_def = builder.finish();
 
     let obj_key = store_key!("my_object");
     let mut obj_proxy = store.create_object(obj_key, &obj_def).unwrap();
 
-    let mut name_proxy = obj_proxy.basic(store_key!("name")).unwrap();
+    let mut name_proxy = obj_proxy.parameter_basic(store_key!("p_name")).unwrap();
     name_proxy.set_value("Junie");
 
-    assert_eq!(format!("{}", name_proxy), "name: Junie (The name)\n")
+    assert_eq!(format!("{}", name_proxy), "p_name: Junie (The name)\n")
 }

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::sync::Arc;
 
-/// Definition for a map property where keys are strings and values follow a `StructDefinition`.
+/// Definition for a map parameter where keys are strings and values follow a `StructDefinition`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MapDefinition {
     description: ShareableString,

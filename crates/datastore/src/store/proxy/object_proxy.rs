@@ -1,6 +1,6 @@
 use crate::StoreError;
 use crate::definition::ObjectDefinition;
-use crate::key::StoreKey;
+use crate::key::{ParameterKey, StoreKey, VariableKey};
 use crate::path::StorePath;
 use crate::store::traits::TreePrint;
 use crate::store::{BasicProxy, ContainerProxy, Store, StoreHashContainer, TableProxy};
@@ -12,7 +12,8 @@ pub struct ObjectProxy {
     path: StorePath,
     store: Store,
     definition: ObjectDefinition,
-    keys: Vec<StoreKey>,
+    parameter_keys: Vec<ParameterKey>,
+    variable_keys: Vec<VariableKey>,
     object_hash: StoreHashContainer,
     last_sync_hash: [u8; 32],
 }
@@ -23,7 +24,8 @@ impl ObjectProxy {
         path: StorePath,
         store: Store,
         definition: ObjectDefinition,
-        keys: Vec<StoreKey>,
+        parameter_keys: Vec<ParameterKey>,
+        variable_keys: Vec<VariableKey>,
         object_hash: StoreHashContainer,
         last_sync_hash: [u8; 32],
     ) -> Self {
@@ -31,21 +33,36 @@ impl ObjectProxy {
             path,
             store,
             definition,
-            keys,
+            parameter_keys,
+            variable_keys,
             object_hash,
             last_sync_hash,
         }
     }
 
-    /// Returns the keys of the properties in the object.
-    pub fn keys(&self) -> &Vec<StoreKey> {
-        &self.keys
+    /// Returns the keys of the parameter in the object.
+    pub fn parameter_keys(&self) -> &Vec<ParameterKey> {
+        &self.parameter_keys
     }
 
-    /// Checks if a property with the given key exists in the object.
-    pub fn check_key<S: Into<ShareableString>>(&self, key: S) -> Result<bool, StoreError> {
+    /// Checks if a parameter with the given key exists in the object.
+    pub fn check_parameter_key<S: Into<ShareableString>>(
+        &self,
+        key: S,
+    ) -> Result<bool, StoreError> {
         let key = key.into();
-        Ok(self.keys.iter().any(|k| k == &key))
+        Ok(self.parameter_keys.iter().any(|k| k == &key))
+    }
+
+    /// Returns the keys of the variables in the object.
+    pub fn variable_keys(&self) -> &Vec<VariableKey> {
+        &self.variable_keys
+    }
+
+    /// Checks if a variable with the given key exists in the object.
+    pub fn check_variable_key<S: Into<ShareableString>>(&self, key: S) -> Result<bool, StoreError> {
+        let key = key.into();
+        Ok(self.variable_keys.iter().any(|k| k == &key))
     }
 
     /// Syncs the proxy with the latest data from the store.
@@ -53,14 +70,19 @@ impl ObjectProxy {
         self.pull()
     }
 
-    /// Returns a `BasicProxy` for the property with the given key.
-    pub fn basic<S: Into<ShareableString>>(&mut self, key: S) -> Result<BasicProxy, StoreError> {
+    /// Returns a `BasicProxy` for the parameter with the given key.
+    pub fn parameter_basic<S: Into<ShareableString>>(
+        &mut self,
+        key: S,
+    ) -> Result<BasicProxy, StoreError> {
         if !self.is_valid() {
             return Err(StoreError::ExpiredProxy);
         }
 
         let key = key.into();
-        self.check_key(key.clone())?;
+        if !self.check_parameter_key(key.clone())? {
+            return Err(StoreError::ParameterNotFound);
+        }
 
         #[expect(unsafe_code)]
         let store_key = unsafe { StoreKey::new_unsafe(key) };
@@ -68,14 +90,19 @@ impl ObjectProxy {
         self.store.basic(&path)
     }
 
-    /// Returns a `TableProxy` for the property with the given key.
-    pub fn table<S: Into<ShareableString>>(&mut self, key: S) -> Result<TableProxy, StoreError> {
+    /// Returns a `TableProxy` for the parameter with the given key.
+    pub fn parameter_table<S: Into<ShareableString>>(
+        &mut self,
+        key: S,
+    ) -> Result<TableProxy, StoreError> {
         if !self.is_valid() {
             return Err(StoreError::ExpiredProxy);
         }
 
         let key = key.into();
-        self.check_key(key.clone())?;
+        if !self.check_parameter_key(key.clone())? {
+            return Err(StoreError::ParameterNotFound);
+        }
 
         #[expect(unsafe_code)]
         let store_key = unsafe { StoreKey::new_unsafe(key) };
@@ -83,8 +110,8 @@ impl ObjectProxy {
         self.store.table(&path)
     }
 
-    /// Returns a `ContainerProxy` for the property with the given key.
-    pub fn container<S: Into<ShareableString>>(
+    /// Returns a `ContainerProxy` for the parameter with the given key.
+    pub fn parameter_container<S: Into<ShareableString>>(
         &mut self,
         key: S,
     ) -> Result<ContainerProxy, StoreError> {
@@ -93,7 +120,9 @@ impl ObjectProxy {
         }
 
         let key = key.into();
-        self.check_key(key.clone())?;
+        if !self.check_parameter_key(key.clone())? {
+            return Err(StoreError::ParameterNotFound);
+        }
 
         #[expect(unsafe_code)]
         let store_key = unsafe { StoreKey::new_unsafe(key) };
@@ -101,9 +130,74 @@ impl ObjectProxy {
         self.store.container(&path)
     }
 
-    /// Returns all property keys in the object.
-    pub fn all_property_keys(&self) -> Result<Vec<StoreKey>, StoreError> {
-        Ok(self.keys.clone())
+    /// Returns a `BasicProxy` for the variable with the given key.
+    pub fn variable_basic<S: Into<ShareableString>>(
+        &mut self,
+        key: S,
+    ) -> Result<BasicProxy, StoreError> {
+        if !self.is_valid() {
+            return Err(StoreError::ExpiredProxy);
+        }
+
+        let key = key.into();
+        if !self.check_variable_key(key.clone())? {
+            return Err(StoreError::VariableNotFound);
+        }
+
+        #[expect(unsafe_code)]
+        let store_key = unsafe { StoreKey::new_unsafe(key) };
+        let path = self.path.clone().with_segment(store_key);
+        self.store.basic(&path)
+    }
+
+    /// Returns a `TableProxy` for the variable with the given key.
+    pub fn variable_table<S: Into<ShareableString>>(
+        &mut self,
+        key: S,
+    ) -> Result<TableProxy, StoreError> {
+        if !self.is_valid() {
+            return Err(StoreError::ExpiredProxy);
+        }
+
+        let key = key.into();
+        if !self.check_variable_key(key.clone())? {
+            return Err(StoreError::VariableNotFound);
+        }
+
+        #[expect(unsafe_code)]
+        let store_key = unsafe { StoreKey::new_unsafe(key) };
+        let path = self.path.clone().with_segment(store_key);
+        self.store.table(&path)
+    }
+
+    /// Returns a `ContainerProxy` for the variable with the given key.
+    pub fn variable_container<S: Into<ShareableString>>(
+        &mut self,
+        key: S,
+    ) -> Result<ContainerProxy, StoreError> {
+        if !self.is_valid() {
+            return Err(StoreError::ExpiredProxy);
+        }
+
+        let key = key.into();
+        if !self.check_variable_key(key.clone())? {
+            return Err(StoreError::VariableNotFound);
+        }
+
+        #[expect(unsafe_code)]
+        let store_key = unsafe { StoreKey::new_unsafe(key) };
+        let path = self.path.clone().with_segment(store_key);
+        self.store.container(&path)
+    }
+
+    /// Returns all parameter keys in the object.
+    pub fn all_parameter_keys(&self) -> Result<Vec<ParameterKey>, StoreError> {
+        Ok(self.parameter_keys.clone())
+    }
+
+    /// Returns all variable keys in the object.
+    pub fn all_variable_keys(&self) -> Result<Vec<VariableKey>, StoreError> {
+        Ok(self.variable_keys.clone())
     }
 
     /// Returns the path to the data this proxy represents.
@@ -134,7 +228,8 @@ impl ObjectProxy {
                 Err(_) => return Err(StoreError::ExpiredProxy),
             };
             return if proxy.definition == self.definition {
-                self.keys = proxy.keys;
+                self.parameter_keys = proxy.parameter_keys;
+                self.variable_keys = proxy.variable_keys;
                 self.object_hash = proxy.object_hash;
                 self.last_sync_hash = proxy.last_sync_hash;
                 Ok(())
@@ -149,7 +244,8 @@ impl ObjectProxy {
 
         let key = self.path.object_key();
         let proxy = self.store.object(key)?;
-        self.keys = proxy.keys;
+        self.parameter_keys = proxy.parameter_keys;
+        self.variable_keys = proxy.variable_keys;
         self.last_sync_hash = proxy.last_sync_hash;
 
         Ok(())

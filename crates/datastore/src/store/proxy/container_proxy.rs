@@ -50,7 +50,9 @@ impl ContainerProxy {
                     .update_container_at_path(&entry_path, entry_container)?;
                 self.store.container(&entry_path)
             }
-            _ => Err(StoreError::PropertyNotFound),
+            _ => Err(StoreError::SchemaMismatch(
+                "Expected map container".to_string(),
+            )),
         }
     }
 

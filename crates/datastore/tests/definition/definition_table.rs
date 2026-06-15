@@ -3,7 +3,7 @@ use datastore::store_key;
 
 #[test]
 fn test_table_definition() {
-    // Why: Test table definition creation and properties.
+    // Why: Test table definition creation and parameters.
     let table_def = TableDefinition::new(
         "A table",
         vec![
@@ -15,7 +15,7 @@ fn test_table_definition() {
         ],
     );
 
-    // Check the various properties of the table definition.
+    // Check the various parameters of the table definition.
     assert_eq!(table_def.description().as_ref(), "A table");
     assert_eq!(table_def.count(), 2);
     assert!(table_def.contains_key(store_key!("col1")));
@@ -33,7 +33,7 @@ fn test_table_definition() {
 
 #[test]
 fn test_table_definition_equality() {
-    // Why: Test that two table definitions with the same properties are considered equal and ref equal.
+    // Why: Test that two table definitions with the same parameter are considered equal and ref equal.
     let table_def_1 = TableDefinition::new(
         "A table",
         vec![

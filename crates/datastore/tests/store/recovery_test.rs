@@ -3,11 +3,9 @@
 //! Verifies that a [`Store`] can recover its full state – including nested
 //! objects and tables – after being serialized and deserialized, and that
 //! proxies obtained from the recovered store reflect the original values.
-use datastore::definition::{
-    BasicDefinition, ObjectDefinition, PropertyDefinition, TableDefinition,
-};
+use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition, TableDefinition};
 use datastore::store::Store;
-use datastore::{StoreError, path, store_key};
+use datastore::{StoreError, parameter_key, path, store_key};
 use shareable_string::SharedStringStore;
 
 #[test]
@@ -17,16 +15,16 @@ fn test_proxy_recovery_after_expiry() {
     // 1. Create Object Definition
     let basic_definition = BasicDefinition::new_string("The name");
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("name"),
-        PropertyDefinition::new("Name", basic_definition.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_name"),
+        ItemDefinition::new("Name", basic_definition.clone()),
     );
     let obj_def = builder.finish();
 
     // 2. Create Object in Store
     let obj_key = store_key!("my_object");
     let mut obj_proxy = store.create_object(obj_key, &obj_def).unwrap();
-    let mut name_proxy = obj_proxy.basic(store_key!("name")).unwrap();
+    let mut name_proxy = obj_proxy.parameter_basic(store_key!("p_name")).unwrap();
 
     name_proxy.set_value("Initial");
     name_proxy.push().unwrap();
@@ -62,25 +60,25 @@ fn test_proxy_no_recovery_if_definition_changes() {
     // 1. Create Initial Object Definition
     let basic_definition = BasicDefinition::new_string("The name");
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("name"),
-        PropertyDefinition::new("Name", basic_definition.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_name"),
+        ItemDefinition::new("Name", basic_definition.clone()),
     );
     let obj_def = builder.finish();
 
     // 2. Create Object in Store
     let obj_key = store_key!("my_object");
     let _obj_proxy = store.create_object(obj_key, &obj_def).unwrap();
-    let mut name_proxy = store.basic(&path!("my_object" / "name")).unwrap();
+    let mut name_proxy = store.basic(&path!("my_object" / "p_name")).unwrap();
 
     // 3. Delete and recreate with DIFFERENT definition
     store.delete_object(obj_key.as_str()).unwrap();
 
     let new_basic_definition = BasicDefinition::new_number("The age");
     let mut builder = ObjectDefinition::builder("Test Object");
-    builder.insert(
-        store_key!("name"), // same key, different definition
-        PropertyDefinition::new("Name", new_basic_definition),
+    builder.insert_parameter(
+        parameter_key!("p_name"), // same key, different definition
+        ItemDefinition::new("Name", new_basic_definition),
     );
     let new_obj_def = builder.finish();
     store.create_object(obj_key, &new_obj_def).unwrap();
@@ -98,15 +96,15 @@ fn test_table_proxy_recovery() {
         vec![(store_key!("col1"), BasicDefinition::new_string("default"))],
     );
     let mut builder = ObjectDefinition::builder("Obj");
-    builder.insert(
-        store_key!("table"),
-        PropertyDefinition::new("Table", table_def.clone()),
+    builder.insert_parameter(
+        parameter_key!("p_table"),
+        ItemDefinition::new("Table", table_def.clone()),
     );
     let obj_def = builder.finish();
 
     let obj_key = store_key!("my_object");
     let _obj_proxy = store.create_object(obj_key, &obj_def).unwrap();
-    let mut table_proxy = store.table(&path!("my_object" / "table")).unwrap();
+    let mut table_proxy = store.table(&path!("my_object" / "p_table")).unwrap();
 
     table_proxy.append_row();
     table_proxy.set_cell(0, "col1", "row0").unwrap();
