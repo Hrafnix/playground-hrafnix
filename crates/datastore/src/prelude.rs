@@ -25,7 +25,6 @@ pub use crate::definition::{
 
 // Store and proxies
 pub use crate::store::traits::TreeDisplay;
-pub use crate::store::{BasicProxy, ContainerProxy, ObjectProxy, Store, TableProxy, TreePrint};
 
 // Shareable strings
 pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTranslationMap};

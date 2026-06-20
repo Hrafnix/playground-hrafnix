@@ -1,21 +1,5 @@
 use std::fmt;
 
-/// Internal trait for common store operations related to hashing.
-pub(crate) trait CommonStoreTraitInternal {
-    /// Returns the current shared BLAKE3 hash.
-    fn current_shared_hash(&self) -> [u8; 32];
-    /// Recomputes the local BLAKE3 hash from the current data without syncing to shared storage.
-    fn update_current_hash(&mut self);
-    /// Syncs the shared hash with the current local hash, making changes visible to other handles.
-    fn update_shared_hash(&mut self);
-    /// Clears the current shared hash.
-    fn clear_shared_hash(&mut self);
-    /// Returns `true` if the local data has changed since the last sync with the store.
-    fn has_changed(&self) -> bool;
-    /// Returns `true` if the shared storage backing this value still exists (non-zero hash).
-    fn is_valid(&self) -> bool;
-}
-
 /// Trait for types that can be printed as a tree for debugging.
 pub trait TreePrint {
     /// Prints the object as a tree with the given label and prefix.

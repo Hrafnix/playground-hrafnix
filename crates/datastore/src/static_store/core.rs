@@ -1,7 +1,6 @@
-use crate::StoreError;
 use crate::key::StoreKey;
 use crate::static_store::data::StaticObject;
-use crate::store::{Store, TreePrint};
+use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -62,22 +61,6 @@ impl StaticStore {
     /// Returns an iterator over the key-object pairs in the store.
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &StaticObject)> {
         self.objects.iter()
-    }
-}
-
-impl TryFrom<&Store> for StaticStore {
-    type Error = StoreError;
-
-    fn try_from(store: &Store) -> Result<Self, Self::Error> {
-        let mut objects = BTreeMap::new();
-        if let Ok(keys) = store.object_keys() {
-            for key in keys {
-                if let Ok(object) = store.get_object_internal(&key) {
-                    objects.insert(key, StaticObject::try_from(&object)?);
-                }
-            }
-        }
-        Ok(Self::new(objects))
     }
 }
 

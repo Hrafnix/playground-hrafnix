@@ -3,7 +3,6 @@ use crate::definition::MapDefinition;
 use crate::key::StoreKey;
 use crate::static_store::data::StaticStruct;
 use crate::store::TreePrint;
-use crate::store::data::{Container, ContainerDefinition};
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -92,24 +91,6 @@ impl StaticMap {
     /// Returns a reference to the map definition.
     pub fn definition(&self) -> &MapDefinition {
         &self.definition
-    }
-}
-
-impl TryFrom<&Container> for StaticMap {
-    type Error = StoreError;
-
-    fn try_from(container: &Container) -> Result<Self, Self::Error> {
-        let mut items = BTreeMap::new();
-        for key in container.keys() {
-            if let Ok(item) = container.get_item(&key) {
-                items.insert(key.clone(), StaticStruct::try_from(item)?);
-            }
-        }
-        let description = match container.definition() {
-            ContainerDefinition::Map(def) => def.description(),
-            _ => return Err(StoreError::SchemaMismatch("Expected MapDefinition".into())),
-        };
-        Self::new(description, items)
     }
 }
 

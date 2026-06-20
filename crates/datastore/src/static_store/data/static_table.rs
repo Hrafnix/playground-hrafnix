@@ -1,7 +1,6 @@
 use crate::definition::TableDefinition;
 use crate::key::StoreKey;
-use crate::store::data::Table;
-use crate::store::{CommonStoreTraitInternal, TreePrint};
+use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -85,22 +84,6 @@ impl StaticTable {
     /// Returns a reference to the table definition.
     pub fn definition(&self) -> &TableDefinition {
         &self.definition
-    }
-}
-
-impl From<&Table> for StaticTable {
-    fn from(table: &Table) -> Self {
-        let mut rows = Vec::new();
-        for i in 0..table.row_count() {
-            if let Some(row) = table.row(i) {
-                rows.push(row.clone());
-            }
-        }
-        Self {
-            definition: table.definition().clone(),
-            rows,
-            hash: table.current_shared_hash(),
-        }
     }
 }
 

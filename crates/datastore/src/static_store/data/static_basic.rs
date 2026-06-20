@@ -1,6 +1,5 @@
 use crate::definition::BasicDefinition;
-use crate::store::data::Basic;
-use crate::store::{CommonStoreTraitInternal, TreePrint};
+use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
@@ -50,16 +49,6 @@ impl StaticBasic {
     /// Returns the pre-calculated BLAKE3 hash of the value.
     pub fn hash(&self) -> [u8; 32] {
         self.hash
-    }
-}
-
-impl From<&Basic> for StaticBasic {
-    fn from(basic: &Basic) -> Self {
-        Self {
-            definition: basic.definition().clone(),
-            value: basic.get(),
-            hash: basic.current_shared_hash(),
-        }
     }
 }
 

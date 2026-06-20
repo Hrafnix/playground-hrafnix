@@ -18,33 +18,6 @@
 //! - **Change Tracking**: Use `has_changed()` on a proxy to check if the store has been updated since the proxy was last synced.
 //! - **Updates**: Updates via proxies are pushed to the store. Other proxies must `pull()` to see these changes.
 //!
-//! ## Example
-//!
-//! ```rust
-//! use datastore::prelude::*;
-//!
-//! // 1. Define your data structure
-//! let mut builder = ObjectDefinition::builder("My Object");
-//! builder.insert_parameter(parameter_key!("p_name"), ItemDefinition::new("User Name", BasicDefinition::new_string("Name")));
-//! let def = builder.finish();
-//!
-//! // 2. Create a store and add an object
-//! let store = Store::new(Default::default());
-//! store.create_object(store_key!("user_1"), &def).unwrap();
-//!
-//! // 3. Access data via a proxy
-//! let mut user_proxy = store.object("user_1").unwrap();
-//! let mut name_proxy = user_proxy.parameter_basic("p_name").unwrap();
-//!
-//! name_proxy.set_value("Alice");
-//! name_proxy.push().unwrap();
-//!
-//! assert_eq!(name_proxy.value().as_str(), "Alice");
-//!
-//! // You can also access data directly via paths
-//! let mut name_proxy_direct = store.basic(&path!("user_1" / "p_name")).unwrap();
-//! assert_eq!(name_proxy_direct.value().as_str(), "Alice");
-//! ```
 
 /// Data structure definitions.
 pub mod definition;

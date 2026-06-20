@@ -70,10 +70,7 @@ name = "datastore"
 version = "0.1.0"
 dependencies = [
  "blake3",
- "parking_lot",
- "rustc-hash",
  "serde",
- "serde_json",
  "shareable_string",
 ]
 

@@ -1,9 +1,7 @@
-use crate::StoreError;
 use crate::definition::ObjectDefinition;
 use crate::key::{ParameterKey, VariableKey};
 use crate::static_store::data::ItemParameter;
 use crate::store::TreePrint;
-use crate::store::data::Object;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -106,27 +104,6 @@ impl StaticObject {
     /// Returns a reference to the object definition.
     pub fn definition(&self) -> &ObjectDefinition {
         &self.definition
-    }
-}
-
-impl TryFrom<&Object> for StaticObject {
-    type Error = StoreError;
-
-    fn try_from(object: &Object) -> Result<Self, Self::Error> {
-        let mut parameter = BTreeMap::new();
-        for (key, _) in object.definition().parameter_iter() {
-            if let Ok(item) = object.get_item(key.as_str()) {
-                parameter.insert(key.clone(), ItemParameter::try_from(item)?);
-            }
-        }
-        let mut variables = BTreeMap::new();
-        for (key, _) in object.definition().variable_iter() {
-            if let Ok(item) = object.get_item(key.as_str()) {
-                variables.insert(key.clone(), ItemParameter::try_from(item)?);
-            }
-        }
-        let description = object.definition().description();
-        Ok(Self::new(description, parameter, variables))
     }
 }
 

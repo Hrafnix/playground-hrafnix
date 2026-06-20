@@ -1,8 +1,6 @@
-use crate::StoreError;
 use crate::definition::ItemDefinition;
 use crate::static_store::data::{StaticBasic, StaticMap, StaticStruct, StaticTable};
 use crate::store::TreePrint;
-use crate::store::data::{ContainerDefinition, ContainerItem};
 use serde::{Deserialize, Serialize};
 
 /// Represents a parameter value in the static store.
@@ -16,21 +14,6 @@ pub enum ItemParameter {
     Struct(StaticStruct),
     /// A map parameter.
     Map(StaticMap),
-}
-
-impl TryFrom<ContainerItem> for ItemParameter {
-    type Error = StoreError;
-
-    fn try_from(item: ContainerItem) -> Result<Self, Self::Error> {
-        match item {
-            ContainerItem::Basic(b) => Ok(Self::Basic(StaticBasic::from(&b))),
-            ContainerItem::Table(t) => Ok(Self::Table(StaticTable::from(&t))),
-            ContainerItem::Container(c) => match c.definition() {
-                ContainerDefinition::Struct(_) => Ok(Self::Struct(StaticStruct::try_from(&c)?)),
-                ContainerDefinition::Map(_) => Ok(Self::Map(StaticMap::try_from(&c)?)),
-            },
-        }
-    }
 }
 
 impl ItemParameter {
