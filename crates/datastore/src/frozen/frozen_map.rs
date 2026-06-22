@@ -1,35 +1,46 @@
 use crate::StoreError;
 use crate::definition::MapDefinition;
+use crate::frozen::StructFrozen;
 use crate::key::StoreKey;
-use crate::static_store::data::StaticStruct;
 use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
-/// Represents a map of parameter in the static store.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StaticMap {
+/// Represents a map of parameter in the frozen data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MapFrozen {
     /// The definition of the map.
     definition: MapDefinition,
     /// The items in the map.
-    items: BTreeMap<StoreKey, StaticStruct>,
+    items: BTreeMap<StoreKey, StructFrozen>,
     /// The pre-calculated BLAKE3 hash of the map's content.
     hash: [u8; 32],
 }
 
-impl StaticMap {
-    /// Creates a new `StaticMap` with a description and items.
-    pub fn new<S: Into<ShareableString>>(
+impl MapFrozen {
+    /// Creates a new `MapFrozen` with a definition.
+    pub fn new(definition: MapDefinition) -> Self {
+        let mut s = Self {
+            definition,
+            items: BTreeMap::new(),
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Creates a new `MapFrozen` with a description and items.
+    pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
-        items: BTreeMap<StoreKey, StaticStruct>,
+        items: BTreeMap<StoreKey, StructFrozen>,
     ) -> Result<Self, StoreError> {
         let item_type = if let Some(first_item) = items.values().next() {
             let first_def = first_item.definition().clone();
             for item in items.values().skip(1) {
                 if first_def != *item.definition() {
                     return Err(StoreError::SchemaMismatch(format!(
-                        "StaticMap items must have the same struct definition. Expected: {:?}, Found: {:?}",
+                        "FrozenMap items must have the same struct definition. Expected: {:?}, Found: {:?}",
                         first_def,
                         item.definition()
                     )));
@@ -38,7 +49,7 @@ impl StaticMap {
             first_def
         } else {
             return Err(StoreError::MissingSchema(
-                "StaticMap cannot be empty as item type cannot be inferred".into(),
+                "FrozenMap cannot be empty as item type cannot be inferred".into(),
             ));
         };
 
@@ -74,17 +85,13 @@ impl StaticMap {
         self.hash
     }
 
-    pub(crate) fn items(&self) -> &BTreeMap<StoreKey, StaticStruct> {
-        &self.items
-    }
-
     /// Returns a reference to the item with the specified key, if it exists.
-    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&StaticStruct> {
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&StructFrozen> {
         self.items.get(&key.into())
     }
 
     /// Returns an iterator over the key-item pairs in the map.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &StaticStruct)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &StructFrozen)> {
         self.items.iter()
     }
 
@@ -92,9 +99,26 @@ impl StaticMap {
     pub fn definition(&self) -> &MapDefinition {
         &self.definition
     }
+
+    /// Returns the number of items in the map.
+    pub fn count(&self) -> usize {
+        self.items.len()
+    }
 }
 
-impl TreePrint for StaticMap {
+impl PartialEq<&MapFrozen> for MapFrozen {
+    fn eq(&self, other: &&MapFrozen) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapFrozen> for &MapFrozen {
+    fn eq(&self, other: &MapFrozen) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

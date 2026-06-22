@@ -5,17 +5,28 @@ use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
-/// Represents a table of data in the static store.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StaticTable {
+/// Represents a table of data in the frozen data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TableFrozen {
     definition: TableDefinition,
     rows: Vec<BTreeMap<StoreKey, ShareableString>>,
     hash: [u8; 32],
 }
 
-impl StaticTable {
-    /// Creates a new `StaticTable` with a definition and rows.
-    pub fn new(
+impl TableFrozen {
+    /// Creates a new `TableFrozen` with a definition.
+    pub fn new(definition: TableDefinition) -> Self {
+        let mut s = Self {
+            definition,
+            rows: Vec::new(),
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Creates a new `TableFrozen` with a definition and rows.
+    pub fn new_from_rows(
         definition: TableDefinition,
         rows: Vec<BTreeMap<StoreKey, ShareableString>>,
     ) -> Self {
@@ -77,7 +88,7 @@ impl StaticTable {
     }
 
     /// Returns a reference to all rows in the table.
-    pub fn rows(&self) -> &Vec<BTreeMap<StoreKey, ShareableString>> {
+    pub fn rows(&self) -> &[BTreeMap<StoreKey, ShareableString>] {
         &self.rows
     }
 
@@ -85,9 +96,31 @@ impl StaticTable {
     pub fn definition(&self) -> &TableDefinition {
         &self.definition
     }
+
+    /// Returns the number of rows in the table.
+    pub fn row_count(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// Returns the number of columns in the table.
+    pub fn column_count(&self) -> usize {
+        self.definition.count()
+    }
 }
 
-impl TreePrint for StaticTable {
+impl PartialEq<&TableFrozen> for TableFrozen {
+    fn eq(&self, other: &&TableFrozen) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<TableFrozen> for &TableFrozen {
+    fn eq(&self, other: &TableFrozen) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for TableFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

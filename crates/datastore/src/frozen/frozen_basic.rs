@@ -3,17 +3,30 @@ use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
-/// Represents a basic data value in the static store.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StaticBasic {
+/// Represents a basic data value in the frozen data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BasicFrozen {
     definition: BasicDefinition,
     value: ShareableString,
     hash: [u8; 32],
 }
 
-impl StaticBasic {
-    /// Creates a new `StaticBasic` instance.
-    pub fn new(definition: BasicDefinition, value: ShareableString) -> Self {
+impl BasicFrozen {
+    /// Creates a new `BasicFrozen` instance.
+    pub fn new(definition: BasicDefinition) -> Self {
+        let value = definition.default_value();
+
+        let mut s = Self {
+            definition,
+            value,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Creates a new `BasicFrozen` instance.
+    pub fn new_with_value(definition: BasicDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
             value,
@@ -52,7 +65,19 @@ impl StaticBasic {
     }
 }
 
-impl TreePrint for StaticBasic {
+impl PartialEq<&BasicFrozen> for BasicFrozen {
+    fn eq(&self, other: &&BasicFrozen) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<BasicFrozen> for &BasicFrozen {
+    fn eq(&self, other: &BasicFrozen) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for BasicFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

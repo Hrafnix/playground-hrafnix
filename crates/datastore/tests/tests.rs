@@ -10,3 +10,4 @@
 //!   object copying, data recovery, and JSON serialization / deserialization.
 
 mod definition;
+mod frozen;

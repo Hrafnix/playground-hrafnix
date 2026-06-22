@@ -19,8 +19,10 @@ pub use crate::path::StorePath;
 // Definitions
 pub use crate::definition::{
     BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition, ItemDefinition,
-    ItemDefinitionType, MapDefinition, ObjectDefinition, ObjectDefinitionBuilder, StructDefinition,
-    StructItemDefinition, TableDefinition,
+    ItemDefinitionType, MapDefinition, ObjectDefinition, ObjectDefinitionBuilder,
+    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition,
+    StructItemDefinition, TableDefinition, VariableObjectDefinition,
+    VariableObjectDefinitionBuilder,
 };
 
 // Store and proxies
@@ -29,8 +31,8 @@ pub use crate::store::traits::TreeDisplay;
 // Shareable strings
 pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTranslationMap};
 
-// Static store
-pub use crate::static_store::{
-    ItemParameter, StaticBasic, StaticMap, StaticObject, StaticStore, StaticStruct,
-    StaticStructItem, StaticTable,
+// Frozen data
+pub use crate::frozen::{
+    BasicFrozen, ItemFrozen, MapFrozen, ObjectFrozen, ParameterObjectFrozen, StructFrozen,
+    StructItemFrozen, TableFrozen, VariableObjectFrozen,
 };

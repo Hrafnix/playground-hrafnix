@@ -1,27 +1,61 @@
-use crate::definition::ObjectDefinition;
+use crate::definition::{ItemDefinitionType, ObjectDefinition};
+use crate::frozen::ItemFrozen;
+use crate::frozen::{BasicFrozen, MapFrozen, StructFrozen, TableFrozen};
 use crate::key::StoreKey;
-use crate::static_store::data::ItemParameter;
 use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
-/// Represents a set of items for an object in the static store.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StaticObject {
+/// Represents a set of items for an object in the frozen data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ObjectFrozen {
     /// The definition of the object.
     definition: ObjectDefinition,
     /// The items of the object.
-    items: BTreeMap<StoreKey, ItemParameter>,
+    items: BTreeMap<StoreKey, ItemFrozen>,
     /// The pre-calculated BLAKE3 hash of the object's content.
     hash: [u8; 32],
 }
 
-impl StaticObject {
-    /// Creates a new `StaticObject` with a description and separate parameters and variables maps.
-    pub fn new<S: Into<ShareableString>>(
+impl ObjectFrozen {
+    /// Creates a new `ObjectFrozen` with a definition.
+    pub fn new(definition: ObjectDefinition) -> Self {
+        let mut items = BTreeMap::new();
+        for (item_key, item_definition) in definition.iter() {
+            let key = item_key.clone();
+            match item_definition.item_type() {
+                ItemDefinitionType::Basic(basic_def) => {
+                    items.insert(key, ItemFrozen::Basic(BasicFrozen::new(basic_def.clone())));
+                }
+                ItemDefinitionType::Table(table_def) => {
+                    items.insert(key, ItemFrozen::Table(TableFrozen::new(table_def.clone())));
+                }
+                ItemDefinitionType::Struct(struct_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Struct(StructFrozen::new(struct_def.clone())),
+                    );
+                }
+                ItemDefinitionType::Map(map_def) => {
+                    items.insert(key, ItemFrozen::Map(MapFrozen::new(map_def.clone())));
+                }
+            }
+        }
+
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Creates a new `ObjectFrozen` with a description and items.
+    pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
-        items: BTreeMap<StoreKey, ItemParameter>,
+        items: BTreeMap<StoreKey, ItemFrozen>,
     ) -> Self {
         let mut builder = ObjectDefinition::builder(description);
         for (k, v) in &items {
@@ -60,12 +94,12 @@ impl StaticObject {
     }
 
     /// Returns a reference to the parameter with the specified key, if it exists.
-    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemParameter> {
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemFrozen> {
         self.items.get(&key.into())
     }
 
     /// Returns an iterator over the key-parameter pairs in the object.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &ItemParameter)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &ItemFrozen)> {
         self.items.iter()
     }
 
@@ -75,7 +109,19 @@ impl StaticObject {
     }
 }
 
-impl TreePrint for StaticObject {
+impl PartialEq<&ObjectFrozen> for ObjectFrozen {
+    fn eq(&self, other: &&ObjectFrozen) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<ObjectFrozen> for &ObjectFrozen {
+    fn eq(&self, other: &ObjectFrozen) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for ObjectFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -100,5 +146,11 @@ impl TreePrint for StaticObject {
             item.tree_print(f, key.as_str(), &next_prefix, is_last)?;
         }
         Ok(())
+    }
+}
+
+impl std::fmt::Display for ObjectFrozen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.tree_display("Frozen Object").fmt(f)
     }
 }

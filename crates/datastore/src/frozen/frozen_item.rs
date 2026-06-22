@@ -1,35 +1,35 @@
 use crate::definition::ItemDefinition;
-use crate::static_store::data::{StaticBasic, StaticMap, StaticStruct, StaticTable};
+use crate::frozen::{BasicFrozen, MapFrozen, StructFrozen, TableFrozen};
 use crate::store::TreePrint;
 use serde::{Deserialize, Serialize};
 
-/// Represents a parameter value in the static store.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ItemParameter {
+/// Represents a parameter value in the frozen data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ItemFrozen {
     /// A basic parameter.
-    Basic(StaticBasic),
+    Basic(BasicFrozen),
     /// A table parameter.
-    Table(StaticTable),
+    Table(TableFrozen),
     /// A struct parameter.
-    Struct(StaticStruct),
+    Struct(StructFrozen),
     /// A map parameter.
-    Map(StaticMap),
+    Map(MapFrozen),
 }
 
-impl ItemParameter {
+impl ItemFrozen {
     /// Returns the parameter definition.
     pub fn definition(&self) -> ItemDefinition {
         match self {
-            ItemParameter::Basic(b) => {
+            ItemFrozen::Basic(b) => {
                 ItemDefinition::new(b.definition().description(), b.definition().clone())
             }
-            ItemParameter::Table(t) => {
+            ItemFrozen::Table(t) => {
                 ItemDefinition::new(t.definition().description(), t.definition().clone())
             }
-            ItemParameter::Struct(s) => {
+            ItemFrozen::Struct(s) => {
                 ItemDefinition::new(s.definition().description(), s.definition().clone())
             }
-            ItemParameter::Map(m) => {
+            ItemFrozen::Map(m) => {
                 ItemDefinition::new(m.definition().description(), m.definition().clone())
             }
         }
@@ -46,7 +46,7 @@ impl ItemParameter {
     }
 
     /// Returns the basic value if this parameter is a basic parameter.
-    pub fn get_basic(&self) -> Option<&StaticBasic> {
+    pub fn get_basic(&self) -> Option<&BasicFrozen> {
         match self {
             Self::Basic(b) => Some(b),
             _ => None,
@@ -54,7 +54,7 @@ impl ItemParameter {
     }
 
     /// Returns the table value if this parameter is a table parameter.
-    pub fn get_table(&self) -> Option<&StaticTable> {
+    pub fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             Self::Table(t) => Some(t),
             _ => None,
@@ -62,7 +62,7 @@ impl ItemParameter {
     }
 
     /// Returns the struct value if this parameter is a struct parameter.
-    pub fn get_struct(&self) -> Option<&StaticStruct> {
+    pub fn get_struct(&self) -> Option<&StructFrozen> {
         match self {
             Self::Struct(s) => Some(s),
             _ => None,
@@ -70,7 +70,7 @@ impl ItemParameter {
     }
 
     /// Returns the map value if this parameter is a map parameter.
-    pub fn get_map(&self) -> Option<&StaticMap> {
+    pub fn get_map(&self) -> Option<&MapFrozen> {
         match self {
             Self::Map(m) => Some(m),
             _ => None,
@@ -78,7 +78,7 @@ impl ItemParameter {
     }
 }
 
-impl TreePrint for ItemParameter {
+impl TreePrint for ItemFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

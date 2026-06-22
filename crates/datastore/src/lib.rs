@@ -21,14 +21,14 @@
 
 /// Data structure definitions.
 pub mod definition;
+/// Frozen data implementation for efficient persistence and access.
+pub mod frozen;
 /// Keys and associated traits.
 pub mod key;
 /// Path types for addressing data within the store.
 pub mod path;
 /// Convenience re-exports of the most common types and macros.
 pub mod prelude;
-/// Static store implementation for efficient persistence and access.
-pub mod static_store;
 /// Dynamic store implementation with proxy-based access.
 pub mod store;
 
