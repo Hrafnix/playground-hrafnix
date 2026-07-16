@@ -129,7 +129,7 @@ impl TreePrint for StaticMap {
             Self::branch_char(prefix, last),
             label,
             type_str,
-            &self.definition.description()
+            self.definition.description()
         )?;
         let next_prefix = Self::next_prefix(prefix, last);
         let entries: Vec<_> = self.items.iter().collect();

@@ -54,12 +54,12 @@ impl ObjectDefinitionBuilder {
         mut self,
         definition: ObjectDefinition,
     ) -> Result<Self, StoreError> {
-        for (key, _) in definition.parameter.iter() {
+        for key in definition.parameter.keys() {
             if self.parameter.contains_key(key) {
                 return Err(StoreError::ParameterConflict(key.key.clone()));
             }
         }
-        for (key, _) in definition.variables.iter() {
+        for key in definition.variables.keys() {
             if self.variables.contains_key(key) {
                 return Err(StoreError::VariableConflict(key.key.clone()));
             }
@@ -98,13 +98,13 @@ impl ObjectDefinitionBuilder {
         mut self,
         builder: ObjectDefinitionBuilder,
     ) -> Result<Self, StoreError> {
-        for (key, _) in builder.parameter.iter() {
+        for key in builder.parameter.keys() {
             if self.parameter.contains_key(key) {
                 return Err(StoreError::ParameterConflict(key.key.clone()));
             }
         }
         self.parameter.extend(builder.parameter);
-        for (key, _) in builder.variables.iter() {
+        for key in builder.variables.keys() {
             if self.variables.contains_key(key) {
                 return Err(StoreError::VariableConflict(key.key.clone()));
             }
