@@ -1,7 +1,4 @@
-use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition};
-use datastore::store::Store;
-use datastore::{StoreError, parameter_key, path, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_proxy_basic() {

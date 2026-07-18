@@ -5,14 +5,7 @@
 //! [`BasicDefinition`], [`ObjectDefinition`], [`StructDefinition`],
 //! [`MapDefinition`], [`TableDefinition`], [`ChoiceDefinition`], and
 //! [`FileDefinition`].
-use datastore::definition::{
-    BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition, ItemDefinition,
-    ItemDefinitionType, MapDefinition, ObjectDefinition, StructDefinition, StructItemDefinition,
-    TableDefinition,
-};
-use datastore::key::StoreKey;
-use datastore::{parameter_key, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_basic_definition_comprehensive() {

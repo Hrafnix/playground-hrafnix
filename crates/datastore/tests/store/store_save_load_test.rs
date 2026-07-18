@@ -4,14 +4,8 @@
 //! data loss, covering basic parameters, nested structs, maps, tables, choice
 //! definitions, and file references.  Also checks that the BLAKE3 content hash
 //! is stable across a round-trip.
-use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
-    ObjectDefinition, StructDefinition, StructItemDefinition, TableDefinition,
-};
-use datastore::path::StorePath;
-use datastore::store::Store;
-use datastore::{parameter_key, store_key};
-use shareable_string::SharedStringStore;
+
+use datastore::prelude::*;
 use std::fs;
 
 #[test]

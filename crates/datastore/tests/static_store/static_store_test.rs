@@ -3,14 +3,8 @@
 //! Validates conversion of a dynamic [`Store`] into a [`StaticStore`] and back,
 //! covering all container kinds (`StaticBasic`, `StaticStruct`, `StaticTable`)
 //! and ensuring that data fidelity is maintained across the round-trip.
-use datastore::definition::{
-    BasicDefinition, ItemDefinition, MapDefinition, ObjectDefinition, TableDefinition,
-};
-use datastore::path::StorePath;
-use datastore::static_store::{StaticBasic, StaticStruct, StaticStructItem, StaticTable};
-use datastore::store::Store;
-use datastore::{parameter_key, store_key};
-use shareable_string::SharedStringStore;
+
+use datastore::prelude::*;
 use std::collections::BTreeMap;
 
 #[test]

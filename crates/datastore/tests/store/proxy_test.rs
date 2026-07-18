@@ -3,13 +3,8 @@
 //! Exercises reading and mutating store data through [`BasicProxy`],
 //! [`ObjectProxy`], [`StructProxy`], and [`TableProxy`], as well as proxy
 //! validity, change-tracking (`has_changed` / `pull`), and push semantics.
-use datastore::definition::{
-    BasicDefinition, ItemDefinition, ObjectDefinition, StructDefinition, StructItemDefinition,
-    TableDefinition,
-};
-use datastore::store::Store;
-use datastore::{parameter_key, store_key};
-use shareable_string::SharedStringStore;
+
+use datastore::prelude::*;
 use std::collections::BTreeMap;
 
 #[test]

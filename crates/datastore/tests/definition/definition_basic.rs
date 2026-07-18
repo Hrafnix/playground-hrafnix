@@ -1,6 +1,4 @@
-use datastore::definition::{
-    BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition,
-};
+use datastore::prelude::*;
 
 #[test]
 fn test_basic_definition_string() {

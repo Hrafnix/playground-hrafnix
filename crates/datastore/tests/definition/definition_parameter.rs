@@ -1,8 +1,4 @@
-use datastore::definition::{
-    BasicDefinition, ItemDefinition, MapDefinition, StructDefinition, StructItemDefinition,
-    TableDefinition,
-};
-use datastore::key::StoreKey;
+use datastore::prelude::*;
 
 #[test]
 fn test_parameter_definition() {

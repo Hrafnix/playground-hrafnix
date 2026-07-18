@@ -1,6 +1,4 @@
-use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition};
-use datastore::key::ParameterKey;
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_object_definition_basic() {

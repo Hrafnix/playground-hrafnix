@@ -3,12 +3,7 @@
 //! Covers construction via the builder pattern, parameter inheritance, conflict
 //! detection, removal of parameter, and the various `with_*` / `without`
 //! convenience methods.
-use datastore::definition::{
-    BasicDefinition, ItemDefinition, ObjectDefinition, ObjectDefinitionBuilder,
-};
-use datastore::key::{ParameterKey, StoreKey};
-use datastore::{StoreError, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_object_builder_pattern() {

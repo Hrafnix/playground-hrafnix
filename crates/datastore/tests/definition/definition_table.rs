@@ -1,5 +1,4 @@
-use datastore::definition::{BasicDefinition, TableDefinition};
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_table_definition() {

@@ -1,7 +1,4 @@
-use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition, TableDefinition};
-use datastore::store::Store;
-use datastore::{StoreError, parameter_key, path, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 use std::collections::BTreeMap;
 
 #[test]

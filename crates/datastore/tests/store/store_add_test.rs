@@ -3,11 +3,7 @@
 //! Verifies that [`Store::copy_object`] correctly duplicates an object from one
 //! store into another, that the copied data matches the source, and that
 //! later mutations in either store do not affect the other.
-use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition};
-use datastore::path::StorePath;
-use datastore::store::Store;
-use datastore::{parameter_key, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_add_object_from_another_store() {

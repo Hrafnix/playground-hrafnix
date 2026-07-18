@@ -3,8 +3,7 @@
 //! Covers the `Display`, `Debug`, `Clone`, and `PartialEq` implementations for
 //! every [`StoreError`] variant, ensuring that error messages are formatted
 //! correctly and that equality comparisons behave as expected.
-use datastore::StoreError;
-use shareable_string::ShareableString;
+use datastore::prelude::*;
 
 #[test]
 fn test_store_error_display() {

@@ -1,8 +1,4 @@
-use datastore::definition::{ItemDefinition, ObjectDefinition};
-use datastore::key::{ParameterKey, StoreKey, VariableKey};
-use datastore::store::Store;
-use shareable_string::ShareableString;
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_object_variables() {

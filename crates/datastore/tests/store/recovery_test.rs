@@ -3,10 +3,7 @@
 //! Verifies that a [`Store`] can recover its full state – including nested
 //! objects and tables – after being serialized and deserialized, and that
 //! proxies obtained from the recovered store reflect the original values.
-use datastore::definition::{BasicDefinition, ItemDefinition, ObjectDefinition, TableDefinition};
-use datastore::store::Store;
-use datastore::{StoreError, parameter_key, path, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_proxy_recovery_after_expiry() {
