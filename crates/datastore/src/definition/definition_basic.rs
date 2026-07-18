@@ -6,13 +6,15 @@ use std::sync::Arc;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileDefinition {
     extension_filter: ShareableString,
+    bundle_on_archive: bool,
 }
 
 impl FileDefinition {
     /// Creates a new `FileDefinition` with the specified extension filter.
-    pub fn new<S: Into<ShareableString>>(extension_filter: S) -> Self {
+    pub fn new<S: Into<ShareableString>>(extension_filter: S, bundle_on_archive: bool) -> Self {
         Self {
             extension_filter: extension_filter.into(),
+            bundle_on_archive,
         }
     }
 
@@ -26,10 +28,16 @@ impl FileDefinition {
         &self.extension_filter
     }
 
+    /// Returns whether the file should be bundled on archive.
+    pub fn bundle_on_archive(&self) -> bool {
+        self.bundle_on_archive
+    }
+
     /// Returns a new `FileDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             extension_filter: store.launder(&self.extension_filter),
+            bundle_on_archive: self.bundle_on_archive,
         }
     }
 }

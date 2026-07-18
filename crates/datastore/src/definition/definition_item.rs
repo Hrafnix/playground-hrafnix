@@ -69,7 +69,6 @@ impl PartialEq<ItemDefinitionType> for &ItemDefinitionType {
 pub struct ItemDefinition {
     description: ShareableString,
     item_type: Arc<ItemDefinitionType>,
-    gui_visibility: bool,
 }
 
 impl ItemDefinition {
@@ -81,19 +80,6 @@ impl ItemDefinition {
         Self {
             description: description.into(),
             item_type: Arc::new(item_type.into()),
-            gui_visibility: true,
-        }
-    }
-
-    /// Creates a new `ItemDefinition` that is invisible in the GUI.
-    pub fn new_gui_invisible<S: Into<ShareableString>, P: Into<ItemDefinitionType>>(
-        description: S,
-        item_type: P,
-    ) -> Self {
-        Self {
-            description: description.into(),
-            item_type: Arc::new(item_type.into()),
-            gui_visibility: false,
         }
     }
 
@@ -107,11 +93,6 @@ impl ItemDefinition {
         self.item_type.as_ref()
     }
 
-    /// Returns whether the item is visible in the GUI.
-    pub fn is_gui_visible(&self) -> bool {
-        self.gui_visibility
-    }
-
     /// Returns a reference to the description.
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
@@ -122,7 +103,6 @@ impl ItemDefinition {
         Self {
             description: store.launder(&self.description),
             item_type: Arc::new(self.item_type.launder(store)),
-            gui_visibility: self.gui_visibility,
         }
     }
 }

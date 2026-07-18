@@ -32,7 +32,6 @@ pub mod static_store;
 /// Dynamic store implementation with proxy-based access.
 pub mod store;
 
-use shareable_string::ShareableString;
 use std::fmt::{Display, Formatter};
 
 /// Error types for the store operations.
@@ -44,6 +43,8 @@ pub enum StoreError {
     KeyInvalidCharacter(String),
     /// The key is missing the required prefix (e.g. `p_` for parameter keys, `v_` for variable keys).
     KeyInvalidPrefix(String),
+    /// A key already exists.
+    KeyConflict(String),
     /// The requested object was not found.
     ObjectNotFound,
     /// An object with the specified key already exists.
@@ -68,10 +69,6 @@ pub enum StoreError {
     RedoNotAvailable,
     /// Failed to serialize or deserialize the store state.
     SerializationError(String),
-    /// A parameter conflict occurred during inheritance.
-    ParameterConflict(ShareableString),
-    /// A variable conflict occurred during inheritance.
-    VariableConflict(ShareableString),
     /// A schema mismatch occurred during update or conversion.
     SchemaMismatch(String),
     /// Nested containers are not supported in this context.
@@ -94,6 +91,7 @@ impl Display for StoreError {
                 "Invalid key: '{}'. Key is missing the required prefix",
                 s
             ),
+            StoreError::KeyConflict(s) => write!(f, "Key conflict: {}", s),
             StoreError::ObjectNotFound => write!(f, "Object not found"),
             StoreError::ObjectKeyAlreadyExists => write!(f, "Object key already exists"),
             StoreError::ParameterNotFound => write!(f, "Parameter not found"),
@@ -106,8 +104,6 @@ impl Display for StoreError {
             StoreError::UndoNotAvailable => write!(f, "Undo not available"),
             StoreError::RedoNotAvailable => write!(f, "Redo not available"),
             StoreError::SerializationError(s) => write!(f, "Serialization error: {}", s),
-            StoreError::ParameterConflict(s) => write!(f, "Parameter conflict: {}", s),
-            StoreError::VariableConflict(s) => write!(f, "Variable conflict: {}", s),
             StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {}", s),
             StoreError::NestedContainerNotSupported => {
                 write!(f, "Nested containers are not supported in this context")

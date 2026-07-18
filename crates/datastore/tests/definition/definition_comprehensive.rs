@@ -9,6 +9,7 @@ use datastore::prelude::*;
 
 #[test]
 fn test_basic_definition_comprehensive() {
+    // Why: Test that various types of basic definitions can be created and hold correct values.
     let def = BasicDefinition::new_string_with_default("Desc", "Default");
     assert_eq!(def.description_ref().as_ref(), "Desc");
     assert_eq!(def.default_value_ref().as_ref(), "Default");
@@ -20,7 +21,7 @@ fn test_basic_definition_comprehensive() {
     ));
     assert_eq!(num_def.default_value().as_ref(), "10");
 
-    let file_info = FileDefinition::new("*.txt");
+    let file_info = FileDefinition::new("*.txt", false);
     assert_eq!(file_info.extension_filter_ref().as_ref(), "*.txt");
     let file_def = BasicDefinition::new_file_with_default("File", file_info, "file.txt");
     assert_eq!(file_def.default_value().as_ref(), "file.txt");
@@ -33,6 +34,7 @@ fn test_basic_definition_comprehensive() {
 
 #[test]
 fn test_table_definition_comprehensive() {
+    // Why: Test that a table definition correctly stores column definitions and supports basic operations.
     let table_def = TableDefinition::new(
         "Table Desc",
         vec![
@@ -57,6 +59,7 @@ fn test_table_definition_comprehensive() {
 
 #[test]
 fn test_struct_definition_comprehensive() {
+    // Why: Test that a struct definition correctly stores field definitions and supports basic operations.
     let struct_def = StructDefinition::new(
         "Struct Desc",
         vec![
@@ -89,6 +92,7 @@ fn test_struct_definition_comprehensive() {
 
 #[test]
 fn test_map_definition_comprehensive() {
+    // Why: Test that a map definition correctly stores its item struct definition.
     let struct_def = StructDefinition::new("Item", Vec::<(StoreKey, StructItemDefinition)>::new());
     let map_def = MapDefinition::new("Map Desc", struct_def);
     assert_eq!(map_def.description_ref().as_ref(), "Map Desc");
@@ -96,6 +100,7 @@ fn test_map_definition_comprehensive() {
 
 #[test]
 fn test_parameter_definition_comprehensive() {
+    // Why: Test that an item definition correctly wraps a basic definition.
     let basic_def = BasicDefinition::new_string("Basic");
     let prop_def = ItemDefinition::new("Prop Desc", basic_def);
     assert_eq!(prop_def.description_ref().as_ref(), "Prop Desc");
@@ -104,35 +109,34 @@ fn test_parameter_definition_comprehensive() {
 
 #[test]
 fn test_object_definition_comprehensive() {
+    // Why: Test that an object definition correctly handles items added via the builder.
     let obj_def = ObjectDefinition::builder("Obj Desc")
-        .with_parameter_inserted(
-            parameter_key!("p_p1"),
+        .with(
+            store_key!("p_p1"),
             ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
         )
-        .with_parameter_inserted(
-            parameter_key!("p_p2"),
+        .with(
+            store_key!("p_p2"),
             ItemDefinition::new("P2", BasicDefinition::new_number("D2")),
         )
         .finish();
 
     assert_eq!(obj_def.description_ref().as_ref(), "Obj Desc");
-    assert_eq!(obj_def.parameter_count(), 2);
-    assert!(obj_def.parameter_contains_key_str("p_p1"));
-    assert!(obj_def.parameter_get_str("p_p2").is_some());
+    assert_eq!(obj_def.count(), 2);
+    assert!(obj_def.contains_str("p_p1"));
+    assert!(obj_def.get_str("p_p2").is_some());
 
-    let keys: Vec<String> = obj_def
-        .parameter_keys()
-        .map(|k| k.as_ref().to_string())
-        .collect();
+    let keys: Vec<String> = obj_def.keys().map(|k| k.as_ref().to_string()).collect();
     assert!(keys.contains(&"p_p1".to_string()));
     assert!(keys.contains(&"p_p2".to_string()));
 
-    let iter_count = obj_def.parameter_iter().count();
+    let iter_count = obj_def.iter().count();
     assert_eq!(iter_count, 2);
 }
 
 #[test]
 fn test_launder_comprehensive() {
+    // Why: Test that all definition types correctly support the launder operation for string store migration.
     let store = SharedStringStore::new();
 
     // Test BasicDefinition launder
@@ -170,9 +174,9 @@ fn test_launder_comprehensive() {
 
     // Test ObjectDefinition launder
     let obj_def = ObjectDefinition::builder("Obj")
-        .with_parameter_inserted(parameter_key!("p_prop"), prop_def)
+        .with(store_key!("p_prop"), prop_def)
         .finish();
     let laundered_obj = obj_def.launder(&store);
     assert_eq!(laundered_obj.description(), obj_def.description());
-    assert!(laundered_obj.parameter_contains_key("p_prop"));
+    assert!(laundered_obj.contains("p_prop"));
 }

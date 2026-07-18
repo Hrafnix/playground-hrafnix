@@ -1,54 +1,51 @@
 use datastore::prelude::*;
 
 #[test]
-fn test_parameter_definition() {
-    // Why: Test basic parameter definition creation and parameter.
+fn test_item_definition() {
+    // Why: Test basic item definition creation and definition.
     let basic_prop = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("String"));
 
-    // Check the various parameter of the parameter definition.
+    // Check the various data items of the item definition.
     assert_eq!(basic_prop.description().as_ref(), "Basic Prop");
     assert!(matches!(
         basic_prop.item_type(),
         datastore::definition::ItemDefinitionType::Basic(_)
     ));
-    assert_eq!(basic_prop.is_gui_visible(), true);
 }
 
 #[test]
-fn test_struct_parameter_definition() {
-    // Why: Test struct parameter definition creation and parameter.
+fn test_struct_item_definition() {
+    // Why: Test struct item definition creation and definition.
     let struct_prop = ItemDefinition::new(
         "Struct Prop",
         StructDefinition::new("Struct", Vec::<(StoreKey, StructItemDefinition)>::new()),
     );
 
-    // Check the various parameter of the parameter definition.
+    // Check the various data items of the item definition.
     assert!(matches!(
         struct_prop.item_type(),
         datastore::definition::ItemDefinitionType::Struct(_)
     ));
-    assert_eq!(struct_prop.is_gui_visible(), true);
 }
 
 #[test]
-fn test_table_parameter_definition() {
-    // Why: Test table parameter definition creation and parameter.
+fn test_table_item_definition() {
+    // Why: Test table item definition creation and definition.
     let table_prop = ItemDefinition::new(
         "Table Prop",
         TableDefinition::new("Table", Vec::<(StoreKey, BasicDefinition)>::new()),
     );
 
-    // Check the various parameter of the parameter definition.
+    // Check the various data items of the item definition.
     assert!(matches!(
         table_prop.item_type(),
         datastore::definition::ItemDefinitionType::Table(_)
     ));
-    assert_eq!(table_prop.is_gui_visible(), true);
 }
 
 #[test]
-fn test_map_parameter_definition() {
-    // Why: Test map parameter definition creation and parameter.
+fn test_map_item_definition() {
+    // Why: Test map item definition creation and definition.
     let map_prop = ItemDefinition::new(
         "Map Prop",
         MapDefinition::new(
@@ -57,32 +54,16 @@ fn test_map_parameter_definition() {
         ),
     );
 
-    // Check the various parameter of the parameter definition.
+    // Check the various data items of the item definition.
     assert!(matches!(
         map_prop.item_type(),
         datastore::definition::ItemDefinitionType::Map(_)
     ));
-    assert_eq!(map_prop.is_gui_visible(), true);
 }
 
 #[test]
-fn test_parameter_gui_visibility() {
-    // Why: Test basic parameter definition creation and parameter with gui invisibility.
-    let basic_prop =
-        ItemDefinition::new_gui_invisible("Basic Prop", BasicDefinition::new_string("String"));
-
-    // Check the various parameter of the parameter definition.
-    assert_eq!(basic_prop.description().as_ref(), "Basic Prop");
-    assert!(matches!(
-        basic_prop.item_type(),
-        datastore::definition::ItemDefinitionType::Basic(_)
-    ));
-    assert_eq!(basic_prop.is_gui_visible(), false);
-}
-
-#[test]
-fn test_parameter_definition_type_equality() {
-    // Why: Test that two parameter definition items with the same parameter are considered equal and ref equal.
+fn test_item_definition_type_equality() {
+    // Why: Test that two item definition items with the same data are considered equal.
     let def_1 = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("String"));
     let def_2 = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("String"));
     let def_3 = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("New String"));
@@ -95,7 +76,7 @@ fn test_parameter_definition_type_equality() {
 
 #[test]
 fn test_parameter_definition_equality() {
-    // Why: Test that two parameter definitions with the same parameter are considered equal and ref equal.
+    // Why: Test that two item definitions with the same data are considered equal.
     let def_1 = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("String"));
     let def_2 = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("String"));
     let def_3 = ItemDefinition::new("Basic Prop", BasicDefinition::new_string("New String"));
