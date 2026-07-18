@@ -1,5 +1,6 @@
 use crate::definition::BasicDefinition;
 use crate::key::StoreKey;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
@@ -100,5 +101,35 @@ impl PartialEq<&TableDefinition> for TableDefinition {
 impl PartialEq<TableDefinition> for &TableDefinition {
     fn eq(&self, other: &TableDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for TableDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}{}{} ({}) Table",
+            prefix,
+            Self::branch_char(last),
+            label,
+            self.description(),
+        )?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let column_count = self.columns.len();
+
+        for (i, (key, column)) in self.columns.iter().enumerate() {
+            let is_last = i == column_count - 1;
+            column.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
     }
 }

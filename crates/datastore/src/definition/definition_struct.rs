@@ -1,5 +1,6 @@
 use crate::definition::{BasicDefinition, TableDefinition};
 use crate::key::StoreKey;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
@@ -45,6 +46,21 @@ impl PartialEq<&StructItemDefinition> for StructItemDefinition {
 impl PartialEq<StructItemDefinition> for &StructItemDefinition {
     fn eq(&self, other: &StructItemDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for StructItemDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        match self {
+            StructItemDefinition::Basic(basic) => basic.tree_print(f, label, prefix, last),
+            StructItemDefinition::Table(table) => table.tree_print(f, label, prefix, last),
+        }
     }
 }
 
@@ -143,5 +159,35 @@ impl PartialEq<&StructDefinition> for StructDefinition {
 impl PartialEq<StructDefinition> for &StructDefinition {
     fn eq(&self, other: &StructDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for StructDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}{}{} ({}) Struct",
+            prefix,
+            Self::branch_char(last),
+            label,
+            self.description(),
+        )?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let item_count = self.item_type.len();
+
+        for (i, (key, item)) in self.item_type.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
     }
 }

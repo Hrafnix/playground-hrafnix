@@ -1,6 +1,6 @@
 use crate::definition::ItemDefinition;
 use crate::frozen::{BasicFrozen, MapFrozen, StructFrozen, TableFrozen};
-use crate::store::TreePrint;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 
 /// Represents a parameter value in the frozen data.

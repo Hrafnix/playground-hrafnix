@@ -1,4 +1,5 @@
 use crate::definition::{BasicDefinition, MapDefinition, StructDefinition, TableDefinition};
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::sync::Arc;
@@ -64,6 +65,23 @@ impl PartialEq<ItemDefinitionType> for &ItemDefinitionType {
     }
 }
 
+impl TreePrint for ItemDefinitionType {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        match self {
+            Self::Basic(b) => b.tree_print(f, label, prefix, last),
+            Self::Table(t) => t.tree_print(f, label, prefix, last),
+            Self::Struct(s) => s.tree_print(f, label, prefix, last),
+            Self::Map(m) => m.tree_print(f, label, prefix, last),
+        }
+    }
+}
+
 /// Definition for a item, including its type and metadata like description and visibility.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ItemDefinition {
@@ -116,5 +134,17 @@ impl PartialEq<&ItemDefinition> for ItemDefinition {
 impl PartialEq<ItemDefinition> for &ItemDefinition {
     fn eq(&self, other: &ItemDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for ItemDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        self.item_type.tree_print(f, label, prefix, last)
     }
 }

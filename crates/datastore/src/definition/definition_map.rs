@@ -1,4 +1,5 @@
 use crate::definition::StructDefinition;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::sync::Arc;
@@ -52,5 +53,28 @@ impl PartialEq<&MapDefinition> for MapDefinition {
 impl PartialEq<MapDefinition> for &MapDefinition {
     fn eq(&self, other: &MapDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for MapDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}{}{} ({}) Map",
+            prefix,
+            Self::branch_char(last),
+            label,
+            self.description(),
+        )?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+        self.item_type
+            .tree_print(f, "item_type", &child_prefix, true)
     }
 }

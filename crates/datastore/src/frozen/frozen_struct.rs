@@ -2,7 +2,7 @@ use crate::StoreError;
 use crate::definition::{StructDefinition, StructItemDefinition};
 use crate::frozen::{BasicFrozen, TableFrozen};
 use crate::key::StoreKey;
-use crate::store::TreePrint;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -217,22 +217,24 @@ impl TreePrint for StructFrozen {
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
-        let type_str = "Struct";
         writeln!(
             f,
-            "{}{}{}: {} - {}",
+            "{}{}{} ({}) Struct",
             prefix,
-            Self::branch_char(prefix, last),
+            Self::branch_char(last),
             label,
-            type_str,
-            self.definition.description()
+            self.definition.description(),
         )?;
-        let next_prefix = Self::next_prefix(prefix, last);
-        let entries: Vec<_> = self.items.iter().collect();
-        for (i, (key, item)) in entries.iter().enumerate() {
-            let is_last = i == entries.len() - 1;
-            item.tree_print(f, key.as_str(), &next_prefix, is_last)?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let item_count = self.items.len();
+
+        for (i, (key, item)) in self.items.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
+
         Ok(())
     }
 }

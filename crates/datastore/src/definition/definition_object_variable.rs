@@ -1,6 +1,7 @@
 use crate::StoreError;
 use crate::definition::ItemDefinition;
 use crate::key::VariableKey;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
@@ -207,5 +208,34 @@ impl PartialEq<&VariableObjectDefinition> for VariableObjectDefinition {
 impl PartialEq<VariableObjectDefinition> for &VariableObjectDefinition {
     fn eq(&self, other: &VariableObjectDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for VariableObjectDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        _label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(f, "Variable Object Definition ({})", self.description())?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let item_count = self.items.len();
+
+        for (i, (key, item)) in self.items.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for VariableObjectDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.tree_print(f, "", "", true)
     }
 }

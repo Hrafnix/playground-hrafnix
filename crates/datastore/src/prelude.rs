@@ -25,9 +25,6 @@ pub use crate::definition::{
     VariableObjectDefinitionBuilder,
 };
 
-// Store and proxies
-pub use crate::store::traits::TreeDisplay;
-
 // Shareable strings
 pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTranslationMap};
 

@@ -29,8 +29,8 @@ pub mod key;
 pub mod path;
 /// Convenience re-exports of the most common types and macros.
 pub mod prelude;
-/// Dynamic store implementation with proxy-based access.
-pub mod store;
+/// Traits used throughout the store.
+pub mod traits;
 
 use std::fmt::{Display, Formatter};
 

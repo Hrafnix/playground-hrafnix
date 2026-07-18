@@ -1,3 +1,4 @@
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::sync::Arc;
@@ -254,5 +255,41 @@ impl PartialEq<&BasicDefinition> for BasicDefinition {
 impl PartialEq<BasicDefinition> for &BasicDefinition {
     fn eq(&self, other: &BasicDefinition) -> bool {
         *self == other
+    }
+}
+
+impl TreePrint for BasicDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        let definition_type = match self.type_definition() {
+            BasicDefinitionType::String => "String",
+            BasicDefinitionType::File(_) => "File",
+            BasicDefinitionType::Number => "Number",
+            BasicDefinitionType::Choice(_) => "Choice",
+        };
+
+        let extra_data = match self.type_definition() {
+            BasicDefinitionType::String => String::new(),
+            BasicDefinitionType::File(def) => format!("[{}]", def.extension_filter),
+            BasicDefinitionType::Number => String::new(),
+            BasicDefinitionType::Choice(def) => format!("[{}]", def.choices.join(", ")),
+        };
+
+        writeln!(
+            f,
+            "{}{}{} ({}) {} - default: \"{}\" {}",
+            prefix,
+            Self::branch_char(last),
+            label,
+            self.description(),
+            definition_type,
+            self.default_value(),
+            extra_data
+        )
     }
 }

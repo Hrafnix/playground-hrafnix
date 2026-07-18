@@ -1,5 +1,5 @@
-use crate::definition::BasicDefinition;
-use crate::store::TreePrint;
+use crate::definition::{BasicDefinition, BasicDefinitionType};
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
@@ -85,14 +85,22 @@ impl TreePrint for BasicFrozen {
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
+        let definition_type = match self.definition().type_definition() {
+            BasicDefinitionType::String => "String",
+            BasicDefinitionType::File(_) => "File",
+            BasicDefinitionType::Number => "Number",
+            BasicDefinitionType::Choice(_) => "Choice",
+        };
+
         writeln!(
             f,
-            "{}{}{}: {} ({})",
+            "{}{}{} ({}) {} - \"{}\"",
             prefix,
-            Self::branch_char(prefix, last),
+            Self::branch_char(last),
             label,
+            self.definition.description(),
+            definition_type,
             self.value,
-            self.definition.description()
         )
     }
 }

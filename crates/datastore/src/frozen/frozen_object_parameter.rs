@@ -2,7 +2,7 @@ use crate::definition::{ItemDefinitionType, ParameterObjectDefinition};
 use crate::frozen::ItemFrozen;
 use crate::frozen::{BasicFrozen, MapFrozen, StructFrozen, TableFrozen};
 use crate::key::ParameterKey;
-use crate::store::TreePrint;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -125,32 +125,31 @@ impl TreePrint for ParameterObjectFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
-        label: &str,
+        _label: &str,
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
-        let type_str = "Object";
         writeln!(
             f,
-            "{}{}{}: {} - {}",
-            prefix,
-            Self::branch_char(prefix, last),
-            label,
-            type_str,
+            "Frozen Parameter Object ({})",
             self.definition.description()
         )?;
-        let next_prefix = Self::next_prefix(prefix, last);
-        let entries: Vec<_> = self.items.iter().collect();
-        for (i, (key, item)) in entries.iter().enumerate() {
-            let is_last = i == entries.len() - 1;
-            item.tree_print(f, key.as_str(), &next_prefix, is_last)?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let item_count = self.items.len();
+
+        for (i, (key, item)) in self.items.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
+
         Ok(())
     }
 }
 
 impl std::fmt::Display for ParameterObjectFrozen {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.tree_display("Frozen Object").fmt(f)
+        self.tree_print(f, "", "", true)
     }
 }

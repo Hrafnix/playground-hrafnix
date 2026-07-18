@@ -1,6 +1,6 @@
 use crate::definition::TableDefinition;
 use crate::key::StoreKey;
-use crate::store::TreePrint;
+use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -130,32 +130,39 @@ impl TreePrint for TableFrozen {
     ) -> std::fmt::Result {
         writeln!(
             f,
-            "{}{}{}: Table ({} rows) - {}",
+            "{}{}{} ({}) Table {} rows",
             prefix,
-            Self::branch_char(prefix, last),
+            Self::branch_char(last),
             label,
+            self.definition.description(),
             self.rows.len(),
-            self.definition.description()
         )?;
-        let next_prefix = Self::next_prefix(prefix, last);
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let row_count = self.rows.len();
+        let column_count = self.definition.count();
+
         for (i, row) in self.rows.iter().enumerate() {
-            let is_last_row = i == self.rows.len() - 1;
+            let is_last_row = i == row_count - 1;
+
             writeln!(
                 f,
                 "{}{}Row {}",
-                next_prefix,
-                Self::branch_char(&next_prefix, is_last_row),
+                child_prefix,
+                Self::branch_char(is_last_row),
                 i
             )?;
-            let row_prefix = Self::next_prefix(&next_prefix, is_last_row);
-            let entries: Vec<_> = row.iter().collect();
-            for (j, (key, value)) in entries.iter().enumerate() {
-                let is_last_key = j == entries.len() - 1;
+
+            let row_prefix = Self::child_prefix(&child_prefix, is_last_row);
+
+            for (j, (key, value)) in row.iter().enumerate() {
+                let is_last_key = j == column_count - 1;
                 writeln!(
                     f,
-                    "{}{}{}: {}",
+                    "{}{}{} \"{}\"",
                     row_prefix,
-                    Self::branch_char(&row_prefix, is_last_key),
+                    Self::branch_char(is_last_key),
                     key.as_str(),
                     value
                 )?;
