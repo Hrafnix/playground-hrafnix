@@ -1,13 +1,6 @@
 //! Integration tests for the [`ParameterObjectDefinitionBuilder`] API.
 
-use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, ChoiceItemDefinition, ItemDefinition, MapDefinition,
-    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition, TableDefinition,
-};
-use datastore::key::ParameterKey;
-use datastore::prelude::FileDefinition;
-use datastore::{StoreError, store_key};
-use shareable_string::SharedStringStore;
+use datastore::prelude::*;
 
 #[test]
 fn test_parameter_object_builder_pattern() {
@@ -15,13 +8,13 @@ fn test_parameter_object_builder_pattern() {
     let obj_def = ParameterObjectDefinition::builder("Test Object")
         .with(
             ParameterKey::new("p_prop1".into()).unwrap(),
-            ItemDefinition::new("parameter 1", BasicDefinition::new_string("String prop")),
+            ItemDefinition::new("parameter 1", StringDefinition::new("String prop")),
         )
         .with(
             ParameterKey::new("p_prop2".into()).unwrap(),
             ItemDefinition::new(
                 "parameter 2",
-                BasicDefinition::new_number_with_default("Number prop", "0"),
+                NumberDefinition::new_with_default("Number prop", "0"),
             ),
         )
         .finish();
@@ -35,7 +28,7 @@ fn test_parameter_object_inheritance() {
     let parent_def = ParameterObjectDefinition::builder("Parent")
         .with(
             ParameterKey::new("p_prop1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string_with_default("D1", "V1")),
+            ItemDefinition::new("P1", StringDefinition::new_with_default("D1", "V1")),
         )
         .finish();
 
@@ -45,7 +38,7 @@ fn test_parameter_object_inheritance() {
     let mut builder = parent_def.inherit("Child");
     builder.insert(
         ParameterKey::new("p_prop2".into()).unwrap(),
-        ItemDefinition::new("P2", BasicDefinition::new_string_with_default("D2", "V2")),
+        ItemDefinition::new("P2", StringDefinition::new_with_default("D2", "V2")),
     );
 
     let child_def = builder.finish();
@@ -85,7 +78,7 @@ fn test_parameter_object_definition_immutability() {
     let obj_def = ParameterObjectDefinition::builder("Test Object")
         .with(
             ParameterKey::new("p_prop1".into()).unwrap(),
-            ItemDefinition::new("parameter 1", BasicDefinition::new_string("String prop")),
+            ItemDefinition::new("parameter 1", StringDefinition::new("String prop")),
         )
         .finish();
 
@@ -108,7 +101,7 @@ fn test_parameter_object_definition_builder_new() {
 fn test_parameter_object_definition_builder_insert() {
     // Why: Test that the builder correctly inserts items into the parameter object definition.
     let mut builder = ParameterObjectDefinitionBuilder::new("Test");
-    let prop = ItemDefinition::new("Prop", BasicDefinition::new_string("Desc"));
+    let prop = ItemDefinition::new("Prop", StringDefinition::new("Desc"));
     let key = ParameterKey::new("p_key1".into()).unwrap();
 
     builder.insert(key.clone(), prop.clone());
@@ -121,7 +114,7 @@ fn test_parameter_object_definition_builder_insert() {
 #[test]
 fn test_parameter_object_definition_builder_with_inserted() {
     // Why: Test that the builder correctly adds an item using the fluent interface.
-    let prop = ItemDefinition::new("Prop", BasicDefinition::new_string("Desc"));
+    let prop = ItemDefinition::new("Prop", StringDefinition::new("Desc"));
     let key = ParameterKey::new("p_key1".into()).unwrap();
 
     let def = ParameterObjectDefinitionBuilder::new("Test")
@@ -136,7 +129,7 @@ fn test_parameter_object_definition_builder_with_inserted() {
 fn test_parameter_object_definition_builder_remove() {
     // Why: Test that the builder correctly removes items.
     let mut builder = ParameterObjectDefinitionBuilder::new("Test");
-    let prop = ItemDefinition::new("Prop", BasicDefinition::new_string("Desc"));
+    let prop = ItemDefinition::new("Prop", StringDefinition::new("Desc"));
     let key = ParameterKey::new("p_key1".into()).unwrap();
 
     builder.insert(key, prop);
@@ -145,7 +138,7 @@ fn test_parameter_object_definition_builder_remove() {
     let mut builder = ParameterObjectDefinitionBuilder::new("Test");
     builder.insert(
         ParameterKey::new("p_key1".into()).unwrap(),
-        ItemDefinition::new("Prop", BasicDefinition::new_string("Desc")),
+        ItemDefinition::new("Prop", StringDefinition::new("Desc")),
     );
     builder.remove("p_key1");
     let def = builder.finish();
@@ -160,7 +153,7 @@ fn test_parameter_object_definition_builder_without() {
     let def = ParameterObjectDefinitionBuilder::new("Test")
         .with(
             ParameterKey::new("p_key1".into()).unwrap(),
-            ItemDefinition::new("Prop", BasicDefinition::new_string("Desc")),
+            ItemDefinition::new("Prop", StringDefinition::new("Desc")),
         )
         .without("p_key1")
         .finish();
@@ -174,7 +167,7 @@ fn test_parameter_object_definition_inherit() {
     let parent_def = ParameterObjectDefinitionBuilder::new("Parent")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .finish();
 
@@ -182,7 +175,7 @@ fn test_parameter_object_definition_inherit() {
         .inherit(parent_def)
         .with(
             ParameterKey::new("p_c1".into()).unwrap(),
-            ItemDefinition::new("C1", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("C1", StringDefinition::new("D2")),
         )
         .finish();
 
@@ -197,14 +190,14 @@ fn test_parameter_object_definition_inherit_overwrite() {
     let parent_def = ParameterObjectDefinitionBuilder::new("Parent")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("ParentProp", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("ParentProp", StringDefinition::new("D1")),
         )
         .finish();
 
     let child_def = ParameterObjectDefinitionBuilder::new("Child")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("ChildProp", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("ChildProp", StringDefinition::new("D2")),
         )
         .inherit(parent_def)
         .finish();
@@ -222,14 +215,14 @@ fn test_parameter_object_definition_inherit_with_check() {
     let parent_def = ParameterObjectDefinitionBuilder::new("Parent")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("ParentProp", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("ParentProp", StringDefinition::new("D1")),
         )
         .finish();
 
     let result = ParameterObjectDefinitionBuilder::new("Child")
         .with(
             ParameterKey::new("p_p2".into()).unwrap(),
-            ItemDefinition::new("ChildProp", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("ChildProp", StringDefinition::new("D2")),
         )
         .inherit_with_check(parent_def);
 
@@ -242,14 +235,14 @@ fn test_parameter_object_definition_inherit_with_check_error() {
     let parent_def = ParameterObjectDefinitionBuilder::new("Parent")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("ParentProp", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("ParentProp", StringDefinition::new("D1")),
         )
         .finish();
 
     let result = ParameterObjectDefinitionBuilder::new("Child")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("ChildProp", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("ChildProp", StringDefinition::new("D2")),
         )
         .inherit_with_check(parent_def);
 
@@ -261,7 +254,7 @@ fn test_parameter_object_definition_inherit_from_builder() {
     // Why: Test that the builder correctly inherits from another builder.
     let b1 = ParameterObjectDefinitionBuilder::new("B1").with(
         ParameterKey::new("p_p1".into()).unwrap(),
-        ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+        ItemDefinition::new("P1", StringDefinition::new("D1")),
     );
 
     let b2 = ParameterObjectDefinitionBuilder::new("B2")
@@ -277,13 +270,13 @@ fn test_parameter_object_definition_inherit_from_builder_with_check() {
     // Why: Test that inherit_from_builder_with_check successfully inherits when there are no key conflicts.
     let b1 = ParameterObjectDefinitionBuilder::new("B1").with(
         ParameterKey::new("p_p1".into()).unwrap(),
-        ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+        ItemDefinition::new("P1", StringDefinition::new("D1")),
     );
 
     let result = ParameterObjectDefinitionBuilder::new("B2")
         .with(
             ParameterKey::new("p_p2".into()).unwrap(),
-            ItemDefinition::new("P2", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("P2", StringDefinition::new("D2")),
         )
         .inherit_from_builder_with_check(b1);
 
@@ -295,13 +288,13 @@ fn test_parameter_object_definition_inherit_from_builder_with_check_error() {
     // Why: Test that inherit_from_builder_with_check returns an error when there is a key conflict.
     let b1 = ParameterObjectDefinitionBuilder::new("B1").with(
         ParameterKey::new("p_p1".into()).unwrap(),
-        ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+        ItemDefinition::new("P1", StringDefinition::new("D1")),
     );
 
     let result = ParameterObjectDefinitionBuilder::new("B2")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("P2", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("P2", StringDefinition::new("D2")),
         )
         .inherit_from_builder_with_check(b1);
 
@@ -314,7 +307,7 @@ fn test_parameter_object_definition_getters() {
     let def = ParameterObjectDefinitionBuilder::new("Test")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .finish();
 
@@ -343,29 +336,26 @@ fn test_parameter_object_definition_launder() {
     let def = ParameterObjectDefinitionBuilder::new("Test")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .with(
             ParameterKey::new("p_p2".into()).unwrap(),
-            ItemDefinition::new(
-                "P2",
-                BasicDefinition::new_file("D2", FileDefinition::new("ext", false)),
-            ),
+            ItemDefinition::new("P2", FileDefinition::new("D2", "ext", false)),
         )
         .with(
             ParameterKey::new("p_p3".into()).unwrap(),
-            ItemDefinition::new("P3", BasicDefinition::new_number("D3")),
+            ItemDefinition::new("P3", NumberDefinition::new("D3")),
         )
         .with(
             ParameterKey::new("p_p4".into()).unwrap(),
             ItemDefinition::new(
                 "P4",
-                BasicDefinition::new_choice(
+                ChoiceDefinition::new(
                     "D4",
-                    ChoiceDefinition::new(vec![
+                    vec![
                         ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                         ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
-                    ]),
+                    ],
                 ),
             ),
         )
@@ -376,8 +366,8 @@ fn test_parameter_object_definition_launder() {
                 TableDefinition::new(
                     "D5",
                     vec![
-                        (store_key!("col1"), BasicDefinition::new_string("C1")),
-                        (store_key!("col2"), BasicDefinition::new_number("C2")),
+                        (store_key!("col1"), NumberDefinition::new("C1")),
+                        (store_key!("col2"), NumberDefinition::new("C2")),
                     ],
                 ),
             ),
@@ -391,8 +381,14 @@ fn test_parameter_object_definition_launder() {
                     StructDefinition::new(
                         "Item",
                         vec![
-                            (store_key!("col1"), BasicDefinition::new_string("C1")),
-                            (store_key!("col2"), BasicDefinition::new_number("C2")),
+                            (
+                                store_key!("col1"),
+                                StructItemDefinition::String(StringDefinition::new("C1")),
+                            ),
+                            (
+                                store_key!("col2"),
+                                StructItemDefinition::Number(NumberDefinition::new("C2")),
+                            ),
                         ],
                     ),
                 ),

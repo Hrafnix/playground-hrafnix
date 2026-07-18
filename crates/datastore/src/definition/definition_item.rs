@@ -1,4 +1,7 @@
-use crate::definition::{BasicDefinition, MapDefinition, TableDefinition};
+use crate::definition::{
+    ChoiceDefinition, MapDefinition, NumberDefinition, StringDefinition, TableDefinition,
+};
+use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
@@ -7,23 +10,35 @@ use std::sync::Arc;
 /// The type of item definition.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ItemDefinitionType {
-    /// A basic item (String, Number, etc.).
-    Basic(BasicDefinition),
-    /// A table item.
-    Table(TableDefinition),
+    /// A choice item.
+    Choice(ChoiceDefinition),
+    /// A file item.
+    File(FileDefinition),
     /// A map item.
     Map(MapDefinition),
+    /// A number item.
+    Number(NumberDefinition),
+    /// A string item.
+    String(StringDefinition),
+    /// A table item.
+    Table(TableDefinition),
 }
 
-impl From<BasicDefinition> for ItemDefinitionType {
-    fn from(definition: BasicDefinition) -> Self {
-        ItemDefinitionType::Basic(definition)
+impl From<StringDefinition> for ItemDefinitionType {
+    fn from(definition: StringDefinition) -> Self {
+        ItemDefinitionType::String(definition)
     }
 }
 
-impl From<TableDefinition> for ItemDefinitionType {
-    fn from(definition: TableDefinition) -> Self {
-        ItemDefinitionType::Table(definition)
+impl From<ChoiceDefinition> for ItemDefinitionType {
+    fn from(definition: ChoiceDefinition) -> Self {
+        ItemDefinitionType::Choice(definition)
+    }
+}
+
+impl From<FileDefinition> for ItemDefinitionType {
+    fn from(definition: FileDefinition) -> Self {
+        ItemDefinitionType::File(definition)
     }
 }
 
@@ -33,12 +48,27 @@ impl From<MapDefinition> for ItemDefinitionType {
     }
 }
 
+impl From<NumberDefinition> for ItemDefinitionType {
+    fn from(definition: NumberDefinition) -> Self {
+        ItemDefinitionType::Number(definition)
+    }
+}
+
+impl From<TableDefinition> for ItemDefinitionType {
+    fn from(definition: TableDefinition) -> Self {
+        ItemDefinitionType::Table(definition)
+    }
+}
+
 impl ItemDefinitionType {
     /// Returns a new `ItemDefinitionType` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
-            Self::Basic(def) => Self::Basic(def.launder(store)),
+            Self::File(def) => Self::File(def.launder(store)),
+            Self::Choice(def) => Self::Choice(def.launder(store)),
             Self::Map(def) => Self::Map(def.launder(store)),
+            Self::Number(def) => Self::Number(def.launder(store)),
+            Self::String(def) => Self::String(def.launder(store)),
             Self::Table(def) => Self::Table(def.launder(store)),
         }
     }
@@ -65,9 +95,12 @@ impl TreePrint for ItemDefinitionType {
         last: bool,
     ) -> std::fmt::Result {
         match self {
-            Self::Basic(b) => b.tree_print(f, label, prefix, last),
-            Self::Table(t) => t.tree_print(f, label, prefix, last),
-            Self::Map(m) => m.tree_print(f, label, prefix, last),
+            Self::String(basic) => basic.tree_print(f, label, prefix, last),
+            Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            Self::Number(number) => number.tree_print(f, label, prefix, last),
+            Self::Table(table) => table.tree_print(f, label, prefix, last),
+            Self::Map(map) => map.tree_print(f, label, prefix, last),
         }
     }
 }

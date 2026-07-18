@@ -1,9 +1,4 @@
-use datastore::definition::{
-    BasicDefinition, MapDefinition, StructDefinition, StructItemDefinition, TableDefinition,
-};
-use datastore::frozen::MapFrozen;
-use datastore::key::StoreKey;
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_map_frozen() {
@@ -35,10 +30,10 @@ fn test_map_frozen() {
 #[test]
 fn test_complex_map_frozen() {
     // Why: Test complex map frozen object creation and definition.
-    let struct_item_def_1 = StructItemDefinition::Basic(BasicDefinition::new_string("Field 1"));
+    let struct_item_def_1 = StructItemDefinition::String(StringDefinition::new("Field 1"));
     let struct_item_def_2 = StructItemDefinition::Table(TableDefinition::new(
         "Table field",
-        Vec::<(StoreKey, BasicDefinition)>::new(),
+        Vec::<(StoreKey, NumberDefinition)>::new(),
     ));
 
     let map_frozen = MapFrozen::new(MapDefinition::new(
@@ -86,8 +81,8 @@ fn test_map_frozen_equality() {
         StructDefinition::new(
             "Item struct",
             vec![
-                (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-                (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+                (store_key!("field1"), StringDefinition::new("Field 1")),
+                (store_key!("field2"), StringDefinition::new("Field 2")),
             ],
         ),
     ));
@@ -96,8 +91,8 @@ fn test_map_frozen_equality() {
         StructDefinition::new(
             "Item struct",
             vec![
-                (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-                (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+                (store_key!("field1"), StringDefinition::new("Field 1")),
+                (store_key!("field2"), StringDefinition::new("Field 2")),
             ],
         ),
     ));
@@ -106,14 +101,8 @@ fn test_map_frozen_equality() {
         StructDefinition::new(
             "Item struct",
             vec![
-                (
-                    store_key!("field1"),
-                    BasicDefinition::new_string("New Field 1"),
-                ),
-                (
-                    store_key!("field2"),
-                    BasicDefinition::new_string("New Field 2"),
-                ),
+                (store_key!("field1"), StringDefinition::new("New Field 1")),
+                (store_key!("field2"), StringDefinition::new("New Field 2")),
             ],
         ),
     ));

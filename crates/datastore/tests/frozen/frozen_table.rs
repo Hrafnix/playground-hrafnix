@@ -1,6 +1,4 @@
-use datastore::definition::{BasicDefinition, TableDefinition};
-use datastore::prelude::TableFrozen;
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_table_frozen() {
@@ -8,10 +6,10 @@ fn test_table_frozen() {
     let table_frozen = TableFrozen::new(TableDefinition::new(
         "A table",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("Column 1")),
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("Column 2", "test"),
+                NumberDefinition::new_with_default("Column 2", "test"),
             ),
         ],
     ));
@@ -42,10 +40,10 @@ fn test_table_frozen_equality() {
     let table_frozen_1 = TableFrozen::new(TableDefinition::new(
         "A table",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("Column 1")),
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("Column 2", "test"),
+                NumberDefinition::new_with_default("Column 2", "test"),
             ),
         ],
     ));
@@ -53,10 +51,10 @@ fn test_table_frozen_equality() {
     let table_frozen_2 = TableFrozen::new(TableDefinition::new(
         "A table",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("Column 1")),
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("Column 2", "test"),
+                NumberDefinition::new_with_default("Column 2", "test"),
             ),
         ],
     ));
@@ -64,13 +62,10 @@ fn test_table_frozen_equality() {
     let table_frozen_3 = TableFrozen::new(TableDefinition::new(
         "A new table",
         vec![
-            (
-                store_key!("col1"),
-                BasicDefinition::new_string("New Column 1"),
-            ),
+            (store_key!("col1"), NumberDefinition::new("New Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("New Column 2", "test"),
+                NumberDefinition::new_with_default("New Column 2", "test"),
             ),
         ],
     ));

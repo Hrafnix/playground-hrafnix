@@ -1,11 +1,4 @@
-use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinition,
-    MapDefinition, ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition,
-    TableDefinition,
-};
-use datastore::frozen::frozen_object_parameter::ParameterObjectFrozen;
-use datastore::key::ParameterKey;
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_parameter_object_definition_basic() {
@@ -14,7 +7,7 @@ fn test_parameter_object_definition_basic() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 ParameterKey::new("p_p1".into()).unwrap(),
-                ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("P1", StringDefinition::new("D1")),
             )
             .finish(),
     );
@@ -33,7 +26,7 @@ fn test_parameter_object_definition_equality() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 ParameterKey::new("p_p1".into()).unwrap(),
-                ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("P1", StringDefinition::new("D1")),
             )
             .finish(),
     );
@@ -41,7 +34,7 @@ fn test_parameter_object_definition_equality() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 ParameterKey::new("p_p1".into()).unwrap(),
-                ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("P1", StringDefinition::new("D1")),
             )
             .finish(),
     );
@@ -49,7 +42,7 @@ fn test_parameter_object_definition_equality() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 ParameterKey::new("p_p1".into()).unwrap(),
-                ItemDefinition::new("P1", BasicDefinition::new_string("D2")),
+                ItemDefinition::new("P1", StringDefinition::new("D2")),
             )
             .finish(),
     );
@@ -67,29 +60,26 @@ fn test_parameter_object_frozen_print_empty() {
         ParameterObjectDefinitionBuilder::new("Test")
             .with(
                 ParameterKey::new("p_p1".into()).unwrap(),
-                ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("P1", StringDefinition::new("D1")),
             )
             .with(
                 ParameterKey::new("p_p2".into()).unwrap(),
-                ItemDefinition::new(
-                    "P2",
-                    BasicDefinition::new_file("D2", FileDefinition::new("ext", false)),
-                ),
+                ItemDefinition::new("P2", FileDefinition::new("D2", "ext", false)),
             )
             .with(
                 ParameterKey::new("p_p3".into()).unwrap(),
-                ItemDefinition::new("P3", BasicDefinition::new_number("D3")),
+                ItemDefinition::new("P3", NumberDefinition::new("D3")),
             )
             .with(
                 ParameterKey::new("p_p4".into()).unwrap(),
                 ItemDefinition::new(
                     "P4",
-                    BasicDefinition::new_choice(
+                    ChoiceDefinition::new(
                         "D4",
-                        ChoiceDefinition::new(vec![
+                        vec![
                             ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                             ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
-                        ]),
+                        ],
                     ),
                 ),
             )
@@ -100,8 +90,8 @@ fn test_parameter_object_frozen_print_empty() {
                     TableDefinition::new(
                         "D5",
                         vec![
-                            (store_key!("col1"), BasicDefinition::new_string("C1")),
-                            (store_key!("col2"), BasicDefinition::new_number("C2")),
+                            (store_key!("col1"), NumberDefinition::new("C1")),
+                            (store_key!("col2"), NumberDefinition::new("C2")),
                         ],
                     ),
                 ),
@@ -115,8 +105,14 @@ fn test_parameter_object_frozen_print_empty() {
                         StructDefinition::new(
                             "Item",
                             vec![
-                                (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                (store_key!("col2"), BasicDefinition::new_number("C2")),
+                                (
+                                    store_key!("col1"),
+                                    StructItemDefinition::String(StringDefinition::new("C1")),
+                                ),
+                                (
+                                    store_key!("col2"),
+                                    StructItemDefinition::Number(NumberDefinition::new("C2")),
+                                ),
                             ],
                         ),
                     ),

@@ -6,10 +6,10 @@ fn test_table_definition() {
     let table_def = TableDefinition::new(
         "A table",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("Column 1")),
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("Column 2", "test"),
+                NumberDefinition::new_with_default("Column 2", "test"),
             ),
         ],
     );
@@ -36,10 +36,10 @@ fn test_table_definition_equality() {
     let table_def_1 = TableDefinition::new(
         "A table",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("Column 1")),
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("Column 2", "test"),
+                NumberDefinition::new_with_default("Column 2", "test"),
             ),
         ],
     );
@@ -47,10 +47,10 @@ fn test_table_definition_equality() {
     let table_def_2 = TableDefinition::new(
         "A table",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("Column 1")),
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("Column 2", "test"),
+                NumberDefinition::new_with_default("Column 2", "test"),
             ),
         ],
     );
@@ -58,13 +58,10 @@ fn test_table_definition_equality() {
     let table_def_3 = TableDefinition::new(
         "A new table",
         vec![
-            (
-                store_key!("col1"),
-                BasicDefinition::new_string("New Column 1"),
-            ),
+            (store_key!("col1"), NumberDefinition::new("New Column 1")),
             (
                 store_key!("col2"),
-                BasicDefinition::new_number_with_default("New Column 2", "test"),
+                NumberDefinition::new_with_default("New Column 2", "test"),
             ),
         ],
     );

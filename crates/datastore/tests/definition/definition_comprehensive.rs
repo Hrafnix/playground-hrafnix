@@ -2,7 +2,7 @@
 //!
 //! These tests complement the focused checks in `definition_checks` by building
 //! realistic composite definitions and verifying the interaction between
-//! [`BasicDefinition`], [`ObjectDefinition`], [`StructDefinition`],
+//! [`StringDefinition`], [`ObjectDefinition`], [`StructDefinition`],
 //! [`MapDefinition`], [`TableDefinition`], [`ChoiceDefinition`], and
 //! [`FileDefinition`].
 use datastore::prelude::*;
@@ -10,29 +10,26 @@ use datastore::prelude::*;
 #[test]
 fn test_basic_definition_comprehensive() {
     // Why: Test that various types of basic definitions can be created and hold correct values.
-    let def = BasicDefinition::new_string_with_default("Desc", "Default");
+    let def = StringDefinition::new_with_default("Desc", "Default");
     assert_eq!(def.description_ref().as_ref(), "Desc");
     assert_eq!(def.default_value_ref().as_ref(), "Default");
 
-    let num_def = BasicDefinition::new_number_with_default("Num", "10");
-    assert!(matches!(
-        num_def.type_definition(),
-        BasicDefinitionType::Number
-    ));
+    let num_def = NumberDefinition::new_with_default("Num", "10");
     assert_eq!(num_def.default_value().as_ref(), "10");
 
-    let file_info = FileDefinition::new("*.txt", false);
-    assert_eq!(file_info.extension_filter_ref().as_ref(), "*.txt");
-    let file_def = BasicDefinition::new_file_with_default("File", file_info, "file.txt");
+    let file_def = FileDefinition::new_with_default("File", "*.txt", false, "file.txt");
     assert_eq!(file_def.default_value().as_ref(), "file.txt");
 
-    let choice_info = ChoiceDefinition::new(vec![
-        ChoiceItemDefinition::new(store_key!("a"), "A"),
-        ChoiceItemDefinition::new(store_key!("b"), "B"),
-    ]);
-    assert_eq!(choice_info.choices().len(), 2);
-    let choice_def = BasicDefinition::new_choice_with_default("Choice", choice_info, "A");
-    assert_eq!(choice_def.default_value().as_ref(), "A");
+    let choice_def = ChoiceDefinition::new_with_default(
+        "Choice",
+        vec![
+            ChoiceItemDefinition::new(store_key!("a"), "A"),
+            ChoiceItemDefinition::new(store_key!("b"), "B"),
+        ],
+        "a",
+    );
+    assert_eq!(choice_def.choices().len(), 2);
+    assert_eq!(choice_def.default_value().as_ref(), "a");
 }
 
 #[test]
@@ -41,8 +38,8 @@ fn test_table_definition_comprehensive() {
     let table_def = TableDefinition::new(
         "Table Desc",
         vec![
-            (store_key!("col1"), BasicDefinition::new_string("C1")),
-            (store_key!("col2"), BasicDefinition::new_number("C2")),
+            (store_key!("col1"), NumberDefinition::new("C1")),
+            (store_key!("col2"), NumberDefinition::new("C2")),
         ],
     );
 
@@ -68,13 +65,13 @@ fn test_struct_definition_comprehensive() {
         vec![
             (
                 store_key!("f1"),
-                StructItemDefinition::Basic(BasicDefinition::new_string("F1")),
+                StructItemDefinition::String(StringDefinition::new("F1")),
             ),
             (
                 store_key!("f2"),
                 StructItemDefinition::Table(TableDefinition::new(
                     "T1",
-                    Vec::<(StoreKey, BasicDefinition)>::new(),
+                    Vec::<(StoreKey, NumberDefinition)>::new(),
                 )),
             ),
         ],
@@ -104,10 +101,13 @@ fn test_map_definition_comprehensive() {
 #[test]
 fn test_parameter_definition_comprehensive() {
     // Why: Test that an item definition correctly wraps a basic definition.
-    let basic_def = BasicDefinition::new_string("Basic");
+    let basic_def = StringDefinition::new("Basic");
     let prop_def = ItemDefinition::new("Prop Desc", basic_def);
     assert_eq!(prop_def.description_ref().as_ref(), "Prop Desc");
-    assert!(matches!(prop_def.item_type(), ItemDefinitionType::Basic(_)));
+    assert!(matches!(
+        prop_def.item_type(),
+        ItemDefinitionType::String(_)
+    ));
 }
 
 #[test]
@@ -116,11 +116,11 @@ fn test_object_definition_comprehensive() {
     let obj_def = ObjectDefinition::builder("Obj Desc")
         .with(
             store_key!("p_p1"),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .with(
             store_key!("p_p2"),
-            ItemDefinition::new("P2", BasicDefinition::new_number("D2")),
+            ItemDefinition::new("P2", NumberDefinition::new("D2")),
         )
         .finish();
 
@@ -143,14 +143,14 @@ fn test_launder_comprehensive() {
     let store = SharedStringStore::new();
 
     // Test BasicDefinition launder
-    let basic_def = BasicDefinition::new_string("Basic");
+    let basic_def = StringDefinition::new("Basic");
     let laundered_basic = basic_def.launder(&store);
     assert_eq!(laundered_basic.description(), basic_def.description());
 
     // Test TableDefinition launder
     let table_def = TableDefinition::new(
         "Table",
-        vec![(store_key!("col"), BasicDefinition::new_string("C"))],
+        vec![(store_key!("col"), NumberDefinition::new("C"))],
     );
     let laundered_table = table_def.launder(&store);
     assert_eq!(laundered_table.description(), table_def.description());
@@ -159,7 +159,7 @@ fn test_launder_comprehensive() {
     // Test StructDefinition launder
     let struct_def = StructDefinition::new(
         "Struct",
-        vec![(store_key!("field"), BasicDefinition::new_string("F"))],
+        vec![(store_key!("field"), NumberDefinition::new("F"))],
     );
     let laundered_struct = struct_def.launder(&store);
     assert_eq!(laundered_struct.description(), struct_def.description());

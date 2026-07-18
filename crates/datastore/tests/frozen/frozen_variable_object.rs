@@ -1,11 +1,4 @@
-use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinition,
-    MapDefinition, StructDefinition, TableDefinition, VariableObjectDefinition,
-    VariableObjectDefinitionBuilder,
-};
-use datastore::frozen::frozen_object_variable::VariableObjectFrozen;
-use datastore::key::VariableKey;
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_variable_object_definition_basic() {
@@ -14,7 +7,7 @@ fn test_variable_object_definition_basic() {
         VariableObjectDefinition::builder("Test Object")
             .with(
                 VariableKey::new("v_v1".into()).unwrap(),
-                ItemDefinition::new("V1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("V1", StringDefinition::new("D1")),
             )
             .finish(),
     );
@@ -33,7 +26,7 @@ fn test_variable_object_definition_equality() {
         VariableObjectDefinition::builder("Test Object")
             .with(
                 VariableKey::new("v_v1".into()).unwrap(),
-                ItemDefinition::new("V1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("V1", StringDefinition::new("D1")),
             )
             .finish(),
     );
@@ -41,7 +34,7 @@ fn test_variable_object_definition_equality() {
         VariableObjectDefinition::builder("Test Object")
             .with(
                 VariableKey::new("v_v1".into()).unwrap(),
-                ItemDefinition::new("V1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("V1", StringDefinition::new("D1")),
             )
             .finish(),
     );
@@ -49,7 +42,7 @@ fn test_variable_object_definition_equality() {
         VariableObjectDefinition::builder("Test Object")
             .with(
                 VariableKey::new("v_v1".into()).unwrap(),
-                ItemDefinition::new("V1", BasicDefinition::new_string("D2")),
+                ItemDefinition::new("V1", StringDefinition::new("D2")),
             )
             .finish(),
     );
@@ -67,29 +60,26 @@ fn test_variable_object_frozen_print_empty() {
         VariableObjectDefinitionBuilder::new("Test")
             .with(
                 VariableKey::new("v_p1".into()).unwrap(),
-                ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+                ItemDefinition::new("P1", StringDefinition::new("D1")),
             )
             .with(
                 VariableKey::new("v_p2".into()).unwrap(),
-                ItemDefinition::new(
-                    "P2",
-                    BasicDefinition::new_file("D2", FileDefinition::new("ext", false)),
-                ),
+                ItemDefinition::new("P2", FileDefinition::new("D2", "ext", false)),
             )
             .with(
                 VariableKey::new("v_p3".into()).unwrap(),
-                ItemDefinition::new("P3", BasicDefinition::new_number("D3")),
+                ItemDefinition::new("P3", NumberDefinition::new("D3")),
             )
             .with(
                 VariableKey::new("v_p4".into()).unwrap(),
                 ItemDefinition::new(
                     "P4",
-                    BasicDefinition::new_choice(
+                    ChoiceDefinition::new(
                         "D4",
-                        ChoiceDefinition::new(vec![
+                        vec![
                             ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                             ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
-                        ]),
+                        ],
                     ),
                 ),
             )
@@ -100,8 +90,8 @@ fn test_variable_object_frozen_print_empty() {
                     TableDefinition::new(
                         "D5",
                         vec![
-                            (store_key!("col1"), BasicDefinition::new_string("C1")),
-                            (store_key!("col2"), BasicDefinition::new_number("C2")),
+                            (store_key!("col1"), NumberDefinition::new("C1")),
+                            (store_key!("col2"), NumberDefinition::new("C2")),
                         ],
                     ),
                 ),
@@ -115,8 +105,14 @@ fn test_variable_object_frozen_print_empty() {
                         StructDefinition::new(
                             "Item",
                             vec![
-                                (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                (store_key!("col2"), BasicDefinition::new_number("C2")),
+                                (
+                                    store_key!("col1"),
+                                    StructItemDefinition::String(StringDefinition::new("C1")),
+                                ),
+                                (
+                                    store_key!("col2"),
+                                    StructItemDefinition::Number(NumberDefinition::new("C2")),
+                                ),
                             ],
                         ),
                     ),

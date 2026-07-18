@@ -6,8 +6,8 @@ fn test_struct_all_basic_definition() {
     let struct_def = StructDefinition::new(
         "A struct",
         vec![
-            (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-            (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+            (store_key!("field1"), StringDefinition::new("Field 1")),
+            (store_key!("field2"), StringDefinition::new("Field 2")),
         ],
     );
 
@@ -20,21 +20,19 @@ fn test_struct_all_basic_definition() {
     assert_eq!(keys, vec!["field1", "field2"]);
 
     let item1 = struct_def.get(&store_key!("field1")).unwrap();
-    if let StructItemDefinition::Basic(def) = item1 {
+    if let StructItemDefinition::String(def) = item1 {
         assert_eq!(def.description().as_ref(), "Field 1");
-        assert!(matches!(def.type_definition(), BasicDefinitionType::String));
         assert_eq!(def.default_value().as_ref(), "");
     } else {
         panic!(
-            "Expected item1 to be StructItemDefinition::Basic, but got {:?}",
+            "Expected item1 to be StructItemDefinition::String, but got {:?}",
             item1
         );
     }
 
     let item2 = struct_def.get(&store_key!("field2")).unwrap();
-    if let StructItemDefinition::Basic(def) = item2 {
+    if let StructItemDefinition::String(def) = item2 {
         assert_eq!(def.description().as_ref(), "Field 2");
-        assert!(matches!(def.type_definition(), BasicDefinitionType::String));
         assert_eq!(def.default_value().as_ref(), "");
     } else {
         panic!(
@@ -52,11 +50,11 @@ fn test_struct_all_table_definition() {
         vec![
             (
                 store_key!("field1"),
-                TableDefinition::new("Table field 1", Vec::<(StoreKey, BasicDefinition)>::new()),
+                TableDefinition::new("Table field 1", Vec::<(StoreKey, NumberDefinition)>::new()),
             ),
             (
                 store_key!("field2"),
-                TableDefinition::new("Table field 2", Vec::<(StoreKey, BasicDefinition)>::new()),
+                TableDefinition::new("Table field 2", Vec::<(StoreKey, NumberDefinition)>::new()),
             ),
         ],
     );
@@ -100,13 +98,13 @@ fn test_struct_mixed_definition() {
         vec![
             (
                 store_key!("field1"),
-                StructItemDefinition::Basic(BasicDefinition::new_string("Field 1")),
+                StructItemDefinition::String(StringDefinition::new("Field 1")),
             ),
             (
                 store_key!("field2"),
                 StructItemDefinition::Table(TableDefinition::new(
                     "Table field",
-                    Vec::<(StoreKey, BasicDefinition)>::new(),
+                    Vec::<(StoreKey, NumberDefinition)>::new(),
                 )),
             ),
         ],
@@ -121,13 +119,12 @@ fn test_struct_mixed_definition() {
     assert_eq!(keys, vec!["field1", "field2"]);
 
     let item1 = struct_def.get(&store_key!("field1")).unwrap();
-    if let StructItemDefinition::Basic(def) = item1 {
+    if let StructItemDefinition::String(def) = item1 {
         assert_eq!(def.description().as_ref(), "Field 1");
-        assert!(matches!(def.type_definition(), BasicDefinitionType::String));
         assert_eq!(def.default_value().as_ref(), "");
     } else {
         panic!(
-            "Expected item1 to be StructItemDefinition::Basic, but got {:?}",
+            "Expected item1 to be StructItemDefinition::String, but got {:?}",
             item1
         );
     }
@@ -138,8 +135,8 @@ fn test_struct_mixed_definition() {
         assert_eq!(def.count(), 0);
     } else {
         panic!(
-            "Expected item1 to be StructItemDefinition::Table, but got {:?}",
-            item1
+            "Expected item2 to be StructItemDefinition::Table, but got {:?}",
+            item2
         );
     }
 }
@@ -150,28 +147,22 @@ fn test_struct_definition_equality() {
     let struct_def_1 = StructDefinition::new(
         "A struct",
         vec![
-            (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-            (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+            (store_key!("field1"), StringDefinition::new("Field 1")),
+            (store_key!("field2"), StringDefinition::new("Field 2")),
         ],
     );
     let struct_def_2 = StructDefinition::new(
         "A struct",
         vec![
-            (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-            (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+            (store_key!("field1"), StringDefinition::new("Field 1")),
+            (store_key!("field2"), StringDefinition::new("Field 2")),
         ],
     );
     let struct_def_3 = StructDefinition::new(
         "A struct",
         vec![
-            (
-                store_key!("field1"),
-                BasicDefinition::new_string("New Field 1"),
-            ),
-            (
-                store_key!("field2"),
-                BasicDefinition::new_string("New Field 2"),
-            ),
+            (store_key!("field1"), StringDefinition::new("New Field 1")),
+            (store_key!("field2"), StringDefinition::new("New Field 2")),
         ],
     );
 

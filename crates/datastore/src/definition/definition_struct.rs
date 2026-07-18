@@ -1,4 +1,6 @@
-use crate::definition::{BasicDefinition, TableDefinition};
+use crate::definition::{
+    ChoiceDefinition, FileDefinition, NumberDefinition, StringDefinition, TableDefinition,
+};
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -9,15 +11,39 @@ use std::sync::Arc;
 /// The definition of an item within a struct.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum StructItemDefinition {
-    /// A basic parameter.
-    Basic(BasicDefinition),
+    /// A choice parameter.
+    Choice(ChoiceDefinition),
+    /// A file parameter.
+    File(FileDefinition),
+    /// A number parameter.
+    Number(NumberDefinition),
+    /// A string parameter.
+    String(StringDefinition),
     /// A table parameter.
     Table(TableDefinition),
 }
 
-impl From<BasicDefinition> for StructItemDefinition {
-    fn from(definition: BasicDefinition) -> Self {
-        Self::Basic(definition)
+impl From<StringDefinition> for StructItemDefinition {
+    fn from(definition: StringDefinition) -> Self {
+        Self::String(definition)
+    }
+}
+
+impl From<ChoiceDefinition> for StructItemDefinition {
+    fn from(definition: ChoiceDefinition) -> Self {
+        Self::Choice(definition)
+    }
+}
+
+impl From<FileDefinition> for StructItemDefinition {
+    fn from(definition: FileDefinition) -> Self {
+        Self::File(definition)
+    }
+}
+
+impl From<NumberDefinition> for StructItemDefinition {
+    fn from(definition: NumberDefinition) -> Self {
+        Self::Number(definition)
     }
 }
 
@@ -31,7 +57,10 @@ impl StructItemDefinition {
     /// Returns a new `StructItemDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
-            Self::Basic(def) => Self::Basic(def.launder(store)),
+            Self::Choice(def) => Self::Choice(def.launder(store)),
+            Self::File(def) => Self::File(def.launder(store)),
+            Self::Number(def) => Self::Number(def.launder(store)),
+            Self::String(def) => Self::String(def.launder(store)),
             Self::Table(def) => Self::Table(def.launder(store)),
         }
     }
@@ -58,7 +87,10 @@ impl TreePrint for StructItemDefinition {
         last: bool,
     ) -> std::fmt::Result {
         match self {
-            StructItemDefinition::Basic(basic) => basic.tree_print(f, label, prefix, last),
+            StructItemDefinition::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            StructItemDefinition::File(file) => file.tree_print(f, label, prefix, last),
+            StructItemDefinition::Number(number) => number.tree_print(f, label, prefix, last),
+            StructItemDefinition::String(string) => string.tree_print(f, label, prefix, last),
             StructItemDefinition::Table(table) => table.tree_print(f, label, prefix, last),
         }
     }

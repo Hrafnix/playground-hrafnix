@@ -1,31 +1,46 @@
 use crate::definition::ItemDefinition;
-use crate::frozen::{BasicFrozen, MapFrozen, TableFrozen};
+use crate::frozen::{ChoiceFrozen, FileFrozen, MapFrozen, NumberFrozen, StringFrozen, TableFrozen};
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 
 /// Represents a parameter value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ItemFrozen {
-    /// A basic parameter.
-    Basic(BasicFrozen),
-    /// A table parameter.
-    Table(TableFrozen),
+    /// A choice parameter.
+    Choice(ChoiceFrozen),
+    /// A file parameter.
+    File(FileFrozen),
     /// A map parameter.
     Map(MapFrozen),
+    /// A number parameter.
+    Number(NumberFrozen),
+    /// A string parameter.
+    String(StringFrozen),
+    /// A table parameter.
+    Table(TableFrozen),
 }
 
 impl ItemFrozen {
     /// Returns the parameter definition.
     pub fn definition(&self) -> ItemDefinition {
         match self {
-            ItemFrozen::Basic(b) => {
+            ItemFrozen::Choice(c) => {
+                ItemDefinition::new(c.definition().description(), c.definition().clone())
+            }
+            ItemFrozen::File(f) => {
+                ItemDefinition::new(f.definition().description(), f.definition().clone())
+            }
+            ItemFrozen::Map(m) => {
+                ItemDefinition::new(m.definition().description(), m.definition().clone())
+            }
+            ItemFrozen::Number(n) => {
+                ItemDefinition::new(n.definition().description(), n.definition().clone())
+            }
+            ItemFrozen::String(b) => {
                 ItemDefinition::new(b.definition().description(), b.definition().clone())
             }
             ItemFrozen::Table(t) => {
                 ItemDefinition::new(t.definition().description(), t.definition().clone())
-            }
-            ItemFrozen::Map(m) => {
-                ItemDefinition::new(m.definition().description(), m.definition().clone())
             }
         }
     }
@@ -33,24 +48,27 @@ impl ItemFrozen {
     /// Returns the pre-calculated BLAKE3 hash of the parameter.
     pub fn hash(&self) -> [u8; 32] {
         match self {
-            Self::Basic(b) => b.hash(),
-            Self::Table(t) => t.hash(),
+            Self::Choice(c) => c.hash(),
+            Self::File(f) => f.hash(),
             Self::Map(m) => m.hash(),
+            Self::Number(n) => n.hash(),
+            Self::String(s) => s.hash(),
+            Self::Table(t) => t.hash(),
         }
     }
 
-    /// Returns the basic value if this parameter is a basic parameter.
-    pub fn get_basic(&self) -> Option<&BasicFrozen> {
+    /// Returns the choice value if this parameter is a choice parameter.
+    pub fn get_choice(&self) -> Option<ChoiceFrozen> {
         match self {
-            Self::Basic(b) => Some(b),
+            Self::Choice(c) => Some(c.clone()),
             _ => None,
         }
     }
 
-    /// Returns the table value if this parameter is a table parameter.
-    pub fn get_table(&self) -> Option<&TableFrozen> {
+    /// Returns the file value if this parameter is a file parameter.
+    pub fn get_file(&self) -> Option<&FileFrozen> {
         match self {
-            Self::Table(t) => Some(t),
+            Self::File(f) => Some(f),
             _ => None,
         }
     }
@@ -59,6 +77,30 @@ impl ItemFrozen {
     pub fn get_map(&self) -> Option<&MapFrozen> {
         match self {
             Self::Map(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    /// Returns the number value if this parameter is a number parameter.
+    pub fn get_number(&self) -> Option<&NumberFrozen> {
+        match self {
+            Self::Number(n) => Some(n),
+            _ => None,
+        }
+    }
+
+    /// Returns the string value if this parameter is a string parameter.
+    pub fn get_string(&self) -> Option<&StringFrozen> {
+        match self {
+            Self::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Returns the table value if this parameter is a table parameter.
+    pub fn get_table(&self) -> Option<&TableFrozen> {
+        match self {
+            Self::Table(t) => Some(t),
             _ => None,
         }
     }
@@ -73,9 +115,12 @@ impl TreePrint for ItemFrozen {
         last: bool,
     ) -> std::fmt::Result {
         match self {
-            Self::Basic(b) => b.tree_print(f, label, prefix, last),
-            Self::Table(t) => t.tree_print(f, label, prefix, last),
-            Self::Map(m) => m.tree_print(f, label, prefix, last),
+            Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Map(map) => map.tree_print(f, label, prefix, last),
+            Self::Number(number) => number.tree_print(f, label, prefix, last),
+            Self::String(basic) => basic.tree_print(f, label, prefix, last),
+            Self::Table(table) => table.tree_print(f, label, prefix, last),
         }
     }
 }

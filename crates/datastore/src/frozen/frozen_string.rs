@@ -1,19 +1,19 @@
-use crate::definition::{BasicDefinition, BasicDefinitionType};
+use crate::definition::StringDefinition;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
-/// Represents a basic data value in the frozen data.
+/// Represents a string data value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BasicFrozen {
-    definition: BasicDefinition,
+pub struct StringFrozen {
+    definition: StringDefinition,
     value: ShareableString,
     hash: [u8; 32],
 }
 
-impl BasicFrozen {
-    /// Creates a new `BasicFrozen` instance.
-    pub fn new(definition: BasicDefinition) -> Self {
+impl StringFrozen {
+    /// Creates a new `StringFrozen` instance.
+    pub fn new(definition: StringDefinition) -> Self {
         let value = definition.default_value();
 
         let mut s = Self {
@@ -25,8 +25,8 @@ impl BasicFrozen {
         s
     }
 
-    /// Creates a new `BasicFrozen` instance.
-    pub fn new_with_value(definition: BasicDefinition, value: ShareableString) -> Self {
+    /// Creates a new `StringFrozen` instance with a specified value.
+    pub fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
             value,
@@ -41,7 +41,7 @@ impl BasicFrozen {
 
         // Domain separation for this node/type.
         h.update(&[0x01]);
-        h.update(b"Basic");
+        h.update(b"String");
 
         h.update(&self.value.current_blake3_hash());
 
@@ -54,8 +54,8 @@ impl BasicFrozen {
         self.value.clone()
     }
 
-    /// Returns a reference to the basic definition.
-    pub fn definition(&self) -> &BasicDefinition {
+    /// Returns a reference to the string definition.
+    pub fn definition(&self) -> &StringDefinition {
         &self.definition
     }
 
@@ -65,19 +65,19 @@ impl BasicFrozen {
     }
 }
 
-impl PartialEq<&BasicFrozen> for BasicFrozen {
-    fn eq(&self, other: &&BasicFrozen) -> bool {
+impl PartialEq<&StringFrozen> for StringFrozen {
+    fn eq(&self, other: &&StringFrozen) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<BasicFrozen> for &BasicFrozen {
-    fn eq(&self, other: &BasicFrozen) -> bool {
+impl PartialEq<StringFrozen> for &StringFrozen {
+    fn eq(&self, other: &StringFrozen) -> bool {
         *self == other
     }
 }
 
-impl TreePrint for BasicFrozen {
+impl TreePrint for StringFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -85,21 +85,13 @@ impl TreePrint for BasicFrozen {
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
-        let definition_type = match self.definition().type_definition() {
-            BasicDefinitionType::String => "String",
-            BasicDefinitionType::File(_) => "File",
-            BasicDefinitionType::Number => "Number",
-            BasicDefinitionType::Choice(_) => "Choice",
-        };
-
         writeln!(
             f,
-            "{}{}{} ({}) {} - \"{}\"",
+            "{}{}{} ({}) String - \"{}\"",
             prefix,
             Self::branch_char(last),
             label,
             self.definition.description(),
-            definition_type,
             self.value,
         )
     }

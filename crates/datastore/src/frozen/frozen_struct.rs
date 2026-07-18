@@ -1,6 +1,6 @@
 use crate::StoreError;
 use crate::definition::{StructDefinition, StructItemDefinition};
-use crate::frozen::{BasicFrozen, TableFrozen};
+use crate::frozen::{ChoiceFrozen, FileFrozen, NumberFrozen, StringFrozen, TableFrozen};
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -10,17 +10,23 @@ use std::collections::BTreeMap;
 /// Represents an item in a frozen struct.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum StructItemFrozen {
-    /// A basic value.
-    Basic(BasicFrozen),
+    /// A choice value.
+    Choice(ChoiceFrozen),
+    /// A file value.
+    File(FileFrozen),
+    /// A number value.
+    Number(NumberFrozen),
+    /// A string value.
+    String(StringFrozen),
     /// A table value.
     Table(TableFrozen),
 }
 
 impl StructItemFrozen {
-    /// Returns the basic value if this item is a basic value.
-    pub fn get_basic(&self) -> Option<&BasicFrozen> {
+    /// Returns the string value if this item is a string value.
+    pub fn get_string(&self) -> Option<&StringFrozen> {
         match self {
-            StructItemFrozen::Basic(basic) => Some(basic),
+            StructItemFrozen::String(string) => Some(string),
             _ => None,
         }
     }
@@ -36,8 +42,15 @@ impl StructItemFrozen {
     /// Returns the struct item definition.
     pub fn definition(&self) -> StructItemDefinition {
         match self {
-            StructItemFrozen::Basic(basic) => {
-                StructItemDefinition::Basic(basic.definition().clone())
+            StructItemFrozen::Choice(choice) => {
+                StructItemDefinition::Choice(choice.definition().clone())
+            }
+            StructItemFrozen::File(file) => StructItemDefinition::File(file.definition().clone()),
+            StructItemFrozen::Number(number) => {
+                StructItemDefinition::Number(number.definition().clone())
+            }
+            StructItemFrozen::String(basic) => {
+                StructItemDefinition::String(basic.definition().clone())
             }
             StructItemFrozen::Table(table) => {
                 StructItemDefinition::Table(table.definition().clone())
@@ -48,7 +61,10 @@ impl StructItemFrozen {
     /// Returns the pre-calculated BLAKE3 hash of the item.
     pub fn hash(&self) -> [u8; 32] {
         match self {
-            StructItemFrozen::Basic(basic) => basic.hash(),
+            StructItemFrozen::Choice(choice) => choice.hash(),
+            StructItemFrozen::File(file) => file.hash(),
+            StructItemFrozen::Number(number) => number.hash(),
+            StructItemFrozen::String(basic) => basic.hash(),
             StructItemFrozen::Table(table) => table.hash(),
         }
     }
@@ -75,7 +91,10 @@ impl TreePrint for StructItemFrozen {
         last: bool,
     ) -> std::fmt::Result {
         match self {
-            StructItemFrozen::Basic(basic) => basic.tree_print(f, label, prefix, last),
+            StructItemFrozen::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            StructItemFrozen::File(file) => file.tree_print(f, label, prefix, last),
+            StructItemFrozen::Number(number) => number.tree_print(f, label, prefix, last),
+            StructItemFrozen::String(basic) => basic.tree_print(f, label, prefix, last),
             StructItemFrozen::Table(table) => table.tree_print(f, label, prefix, last),
         }
     }
@@ -98,10 +117,28 @@ impl StructFrozen {
         let mut items = BTreeMap::new();
         for (key, item_definition) in definition.iter() {
             match item_definition {
-                StructItemDefinition::Basic(basic_definition) => {
+                StructItemDefinition::Choice(choice_definition) => {
                     items.insert(
                         key.clone(),
-                        StructItemFrozen::Basic(BasicFrozen::new(basic_definition.clone())),
+                        StructItemFrozen::Choice(ChoiceFrozen::new(choice_definition.clone())),
+                    );
+                }
+                StructItemDefinition::File(file_definition) => {
+                    items.insert(
+                        key.clone(),
+                        StructItemFrozen::File(FileFrozen::new(file_definition.clone())),
+                    );
+                }
+                StructItemDefinition::Number(number_definition) => {
+                    items.insert(
+                        key.clone(),
+                        StructItemFrozen::Number(NumberFrozen::new(number_definition.clone())),
+                    );
+                }
+                StructItemDefinition::String(basic_definition) => {
+                    items.insert(
+                        key.clone(),
+                        StructItemFrozen::String(StringFrozen::new(basic_definition.clone())),
                     );
                 }
                 StructItemDefinition::Table(table_definition) => {
@@ -169,9 +206,9 @@ impl StructFrozen {
     }
 
     /// Return the basic value if this item is a basic value.
-    pub fn get_basic<S: Into<ShareableString>>(&self, key: S) -> Option<&BasicFrozen> {
+    pub fn get_string<S: Into<ShareableString>>(&self, key: S) -> Option<&StringFrozen> {
         if let Some(item) = self.get(key) {
-            item.get_basic()
+            item.get_string()
         } else {
             None
         }

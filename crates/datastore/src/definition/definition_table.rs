@@ -1,4 +1,4 @@
-use crate::definition::BasicDefinition;
+use crate::definition::NumberDefinition;
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -10,14 +10,14 @@ use std::sync::Arc;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableDefinition {
     description: ShareableString,
-    columns: Arc<BTreeMap<StoreKey, BasicDefinition>>,
+    columns: Arc<BTreeMap<StoreKey, NumberDefinition>>,
 }
 
 impl TableDefinition {
     /// Creates a new `TableDefinition` with a description and a list of columns.
     pub fn new<S1: Into<ShareableString>, K: Into<StoreKey>>(
         description: S1,
-        columns: Vec<(K, BasicDefinition)>,
+        columns: Vec<(K, NumberDefinition)>,
     ) -> Self {
         let mut cols = BTreeMap::new();
         for (id, item) in columns {
@@ -41,7 +41,7 @@ impl TableDefinition {
     }
 
     /// Returns a reference to the column definition for the specified key.
-    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&BasicDefinition> {
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&NumberDefinition> {
         self.columns.get(&key.into())
     }
 
@@ -51,7 +51,7 @@ impl TableDefinition {
     }
 
     /// Returns a reference to the column definition for the specified key string.
-    pub fn get_str(&self, key: &str) -> Option<&BasicDefinition> {
+    pub fn get_str(&self, key: &str) -> Option<&NumberDefinition> {
         self.columns
             .iter()
             .find(|(k, _)| k.as_str() == key)
@@ -64,7 +64,7 @@ impl TableDefinition {
     }
 
     /// Returns an iterator over the column definitions.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &BasicDefinition)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &NumberDefinition)> {
         self.columns.iter()
     }
 

@@ -1,9 +1,4 @@
-use datastore::definition::{
-    BasicDefinition, BasicDefinitionType, StructDefinition, StructItemDefinition, TableDefinition,
-};
-use datastore::frozen::StructFrozen;
-use datastore::key::StoreKey;
-use datastore::store_key;
+use datastore::prelude::*;
 
 #[test]
 fn test_struct_all_basic_frozen() {
@@ -11,10 +6,10 @@ fn test_struct_all_basic_frozen() {
     let struct_frozen = StructFrozen::new(StructDefinition::new(
         "A struct",
         vec![
-            (store_key!("field1"), BasicDefinition::new_string("Field 1")),
+            (store_key!("field1"), StringDefinition::new("Field 1")),
             (
                 store_key!("field2"),
-                BasicDefinition::new_string_with_default("Field 2", "Default value"),
+                StringDefinition::new_with_default("Field 2", "Default value"),
             ),
         ],
     ));
@@ -35,9 +30,8 @@ fn test_struct_all_basic_frozen() {
         .definition()
         .get(&store_key!("field1"))
         .unwrap();
-    if let StructItemDefinition::Basic(def) = item1 {
+    if let StructItemDefinition::String(def) = item1 {
         assert_eq!(def.description(), "Field 1");
-        assert!(matches!(def.type_definition(), BasicDefinitionType::String));
         assert_eq!(def.default_value(), "");
     } else {
         panic!(
@@ -50,9 +44,8 @@ fn test_struct_all_basic_frozen() {
         .definition()
         .get(&store_key!("field2"))
         .unwrap();
-    if let StructItemDefinition::Basic(def) = item2 {
+    if let StructItemDefinition::String(def) = item2 {
         assert_eq!(def.description(), "Field 2");
-        assert!(matches!(def.type_definition(), BasicDefinitionType::String));
         assert_eq!(def.default_value(), "Default value");
     } else {
         panic!(
@@ -61,8 +54,8 @@ fn test_struct_all_basic_frozen() {
         );
     }
 
-    let t1 = struct_frozen.get("field1").unwrap().get_basic().unwrap();
-    let t2 = struct_frozen.get_basic("field2").unwrap();
+    let t1 = struct_frozen.get("field1").unwrap().get_string().unwrap();
+    let t2 = struct_frozen.get_string("field2").unwrap();
     assert_ne!(t1, t2);
     assert_eq!(t1.value(), "");
     assert_eq!(t2.value(), "Default value");
@@ -82,11 +75,11 @@ fn test_struct_all_table_frozen() {
         vec![
             (
                 store_key!("field1"),
-                TableDefinition::new("Table field 1", Vec::<(StoreKey, BasicDefinition)>::new()),
+                TableDefinition::new("Table field 1", Vec::<(StoreKey, NumberDefinition)>::new()),
             ),
             (
                 store_key!("field2"),
-                TableDefinition::new("Table field 2", Vec::<(StoreKey, BasicDefinition)>::new()),
+                TableDefinition::new("Table field 2", Vec::<(StoreKey, NumberDefinition)>::new()),
             ),
         ],
     ));
@@ -140,9 +133,9 @@ fn test_struct_all_table_frozen() {
     assert_eq!(t2.column_count(), 0);
 
     assert_eq!(struct_frozen.get("field3"), None);
-    assert_eq!(struct_frozen.get_basic("field3"), None);
-    assert_eq!(struct_frozen.get_basic("field1"), None);
-    assert_eq!(struct_frozen.get_basic("field2"), None);
+    assert_eq!(struct_frozen.get_string("field3"), None);
+    assert_eq!(struct_frozen.get_string("field1"), None);
+    assert_eq!(struct_frozen.get_string("field2"), None);
     assert_ne!(struct_frozen.hash(), [0u8; 32]);
 }
 
@@ -154,13 +147,13 @@ fn test_struct_mixed_frozen() {
         vec![
             (
                 store_key!("field1"),
-                StructItemDefinition::Basic(BasicDefinition::new_string("Field 1")),
+                StructItemDefinition::String(StringDefinition::new("Field 1")),
             ),
             (
                 store_key!("field2"),
                 StructItemDefinition::Table(TableDefinition::new(
                     "Table field",
-                    Vec::<(StoreKey, BasicDefinition)>::new(),
+                    Vec::<(StoreKey, NumberDefinition)>::new(),
                 )),
             ),
         ],
@@ -182,9 +175,8 @@ fn test_struct_mixed_frozen() {
         .definition()
         .get(&store_key!("field1"))
         .unwrap();
-    if let StructItemDefinition::Basic(def) = item1 {
+    if let StructItemDefinition::String(def) = item1 {
         assert_eq!(def.description(), "Field 1");
-        assert!(matches!(def.type_definition(), BasicDefinitionType::String));
         assert_eq!(def.default_value(), "");
     } else {
         panic!(
@@ -207,16 +199,16 @@ fn test_struct_mixed_frozen() {
         );
     }
 
-    let t1 = struct_frozen.get("field1").unwrap().get_basic().unwrap();
+    let t1 = struct_frozen.get("field1").unwrap().get_string().unwrap();
     let t2 = struct_frozen.get_table("field2").unwrap();
     assert_eq!(t1.value(), "");
     assert_eq!(t2.row_count(), 0);
     assert_eq!(t2.column_count(), 0);
 
     assert_eq!(struct_frozen.get("field3"), None);
-    assert_eq!(struct_frozen.get_basic("field3"), None);
+    assert_eq!(struct_frozen.get_string("field3"), None);
     assert_eq!(struct_frozen.get_table("field1"), None);
-    assert_eq!(struct_frozen.get_basic("field2"), None);
+    assert_eq!(struct_frozen.get_string("field2"), None);
     assert_ne!(struct_frozen.hash(), [0u8; 32]);
 }
 
@@ -226,28 +218,22 @@ fn test_struct_frozen_equality() {
     let struct_frozen_1 = StructFrozen::new(StructDefinition::new(
         "A struct",
         vec![
-            (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-            (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+            (store_key!("field1"), StringDefinition::new("Field 1")),
+            (store_key!("field2"), StringDefinition::new("Field 2")),
         ],
     ));
     let struct_frozen_2 = StructFrozen::new(StructDefinition::new(
         "A struct",
         vec![
-            (store_key!("field1"), BasicDefinition::new_string("Field 1")),
-            (store_key!("field2"), BasicDefinition::new_string("Field 2")),
+            (store_key!("field1"), StringDefinition::new("Field 1")),
+            (store_key!("field2"), StringDefinition::new("Field 2")),
         ],
     ));
     let struct_frozen_3 = StructFrozen::new(StructDefinition::new(
         "A struct",
         vec![
-            (
-                store_key!("field1"),
-                BasicDefinition::new_string("New Field 1"),
-            ),
-            (
-                store_key!("field2"),
-                BasicDefinition::new_string("New Field 2"),
-            ),
+            (store_key!("field1"), StringDefinition::new("New Field 1")),
+            (store_key!("field2"), StringDefinition::new("New Field 2")),
         ],
     ));
 

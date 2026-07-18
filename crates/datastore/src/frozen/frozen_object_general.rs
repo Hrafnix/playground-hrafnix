@@ -1,6 +1,5 @@
 use crate::definition::{ItemDefinitionType, ObjectDefinition};
-use crate::frozen::ItemFrozen;
-use crate::frozen::{BasicFrozen, MapFrozen, TableFrozen};
+use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -25,14 +24,32 @@ impl ObjectFrozen {
         for (item_key, item_definition) in definition.iter() {
             let key = item_key.clone();
             match item_definition.item_type() {
-                ItemDefinitionType::Basic(basic_def) => {
-                    items.insert(key, ItemFrozen::Basic(BasicFrozen::new(basic_def.clone())));
+                ItemDefinitionType::Choice(choice_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Choice(crate::frozen::ChoiceFrozen::new(choice_def.clone())),
+                    );
                 }
-                ItemDefinitionType::Table(table_def) => {
-                    items.insert(key, ItemFrozen::Table(TableFrozen::new(table_def.clone())));
+                ItemDefinitionType::File(file_def) => {
+                    items.insert(key, ItemFrozen::File(FileFrozen::new(file_def.clone())));
                 }
                 ItemDefinitionType::Map(map_def) => {
                     items.insert(key, ItemFrozen::Map(MapFrozen::new(map_def.clone())));
+                }
+                ItemDefinitionType::Number(number_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Number(crate::frozen::NumberFrozen::new(number_def.clone())),
+                    );
+                }
+                ItemDefinitionType::String(basic_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::String(StringFrozen::new(basic_def.clone())),
+                    );
+                }
+                ItemDefinitionType::Table(table_def) => {
+                    items.insert(key, ItemFrozen::Table(TableFrozen::new(table_def.clone())));
                 }
             }
         }

@@ -6,7 +6,7 @@ fn test_object_definition_basic() {
     let mut builder = ObjectDefinition::builder("Test Object");
     builder.insert(
         StoreKey::new("p1".into()).unwrap(),
-        ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+        ItemDefinition::new("P1", StringDefinition::new("D1")),
     );
     let obj_def = builder.finish();
 
@@ -22,19 +22,19 @@ fn test_object_definition_equality() {
     let def_1 = ObjectDefinition::builder("Test Object")
         .with(
             StoreKey::new("p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .finish();
     let def_2 = ObjectDefinition::builder("Test Object")
         .with(
             StoreKey::new("p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .finish();
     let def_3 = ObjectDefinition::builder("Test Object")
         .with(
             StoreKey::new("p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D2")),
+            ItemDefinition::new("P1", StringDefinition::new("D2")),
         )
         .finish();
 
@@ -50,29 +50,26 @@ fn test_object_definition_print() {
     let def_1 = ObjectDefinitionBuilder::new("Test")
         .with(
             StoreKey::new("p1".into()).unwrap(),
-            ItemDefinition::new("P1", BasicDefinition::new_string("D1")),
+            ItemDefinition::new("P1", StringDefinition::new("D1")),
         )
         .with(
             StoreKey::new("p2".into()).unwrap(),
-            ItemDefinition::new(
-                "P2",
-                BasicDefinition::new_file("D2", FileDefinition::new("ext", false)),
-            ),
+            ItemDefinition::new("P2", FileDefinition::new("D2", "ext", false)),
         )
         .with(
             StoreKey::new("p3".into()).unwrap(),
-            ItemDefinition::new("P3", BasicDefinition::new_number("D3")),
+            ItemDefinition::new("P3", NumberDefinition::new("D3")),
         )
         .with(
             StoreKey::new("p4".into()).unwrap(),
             ItemDefinition::new(
                 "P4",
-                BasicDefinition::new_choice(
+                ChoiceDefinition::new(
                     "D4",
-                    ChoiceDefinition::new(vec![
+                    vec![
                         ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                         ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
-                    ]),
+                    ],
                 ),
             ),
         )
@@ -83,8 +80,17 @@ fn test_object_definition_print() {
                 TableDefinition::new(
                     "D5",
                     vec![
-                        (store_key!("col1"), BasicDefinition::new_string("C1")),
-                        (store_key!("col2"), BasicDefinition::new_number("C2")),
+                        (store_key!("col1"), NumberDefinition::new("C1")),
+                        (
+                            store_key!("col2"),
+                            NumberDefinition::new_with_constraint(
+                                "C2",
+                                NumberConstraint::Min {
+                                    value: 1.52,
+                                    inclusive: true,
+                                },
+                            ),
+                        ),
                     ],
                 ),
             ),
@@ -98,8 +104,22 @@ fn test_object_definition_print() {
                     StructDefinition::new(
                         "Item",
                         vec![
-                            (store_key!("col1"), BasicDefinition::new_string("C1")),
-                            (store_key!("col2"), BasicDefinition::new_number("C2")),
+                            (
+                                store_key!("col1"),
+                                StructItemDefinition::String(StringDefinition::new("C1")),
+                            ),
+                            (
+                                store_key!("col2"),
+                                StructItemDefinition::Number(
+                                    NumberDefinition::new_with_constraint(
+                                        "C2",
+                                        NumberConstraint::Max {
+                                            value: 1.0,
+                                            inclusive: true,
+                                        },
+                                    ),
+                                ),
+                            ),
                         ],
                     ),
                 ),
@@ -109,6 +129,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\" \n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\" \n    ├── p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    └── p6 (D6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
+        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\"\n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\"\n    ├── p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p6 (D6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\"\n            └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
     );
 }
