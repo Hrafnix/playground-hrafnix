@@ -69,7 +69,10 @@ fn test_object_definition_print() {
                 "P4",
                 BasicDefinition::new_choice(
                     "D4",
-                    ChoiceDefinition::new(vec!["Option 1".into(), "Option 2".into()]),
+                    ChoiceDefinition::new(vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ]),
                 ),
             ),
         )
@@ -106,6 +109,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\" \n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\" \n    ├── p4 (D4) Choice - default: \"\" [Option 1, Option 2]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    └── p6 (D6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
+        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\" \n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\" \n    ├── p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    └── p6 (D6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
     );
 }

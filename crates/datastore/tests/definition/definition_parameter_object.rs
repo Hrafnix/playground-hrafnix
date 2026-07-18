@@ -1,6 +1,7 @@
 use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
-    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition, TableDefinition,
+    BasicDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinition,
+    MapDefinition, ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition,
+    TableDefinition,
 };
 use datastore::key::ParameterKey;
 use datastore::store_key;
@@ -74,7 +75,10 @@ fn test_parameter_object_definition_print() {
                 "P4",
                 BasicDefinition::new_choice(
                     "D4",
-                    ChoiceDefinition::new(vec!["Option 1".into(), "Option 2".into()]),
+                    ChoiceDefinition::new(vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ]),
                 ),
             ),
         )
@@ -111,6 +115,6 @@ fn test_parameter_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\" \n    ├── p_p2 (D2) File - default: \"\" [ext]\n    ├── p_p3 (D3) Number - default: \"\" \n    ├── p_p4 (D4) Choice - default: \"\" [Option 1, Option 2]\n    ├── p_p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    └── p_p6 (P6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
+        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\" \n    ├── p_p2 (D2) File - default: \"\" [ext]\n    ├── p_p3 (D3) Number - default: \"\" \n    ├── p_p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p_p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    └── p_p6 (P6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
     );
 }

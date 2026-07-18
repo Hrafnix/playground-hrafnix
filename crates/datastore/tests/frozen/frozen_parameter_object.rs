@@ -1,6 +1,7 @@
 use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
-    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition, TableDefinition,
+    BasicDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinition,
+    MapDefinition, ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition,
+    TableDefinition,
 };
 use datastore::frozen::frozen_object_parameter::ParameterObjectFrozen;
 use datastore::key::ParameterKey;
@@ -85,7 +86,10 @@ fn test_parameter_object_frozen_print_empty() {
                     "P4",
                     BasicDefinition::new_choice(
                         "D4",
-                        ChoiceDefinition::new(vec!["Option 1".into(), "Option 2".into()]),
+                        ChoiceDefinition::new(vec![
+                            ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                            ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                        ]),
                     ),
                 ),
             )

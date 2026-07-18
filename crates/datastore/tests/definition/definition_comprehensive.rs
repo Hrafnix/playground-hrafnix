@@ -26,7 +26,10 @@ fn test_basic_definition_comprehensive() {
     let file_def = BasicDefinition::new_file_with_default("File", file_info, "file.txt");
     assert_eq!(file_def.default_value().as_ref(), "file.txt");
 
-    let choice_info = ChoiceDefinition::new(vec!["A".into(), "B".into()]);
+    let choice_info = ChoiceDefinition::new(vec![
+        ChoiceItemDefinition::new(store_key!("a"), "A"),
+        ChoiceItemDefinition::new(store_key!("b"), "B"),
+    ]);
     assert_eq!(choice_info.choices().len(), 2);
     let choice_def = BasicDefinition::new_choice_with_default("Choice", choice_info, "A");
     assert_eq!(choice_def.default_value().as_ref(), "A");

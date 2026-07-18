@@ -82,15 +82,21 @@ fn test_basic_definition_file_with_default() {
 #[test]
 fn test_basic_definition_choice() {
     // Why: Test basic choice definition creation and definition.
-    let choice_def = ChoiceDefinition::new(vec!["A".into(), "B".into()]);
+    let choice_def = ChoiceDefinition::new(vec![
+        ChoiceItemDefinition::new(store_key!("a"), "A"),
+        ChoiceItemDefinition::new(store_key!("b"), "B"),
+    ]);
     let def = BasicDefinition::new_choice("A choice parameter", choice_def.clone());
 
     // Check the various data items of the choice definition.
     assert_eq!(def.description().as_ref(), "A choice parameter");
     if let BasicDefinitionType::Choice(c) = def.type_definition() {
-        assert_eq!(c.choices().len(), 2);
-        assert_eq!(c.choices()[0].as_ref(), "A");
-        assert_eq!(c.choices()[1].as_ref(), "B");
+        let choices = c.choices();
+        assert_eq!(choices.len(), 2);
+        assert_eq!(choices[0].id(), "a");
+        assert_eq!(choices[0].description(), "A");
+        assert_eq!(choices[1].id(), "b");
+        assert_eq!(choices[1].description(), "B");
     } else {
         panic!("Expected Choice type");
     }
@@ -100,16 +106,22 @@ fn test_basic_definition_choice() {
 #[test]
 fn test_basic_definition_choice_with_default() {
     // Why: Test basic choice definition creation with a default value.
-    let choice_def = ChoiceDefinition::new(vec!["A".into(), "B".into()]);
+    let choice_def = ChoiceDefinition::new(vec![
+        ChoiceItemDefinition::new(store_key!("a"), "A"),
+        ChoiceItemDefinition::new(store_key!("b"), "B"),
+    ]);
     let def =
         BasicDefinition::new_choice_with_default("A choice parameter", choice_def.clone(), "A");
 
     // Check the various data items of the choice definition.
     assert_eq!(def.description().as_ref(), "A choice parameter");
     if let BasicDefinitionType::Choice(c) = def.type_definition() {
-        assert_eq!(c.choices().len(), 2);
-        assert_eq!(c.choices()[0].as_ref(), "A");
-        assert_eq!(c.choices()[1].as_ref(), "B");
+        let choices = c.choices();
+        assert_eq!(choices.len(), 2);
+        assert_eq!(choices[0].id(), "a");
+        assert_eq!(choices[0].description(), "A");
+        assert_eq!(choices[1].id(), "b");
+        assert_eq!(choices[1].description(), "B");
     } else {
         panic!("Expected Choice type");
     }
@@ -119,7 +131,10 @@ fn test_basic_definition_choice_with_default() {
 #[test]
 fn test_basic_definition_equality() {
     // Why: Test that two basic definitions with the same data items are considered equal.
-    let choice_def = ChoiceDefinition::new(vec!["A".into(), "B".into()]);
+    let choice_def = ChoiceDefinition::new(vec![
+        ChoiceItemDefinition::new(store_key!("a"), "A"),
+        ChoiceItemDefinition::new(store_key!("b"), "B"),
+    ]);
     let def_1 =
         BasicDefinition::new_choice_with_default("A choice parameter", choice_def.clone(), "A");
     let def_2 =

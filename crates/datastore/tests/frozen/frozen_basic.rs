@@ -1,7 +1,8 @@
 use datastore::definition::{
-    BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition,
+    BasicDefinition, BasicDefinitionType, ChoiceDefinition, ChoiceItemDefinition, FileDefinition,
 };
 use datastore::frozen::BasicFrozen;
+use datastore::store_key;
 
 #[test]
 fn test_basic_frozen_string() {
@@ -133,7 +134,10 @@ fn test_basic_frozen_choice() {
     // Why: Test frozen basic choice creation and definition.
     let frozen_basic = BasicFrozen::new(BasicDefinition::new_choice(
         "A choice parameter",
-        ChoiceDefinition::new(vec!["A".into(), "B".into()]),
+        ChoiceDefinition::new(vec![
+            ChoiceItemDefinition::new(store_key!("a"), "A"),
+            ChoiceItemDefinition::new(store_key!("b"), "B"),
+        ]),
     ));
 
     // Check the frozen choice object.
@@ -142,9 +146,12 @@ fn test_basic_frozen_choice() {
         "A choice parameter"
     );
     if let BasicDefinitionType::Choice(c) = frozen_basic.definition().type_definition() {
-        assert_eq!(c.choices().len(), 2);
-        assert_eq!(c.choices()[0], "A");
-        assert_eq!(c.choices()[1], "B");
+        let choices = c.choices();
+        assert_eq!(choices.len(), 2);
+        assert_eq!(choices[0].id(), "a");
+        assert_eq!(choices[0].description(), "A");
+        assert_eq!(choices[1].id(), "b");
+        assert_eq!(choices[1].description(), "B");
     } else {
         panic!("Expected Choice type");
     }
@@ -158,7 +165,10 @@ fn test_basic_frozen_choice_with_default() {
     // Why: Test frozen basic choice creation with a default value.
     let frozen_basic = BasicFrozen::new(BasicDefinition::new_choice_with_default(
         "A choice parameter",
-        ChoiceDefinition::new(vec!["A".into(), "B".into()]),
+        ChoiceDefinition::new(vec![
+            ChoiceItemDefinition::new(store_key!("a"), "A"),
+            ChoiceItemDefinition::new(store_key!("b"), "B"),
+        ]),
         "A",
     ));
 
@@ -168,9 +178,12 @@ fn test_basic_frozen_choice_with_default() {
         "A choice parameter"
     );
     if let BasicDefinitionType::Choice(c) = frozen_basic.definition().type_definition() {
-        assert_eq!(c.choices().len(), 2);
-        assert_eq!(c.choices()[0], "A");
-        assert_eq!(c.choices()[1], "B");
+        let choices = c.choices();
+        assert_eq!(choices.len(), 2);
+        assert_eq!(choices[0].id(), "a");
+        assert_eq!(choices[0].description(), "A");
+        assert_eq!(choices[1].id(), "b");
+        assert_eq!(choices[1].description(), "B");
     } else {
         panic!("Expected Choice type");
     }
@@ -182,7 +195,10 @@ fn test_basic_frozen_choice_with_default() {
 #[test]
 fn test_basic_frozen_equality() {
     // Why: Test that two frozen basic choices with the same parameters are considered equal.
-    let choice_def = ChoiceDefinition::new(vec!["A".into(), "B".into()]);
+    let choice_def = ChoiceDefinition::new(vec![
+        ChoiceItemDefinition::new(store_key!("a"), "A"),
+        ChoiceItemDefinition::new(store_key!("b"), "B"),
+    ]);
     let frozen_1 = BasicFrozen::new(BasicDefinition::new_choice_with_default(
         "A choice parameter",
         choice_def.clone(),

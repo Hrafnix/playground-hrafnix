@@ -1,6 +1,6 @@
 use datastore::definition::{
-    BasicDefinition, ChoiceDefinition, ItemDefinition, MapDefinition, StructDefinition,
-    TableDefinition, VariableObjectDefinition, VariableObjectDefinitionBuilder,
+    BasicDefinition, ChoiceDefinition, ChoiceItemDefinition, ItemDefinition, MapDefinition,
+    StructDefinition, TableDefinition, VariableObjectDefinition, VariableObjectDefinitionBuilder,
 };
 use datastore::key::VariableKey;
 use datastore::prelude::FileDefinition;
@@ -341,7 +341,10 @@ fn test_variable_object_definition_launder() {
                 "P4",
                 BasicDefinition::new_choice(
                     "D4",
-                    ChoiceDefinition::new(vec!["Option 1".into(), "Option 2".into()]),
+                    ChoiceDefinition::new(vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ]),
                 ),
             ),
         )
@@ -405,6 +408,8 @@ fn test_variable_object_definition_launder() {
     assert!(store.contains("D5"));
     assert!(store.contains("D6"));
     assert!(store.contains("ext"));
+    assert!(store.contains("option_1"));
+    assert!(store.contains("option_2"));
     assert!(store.contains("Option 1"));
     assert!(store.contains("Option 2"));
     assert!(store.contains("col1"));

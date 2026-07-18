@@ -1,3 +1,4 @@
+use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
@@ -43,21 +44,74 @@ impl FileDefinition {
     }
 }
 
+/// Definition for a single choice item in a choice-based parameter.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ChoiceItemDefinition {
+    id: StoreKey,
+    description: ShareableString,
+}
+
+impl ChoiceItemDefinition {
+    /// Creates a new `ChoiceItemDefinition` with the specified value and description.
+    pub fn new<K: Into<StoreKey>, S: Into<ShareableString>>(id: K, description: S) -> Self {
+        Self {
+            id: id.into(),
+            description: description.into(),
+        }
+    }
+
+    /// Returns the ID of the choice item.
+    pub fn id(&self) -> StoreKey {
+        self.id.clone()
+    }
+
+    /// Returns the description of the choice item.
+    pub fn description(&self) -> ShareableString {
+        self.description.clone()
+    }
+
+    /// Returns a reference to the description.
+    pub fn description_ref(&self) -> &ShareableString {
+        &self.description
+    }
+
+    /// Returns a new `ChoiceItemDefinition` with strings laundered through the provided store.
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        Self {
+            id: self.id.launder(store),
+            description: store.launder(&self.description),
+        }
+    }
+}
+
 /// Definition for a choice-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceDefinition {
-    choices: Vec<ShareableString>,
+    choices: Vec<ChoiceItemDefinition>,
 }
 
 impl ChoiceDefinition {
     /// Creates a new `ChoiceDefinition` with the specified choices.
-    pub fn new(choices: Vec<ShareableString>) -> Self {
+    pub fn new(choices: Vec<ChoiceItemDefinition>) -> Self {
         Self { choices }
     }
 
     /// Returns a reference to the list of choices.
-    pub fn choices(&self) -> &Vec<ShareableString> {
+    pub fn choices(&self) -> &[ChoiceItemDefinition] {
         &self.choices
+    }
+
+    /// Returns a vector of IDs for the choices.
+    pub fn ids(&self) -> Vec<StoreKey> {
+        self.choices.iter().map(|choice| choice.id()).collect()
+    }
+
+    /// Returns a vector of descriptions for the choices.
+    pub fn descriptions(&self) -> Vec<ShareableString> {
+        self.choices
+            .iter()
+            .map(|choice| choice.description())
+            .collect()
     }
 
     /// Returns a new `ChoiceDefinition` with strings laundered through the provided store.
@@ -66,7 +120,7 @@ impl ChoiceDefinition {
             choices: self
                 .choices
                 .iter()
-                .map(|choice| store.launder(choice))
+                .map(|choice| choice.launder(store))
                 .collect(),
         }
     }
@@ -277,7 +331,14 @@ impl TreePrint for BasicDefinition {
             BasicDefinitionType::String => String::new(),
             BasicDefinitionType::File(def) => format!("[{}]", def.extension_filter),
             BasicDefinitionType::Number => String::new(),
-            BasicDefinitionType::Choice(def) => format!("[{}]", def.choices.join(", ")),
+            BasicDefinitionType::Choice(def) => format!(
+                "[{}]",
+                def.choices
+                    .iter()
+                    .map(|choice| format!("{} ({})", choice.id(), choice.description()))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
         };
 
         writeln!(
