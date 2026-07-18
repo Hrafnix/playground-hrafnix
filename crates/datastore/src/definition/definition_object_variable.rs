@@ -1,5 +1,5 @@
 use crate::StoreError;
-use crate::definition::ItemDefinition;
+use crate::definition::ItemDefinitionType;
 use crate::key::VariableKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VariableObjectDefinitionBuilder {
     description: ShareableString,
-    items: BTreeMap<VariableKey, ItemDefinition>,
+    items: BTreeMap<VariableKey, ItemDefinitionType>,
 }
 
 impl VariableObjectDefinitionBuilder {
@@ -81,17 +81,25 @@ impl VariableObjectDefinitionBuilder {
     /// Returns a new builder with the variable inserted.
     ///
     /// This method will overwrite existing variables with the same keys.
-    pub fn with<K: Into<VariableKey>>(mut self, key: K, variable: ItemDefinition) -> Self {
-        self.insert(key, variable);
+    pub fn with<K: Into<VariableKey>, T: Into<ItemDefinitionType>>(
+        mut self,
+        key: K,
+        variable: T,
+    ) -> Self {
+        self.insert(key, variable.into());
         self
     }
 
     /// Inserts a variable into the current builder.
     ///
     /// This method will overwrite existing variables with the same keys.
-    pub fn insert<K: Into<VariableKey>>(&mut self, key: K, variable: ItemDefinition) {
+    pub fn insert<K: Into<VariableKey>, T: Into<ItemDefinitionType>>(
+        &mut self,
+        key: K,
+        variable: T,
+    ) {
         let key = key.into();
-        self.items.insert(key, variable);
+        self.items.insert(key, variable.into());
     }
 
     /// Returns a new builder with the variable removed.
@@ -118,7 +126,7 @@ impl VariableObjectDefinitionBuilder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct VariableObjectDefinition {
     description: ShareableString,
-    items: Arc<BTreeMap<VariableKey, ItemDefinition>>,
+    items: Arc<BTreeMap<VariableKey, ItemDefinitionType>>,
 }
 
 impl VariableObjectDefinition {
@@ -166,12 +174,12 @@ impl VariableObjectDefinition {
     }
 
     /// Returns a reference to the variable definition for the specified key.
-    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinition> {
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinitionType> {
         self.items.get(&key.into())
     }
 
     /// Returns a reference to the variable definition for the specified key string.
-    pub fn get_str(&self, key: &str) -> Option<&ItemDefinition> {
+    pub fn get_str(&self, key: &str) -> Option<&ItemDefinitionType> {
         self.items.get(key)
     }
 
@@ -181,7 +189,7 @@ impl VariableObjectDefinition {
     }
 
     /// Returns an iterator over the variable definitions.
-    pub fn iter(&self) -> impl Iterator<Item = (&VariableKey, &ItemDefinition)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&VariableKey, &ItemDefinitionType)> {
         self.items.iter()
     }
 

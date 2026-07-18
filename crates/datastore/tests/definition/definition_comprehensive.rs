@@ -102,26 +102,15 @@ fn test_map_definition_comprehensive() {
 fn test_parameter_definition_comprehensive() {
     // Why: Test that an item definition correctly wraps a basic definition.
     let basic_def = StringDefinition::new("Basic");
-    let prop_def = ItemDefinition::new("Prop Desc", basic_def);
-    assert_eq!(prop_def.description_ref().as_ref(), "Prop Desc");
-    assert!(matches!(
-        prop_def.item_type(),
-        ItemDefinitionType::String(_)
-    ));
+    assert_eq!(basic_def.description_ref().as_ref(), "Basic");
 }
 
 #[test]
 fn test_object_definition_comprehensive() {
     // Why: Test that an object definition correctly handles items added via the builder.
     let obj_def = ObjectDefinition::builder("Obj Desc")
-        .with(
-            store_key!("p_p1"),
-            ItemDefinition::new("P1", StringDefinition::new("D1")),
-        )
-        .with(
-            store_key!("p_p2"),
-            ItemDefinition::new("P2", NumberDefinition::new("D2")),
-        )
+        .with(store_key!("p_p1"), StringDefinition::new("D1"))
+        .with(store_key!("p_p2"), NumberDefinition::new("D2"))
         .finish();
 
     assert_eq!(obj_def.description_ref().as_ref(), "Obj Desc");
@@ -170,14 +159,9 @@ fn test_launder_comprehensive() {
     let laundered_map = map_def.launder(&store);
     assert_eq!(laundered_map.description(), map_def.description());
 
-    // Test ItemDefinition launder
-    let prop_def = ItemDefinition::new("Prop", basic_def);
-    let laundered_prop = prop_def.launder(&store);
-    assert_eq!(laundered_prop.description(), prop_def.description());
-
     // Test ObjectDefinition launder
     let obj_def = ObjectDefinition::builder("Obj")
-        .with(store_key!("p_prop"), prop_def)
+        .with(store_key!("p_prop"), basic_def)
         .finish();
     let laundered_obj = obj_def.launder(&store);
     assert_eq!(laundered_obj.description(), obj_def.description());

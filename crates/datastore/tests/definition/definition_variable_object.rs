@@ -6,7 +6,7 @@ fn test_variable_object_definition_basic() {
     let mut builder = VariableObjectDefinition::builder("Test Object");
     builder.insert(
         VariableKey::new("v_v1".into()).unwrap(),
-        ItemDefinition::new("V1", StringDefinition::new("D1")),
+        StringDefinition::new("D1"),
     );
     let obj_def = builder.finish();
 
@@ -22,19 +22,19 @@ fn test_variable_object_definition_equality() {
     let def_1 = VariableObjectDefinition::builder("Test Object")
         .with(
             VariableKey::new("v_v1".into()).unwrap(),
-            ItemDefinition::new("V1", StringDefinition::new("D1")),
+            StringDefinition::new("D1"),
         )
         .finish();
     let def_2 = VariableObjectDefinition::builder("Test Object")
         .with(
             VariableKey::new("v_v1".into()).unwrap(),
-            ItemDefinition::new("V1", StringDefinition::new("D1")),
+            StringDefinition::new("D1"),
         )
         .finish();
     let def_3 = VariableObjectDefinition::builder("Test Object")
         .with(
             VariableKey::new("v_v1".into()).unwrap(),
-            ItemDefinition::new("V1", StringDefinition::new("D2")),
+            StringDefinition::new("D2"),
         )
         .finish();
 
@@ -50,78 +50,67 @@ fn test_variable_object_definition_print() {
     let def_1 = VariableObjectDefinitionBuilder::new("Test")
         .with(
             VariableKey::new("v_p1".into()).unwrap(),
-            ItemDefinition::new("P1", StringDefinition::new("D1")),
+            StringDefinition::new("D1"),
         )
         .with(
             VariableKey::new("v_p2".into()).unwrap(),
-            ItemDefinition::new("P2", FileDefinition::new("D2", "ext", false)),
+            FileDefinition::new("D2", "ext", false),
         )
         .with(
             VariableKey::new("v_p3".into()).unwrap(),
-            ItemDefinition::new("P3", NumberDefinition::new("D3")),
+            NumberDefinition::new("D3"),
         )
         .with(
             VariableKey::new("v_p4".into()).unwrap(),
-            ItemDefinition::new(
-                "P4",
-                ChoiceDefinition::new(
-                    "D4",
-                    vec![
-                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
-                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
-                    ],
-                ),
+            ChoiceDefinition::new(
+                "D4",
+                vec![
+                    ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                    ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                ],
             ),
         )
         .with(
             VariableKey::new("v_p5".into()).unwrap(),
-            ItemDefinition::new(
-                "P5",
-                TableDefinition::new(
-                    "D5",
-                    vec![
-                        (store_key!("col1"), NumberDefinition::new("C1")),
-                        (
-                            store_key!("col2"),
-                            NumberDefinition::new_with_constraint(
-                                "C2",
-                                NumberConstraint::Min {
-                                    value: 1.52,
-                                    inclusive: true,
-                                },
-                            ),
+            TableDefinition::new(
+                "D5",
+                vec![
+                    (store_key!("col1"), NumberDefinition::new("C1")),
+                    (
+                        store_key!("col2"),
+                        NumberDefinition::new_with_constraint(
+                            "C2",
+                            NumberConstraint::Min {
+                                value: 1.52,
+                                inclusive: true,
+                            },
                         ),
-                    ],
-                ),
+                    ),
+                ],
             ),
         )
         .with(
             VariableKey::new("v_p6".into()).unwrap(),
-            ItemDefinition::new(
-                "P6",
-                MapDefinition::new(
-                    "D6",
-                    StructDefinition::new(
-                        "Item",
-                        vec![
-                            (
-                                store_key!("col1"),
-                                StructItemDefinition::String(StringDefinition::new("C1")),
-                            ),
-                            (
-                                store_key!("col2"),
-                                StructItemDefinition::Number(
-                                    NumberDefinition::new_with_constraint(
-                                        "C2",
-                                        NumberConstraint::Max {
-                                            value: 1.0,
-                                            inclusive: true,
-                                        },
-                                    ),
-                                ),
-                            ),
-                        ],
-                    ),
+            MapDefinition::new(
+                "D6",
+                StructDefinition::new(
+                    "Item",
+                    vec![
+                        (
+                            store_key!("col1"),
+                            StructItemDefinition::String(StringDefinition::new("C1")),
+                        ),
+                        (
+                            store_key!("col2"),
+                            StructItemDefinition::Number(NumberDefinition::new_with_constraint(
+                                "C2",
+                                NumberConstraint::Max {
+                                    value: 1.0,
+                                    inclusive: true,
+                                },
+                            )),
+                        ),
+                    ],
                 ),
             ),
         )

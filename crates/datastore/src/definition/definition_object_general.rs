@@ -1,5 +1,5 @@
 use crate::StoreError;
-use crate::definition::ItemDefinition;
+use crate::definition::ItemDefinitionType;
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ObjectDefinitionBuilder {
     description: ShareableString,
-    items: BTreeMap<StoreKey, ItemDefinition>,
+    items: BTreeMap<StoreKey, ItemDefinitionType>,
 }
 
 impl ObjectDefinitionBuilder {
@@ -78,17 +78,21 @@ impl ObjectDefinitionBuilder {
     /// Returns a new builder with the item inserted.
     ///
     /// This method will overwrite existing item with the same keys.
-    pub fn with<K: Into<StoreKey>>(mut self, key: K, parameter: ItemDefinition) -> Self {
-        self.insert(key, parameter);
+    pub fn with<K: Into<StoreKey>, T: Into<ItemDefinitionType>>(
+        mut self,
+        key: K,
+        parameter: T,
+    ) -> Self {
+        self.insert(key, parameter.into());
         self
     }
 
     /// Inserts an item into the current builder.
     ///
     /// This method will overwrite existing item with the same keys.
-    pub fn insert<K: Into<StoreKey>>(&mut self, key: K, parameter: ItemDefinition) {
+    pub fn insert<K: Into<StoreKey>, T: Into<ItemDefinitionType>>(&mut self, key: K, parameter: T) {
         let key = key.into();
-        self.items.insert(key, parameter);
+        self.items.insert(key, parameter.into());
     }
 
     /// Returns a new builder with the item removed.
@@ -115,7 +119,7 @@ impl ObjectDefinitionBuilder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ObjectDefinition {
     description: ShareableString,
-    items: Arc<BTreeMap<StoreKey, ItemDefinition>>,
+    items: Arc<BTreeMap<StoreKey, ItemDefinitionType>>,
 }
 
 impl ObjectDefinition {
@@ -160,12 +164,12 @@ impl ObjectDefinition {
     }
 
     /// Returns a reference to the item definition for the specified key.
-    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinition> {
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinitionType> {
         self.items.get(&key.into())
     }
 
     /// Returns a reference to the item definition for the specified key string.
-    pub fn get_str(&self, key: &str) -> Option<&ItemDefinition> {
+    pub fn get_str(&self, key: &str) -> Option<&ItemDefinitionType> {
         self.items.get(key)
     }
 
@@ -175,7 +179,7 @@ impl ObjectDefinition {
     }
 
     /// Returns an iterator over the item definitions.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &ItemDefinition)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &ItemDefinitionType)> {
         self.items.iter()
     }
 

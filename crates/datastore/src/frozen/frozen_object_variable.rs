@@ -21,9 +21,9 @@ impl VariableObjectFrozen {
     /// Creates a new `VariableObjectFrozen` with a definition.
     pub fn new(definition: VariableObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
-        for (item_key, item_definition) in definition.iter() {
+        for (item_key, item_definition_type) in definition.iter() {
             let key = item_key.clone();
-            match item_definition.item_type() {
+            match item_definition_type {
                 ItemDefinitionType::Choice(choice_def) => {
                     items.insert(
                         key,

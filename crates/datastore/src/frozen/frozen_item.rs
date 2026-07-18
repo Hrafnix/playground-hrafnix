@@ -1,4 +1,4 @@
-use crate::definition::ItemDefinition;
+use crate::definition::ItemDefinitionType;
 use crate::frozen::{ChoiceFrozen, FileFrozen, MapFrozen, NumberFrozen, StringFrozen, TableFrozen};
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -22,26 +22,14 @@ pub enum ItemFrozen {
 
 impl ItemFrozen {
     /// Returns the parameter definition.
-    pub fn definition(&self) -> ItemDefinition {
+    pub fn definition(&self) -> ItemDefinitionType {
         match self {
-            ItemFrozen::Choice(c) => {
-                ItemDefinition::new(c.definition().description(), c.definition().clone())
-            }
-            ItemFrozen::File(f) => {
-                ItemDefinition::new(f.definition().description(), f.definition().clone())
-            }
-            ItemFrozen::Map(m) => {
-                ItemDefinition::new(m.definition().description(), m.definition().clone())
-            }
-            ItemFrozen::Number(n) => {
-                ItemDefinition::new(n.definition().description(), n.definition().clone())
-            }
-            ItemFrozen::String(b) => {
-                ItemDefinition::new(b.definition().description(), b.definition().clone())
-            }
-            ItemFrozen::Table(t) => {
-                ItemDefinition::new(t.definition().description(), t.definition().clone())
-            }
+            ItemFrozen::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
+            ItemFrozen::File(f) => ItemDefinitionType::File(f.definition().clone()),
+            ItemFrozen::Map(m) => ItemDefinitionType::Map(m.definition().clone()),
+            ItemFrozen::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
+            ItemFrozen::String(b) => ItemDefinitionType::String(b.definition().clone()),
+            ItemFrozen::Table(t) => ItemDefinitionType::Table(t.definition().clone()),
         }
     }
 

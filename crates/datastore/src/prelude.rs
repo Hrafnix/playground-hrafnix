@@ -18,8 +18,8 @@ pub use crate::path::StorePath;
 
 // Definitions
 pub use crate::definition::{
-    ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinition, ItemDefinitionType,
-    MapDefinition, NumberConstraint, NumberDefinition, ObjectDefinition, ObjectDefinitionBuilder,
+    ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinitionType, MapDefinition,
+    NumberConstraint, NumberDefinition, ObjectDefinition, ObjectDefinitionBuilder,
     ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StringDefinition,
     StructDefinition, StructItemDefinition, TableDefinition, VariableObjectDefinition,
     VariableObjectDefinitionBuilder,

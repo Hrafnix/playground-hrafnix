@@ -4,8 +4,7 @@ use crate::definition::{
 use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
-use shareable_string::{ShareableString, SharedStringStore};
-use std::sync::Arc;
+use shareable_string::SharedStringStore;
 
 /// The type of item definition.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -102,72 +101,5 @@ impl TreePrint for ItemDefinitionType {
             Self::Table(table) => table.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
         }
-    }
-}
-
-/// Definition for a item, including its type and metadata like description and visibility.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ItemDefinition {
-    description: ShareableString,
-    item_type: Arc<ItemDefinitionType>,
-}
-
-impl ItemDefinition {
-    /// Creates a new `ItemDefinition` with a description and type.
-    pub fn new<S: Into<ShareableString>, P: Into<ItemDefinitionType>>(
-        description: S,
-        item_type: P,
-    ) -> Self {
-        Self {
-            description: description.into(),
-            item_type: Arc::new(item_type.into()),
-        }
-    }
-
-    /// Returns the description of the item.
-    pub fn description(&self) -> ShareableString {
-        self.description.clone()
-    }
-
-    /// Returns a reference to the type definition.
-    pub fn item_type(&self) -> &ItemDefinitionType {
-        self.item_type.as_ref()
-    }
-
-    /// Returns a reference to the description.
-    pub fn description_ref(&self) -> &ShareableString {
-        &self.description
-    }
-
-    /// Returns a new `ItemDefinition` with strings laundered through the provided store.
-    pub fn launder(&self, store: &SharedStringStore) -> Self {
-        Self {
-            description: store.launder(&self.description),
-            item_type: Arc::new(self.item_type.launder(store)),
-        }
-    }
-}
-
-impl PartialEq<&ItemDefinition> for ItemDefinition {
-    fn eq(&self, other: &&ItemDefinition) -> bool {
-        self == *other
-    }
-}
-
-impl PartialEq<ItemDefinition> for &ItemDefinition {
-    fn eq(&self, other: &ItemDefinition) -> bool {
-        *self == other
-    }
-}
-
-impl TreePrint for ItemDefinition {
-    fn tree_print(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        label: &str,
-        prefix: &str,
-        last: bool,
-    ) -> std::fmt::Result {
-        self.item_type.tree_print(f, label, prefix, last)
     }
 }

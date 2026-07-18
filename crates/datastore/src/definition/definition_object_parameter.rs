@@ -1,5 +1,5 @@
 use crate::StoreError;
-use crate::definition::ItemDefinition;
+use crate::definition::ItemDefinitionType;
 use crate::key::ParameterKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ParameterObjectDefinitionBuilder {
     description: ShareableString,
-    items: BTreeMap<ParameterKey, ItemDefinition>,
+    items: BTreeMap<ParameterKey, ItemDefinitionType>,
 }
 
 impl ParameterObjectDefinitionBuilder {
@@ -81,17 +81,25 @@ impl ParameterObjectDefinitionBuilder {
     /// Returns a new builder with the parameter inserted.
     ///
     /// This method will overwrite existing parameter with the same keys.
-    pub fn with<K: Into<ParameterKey>>(mut self, key: K, parameter: ItemDefinition) -> Self {
-        self.insert(key, parameter);
+    pub fn with<K: Into<ParameterKey>, T: Into<ItemDefinitionType>>(
+        mut self,
+        key: K,
+        parameter: T,
+    ) -> Self {
+        self.insert(key, parameter.into());
         self
     }
 
     /// Inserts a parameter into the current builder.
     ///
     /// This method will overwrite existing parameter with the same keys.
-    pub fn insert<K: Into<ParameterKey>>(&mut self, key: K, parameter: ItemDefinition) {
+    pub fn insert<K: Into<ParameterKey>, T: Into<ItemDefinitionType>>(
+        &mut self,
+        key: K,
+        parameter: T,
+    ) {
         let key = key.into();
-        self.items.insert(key, parameter);
+        self.items.insert(key, parameter.into());
     }
 
     /// Returns a new builder with the parameter removed.
@@ -118,7 +126,7 @@ impl ParameterObjectDefinitionBuilder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ParameterObjectDefinition {
     description: ShareableString,
-    items: Arc<BTreeMap<ParameterKey, ItemDefinition>>,
+    items: Arc<BTreeMap<ParameterKey, ItemDefinitionType>>,
 }
 
 impl ParameterObjectDefinition {
@@ -166,12 +174,12 @@ impl ParameterObjectDefinition {
     }
 
     /// Returns a reference to the parameter definition for the specified key.
-    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinition> {
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinitionType> {
         self.items.get(&key.into())
     }
 
     /// Returns a reference to the parameter definition for the specified key string.
-    pub fn get_str(&self, key: &str) -> Option<&ItemDefinition> {
+    pub fn get_str(&self, key: &str) -> Option<&ItemDefinitionType> {
         self.items.get(key)
     }
 
@@ -181,7 +189,7 @@ impl ParameterObjectDefinition {
     }
 
     /// Returns an iterator over the parameter definitions.
-    pub fn iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemDefinition)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemDefinitionType)> {
         self.items.iter()
     }
 
