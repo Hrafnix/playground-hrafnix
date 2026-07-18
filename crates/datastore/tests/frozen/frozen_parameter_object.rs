@@ -1,7 +1,6 @@
 use datastore::definition::{
     BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
-    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition,
-    StructItemDefinition, TableDefinition,
+    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StructDefinition, TableDefinition,
 };
 use datastore::frozen::frozen_object_parameter::ParameterObjectFrozen;
 use datastore::key::ParameterKey;
@@ -107,33 +106,8 @@ fn test_parameter_object_frozen_print_empty() {
                 ParameterKey::new("p_p6".into()).unwrap(),
                 ItemDefinition::new(
                     "P6",
-                    StructDefinition::new(
-                        "D6",
-                        vec![
-                            (
-                                store_key!("f1"),
-                                StructItemDefinition::Basic(BasicDefinition::new_string("F1")),
-                            ),
-                            (
-                                store_key!("f2"),
-                                StructItemDefinition::Table(TableDefinition::new(
-                                    "T1",
-                                    vec![
-                                        (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                        (store_key!("col2"), BasicDefinition::new_number("C2")),
-                                    ],
-                                )),
-                            ),
-                        ],
-                    ),
-                ),
-            )
-            .with(
-                ParameterKey::new("p_p7".into()).unwrap(),
-                ItemDefinition::new(
-                    "P7",
                     MapDefinition::new(
-                        "D7",
+                        "D6",
                         StructDefinition::new(
                             "Item",
                             vec![
@@ -149,6 +123,6 @@ fn test_parameter_object_frozen_print_empty() {
 
     assert_eq!(
         format!("{}", frozen_1),
-        "Frozen Parameter Object (Test)\n    ├── p_p1 (D1) String - \"\"\n    ├── p_p2 (D2) File - \"\"\n    ├── p_p3 (D3) Number - \"\"\n    ├── p_p4 (D4) Choice - \"\"\n    ├── p_p5 (D5) Table 0 rows\n    ├── p_p6 (D6) Struct\n    │   ├── f1 (F1) String - \"\"\n    │   └── f2 (T1) Table 0 rows\n    └── p_p7 (D7) Map\n"
+        "Frozen Parameter Object (Test)\n    ├── p_p1 (D1) String - \"\"\n    ├── p_p2 (D2) File - \"\"\n    ├── p_p3 (D3) Number - \"\"\n    ├── p_p4 (D4) Choice - \"\"\n    ├── p_p5 (D5) Table 0 rows\n    └── p_p6 (D6) Map\n"
     );
 }

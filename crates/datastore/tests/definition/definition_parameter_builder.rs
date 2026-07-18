@@ -2,7 +2,7 @@
 
 use datastore::definition::{
     BasicDefinition, ChoiceDefinition, ItemDefinition, MapDefinition, ParameterObjectDefinition,
-    ParameterObjectDefinitionBuilder, StructDefinition, StructItemDefinition, TableDefinition,
+    ParameterObjectDefinitionBuilder, StructDefinition, TableDefinition,
 };
 use datastore::key::ParameterKey;
 use datastore::prelude::FileDefinition;
@@ -383,33 +383,8 @@ fn test_parameter_object_definition_launder() {
             ParameterKey::new("p_p6".into()).unwrap(),
             ItemDefinition::new(
                 "P6",
-                StructDefinition::new(
-                    "D6",
-                    vec![
-                        (
-                            store_key!("f1"),
-                            StructItemDefinition::Basic(BasicDefinition::new_string("F1")),
-                        ),
-                        (
-                            store_key!("f2"),
-                            StructItemDefinition::Table(TableDefinition::new(
-                                "T1",
-                                vec![
-                                    (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                    (store_key!("col2"), BasicDefinition::new_number("C2")),
-                                ],
-                            )),
-                        ),
-                    ],
-                ),
-            ),
-        )
-        .with(
-            ParameterKey::new("p_p7".into()).unwrap(),
-            ItemDefinition::new(
-                "P7",
                 MapDefinition::new(
-                    "D7",
+                    "D6",
                     StructDefinition::new(
                         "Item",
                         vec![
@@ -424,14 +399,13 @@ fn test_parameter_object_definition_launder() {
 
     let laundered = def.launder(&store);
     assert_eq!(laundered.description().as_str(), "Test");
-    assert_eq!(laundered.count(), 7);
+    assert_eq!(laundered.count(), 6);
     assert!(laundered.contains("p_p1"));
     assert!(laundered.contains("p_p2"));
     assert!(laundered.contains("p_p3"));
     assert!(laundered.contains("p_p4"));
     assert!(laundered.contains("p_p5"));
     assert!(laundered.contains("p_p6"));
-    assert!(laundered.contains("p_p7"));
 
     assert!(store.contains("p_p1"));
     assert!(store.contains("p_p2"));
@@ -439,29 +413,23 @@ fn test_parameter_object_definition_launder() {
     assert!(store.contains("p_p4"));
     assert!(store.contains("p_p5"));
     assert!(store.contains("p_p6"));
-    assert!(store.contains("p_p7"));
     assert!(store.contains("P1"));
     assert!(store.contains("P2"));
     assert!(store.contains("P3"));
     assert!(store.contains("P4"));
     assert!(store.contains("P5"));
     assert!(store.contains("P6"));
-    assert!(store.contains("P7"));
     assert!(store.contains("D1"));
     assert!(store.contains("D2"));
     assert!(store.contains("D3"));
     assert!(store.contains("D4"));
     assert!(store.contains("D5"));
     assert!(store.contains("D6"));
-    assert!(store.contains("D7"));
     assert!(store.contains("ext"));
     assert!(store.contains("Option 1"));
     assert!(store.contains("Option 2"));
     assert!(store.contains("col1"));
     assert!(store.contains("col2"));
-    assert!(store.contains("f1"));
-    assert!(store.contains("f2"));
-    assert!(store.contains("T1"));
     assert!(store.contains("C1"));
     assert!(store.contains("C2"));
     assert!(store.contains("Item"));

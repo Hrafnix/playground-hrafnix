@@ -1,7 +1,6 @@
 use datastore::definition::{
     BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
-    StructDefinition, StructItemDefinition, TableDefinition, VariableObjectDefinition,
-    VariableObjectDefinitionBuilder,
+    StructDefinition, TableDefinition, VariableObjectDefinition, VariableObjectDefinitionBuilder,
 };
 use datastore::frozen::frozen_object_variable::VariableObjectFrozen;
 use datastore::key::VariableKey;
@@ -107,33 +106,8 @@ fn test_variable_object_frozen_print_empty() {
                 VariableKey::new("v_p6".into()).unwrap(),
                 ItemDefinition::new(
                     "P6",
-                    StructDefinition::new(
-                        "D6",
-                        vec![
-                            (
-                                store_key!("f1"),
-                                StructItemDefinition::Basic(BasicDefinition::new_string("F1")),
-                            ),
-                            (
-                                store_key!("f2"),
-                                StructItemDefinition::Table(TableDefinition::new(
-                                    "T1",
-                                    vec![
-                                        (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                        (store_key!("col2"), BasicDefinition::new_number("C2")),
-                                    ],
-                                )),
-                            ),
-                        ],
-                    ),
-                ),
-            )
-            .with(
-                VariableKey::new("v_p7".into()).unwrap(),
-                ItemDefinition::new(
-                    "P7",
                     MapDefinition::new(
-                        "D7",
+                        "D6",
                         StructDefinition::new(
                             "Item",
                             vec![
@@ -149,6 +123,6 @@ fn test_variable_object_frozen_print_empty() {
 
     assert_eq!(
         format!("{}", frozen_1),
-        "Frozen Variable Object (Test)\n    ├── v_p1 (D1) String - \"\"\n    ├── v_p2 (D2) File - \"\"\n    ├── v_p3 (D3) Number - \"\"\n    ├── v_p4 (D4) Choice - \"\"\n    ├── v_p5 (D5) Table 0 rows\n    ├── v_p6 (D6) Struct\n    │   ├── f1 (F1) String - \"\"\n    │   └── f2 (T1) Table 0 rows\n    └── v_p7 (D7) Map\n"
+        "Frozen Variable Object (Test)\n    ├── v_p1 (D1) String - \"\"\n    ├── v_p2 (D2) File - \"\"\n    ├── v_p3 (D3) Number - \"\"\n    ├── v_p4 (D4) Choice - \"\"\n    ├── v_p5 (D5) Table 0 rows\n    └── v_p6 (D6) Map\n"
     );
 }

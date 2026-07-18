@@ -1,4 +1,4 @@
-use crate::definition::{BasicDefinition, MapDefinition, StructDefinition, TableDefinition};
+use crate::definition::{BasicDefinition, MapDefinition, TableDefinition};
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
@@ -9,8 +9,6 @@ use std::sync::Arc;
 pub enum ItemDefinitionType {
     /// A basic item (String, Number, etc.).
     Basic(BasicDefinition),
-    /// A structured item.
-    Struct(StructDefinition),
     /// A table item.
     Table(TableDefinition),
     /// A map item.
@@ -20,12 +18,6 @@ pub enum ItemDefinitionType {
 impl From<BasicDefinition> for ItemDefinitionType {
     fn from(definition: BasicDefinition) -> Self {
         ItemDefinitionType::Basic(definition)
-    }
-}
-
-impl From<StructDefinition> for ItemDefinitionType {
-    fn from(definition: StructDefinition) -> Self {
-        ItemDefinitionType::Struct(definition)
     }
 }
 
@@ -47,7 +39,6 @@ impl ItemDefinitionType {
         match self {
             Self::Basic(def) => Self::Basic(def.launder(store)),
             Self::Map(def) => Self::Map(def.launder(store)),
-            Self::Struct(def) => Self::Struct(def.launder(store)),
             Self::Table(def) => Self::Table(def.launder(store)),
         }
     }
@@ -76,7 +67,6 @@ impl TreePrint for ItemDefinitionType {
         match self {
             Self::Basic(b) => b.tree_print(f, label, prefix, last),
             Self::Table(t) => t.tree_print(f, label, prefix, last),
-            Self::Struct(s) => s.tree_print(f, label, prefix, last),
             Self::Map(m) => m.tree_print(f, label, prefix, last),
         }
     }

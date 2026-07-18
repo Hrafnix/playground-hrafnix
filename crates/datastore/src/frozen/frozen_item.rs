@@ -1,5 +1,5 @@
 use crate::definition::ItemDefinition;
-use crate::frozen::{BasicFrozen, MapFrozen, StructFrozen, TableFrozen};
+use crate::frozen::{BasicFrozen, MapFrozen, TableFrozen};
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 
@@ -10,8 +10,6 @@ pub enum ItemFrozen {
     Basic(BasicFrozen),
     /// A table parameter.
     Table(TableFrozen),
-    /// A struct parameter.
-    Struct(StructFrozen),
     /// A map parameter.
     Map(MapFrozen),
 }
@@ -26,9 +24,6 @@ impl ItemFrozen {
             ItemFrozen::Table(t) => {
                 ItemDefinition::new(t.definition().description(), t.definition().clone())
             }
-            ItemFrozen::Struct(s) => {
-                ItemDefinition::new(s.definition().description(), s.definition().clone())
-            }
             ItemFrozen::Map(m) => {
                 ItemDefinition::new(m.definition().description(), m.definition().clone())
             }
@@ -40,7 +35,6 @@ impl ItemFrozen {
         match self {
             Self::Basic(b) => b.hash(),
             Self::Table(t) => t.hash(),
-            Self::Struct(s) => s.hash(),
             Self::Map(m) => m.hash(),
         }
     }
@@ -57,14 +51,6 @@ impl ItemFrozen {
     pub fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             Self::Table(t) => Some(t),
-            _ => None,
-        }
-    }
-
-    /// Returns the struct value if this parameter is a struct parameter.
-    pub fn get_struct(&self) -> Option<&StructFrozen> {
-        match self {
-            Self::Struct(s) => Some(s),
             _ => None,
         }
     }
@@ -89,7 +75,6 @@ impl TreePrint for ItemFrozen {
         match self {
             Self::Basic(b) => b.tree_print(f, label, prefix, last),
             Self::Table(t) => t.tree_print(f, label, prefix, last),
-            Self::Struct(s) => s.tree_print(f, label, prefix, last),
             Self::Map(m) => m.tree_print(f, label, prefix, last),
         }
     }

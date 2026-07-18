@@ -1,7 +1,6 @@
 use datastore::definition::{
     BasicDefinition, ChoiceDefinition, FileDefinition, ItemDefinition, MapDefinition,
-    ObjectDefinition, ObjectDefinitionBuilder, StructDefinition, StructItemDefinition,
-    TableDefinition,
+    ObjectDefinition, ObjectDefinitionBuilder, StructDefinition, TableDefinition,
 };
 use datastore::frozen::ObjectFrozen;
 use datastore::key::StoreKey;
@@ -107,33 +106,8 @@ fn test_object_frozen_print_empty() {
                 StoreKey::new("p6".into()).unwrap(),
                 ItemDefinition::new(
                     "P6",
-                    StructDefinition::new(
-                        "D6",
-                        vec![
-                            (
-                                store_key!("f1"),
-                                StructItemDefinition::Basic(BasicDefinition::new_string("F1")),
-                            ),
-                            (
-                                store_key!("f2"),
-                                StructItemDefinition::Table(TableDefinition::new(
-                                    "T1",
-                                    vec![
-                                        (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                        (store_key!("col2"), BasicDefinition::new_number("C2")),
-                                    ],
-                                )),
-                            ),
-                        ],
-                    ),
-                ),
-            )
-            .with(
-                StoreKey::new("p7".into()).unwrap(),
-                ItemDefinition::new(
-                    "P7",
                     MapDefinition::new(
-                        "D7",
+                        "D6",
                         StructDefinition::new(
                             "Item",
                             vec![
@@ -149,6 +123,6 @@ fn test_object_frozen_print_empty() {
 
     assert_eq!(
         format!("{}", frozen_1),
-        "Frozen Object (Test)\n    ├── p1 (D1) String - \"\"\n    ├── p2 (D2) File - \"\"\n    ├── p3 (D3) Number - \"\"\n    ├── p4 (D4) Choice - \"\"\n    ├── p5 (D5) Table 0 rows\n    ├── p6 (D6) Struct\n    │   ├── f1 (F1) String - \"\"\n    │   └── f2 (T1) Table 0 rows\n    └── p7 (D7) Map\n"
+        "Frozen Object (Test)\n    ├── p1 (D1) String - \"\"\n    ├── p2 (D2) File - \"\"\n    ├── p3 (D3) Number - \"\"\n    ├── p4 (D4) Choice - \"\"\n    ├── p5 (D5) Table 0 rows\n    └── p6 (D6) Map\n"
     );
 }

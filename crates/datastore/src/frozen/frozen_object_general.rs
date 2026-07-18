@@ -1,6 +1,6 @@
 use crate::definition::{ItemDefinitionType, ObjectDefinition};
 use crate::frozen::ItemFrozen;
-use crate::frozen::{BasicFrozen, MapFrozen, StructFrozen, TableFrozen};
+use crate::frozen::{BasicFrozen, MapFrozen, TableFrozen};
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -30,12 +30,6 @@ impl ObjectFrozen {
                 }
                 ItemDefinitionType::Table(table_def) => {
                     items.insert(key, ItemFrozen::Table(TableFrozen::new(table_def.clone())));
-                }
-                ItemDefinitionType::Struct(struct_def) => {
-                    items.insert(
-                        key,
-                        ItemFrozen::Struct(StructFrozen::new(struct_def.clone())),
-                    );
                 }
                 ItemDefinitionType::Map(map_def) => {
                     items.insert(key, ItemFrozen::Map(MapFrozen::new(map_def.clone())));

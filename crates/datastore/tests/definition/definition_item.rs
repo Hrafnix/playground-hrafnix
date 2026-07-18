@@ -14,21 +14,6 @@ fn test_item_definition() {
 }
 
 #[test]
-fn test_struct_item_definition() {
-    // Why: Test struct item definition creation and definition.
-    let struct_prop = ItemDefinition::new(
-        "Struct Prop",
-        StructDefinition::new("Struct", Vec::<(StoreKey, StructItemDefinition)>::new()),
-    );
-
-    // Check the various data items of the item definition.
-    assert!(matches!(
-        struct_prop.item_type(),
-        datastore::definition::ItemDefinitionType::Struct(_)
-    ));
-}
-
-#[test]
 fn test_table_item_definition() {
     // Why: Test table item definition creation and definition.
     let table_prop = ItemDefinition::new(

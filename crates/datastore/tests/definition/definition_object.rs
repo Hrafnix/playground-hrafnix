@@ -90,33 +90,8 @@ fn test_object_definition_print() {
             StoreKey::new("p6".into()).unwrap(),
             ItemDefinition::new(
                 "P6",
-                StructDefinition::new(
-                    "D6",
-                    vec![
-                        (
-                            store_key!("f1"),
-                            StructItemDefinition::Basic(BasicDefinition::new_string("F1")),
-                        ),
-                        (
-                            store_key!("f2"),
-                            StructItemDefinition::Table(TableDefinition::new(
-                                "T1",
-                                vec![
-                                    (store_key!("col1"), BasicDefinition::new_string("C1")),
-                                    (store_key!("col2"), BasicDefinition::new_number("C2")),
-                                ],
-                            )),
-                        ),
-                    ],
-                ),
-            ),
-        )
-        .with(
-            StoreKey::new("p7".into()).unwrap(),
-            ItemDefinition::new(
-                "P7",
                 MapDefinition::new(
-                    "D7",
+                    "D6",
                     StructDefinition::new(
                         "Item",
                         vec![
@@ -131,6 +106,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\" \n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\" \n    ├── p4 (D4) Choice - default: \"\" [Option 1, Option 2]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    ├── p6 (D6) Struct\n    │   ├── f1 (F1) String - default: \"\" \n    │   └── f2 (T1) Table\n    │       ├── col1 (C1) String - default: \"\" \n    │       └── col2 (C2) Number - default: \"\" \n    └── p7 (D7) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
+        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\" \n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\" \n    ├── p4 (D4) Choice - default: \"\" [Option 1, Option 2]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) String - default: \"\" \n    │   └── col2 (C2) Number - default: \"\" \n    └── p6 (D6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\" \n            └── col2 (C2) Number - default: \"\" \n"
     );
 }
