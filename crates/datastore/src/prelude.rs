@@ -33,3 +33,10 @@ pub use crate::frozen::{
     ChoiceFrozen, FileFrozen, ItemFrozen, MapEntryFrozen, MapFrozen, MapItemFrozen, NumberFrozen,
     ObjectFrozen, ParameterObjectFrozen, StringFrozen, TableFrozen, VariableObjectFrozen,
 };
+
+// Editable data
+pub use crate::editable::{
+    ChoiceEditable, FileEditable, ItemEditable, MapEditable, MapEntryEditable, MapItemEditable,
+    NumberEditable, ObjectEditable, ParameterObjectEditable, StringEditable, TableEditable,
+    VariableObjectEditable,
+};

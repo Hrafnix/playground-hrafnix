@@ -1,4 +1,5 @@
 use crate::definition::StringDefinition;
+use crate::editable::StringEditable;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
@@ -34,6 +35,24 @@ impl StringFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `StringFrozen` instance from a given `StringEditable` value.
+    pub fn new_from_editable(basic: &StringEditable) -> Self {
+        let definition = basic.definition().clone();
+        let value = basic.value().clone();
+        let mut s = Self {
+            definition,
+            value,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `StringFrozen` instance into a `StringEditable` instance.
+    pub fn thaw(&self) -> StringEditable {
+        StringEditable::new(self)
     }
 
     fn update_hash(&mut self) {

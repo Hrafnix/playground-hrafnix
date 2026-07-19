@@ -1,4 +1,5 @@
 use crate::definition::FileDefinition;
+use crate::editable::FileEditable;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
@@ -34,6 +35,24 @@ impl FileFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `FileFrozen` instance from a given `FileEditable` value.
+    pub fn new_from_editable(basic: &FileEditable) -> Self {
+        let definition = basic.definition().clone();
+        let value = basic.value().clone();
+        let mut s = Self {
+            definition,
+            value,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `FileFrozen` instance into a `FileEditable` instance.
+    pub fn thaw(&self) -> FileEditable {
+        FileEditable::new(self)
     }
 
     fn update_hash(&mut self) {

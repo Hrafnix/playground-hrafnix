@@ -1,4 +1,5 @@
 use crate::definition::NumberDefinition;
+use crate::editable::NumberEditable;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
@@ -34,6 +35,24 @@ impl NumberFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `NumberFrozen` instance from a given `NumberEditable` value.
+    pub fn new_from_editable(basic: &NumberEditable) -> Self {
+        let definition = basic.definition().clone();
+        let value = basic.value().clone();
+        let mut s = Self {
+            definition,
+            value,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `NumberFrozen` instance into a `NumberEditable` instance.
+    pub fn thaw(&self) -> NumberEditable {
+        NumberEditable::new(self)
     }
 
     fn update_hash(&mut self) {

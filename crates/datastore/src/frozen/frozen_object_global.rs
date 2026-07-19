@@ -1,4 +1,5 @@
 use crate::definition::{ItemDefinitionType, ObjectDefinition};
+use crate::editable::ObjectEditable;
 use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
 use crate::key::GlobalKey;
 use crate::traits::TreePrint;
@@ -80,6 +81,27 @@ impl ObjectFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `ObjectFrozen` from a given `ObjectEditable` value.
+    pub fn new_from_editable(editable_object: &ObjectEditable) -> Self {
+        let definition = editable_object.definition().clone();
+        let items = editable_object
+            .iter()
+            .map(|(key, value)| (key.clone(), value.freeze()))
+            .collect();
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `ObjectFrozen` instance into an `ObjectEditable` instance.
+    pub fn thaw(&self) -> ObjectEditable {
+        ObjectEditable::new_from_frozen(self)
     }
 
     fn update_hash(&mut self) {

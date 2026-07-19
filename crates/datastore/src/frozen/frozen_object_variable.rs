@@ -1,4 +1,5 @@
 use crate::definition::{ItemDefinitionType, VariableObjectDefinition};
+use crate::editable::VariableObjectEditable;
 use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
 use crate::key::VariableKey;
 use crate::traits::TreePrint;
@@ -80,6 +81,27 @@ impl VariableObjectFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `VariableObjectFrozen` from a given `VariableObjectEditable` value.
+    pub fn new_from_editable(editable_object: &VariableObjectEditable) -> Self {
+        let definition = editable_object.definition().clone();
+        let items = editable_object
+            .iter()
+            .map(|(key, value)| (key.clone(), value.freeze()))
+            .collect();
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `VariableObjectFrozen` instance into a `VariableObjectEditable` instance.
+    pub fn thaw(&self) -> VariableObjectEditable {
+        VariableObjectEditable::new_from_frozen(self)
     }
 
     fn update_hash(&mut self) {

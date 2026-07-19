@@ -1,4 +1,5 @@
 use crate::definition::ChoiceDefinition;
+use crate::editable::ChoiceEditable;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
@@ -34,6 +35,24 @@ impl ChoiceFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `ChoiceFrozen` instance from a given `ChoiceEditable` value.
+    pub fn new_from_editable(basic: &ChoiceEditable) -> Self {
+        let definition = basic.definition().clone();
+        let value = basic.value().clone();
+        let mut s = Self {
+            definition,
+            value,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `ChoiceFrozen` instance into a `ChoiceEditable` instance.
+    pub fn thaw(&self) -> ChoiceEditable {
+        ChoiceEditable::new(self)
     }
 
     fn update_hash(&mut self) {

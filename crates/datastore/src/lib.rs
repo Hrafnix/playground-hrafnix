@@ -21,6 +21,8 @@
 
 /// Data structure definitions.
 pub mod definition;
+/// Editable data implementation.
+pub mod editable;
 /// Frozen data implementation for efficient persistence and access.
 pub mod frozen;
 /// Keys and associated traits.

@@ -1,5 +1,6 @@
 use crate::StoreError;
 use crate::definition::{MapDefinition, MapItemDefinition};
+use crate::editable::{MapEditable, MapEntryEditable, MapItemEditable};
 use crate::frozen::{ChoiceFrozen, FileFrozen, NumberFrozen, StringFrozen, TableFrozen};
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
@@ -59,6 +60,30 @@ impl MapItemFrozen {
             MapItemFrozen::String(basic) => basic.hash(),
             MapItemFrozen::Table(table) => table.hash(),
         }
+    }
+
+    /// Creates a new `MapItemFrozen` instance from a given `MapItemEditable` value.
+    pub fn new_from_editable(item: &MapItemEditable) -> Self {
+        match item {
+            MapItemEditable::Choice(choice) => {
+                MapItemFrozen::Choice(ChoiceFrozen::new_from_editable(choice))
+            }
+            MapItemEditable::File(file) => MapItemFrozen::File(FileFrozen::new_from_editable(file)),
+            MapItemEditable::Number(number) => {
+                MapItemFrozen::Number(NumberFrozen::new_from_editable(number))
+            }
+            MapItemEditable::String(basic) => {
+                MapItemFrozen::String(StringFrozen::new_from_editable(basic))
+            }
+            MapItemEditable::Table(table) => {
+                MapItemFrozen::Table(TableFrozen::new_from_editable(table))
+            }
+        }
+    }
+
+    /// Converts the current `MapItemFrozen` instance into a `MapItemEditable` instance.
+    pub fn thaw(&self) -> MapItemEditable {
+        MapItemEditable::new(self)
     }
 }
 
@@ -156,6 +181,20 @@ impl MapEntryFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `MapEntryFrozen` from a given `MapEntryEditable` value.
+    pub fn new_from_editable(editable_entry: &MapEntryEditable) -> Self {
+        let items = editable_entry
+            .iter()
+            .map(|(key, value)| (key.clone(), MapItemFrozen::new_from_editable(value)))
+            .collect();
+        Self::new_from_items(items)
+    }
+
+    /// Converts the current `MapEntryFrozen` instance into a `MapEntryEditable` instance.
+    pub fn thaw(&self) -> MapEntryEditable {
+        MapEntryEditable::new(self)
     }
 
     fn update_hash(&mut self) {
@@ -306,6 +345,27 @@ impl MapFrozen {
         };
         s.update_hash();
         Ok(s)
+    }
+
+    /// Creates a new `MapFrozen` from a given `MapEditable` value.
+    pub fn new_from_editable(editable_map: &MapEditable) -> Self {
+        let definition = editable_map.definition().clone();
+        let items = editable_map
+            .iter()
+            .map(|(key, value)| (key.clone(), MapEntryFrozen::new_from_editable(value)))
+            .collect();
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `MapFrozen` instance into a `MapEditable` instance.
+    pub fn thaw(&self) -> MapEditable {
+        MapEditable::new(self)
     }
 
     fn update_hash(&mut self) {

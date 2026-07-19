@@ -1,79 +1,31 @@
+use crate::StoreError;
 use crate::definition::TableDefinition;
-use crate::editable::TableEditable;
+use crate::frozen::TableFrozen;
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
-/// Represents a table of data in the frozen data.
+/// Represents a table of data in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TableFrozen {
+pub struct TableEditable {
     definition: TableDefinition,
     rows: Vec<BTreeMap<StoreKey, ShareableString>>,
-    hash: [u8; 32],
 }
 
-impl TableFrozen {
-    /// Creates a new `TableFrozen` with a definition.
-    pub fn new(definition: TableDefinition) -> Self {
-        let mut s = Self {
-            definition,
-            rows: Vec::new(),
-            hash: [0u8; 32],
-        };
-        s.update_hash();
-        s
-    }
-
-    /// Creates a new `TableFrozen` with a definition and rows.
-    pub fn new_from_rows(
-        definition: TableDefinition,
-        rows: Vec<BTreeMap<StoreKey, ShareableString>>,
-    ) -> Self {
-        let mut s = Self {
-            definition,
-            rows,
-            hash: [0u8; 32],
-        };
-        s.update_hash();
-        s
-    }
-
-    /// Creates a new `TableFrozen` from an `TableEditable`.
-    pub fn new_from_editable(editable_table: &TableEditable) -> Self {
-        let mut s = Self {
-            definition: editable_table.definition().clone(),
-            rows: editable_table.rows().to_vec(),
-            hash: [0u8; 32],
-        };
-        s.update_hash();
-        s
-    }
-
-    /// Converts the current `TableFrozen` instance into an `TableEditable` instance.
-    pub fn thaw(&self) -> TableEditable {
-        TableEditable::new(self)
-    }
-
-    fn update_hash(&mut self) {
-        let mut h = blake3::Hasher::new();
-
-        // Domain separation for this node/type.
-        h.update(&[0x01]);
-        h.update(b"Table");
-
-        h.update(&(self.rows.len() as u64).to_le_bytes());
-        for row in &self.rows {
-            h.update(&(row.len() as u64).to_le_bytes());
-            for (key, value) in row {
-                h.update(&key.current_blake3_hash());
-                h.update(&value.current_blake3_hash());
-            }
+impl TableEditable {
+    /// Creates a new `TableEditable` from a `TableFrozen`.
+    pub fn new(frozen_table: &TableFrozen) -> Self {
+        Self {
+            definition: frozen_table.definition().clone(),
+            rows: frozen_table.rows().to_vec(),
         }
+    }
 
-        let digest = h.finalize();
-        self.hash = *digest.as_bytes();
+    /// Converts this `TableEditable` into a `TableFrozen`.
+    pub fn freeze(&self) -> TableFrozen {
+        TableFrozen::new_from_editable(self)
     }
 
     /// Returns the value of a cell by row and column index.
@@ -99,11 +51,6 @@ impl TableFrozen {
         self.rows.get(row)
     }
 
-    /// Returns the pre-calculated BLAKE3 hash of the table.
-    pub fn hash(&self) -> [u8; 32] {
-        self.hash
-    }
-
     /// Returns a reference to all rows in the table.
     pub fn rows(&self) -> &[BTreeMap<StoreKey, ShareableString>] {
         &self.rows
@@ -123,21 +70,71 @@ impl TableFrozen {
     pub fn column_count(&self) -> usize {
         self.definition.count()
     }
+
+    /// Sets the value of a cell and updates the hash.
+    pub fn set_cell<S: Into<ShareableString>, V: Into<ShareableString>>(
+        &mut self,
+        row: usize,
+        column_name: S,
+        value: V,
+    ) -> Result<(), StoreError> {
+        let col_name = column_name.into();
+        if !self.definition.contains_key(col_name.clone()) {
+            return Err(StoreError::KeyNotFound);
+        }
+        let col_key = StoreKey::new(col_name).map_err(|e| match e {
+            StoreError::KeyEmpty => StoreError::KeyEmpty,
+            StoreError::KeyInvalidCharacter(s) => StoreError::KeyInvalidCharacter(s),
+            _ => unreachable!("StoreKey::new should only return KeyEmpty or KeyInvalidCharacter"),
+        })?;
+        if let Some(row_data) = self.rows.get_mut(row) {
+            row_data.insert(col_key, value.into());
+            Ok(())
+        } else {
+            Err(StoreError::IndexNotFound)
+        }
+    }
+
+    /// Adds a new row and updates the hash.
+    pub fn add_row(&mut self, row: usize) {
+        let mut full_row = BTreeMap::new();
+        for (key, definition) in self.definition.iter() {
+            full_row.insert(key.clone(), definition.default_value().clone());
+        }
+        if row < self.rows.len() {
+            self.rows.insert(row, full_row);
+        } else {
+            self.rows.push(full_row);
+        }
+    }
+
+    /// Removes a row and updates the hash.
+    pub fn remove_row(&mut self, row: usize) {
+        if self.rows.is_empty() {
+            return;
+        }
+
+        if row < self.rows.len() {
+            self.rows.remove(row);
+        } else {
+            self.rows.pop();
+        }
+    }
 }
 
-impl PartialEq<&TableFrozen> for TableFrozen {
-    fn eq(&self, other: &&TableFrozen) -> bool {
+impl PartialEq<&TableEditable> for TableEditable {
+    fn eq(&self, other: &&TableEditable) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<TableFrozen> for &TableFrozen {
-    fn eq(&self, other: &TableFrozen) -> bool {
+impl PartialEq<TableEditable> for &TableEditable {
+    fn eq(&self, other: &TableEditable) -> bool {
         *self == other
     }
 }
 
-impl TreePrint for TableFrozen {
+impl TreePrint for TableEditable {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

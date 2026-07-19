@@ -1,4 +1,5 @@
 use crate::definition::{ItemDefinitionType, ParameterObjectDefinition};
+use crate::editable::ParameterObjectEditable;
 use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
 use crate::key::ParameterKey;
 use crate::traits::TreePrint;
@@ -80,6 +81,27 @@ impl ParameterObjectFrozen {
         };
         s.update_hash();
         s
+    }
+
+    /// Creates a new `ParameterObjectFrozen` from a given `ParameterObjectEditable` value.
+    pub fn new_from_editable(editable_object: &ParameterObjectEditable) -> Self {
+        let definition = editable_object.definition().clone();
+        let items = editable_object
+            .iter()
+            .map(|(key, value)| (key.clone(), value.freeze()))
+            .collect();
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
+    /// Converts the current `ParameterObjectFrozen` instance into a `ParameterObjectEditable` instance.
+    pub fn thaw(&self) -> ParameterObjectEditable {
+        ParameterObjectEditable::new_from_frozen(self)
     }
 
     fn update_hash(&mut self) {
