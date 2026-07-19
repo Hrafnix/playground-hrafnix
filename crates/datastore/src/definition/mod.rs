@@ -16,8 +16,6 @@ pub mod definition_object_parameter;
 pub mod definition_object_variable;
 /// Definitions for string-based data structures.
 pub mod definition_string;
-/// Definitions for struct-like data structures.
-pub mod definition_struct;
 /// Definitions for table-based data structures.
 pub mod definition_table;
 
@@ -30,5 +28,4 @@ pub use definition_object_general::*;
 pub use definition_object_parameter::*;
 pub use definition_object_variable::*;
 pub use definition_string::*;
-pub use definition_struct::*;
 pub use definition_table::*;

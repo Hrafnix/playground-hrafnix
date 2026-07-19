@@ -5,7 +5,6 @@ mod definition_map;
 mod definition_object;
 mod definition_parameter_builder;
 mod definition_parameter_object;
-mod definition_struct;
 mod definition_table;
 mod definition_variable_builder;
 mod definition_variable_object;

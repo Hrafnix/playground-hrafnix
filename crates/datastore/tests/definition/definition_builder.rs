@@ -356,19 +356,16 @@ fn test_object_definition_launder() {
             StoreKey::new("p6".into()).unwrap(),
             MapDefinition::new(
                 "D6",
-                StructDefinition::new(
-                    "Item",
-                    vec![
-                        (
-                            store_key!("col1"),
-                            StructItemDefinition::String(StringDefinition::new("C1")),
-                        ),
-                        (
-                            store_key!("col2"),
-                            StructItemDefinition::Number(NumberDefinition::new("C2")),
-                        ),
-                    ],
-                ),
+                vec![
+                    (
+                        store_key!("col1"),
+                        MapItemDefinition::String(StringDefinition::new("C1")),
+                    ),
+                    (
+                        store_key!("col2"),
+                        MapItemDefinition::Number(NumberDefinition::new("C2")),
+                    ),
+                ],
             ),
         )
         .finish();
@@ -404,5 +401,4 @@ fn test_object_definition_launder() {
     assert!(store.contains("col2"));
     assert!(store.contains("C1"));
     assert!(store.contains("C2"));
-    assert!(store.contains("Item"));
 }

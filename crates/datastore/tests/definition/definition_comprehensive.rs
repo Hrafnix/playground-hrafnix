@@ -2,7 +2,7 @@
 //!
 //! These tests complement the focused checks in `definition_checks` by building
 //! realistic composite definitions and verifying the interaction between
-//! [`StringDefinition`], [`ObjectDefinition`], [`StructDefinition`],
+//! [`StringDefinition`], [`ObjectDefinition`],
 //! [`MapDefinition`], [`TableDefinition`], [`ChoiceDefinition`], and
 //! [`FileDefinition`].
 use datastore::prelude::*;
@@ -58,18 +58,18 @@ fn test_table_definition_comprehensive() {
 }
 
 #[test]
-fn test_struct_definition_comprehensive() {
-    // Why: Test that a struct definition correctly stores field definitions and supports basic operations.
-    let struct_def = StructDefinition::new(
-        "Struct Desc",
+fn test_map_definition_comprehensive() {
+    // Why: Test that a map definition correctly stores its entry schema fields.
+    let map_def = MapDefinition::new(
+        "Map Desc",
         vec![
             (
                 store_key!("f1"),
-                StructItemDefinition::String(StringDefinition::new("F1")),
+                MapItemDefinition::String(StringDefinition::new("F1")),
             ),
             (
                 store_key!("f2"),
-                StructItemDefinition::Table(TableDefinition::new(
+                MapItemDefinition::Table(TableDefinition::new(
                     "T1",
                     Vec::<(StoreKey, NumberDefinition)>::new(),
                 )),
@@ -77,25 +77,17 @@ fn test_struct_definition_comprehensive() {
         ],
     );
 
-    assert_eq!(struct_def.description_ref().as_ref(), "Struct Desc");
-    assert_eq!(struct_def.count(), 2);
-    assert!(struct_def.contains_key_str("f1"));
-    assert!(struct_def.get_str("f2").is_some());
+    assert_eq!(map_def.description_ref().as_ref(), "Map Desc");
+    assert_eq!(map_def.count(), 2);
+    assert!(map_def.contains_key_str("f1"));
+    assert!(map_def.get_str("f2").is_some());
 
-    let keys: Vec<String> = struct_def.keys().map(|k| k.as_str().to_string()).collect();
+    let keys: Vec<String> = map_def.keys().map(|k| k.as_str().to_string()).collect();
     assert!(keys.contains(&"f1".to_string()));
     assert!(keys.contains(&"f2".to_string()));
 
-    let iter_count = struct_def.iter().count();
+    let iter_count = map_def.iter().count();
     assert_eq!(iter_count, 2);
-}
-
-#[test]
-fn test_map_definition_comprehensive() {
-    // Why: Test that a map definition correctly stores its item struct definition.
-    let struct_def = StructDefinition::new("Item", Vec::<(StoreKey, StructItemDefinition)>::new());
-    let map_def = MapDefinition::new("Map Desc", struct_def);
-    assert_eq!(map_def.description_ref().as_ref(), "Map Desc");
 }
 
 #[test]
@@ -145,19 +137,14 @@ fn test_launder_comprehensive() {
     assert_eq!(laundered_table.description(), table_def.description());
     assert!(laundered_table.contains_key("col"));
 
-    // Test StructDefinition launder
-    let struct_def = StructDefinition::new(
-        "Struct",
+    // Test MapDefinition launder
+    let map_def = MapDefinition::new(
+        "Map",
         vec![(store_key!("field"), NumberDefinition::new("F"))],
     );
-    let laundered_struct = struct_def.launder(&store);
-    assert_eq!(laundered_struct.description(), struct_def.description());
-    assert!(laundered_struct.contains_key("field"));
-
-    // Test MapDefinition launder
-    let map_def = MapDefinition::new("Map", struct_def.clone());
     let laundered_map = map_def.launder(&store);
     assert_eq!(laundered_map.description(), map_def.description());
+    assert!(laundered_map.contains_key("field"));
 
     // Test ObjectDefinition launder
     let obj_def = ObjectDefinition::builder("Obj")

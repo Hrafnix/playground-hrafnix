@@ -93,31 +93,28 @@ fn test_variable_object_definition_print() {
             VariableKey::new("v_p6".into()).unwrap(),
             MapDefinition::new(
                 "D6",
-                StructDefinition::new(
-                    "Item",
-                    vec![
-                        (
-                            store_key!("col1"),
-                            StructItemDefinition::String(StringDefinition::new("C1")),
-                        ),
-                        (
-                            store_key!("col2"),
-                            StructItemDefinition::Number(NumberDefinition::new_with_constraint(
-                                "C2",
-                                NumberConstraint::Max {
-                                    value: 1.0,
-                                    inclusive: true,
-                                },
-                            )),
-                        ),
-                    ],
-                ),
+                vec![
+                    (
+                        store_key!("col1"),
+                        MapItemDefinition::String(StringDefinition::new("C1")),
+                    ),
+                    (
+                        store_key!("col2"),
+                        MapItemDefinition::Number(NumberDefinition::new_with_constraint(
+                            "C2",
+                            NumberConstraint::Max {
+                                value: 1.0,
+                                inclusive: true,
+                            },
+                        )),
+                    ),
+                ],
             ),
         )
         .finish();
 
     assert_eq!(
         format!("{}", def_1),
-        "Variable Object Definition (Test)\n    ├── v_p1 (D1) String - default: \"\"\n    ├── v_p2 (D2) File - default: \"\" [ext]\n    ├── v_p3 (D3) Number - default: \"\"\n    ├── v_p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── v_p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── v_p6 (D6) Map\n        └── item_type (Item) Struct\n            ├── col1 (C1) String - default: \"\"\n            └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
+        "Variable Object Definition (Test)\n    ├── v_p1 (D1) String - default: \"\"\n    ├── v_p2 (D2) File - default: \"\" [ext]\n    ├── v_p3 (D3) Number - default: \"\"\n    ├── v_p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── v_p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── v_p6 (D6) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
     );
 }

@@ -16,8 +16,6 @@ pub mod frozen_object_parameter;
 pub mod frozen_object_variable;
 /// Frozen string data.
 pub mod frozen_string;
-/// Frozen struct data.
-pub mod frozen_struct;
 /// Frozen table data.
 pub mod frozen_table;
 
@@ -30,5 +28,4 @@ pub use frozen_object_general::*;
 pub use frozen_object_parameter::*;
 pub use frozen_object_variable::*;
 pub use frozen_string::*;
-pub use frozen_struct::*;
 pub use frozen_table::*;

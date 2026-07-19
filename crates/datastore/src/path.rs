@@ -200,13 +200,13 @@ mod tests {
             .with_segment(store_key!("key"));
         assert_eq!(path.to_string(), "obj/prop/key");
 
-        // Struct item path from parameter
+        // Map entry item path from parameter
         let path = StorePath::new(store_key!("obj"))
             .with_segment(store_key!("prop"))
             .with_segment(store_key!("item"));
         assert_eq!(path.to_string(), "obj/prop/item");
 
-        // Struct item path from map entry
+        // Map entry item path from map entry
         let path = StorePath::new(store_key!("obj"))
             .with_segment(store_key!("prop"))
             .with_segment(store_key!("key"))

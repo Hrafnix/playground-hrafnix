@@ -1,22 +1,123 @@
-use crate::definition::StructDefinition;
+use crate::definition::{
+    ChoiceDefinition, FileDefinition, NumberDefinition, StringDefinition, TableDefinition,
+};
+use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-/// Definition for a map parameter where keys are strings and values follow a `StructDefinition`.
+/// The definition of an item within a map entry.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum MapItemDefinition {
+    /// A choice parameter.
+    Choice(ChoiceDefinition),
+    /// A file parameter.
+    File(FileDefinition),
+    /// A number parameter.
+    Number(NumberDefinition),
+    /// A string parameter.
+    String(StringDefinition),
+    /// A table parameter.
+    Table(TableDefinition),
+}
+
+impl From<StringDefinition> for MapItemDefinition {
+    fn from(definition: StringDefinition) -> Self {
+        Self::String(definition)
+    }
+}
+
+impl From<ChoiceDefinition> for MapItemDefinition {
+    fn from(definition: ChoiceDefinition) -> Self {
+        Self::Choice(definition)
+    }
+}
+
+impl From<FileDefinition> for MapItemDefinition {
+    fn from(definition: FileDefinition) -> Self {
+        Self::File(definition)
+    }
+}
+
+impl From<NumberDefinition> for MapItemDefinition {
+    fn from(definition: NumberDefinition) -> Self {
+        Self::Number(definition)
+    }
+}
+
+impl From<TableDefinition> for MapItemDefinition {
+    fn from(definition: TableDefinition) -> Self {
+        Self::Table(definition)
+    }
+}
+
+impl MapItemDefinition {
+    /// Returns a new `MapItemDefinition` with strings laundered through the provided store.
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        match self {
+            Self::Choice(def) => Self::Choice(def.launder(store)),
+            Self::File(def) => Self::File(def.launder(store)),
+            Self::Number(def) => Self::Number(def.launder(store)),
+            Self::String(def) => Self::String(def.launder(store)),
+            Self::Table(def) => Self::Table(def.launder(store)),
+        }
+    }
+}
+
+impl PartialEq<&MapItemDefinition> for MapItemDefinition {
+    fn eq(&self, other: &&MapItemDefinition) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapItemDefinition> for &MapItemDefinition {
+    fn eq(&self, other: &MapItemDefinition) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapItemDefinition {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        match self {
+            MapItemDefinition::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            MapItemDefinition::File(file) => file.tree_print(f, label, prefix, last),
+            MapItemDefinition::Number(number) => number.tree_print(f, label, prefix, last),
+            MapItemDefinition::String(string) => string.tree_print(f, label, prefix, last),
+            MapItemDefinition::Table(table) => table.tree_print(f, label, prefix, last),
+        }
+    }
+}
+
+/// Definition for a map parameter where keys are strings and values follow a fixed schema of
+/// named `MapItemDefinition`s.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MapDefinition {
     description: ShareableString,
-    item_type: Arc<StructDefinition>,
+    item_type: Arc<BTreeMap<StoreKey, MapItemDefinition>>,
 }
 
 impl MapDefinition {
-    /// Creates a new `MapDefinition` with a description and item type.
-    pub fn new<S: Into<ShareableString>>(description: S, item_type: StructDefinition) -> Self {
+    /// Creates a new `MapDefinition` with a description and a list of entry items.
+    pub fn new<S1: Into<ShareableString>, K: Into<StoreKey>, I: Into<MapItemDefinition>>(
+        description: S1,
+        item_type: Vec<(K, I)>,
+    ) -> Self {
+        let mut items = BTreeMap::new();
+        for (k, v) in item_type {
+            let key = k.into();
+            items.insert(key, v.into());
+        }
         Self {
             description: description.into(),
-            item_type: Arc::new(item_type),
+            item_type: Arc::new(items),
         }
     }
 
@@ -25,9 +126,47 @@ impl MapDefinition {
         self.description.clone()
     }
 
-    /// Returns a reference to the item type definition.
-    pub fn item_type(&self) -> &StructDefinition {
-        self.item_type.as_ref()
+    /// Returns a reference to the map item definition for the specified key.
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemDefinition> {
+        self.item_type.get(&key.into())
+    }
+
+    /// Returns a reference to the map item definition for the specified key string.
+    pub fn get_str(&self, key: &str) -> Option<&MapItemDefinition> {
+        self.item_type
+            .iter()
+            .find(|(k, _)| k.as_str() == key)
+            .map(|(_, v)| v)
+    }
+
+    /// Returns true if the map's entry schema contains an item with the specified key.
+    pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
+        self.item_type.contains_key(&key.into())
+    }
+
+    /// Returns an iterator over the keys of the map's entry schema.
+    pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
+        self.item_type.keys()
+    }
+
+    /// Returns true if the map's entry schema contains an item with the specified key string.
+    pub fn contains_key_str(&self, key: &str) -> bool {
+        self.item_type.iter().any(|(k, _)| k.as_str() == key)
+    }
+
+    /// Returns an iterator over the map's entry item definitions.
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapItemDefinition)> {
+        self.item_type.iter()
+    }
+
+    /// Returns the number of items in the map's entry schema.
+    pub fn count(&self) -> usize {
+        self.item_type.len()
+    }
+
+    /// Returns a reference to the map's entry item type.
+    pub fn item_type(&self) -> &BTreeMap<StoreKey, MapItemDefinition> {
+        &self.item_type
     }
 
     /// Returns a reference to the description.
@@ -39,7 +178,12 @@ impl MapDefinition {
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
-            item_type: Arc::new(self.item_type.launder(store)),
+            item_type: Arc::new(
+                self.item_type
+                    .iter()
+                    .map(|(k, v)| (k.launder(store), v.launder(store)))
+                    .collect(),
+            ),
         }
     }
 }
@@ -74,7 +218,14 @@ impl TreePrint for MapDefinition {
         )?;
 
         let child_prefix = Self::child_prefix(prefix, last);
-        self.item_type
-            .tree_print(f, "item_type", &child_prefix, true)
+
+        let item_count = self.item_type.len();
+
+        for (i, (key, item)) in self.item_type.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
     }
 }

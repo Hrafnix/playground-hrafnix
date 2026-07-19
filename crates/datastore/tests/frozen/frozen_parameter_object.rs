@@ -94,19 +94,16 @@ fn test_parameter_object_frozen_print_empty() {
                 ParameterKey::new("p_p6".into()).unwrap(),
                 MapDefinition::new(
                     "D6",
-                    StructDefinition::new(
-                        "Item",
-                        vec![
-                            (
-                                store_key!("col1"),
-                                StructItemDefinition::String(StringDefinition::new("C1")),
-                            ),
-                            (
-                                store_key!("col2"),
-                                StructItemDefinition::Number(NumberDefinition::new("C2")),
-                            ),
-                        ],
-                    ),
+                    vec![
+                        (
+                            store_key!("col1"),
+                            MapItemDefinition::String(StringDefinition::new("C1")),
+                        ),
+                        (
+                            store_key!("col2"),
+                            MapItemDefinition::Number(NumberDefinition::new("C2")),
+                        ),
+                    ],
                 ),
             )
             .finish(),
