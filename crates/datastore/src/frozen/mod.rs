@@ -9,7 +9,7 @@ pub mod frozen_map;
 /// Frozen number data.
 pub mod frozen_number;
 /// Frozen object data.
-pub mod frozen_object_general;
+pub mod frozen_object_global;
 /// Frozen parameter object data.
 pub mod frozen_object_parameter;
 /// Frozen variable object data.
@@ -24,7 +24,7 @@ pub use frozen_file::*;
 pub use frozen_item::*;
 pub use frozen_map::*;
 pub use frozen_number::*;
-pub use frozen_object_general::*;
+pub use frozen_object_global::*;
 pub use frozen_object_parameter::*;
 pub use frozen_object_variable::*;
 pub use frozen_string::*;

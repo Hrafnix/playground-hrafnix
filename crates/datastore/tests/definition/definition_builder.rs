@@ -5,11 +5,11 @@ fn test_object_builder_pattern() {
     // Why: Test object creation with the builder pattern using with_inserted parameter.
     let obj_def = ObjectDefinition::builder("Test Object")
         .with(
-            StoreKey::new("prop1".into()).unwrap(),
+            GlobalKey::new("g_prop1".into()).unwrap(),
             StringDefinition::new("String prop"),
         )
         .with(
-            StoreKey::new("prop2".into()).unwrap(),
+            GlobalKey::new("g_prop2".into()).unwrap(),
             NumberDefinition::new_with_default("Number prop", "0"),
         )
         .finish();
@@ -23,7 +23,7 @@ fn test_object_inheritance() {
     // Why: Test that an object definition can inherit from another.
     let parent_def = ObjectDefinition::builder("Parent")
         .with(
-            StoreKey::new("prop1".into()).unwrap(),
+            GlobalKey::new("g_prop1".into()).unwrap(),
             StringDefinition::new_with_default("D1", "V1"),
         )
         .finish();
@@ -33,20 +33,20 @@ fn test_object_inheritance() {
 
     let mut builder = parent_def.inherit("Child");
     builder.insert(
-        StoreKey::new("prop2".into()).unwrap(),
+        GlobalKey::new("g_prop2".into()).unwrap(),
         StringDefinition::new_with_default("D2", "V2"),
     );
 
     let child_def = builder.finish();
     assert_eq!(child_def.count(), 2);
-    assert!(child_def.contains("prop1"));
-    assert!(child_def.contains("prop2"));
+    assert!(child_def.contains("g_prop1"));
+    assert!(child_def.contains("g_prop2"));
 
     let mut builder = child_def.inherit("Grandchild");
-    builder.remove("prop1");
+    builder.remove("g_prop1");
     let grandchild_def = builder.finish();
     assert_eq!(grandchild_def.count(), 1);
-    assert!(!grandchild_def.contains("prop1"));
+    assert!(!grandchild_def.contains("g_prop1"));
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn test_object_definition_immutability() {
     // Why: Test that the object definition is immutable once created.
     let obj_def = ObjectDefinition::builder("Test Object")
         .with(
-            StoreKey::new("prop1".into()).unwrap(),
+            GlobalKey::new("g_prop1".into()).unwrap(),
             StringDefinition::new("String prop"),
         )
         .finish();
@@ -75,7 +75,7 @@ fn test_object_definition_immutability() {
     // The point of this test is that obj_def does NOT have .add() or .remove()
     // It is immutable by design.
     assert_eq!(obj_def.count(), 1);
-    assert!(obj_def.contains("prop1"));
+    assert!(obj_def.contains("g_prop1"));
 }
 
 #[test]
@@ -92,27 +92,27 @@ fn test_object_definition_builder_insert() {
     // Why: Test that the builder correctly inserts items into the object definition.
     let mut builder = ObjectDefinitionBuilder::new("Test");
     let prop = StringDefinition::new("Desc");
-    let key = StoreKey::new("key1".into()).unwrap();
+    let key = GlobalKey::new("g_key1".into()).unwrap();
 
     builder.insert(key.clone(), prop.clone());
     let def = builder.finish();
 
     assert_eq!(def.count(), 1);
-    assert!(def.contains("key1"));
+    assert!(def.contains("g_key1"));
 }
 
 #[test]
 fn test_object_definition_builder_with_inserted() {
     // Why: Test that the builder correctly adds an item using the fluent interface.
     let prop = StringDefinition::new("Desc");
-    let key = StoreKey::new("key1".into()).unwrap();
+    let key = GlobalKey::new("g_key1".into()).unwrap();
 
     let def = ObjectDefinitionBuilder::new("Test")
         .with(key, prop)
         .finish();
 
     assert_eq!(def.count(), 1);
-    assert!(def.contains("key1"));
+    assert!(def.contains("g_key1"));
 }
 
 #[test]
@@ -120,21 +120,21 @@ fn test_object_definition_builder_remove() {
     // Why: Test that the builder correctly removes items.
     let mut builder = ObjectDefinitionBuilder::new("Test");
     let prop = StringDefinition::new("Desc");
-    let key = StoreKey::new("key1".into()).unwrap();
+    let key = GlobalKey::new("g_key1".into()).unwrap();
 
     builder.insert(key, prop);
     assert_eq!(builder.finish().count(), 1);
 
     let mut builder = ObjectDefinitionBuilder::new("Test");
     builder.insert(
-        StoreKey::new("key1".into()).unwrap(),
+        GlobalKey::new("g_key1".into()).unwrap(),
         StringDefinition::new("Desc"),
     );
-    builder.remove("key1");
+    builder.remove("g_key1");
     let def = builder.finish();
 
     assert_eq!(def.count(), 0);
-    assert!(!def.contains("key1"));
+    assert!(!def.contains("g_key1"));
 }
 
 #[test]
@@ -142,10 +142,10 @@ fn test_object_definition_builder_without() {
     // Why: Test that the builder correctly removes an item using the fluent interface.
     let def = ObjectDefinitionBuilder::new("Test")
         .with(
-            StoreKey::new("key1".into()).unwrap(),
+            GlobalKey::new("g_key1".into()).unwrap(),
             StringDefinition::new("Desc"),
         )
-        .without("key1")
+        .without("g_key1")
         .finish();
 
     assert_eq!(def.count(), 0);
@@ -156,7 +156,7 @@ fn test_object_definition_inherit() {
     // Why: Test that the builder correctly inherits from another object definition.
     let parent_def = ObjectDefinitionBuilder::new("Parent")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
@@ -164,14 +164,14 @@ fn test_object_definition_inherit() {
     let child_def = ObjectDefinitionBuilder::new("Child")
         .inherit(parent_def)
         .with(
-            StoreKey::new("c1".into()).unwrap(),
+            GlobalKey::new("g_c1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .finish();
 
     assert_eq!(child_def.count(), 2);
-    assert!(child_def.contains("p1"));
-    assert!(child_def.contains("c1"));
+    assert!(child_def.contains("g_p1"));
+    assert!(child_def.contains("g_c1"));
 }
 
 #[test]
@@ -179,14 +179,14 @@ fn test_object_definition_inherit_overwrite() {
     // Why: Test that inheriting from another object definition overwrites existing items with the same key.
     let parent_def = ObjectDefinitionBuilder::new("Parent")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
 
     let child_def = ObjectDefinitionBuilder::new("Child")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .inherit(parent_def)
@@ -200,14 +200,14 @@ fn test_object_definition_inherit_with_check() {
     // Why: Test that try_inherit successfully inherits when there are no key conflicts.
     let parent_def = ObjectDefinitionBuilder::new("Parent")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
 
     let result = ObjectDefinitionBuilder::new("Child")
         .with(
-            StoreKey::new("p2".into()).unwrap(),
+            GlobalKey::new("g_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .inherit_with_check(parent_def);
@@ -220,14 +220,14 @@ fn test_object_definition_inherit_with_check_error() {
     // Why: Test that try_inherit returns an error when there is a key conflict.
     let parent_def = ObjectDefinitionBuilder::new("Parent")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
 
     let result = ObjectDefinitionBuilder::new("Child")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .inherit_with_check(parent_def);
@@ -239,7 +239,7 @@ fn test_object_definition_inherit_with_check_error() {
 fn test_object_definition_inherit_from_builder() {
     // Why: Test that the builder correctly inherits from another builder.
     let b1 = ObjectDefinitionBuilder::new("B1").with(
-        StoreKey::new("p1".into()).unwrap(),
+        GlobalKey::new("g_p1".into()).unwrap(),
         StringDefinition::new("D1"),
     );
 
@@ -248,20 +248,20 @@ fn test_object_definition_inherit_from_builder() {
         .finish();
 
     assert_eq!(b2.count(), 1);
-    assert!(b2.contains("p1"));
+    assert!(b2.contains("g_p1"));
 }
 
 #[test]
 fn test_object_definition_inherit_from_builder_with_check() {
     // Why: Test that try_inherit_from_builder successfully inherits when there are no key conflicts.
     let b1 = ObjectDefinitionBuilder::new("B1").with(
-        StoreKey::new("p1".into()).unwrap(),
+        GlobalKey::new("g_p1".into()).unwrap(),
         StringDefinition::new("D1"),
     );
 
     let result = ObjectDefinitionBuilder::new("B2")
         .with(
-            StoreKey::new("p2".into()).unwrap(),
+            GlobalKey::new("g_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .inherit_from_builder_with_check(b1);
@@ -273,13 +273,13 @@ fn test_object_definition_inherit_from_builder_with_check() {
 fn test_object_definition_inherit_from_builder_with_check_error() {
     // Why: Test that try_inherit_from_builder returns an error when there is a key conflict.
     let b1 = ObjectDefinitionBuilder::new("B1").with(
-        StoreKey::new("p1".into()).unwrap(),
+        GlobalKey::new("g_p1".into()).unwrap(),
         StringDefinition::new("D1"),
     );
 
     let result = ObjectDefinitionBuilder::new("B2")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .inherit_from_builder_with_check(b1);
@@ -292,7 +292,7 @@ fn test_object_definition_getters() {
     // Why: Test that object definition getters correctly return the expected values and iterators.
     let def = ObjectDefinitionBuilder::new("Test")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
@@ -300,19 +300,19 @@ fn test_object_definition_getters() {
     assert_eq!(def.description().as_str(), "Test");
     assert_eq!(def.description_ref().as_str(), "Test");
     assert_eq!(def.count(), 1);
-    assert!(def.contains("p1"));
-    assert!(def.contains_str("p1"));
-    assert!(def.get("p1").is_some());
-    assert!(def.get_str("p1").is_some());
-    assert!(def.get("p2").is_none());
+    assert!(def.contains("g_p1"));
+    assert!(def.contains_str("g_p1"));
+    assert!(def.get("g_p1").is_some());
+    assert!(def.get_str("g_p1").is_some());
+    assert!(def.get("g_p2").is_none());
 
     let keys: Vec<_> = def.keys().collect();
     assert_eq!(keys.len(), 1);
-    assert_eq!(keys[0].as_str(), "p1");
+    assert_eq!(keys[0].as_str(), "g_p1");
 
     let iter_items: Vec<_> = def.iter().collect();
     assert_eq!(iter_items.len(), 1);
-    assert_eq!(iter_items[0].0.as_str(), "p1");
+    assert_eq!(iter_items[0].0.as_str(), "g_p1");
 }
 
 #[test]
@@ -321,19 +321,19 @@ fn test_object_definition_launder() {
     let store = SharedStringStore::new();
     let def = ObjectDefinitionBuilder::new("Test")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .with(
-            StoreKey::new("p2".into()).unwrap(),
+            GlobalKey::new("g_p2".into()).unwrap(),
             FileDefinition::new("D2", "ext", false),
         )
         .with(
-            StoreKey::new("p3".into()).unwrap(),
+            GlobalKey::new("g_p3".into()).unwrap(),
             NumberDefinition::new("D3"),
         )
         .with(
-            StoreKey::new("p4".into()).unwrap(),
+            GlobalKey::new("g_p4".into()).unwrap(),
             ChoiceDefinition::new(
                 "D4",
                 vec![
@@ -343,7 +343,7 @@ fn test_object_definition_launder() {
             ),
         )
         .with(
-            StoreKey::new("p5".into()).unwrap(),
+            GlobalKey::new("g_p5".into()).unwrap(),
             TableDefinition::new(
                 "D5",
                 vec![
@@ -353,7 +353,7 @@ fn test_object_definition_launder() {
             ),
         )
         .with(
-            StoreKey::new("p6".into()).unwrap(),
+            GlobalKey::new("g_p6".into()).unwrap(),
             MapDefinition::new(
                 "D6",
                 vec![
@@ -373,19 +373,19 @@ fn test_object_definition_launder() {
     let laundered = def.launder(&store);
     assert_eq!(laundered.description().as_str(), "Test");
     assert_eq!(laundered.count(), 6);
-    assert!(laundered.contains("p1"));
-    assert!(laundered.contains("p2"));
-    assert!(laundered.contains("p3"));
-    assert!(laundered.contains("p4"));
-    assert!(laundered.contains("p5"));
-    assert!(laundered.contains("p6"));
+    assert!(laundered.contains("g_p1"));
+    assert!(laundered.contains("g_p2"));
+    assert!(laundered.contains("g_p3"));
+    assert!(laundered.contains("g_p4"));
+    assert!(laundered.contains("g_p5"));
+    assert!(laundered.contains("g_p6"));
 
-    assert!(store.contains("p1"));
-    assert!(store.contains("p2"));
-    assert!(store.contains("p3"));
-    assert!(store.contains("p4"));
-    assert!(store.contains("p5"));
-    assert!(store.contains("p6"));
+    assert!(store.contains("g_p1"));
+    assert!(store.contains("g_p2"));
+    assert!(store.contains("g_p3"));
+    assert!(store.contains("g_p4"));
+    assert!(store.contains("g_p5"));
+    assert!(store.contains("g_p6"));
     assert!(store.contains("D1"));
     assert!(store.contains("D2"));
     assert!(store.contains("D3"));

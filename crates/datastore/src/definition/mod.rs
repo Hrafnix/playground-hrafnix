@@ -9,7 +9,7 @@ pub mod definition_map;
 /// Definitions for number-based data structures.
 pub mod definition_number;
 /// Definitions for object-based data structures.
-pub mod definition_object_general;
+pub mod definition_object_global;
 /// Definitions for object parameter configurations within data structures.
 pub mod definition_object_parameter;
 /// Definitions for object variable configurations within data structures.
@@ -24,7 +24,7 @@ pub use definition_file::*;
 pub use definition_item::*;
 pub use definition_map::*;
 pub use definition_number::*;
-pub use definition_object_general::*;
+pub use definition_object_global::*;
 pub use definition_object_parameter::*;
 pub use definition_object_variable::*;
 pub use definition_string::*;

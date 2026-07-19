@@ -5,15 +5,15 @@ fn test_object_definition_basic() {
     // Why: Test object definition creation and items.
     let mut builder = ObjectDefinition::builder("Test Object");
     builder.insert(
-        StoreKey::new("p1".into()).unwrap(),
+        GlobalKey::new("g_p1".into()).unwrap(),
         StringDefinition::new("D1"),
     );
     let obj_def = builder.finish();
 
     assert_eq!(obj_def.description().as_ref(), "Test Object");
     assert_eq!(obj_def.count(), 1);
-    assert!(obj_def.contains("p1"));
-    assert!(obj_def.contains_str("p1"));
+    assert!(obj_def.contains("g_p1"));
+    assert!(obj_def.contains_str("g_p1"));
 }
 
 #[test]
@@ -21,19 +21,19 @@ fn test_object_definition_equality() {
     // Why: Test that two object definitions with the same items are considered equal.
     let def_1 = ObjectDefinition::builder("Test Object")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
     let def_2 = ObjectDefinition::builder("Test Object")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
     let def_3 = ObjectDefinition::builder("Test Object")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
         .finish();
@@ -49,19 +49,19 @@ fn test_object_definition_print() {
     // Why: Test object definition print.
     let def_1 = ObjectDefinitionBuilder::new("Test")
         .with(
-            StoreKey::new("p1".into()).unwrap(),
+            GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .with(
-            StoreKey::new("p2".into()).unwrap(),
+            GlobalKey::new("g_p2".into()).unwrap(),
             FileDefinition::new("D2", "ext", false),
         )
         .with(
-            StoreKey::new("p3".into()).unwrap(),
+            GlobalKey::new("g_p3".into()).unwrap(),
             NumberDefinition::new("D3"),
         )
         .with(
-            StoreKey::new("p4".into()).unwrap(),
+            GlobalKey::new("g_p4".into()).unwrap(),
             ChoiceDefinition::new(
                 "D4",
                 vec![
@@ -71,7 +71,7 @@ fn test_object_definition_print() {
             ),
         )
         .with(
-            StoreKey::new("p5".into()).unwrap(),
+            GlobalKey::new("g_p5".into()).unwrap(),
             TableDefinition::new(
                 "D5",
                 vec![
@@ -90,7 +90,7 @@ fn test_object_definition_print() {
             ),
         )
         .with(
-            StoreKey::new("p6".into()).unwrap(),
+            GlobalKey::new("g_p6".into()).unwrap(),
             MapDefinition::new(
                 "D6",
                 vec![
@@ -115,6 +115,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Object Definition (Test)\n    ├── p1 (D1) String - default: \"\"\n    ├── p2 (D2) File - default: \"\" [ext]\n    ├── p3 (D3) Number - default: \"\"\n    ├── p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p6 (D6) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
+        "Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) File - default: \"\" [ext]\n    ├── g_p3 (D3) Number - default: \"\"\n    ├── g_p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p6 (D6) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
     );
 }

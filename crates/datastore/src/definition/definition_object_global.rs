@@ -1,6 +1,6 @@
 use crate::StoreError;
 use crate::definition::ItemDefinitionType;
-use crate::key::StoreKey;
+use crate::key::GlobalKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ObjectDefinitionBuilder {
     description: ShareableString,
-    items: BTreeMap<StoreKey, ItemDefinitionType>,
+    items: BTreeMap<GlobalKey, ItemDefinitionType>,
 }
 
 impl ObjectDefinitionBuilder {
@@ -78,7 +78,7 @@ impl ObjectDefinitionBuilder {
     /// Returns a new builder with the item inserted.
     ///
     /// This method will overwrite existing item with the same keys.
-    pub fn with<K: Into<StoreKey>, T: Into<ItemDefinitionType>>(
+    pub fn with<K: Into<GlobalKey>, T: Into<ItemDefinitionType>>(
         mut self,
         key: K,
         parameter: T,
@@ -90,7 +90,11 @@ impl ObjectDefinitionBuilder {
     /// Inserts an item into the current builder.
     ///
     /// This method will overwrite existing item with the same keys.
-    pub fn insert<K: Into<StoreKey>, T: Into<ItemDefinitionType>>(&mut self, key: K, parameter: T) {
+    pub fn insert<K: Into<GlobalKey>, T: Into<ItemDefinitionType>>(
+        &mut self,
+        key: K,
+        parameter: T,
+    ) {
         let key = key.into();
         self.items.insert(key, parameter.into());
     }
@@ -119,7 +123,7 @@ impl ObjectDefinitionBuilder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ObjectDefinition {
     description: ShareableString,
-    items: Arc<BTreeMap<StoreKey, ItemDefinitionType>>,
+    items: Arc<BTreeMap<GlobalKey, ItemDefinitionType>>,
 }
 
 impl ObjectDefinition {
@@ -174,12 +178,12 @@ impl ObjectDefinition {
     }
 
     /// Returns an iterator over the keys of the items.
-    pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
+    pub fn keys(&self) -> impl Iterator<Item = &GlobalKey> {
         self.items.keys()
     }
 
     /// Returns an iterator over the item definitions.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &ItemDefinitionType)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&GlobalKey, &ItemDefinitionType)> {
         self.items.iter()
     }
 

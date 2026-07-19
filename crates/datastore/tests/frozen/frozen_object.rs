@@ -6,7 +6,7 @@ fn test_object_frozen_basic() {
     let frozen_1 = ObjectFrozen::new(
         ObjectDefinition::builder("Test Object")
             .with(
-                StoreKey::new("p1".into()).unwrap(),
+                GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
@@ -14,8 +14,8 @@ fn test_object_frozen_basic() {
 
     assert_eq!(frozen_1.definition().description().as_ref(), "Test Object");
     assert_eq!(frozen_1.definition().count(), 1);
-    assert!(frozen_1.definition().contains("p1"));
-    assert!(frozen_1.definition().contains_str("p1"));
+    assert!(frozen_1.definition().contains("g_p1"));
+    assert!(frozen_1.definition().contains_str("g_p1"));
     assert_ne!(frozen_1.hash(), [0u8; 32]);
 }
 
@@ -25,7 +25,7 @@ fn test_object_frozen_equality() {
     let frozen_1 = ObjectFrozen::new(
         ObjectDefinition::builder("Test Object")
             .with(
-                StoreKey::new("p1".into()).unwrap(),
+                GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
@@ -33,7 +33,7 @@ fn test_object_frozen_equality() {
     let frozen_2 = ObjectFrozen::new(
         ObjectDefinition::builder("Test Object")
             .with(
-                StoreKey::new("p1".into()).unwrap(),
+                GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
@@ -41,7 +41,7 @@ fn test_object_frozen_equality() {
     let frozen_3 = ObjectFrozen::new(
         ObjectDefinition::builder("Test Object")
             .with(
-                StoreKey::new("p1".into()).unwrap(),
+                GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D2"),
             )
             .finish(),
@@ -59,19 +59,19 @@ fn test_object_frozen_print_empty() {
     let frozen_1 = ObjectFrozen::new(
         ObjectDefinitionBuilder::new("Test")
             .with(
-                StoreKey::new("p1".into()).unwrap(),
+                GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .with(
-                StoreKey::new("p2".into()).unwrap(),
+                GlobalKey::new("g_p2".into()).unwrap(),
                 FileDefinition::new("D2", "ext", false),
             )
             .with(
-                StoreKey::new("p3".into()).unwrap(),
+                GlobalKey::new("g_p3".into()).unwrap(),
                 NumberDefinition::new("D3"),
             )
             .with(
-                StoreKey::new("p4".into()).unwrap(),
+                GlobalKey::new("g_p4".into()).unwrap(),
                 ChoiceDefinition::new(
                     "D4",
                     vec![
@@ -81,7 +81,7 @@ fn test_object_frozen_print_empty() {
                 ),
             )
             .with(
-                StoreKey::new("p5".into()).unwrap(),
+                GlobalKey::new("g_p5".into()).unwrap(),
                 TableDefinition::new(
                     "D5",
                     vec![
@@ -91,7 +91,7 @@ fn test_object_frozen_print_empty() {
                 ),
             )
             .with(
-                StoreKey::new("p6".into()).unwrap(),
+                GlobalKey::new("g_p6".into()).unwrap(),
                 MapDefinition::new(
                     "D6",
                     vec![
@@ -111,6 +111,6 @@ fn test_object_frozen_print_empty() {
 
     assert_eq!(
         format!("{}", frozen_1),
-        "Frozen Object (Test)\n    ├── p1 (D1) String - \"\"\n    ├── p2 (D2) File - \"\"\n    ├── p3 (D3) Number - \"\"\n    ├── p4 (D4) Choice - \"\"\n    ├── p5 (D5) Table 0 rows\n    └── p6 (D6) Map\n"
+        "Frozen Object (Test)\n    ├── g_p1 (D1) String - \"\"\n    ├── g_p2 (D2) File - \"\"\n    ├── g_p3 (D3) Number - \"\"\n    ├── g_p4 (D4) Choice - \"\"\n    ├── g_p5 (D5) Table 0 rows\n    └── g_p6 (D6) Map\n"
     );
 }

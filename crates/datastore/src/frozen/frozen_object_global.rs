@@ -1,6 +1,6 @@
 use crate::definition::{ItemDefinitionType, ObjectDefinition};
 use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
-use crate::key::StoreKey;
+use crate::key::GlobalKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
@@ -12,7 +12,7 @@ pub struct ObjectFrozen {
     /// The definition of the object.
     definition: ObjectDefinition,
     /// The items of the object.
-    items: BTreeMap<StoreKey, ItemFrozen>,
+    items: BTreeMap<GlobalKey, ItemFrozen>,
     /// The pre-calculated BLAKE3 hash of the object's content.
     hash: [u8; 32],
 }
@@ -66,7 +66,7 @@ impl ObjectFrozen {
     /// Creates a new `ObjectFrozen` with a description and items.
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
-        items: BTreeMap<StoreKey, ItemFrozen>,
+        items: BTreeMap<GlobalKey, ItemFrozen>,
     ) -> Self {
         let mut builder = ObjectDefinition::builder(description);
         for (k, v) in &items {
@@ -110,7 +110,7 @@ impl ObjectFrozen {
     }
 
     /// Returns an iterator over the key-parameter pairs in the object.
-    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &ItemFrozen)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&GlobalKey, &ItemFrozen)> {
         self.items.iter()
     }
 
