@@ -81,7 +81,7 @@ fn test_variable_object_definition_print() {
                         NumberDefinition::new_with_constraint(
                             "C2",
                             NumberConstraint::Min {
-                                value: 1.52,
+                                min: 1.52,
                                 inclusive: true,
                             },
                         ),
@@ -103,7 +103,7 @@ fn test_variable_object_definition_print() {
                         MapItemDefinition::Number(NumberDefinition::new_with_constraint(
                             "C2",
                             NumberConstraint::Max {
-                                value: 1.0,
+                                max: 1.0,
                                 inclusive: true,
                             },
                         )),

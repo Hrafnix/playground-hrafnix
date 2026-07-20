@@ -1,16 +1,14 @@
 use crate::definition::TableDefinition;
 use crate::editable::TableEditable;
-use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
-use std::collections::BTreeMap;
 
 /// Represents a table of data in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableFrozen {
     definition: TableDefinition,
-    rows: Vec<BTreeMap<StoreKey, ShareableString>>,
+    rows: Vec<Vec<ShareableString>>,
     hash: [u8; 32],
 }
 
@@ -27,10 +25,7 @@ impl TableFrozen {
     }
 
     /// Creates a new `TableFrozen` with a definition and rows.
-    pub fn new_from_rows(
-        definition: TableDefinition,
-        rows: Vec<BTreeMap<StoreKey, ShareableString>>,
-    ) -> Self {
+    pub fn new_from_rows(definition: TableDefinition, rows: Vec<Vec<ShareableString>>) -> Self {
         let mut s = Self {
             definition,
             rows,
@@ -66,8 +61,7 @@ impl TableFrozen {
         h.update(&(self.rows.len() as u64).to_le_bytes());
         for row in &self.rows {
             h.update(&(row.len() as u64).to_le_bytes());
-            for (key, value) in row {
-                h.update(&key.current_blake3_hash());
+            for value in row {
                 h.update(&value.current_blake3_hash());
             }
         }
@@ -78,11 +72,7 @@ impl TableFrozen {
 
     /// Returns the value of a cell by row and column index.
     pub fn cell_by_index(&self, row: usize, column: usize) -> Option<&ShareableString> {
-        self.rows
-            .get(row)?
-            .iter()
-            .nth(column)
-            .map(|(_, value)| value)
+        self.rows.get(row)?.get(column)
     }
 
     /// Returns the value of a cell by row index and column name.
@@ -91,11 +81,14 @@ impl TableFrozen {
         row: usize,
         column_name: S,
     ) -> Option<&ShareableString> {
-        self.rows.get(row)?.get(&column_name.into())
+        let column_index = self
+            .definition
+            .get_column_index_by_name(column_name.into())?;
+        self.cell_by_index(row, column_index)
     }
 
     /// Returns the row at the specified index.
-    pub fn row(&self, row: usize) -> Option<&BTreeMap<StoreKey, ShareableString>> {
+    pub fn row(&self, row: usize) -> Option<&Vec<ShareableString>> {
         self.rows.get(row)
     }
 
@@ -105,7 +98,7 @@ impl TableFrozen {
     }
 
     /// Returns a reference to all rows in the table.
-    pub fn rows(&self) -> &[BTreeMap<StoreKey, ShareableString>] {
+    pub fn rows(&self) -> &[Vec<ShareableString>] {
         &self.rows
     }
 
@@ -173,14 +166,18 @@ impl TreePrint for TableFrozen {
 
             let row_prefix = Self::child_prefix(&child_prefix, is_last_row);
 
-            for (j, (key, value)) in row.iter().enumerate() {
+            for (j, value) in row.iter().enumerate() {
                 let is_last_key = j == column_count - 1;
+                let key = match self.definition.keys().nth(j) {
+                    Some(k) => k.as_str(),
+                    None => "Unknown",
+                };
                 writeln!(
                     f,
                     "{}{}{} \"{}\"",
                     row_prefix,
                     Self::branch_char(is_last_key),
-                    key.as_str(),
+                    key,
                     value
                 )?;
             }

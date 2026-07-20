@@ -1,17 +1,15 @@
 use crate::StoreError;
 use crate::definition::TableDefinition;
 use crate::frozen::TableFrozen;
-use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
-use std::collections::BTreeMap;
 
 /// Represents a table of data in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableEditable {
     definition: TableDefinition,
-    rows: Vec<BTreeMap<StoreKey, ShareableString>>,
+    rows: Vec<Vec<ShareableString>>,
 }
 
 impl TableEditable {
@@ -30,11 +28,7 @@ impl TableEditable {
 
     /// Returns the value of a cell by row and column index.
     pub fn cell_by_index(&self, row: usize, column: usize) -> Option<&ShareableString> {
-        self.rows
-            .get(row)?
-            .iter()
-            .nth(column)
-            .map(|(_, value)| value)
+        self.rows.get(row)?.get(column)
     }
 
     /// Returns the value of a cell by row index and column name.
@@ -43,16 +37,19 @@ impl TableEditable {
         row: usize,
         column_name: S,
     ) -> Option<&ShareableString> {
-        self.rows.get(row)?.get(&column_name.into())
+        let column_index = self
+            .definition
+            .get_column_index_by_name(column_name.into())?;
+        self.cell_by_index(row, column_index)
     }
 
     /// Returns the row at the specified index.
-    pub fn row(&self, row: usize) -> Option<&BTreeMap<StoreKey, ShareableString>> {
+    pub fn row(&self, row: usize) -> Option<&Vec<ShareableString>> {
         self.rows.get(row)
     }
 
     /// Returns a reference to all rows in the table.
-    pub fn rows(&self) -> &[BTreeMap<StoreKey, ShareableString>] {
+    pub fn rows(&self) -> &[Vec<ShareableString>] {
         &self.rows
     }
 
@@ -79,16 +76,13 @@ impl TableEditable {
         value: V,
     ) -> Result<(), StoreError> {
         let col_name = column_name.into();
-        if !self.definition.contains_key(col_name.clone()) {
-            return Err(StoreError::KeyNotFound);
-        }
-        let col_key = StoreKey::new(col_name).map_err(|e| match e {
-            StoreError::KeyEmpty => StoreError::KeyEmpty,
-            StoreError::KeyInvalidCharacter(s) => StoreError::KeyInvalidCharacter(s),
-            _ => unreachable!("StoreKey::new should only return KeyEmpty or KeyInvalidCharacter"),
-        })?;
+        let column_index = match self.definition.get_column_index_by_name(col_name.clone()) {
+            Some(index) => index,
+            None => return Err(StoreError::KeyNotFound),
+        };
+
         if let Some(row_data) = self.rows.get_mut(row) {
-            row_data.insert(col_key, value.into());
+            row_data[column_index] = value.into();
             Ok(())
         } else {
             Err(StoreError::IndexNotFound)
@@ -97,9 +91,9 @@ impl TableEditable {
 
     /// Adds a new row and updates the hash.
     pub fn add_row(&mut self, row: usize) {
-        let mut full_row = BTreeMap::new();
-        for (key, definition) in self.definition.iter() {
-            full_row.insert(key.clone(), definition.default_value().clone());
+        let mut full_row = Vec::new();
+        for (_, definition) in self.definition.iter() {
+            full_row.push(definition.default_value().clone());
         }
         if row < self.rows.len() {
             self.rows.insert(row, full_row);
@@ -170,14 +164,18 @@ impl TreePrint for TableEditable {
 
             let row_prefix = Self::child_prefix(&child_prefix, is_last_row);
 
-            for (j, (key, value)) in row.iter().enumerate() {
+            for (j, value) in row.iter().enumerate() {
                 let is_last_key = j == column_count - 1;
+                let key = match self.definition.keys().nth(j) {
+                    Some(k) => k.as_str(),
+                    None => "Unknown",
+                };
                 writeln!(
                     f,
                     "{}{}{} \"{}\"",
                     row_prefix,
                     Self::branch_char(is_last_key),
-                    key.as_str(),
+                    key,
                     value
                 )?;
             }

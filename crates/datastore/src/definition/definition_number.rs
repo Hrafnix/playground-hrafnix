@@ -8,14 +8,14 @@ pub enum NumberConstraint {
     /// Minimum value constraint.
     Min {
         /// Minimum value of the constraint.
-        value: f64,
+        min: f64,
         /// Whether the minimum value is inclusive.
         inclusive: bool,
     },
     /// Maximum value constraint.
     Max {
         /// Maximum value of the constraint.
-        value: f64,
+        max: f64,
         /// Whether the maximum value is inclusive.
         inclusive: bool,
     },
@@ -163,17 +163,17 @@ impl TreePrint for NumberDefinition {
         last: bool,
     ) -> std::fmt::Result {
         let constraint_str = match &self.constraint {
-            NumberConstraint::Min { value, inclusive } => {
+            NumberConstraint::Min { min, inclusive } => {
                 format!(
                     " [Min({}, {})]",
-                    format_number_value(*value),
+                    format_number_value(*min),
                     if *inclusive { "inclusive" } else { "exclusive" }
                 )
             }
-            NumberConstraint::Max { value, inclusive } => {
+            NumberConstraint::Max { max, inclusive } => {
                 format!(
                     " [Max({}, {})]",
-                    format_number_value(*value),
+                    format_number_value(*max),
                     if *inclusive { "inclusive" } else { "exclusive" }
                 )
             }

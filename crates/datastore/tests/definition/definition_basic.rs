@@ -48,7 +48,7 @@ fn test_basic_definition_number_with_constraint() {
     let def = NumberDefinition::new_with_constraint(
         "A number parameter",
         NumberConstraint::Min {
-            value: 0.0,
+            min: 0.0,
             inclusive: true,
         },
     );
@@ -58,7 +58,7 @@ fn test_basic_definition_number_with_constraint() {
     assert_eq!(
         def.constraint(),
         NumberConstraint::Min {
-            value: 0.0,
+            min: 0.0,
             inclusive: true
         }
     );
@@ -71,7 +71,7 @@ fn test_basic_definition_number_with_constraint_and_default() {
     let def = NumberDefinition::new_with_constraint_and_default(
         "A number parameter",
         NumberConstraint::Max {
-            value: 10.0,
+            max: 10.0,
             inclusive: true,
         },
         "5.0",
@@ -82,7 +82,7 @@ fn test_basic_definition_number_with_constraint_and_default() {
     assert_eq!(
         def.constraint(),
         NumberConstraint::Max {
-            value: 10.0,
+            max: 10.0,
             inclusive: true
         }
     );

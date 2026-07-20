@@ -82,6 +82,12 @@ impl ChoiceDefinition {
         &self.choices
     }
 
+    /// Returns true if the given value is a valid choice.
+    pub fn contains<S: Into<ShareableString>>(&self, value: S) -> bool {
+        let value = value.into();
+        self.choices.iter().any(|choice| choice.id() == value)
+    }
+
     /// Returns a vector of IDs for the choices.
     pub fn ids(&self) -> Vec<StoreKey> {
         self.choices.iter().map(|choice| choice.id()).collect()
