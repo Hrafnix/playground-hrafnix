@@ -7,31 +7,36 @@
 //! ```
 
 // Macros
-pub use crate::{parameter_key, path, store_key, variable_key};
+pub use crate::{global_key, parameter_key, path, store_key, variable_key};
 
 // Core types
 pub use crate::StoreError;
 pub use crate::key::{
-    ConstParameterKey, ConstStoreKey, ConstVariableKey, ParameterKey, StoreKey, VariableKey,
+    ConstGlobalKey, ConstParameterKey, ConstStoreKey, ConstVariableKey, GlobalKey, ParameterKey,
+    StoreKey, VariableKey,
 };
 pub use crate::path::StorePath;
 
 // Definitions
 pub use crate::definition::{
-    BasicDefinition, BasicDefinitionType, ChoiceDefinition, FileDefinition, ItemDefinition,
-    ItemDefinitionType, MapDefinition, ObjectDefinition, ObjectDefinitionBuilder, StructDefinition,
-    StructItemDefinition, TableDefinition,
+    ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinitionType, MapDefinition,
+    MapItemDefinition, NumberConstraint, NumberDefinition, ObjectDefinition,
+    ObjectDefinitionBuilder, ParameterObjectDefinition, ParameterObjectDefinitionBuilder,
+    StringDefinition, TableDefinition, VariableObjectDefinition, VariableObjectDefinitionBuilder,
 };
-
-// Store and proxies
-pub use crate::store::traits::TreeDisplay;
-pub use crate::store::{BasicProxy, ContainerProxy, ObjectProxy, Store, TableProxy, TreePrint};
 
 // Shareable strings
 pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTranslationMap};
 
-// Static store
-pub use crate::static_store::{
-    ItemParameter, StaticBasic, StaticMap, StaticObject, StaticStore, StaticStruct,
-    StaticStructItem, StaticTable,
+// Frozen data
+pub use crate::frozen::{
+    ChoiceFrozen, FileFrozen, ItemFrozen, MapEntryFrozen, MapFrozen, MapItemFrozen, NumberFrozen,
+    ObjectFrozen, ParameterObjectFrozen, StringFrozen, TableFrozen, VariableObjectFrozen,
+};
+
+// Editable data
+pub use crate::editable::{
+    ChoiceEditable, FileEditable, ItemEditable, MapEditable, MapEntryEditable, MapItemEditable,
+    NumberEditable, ObjectEditable, ParameterObjectEditable, StringEditable, TableEditable,
+    VariableObjectEditable,
 };

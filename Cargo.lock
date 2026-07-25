@@ -70,10 +70,15 @@ name = "datastore"
 version = "0.1.0"
 dependencies = [
  "blake3",
- "parking_lot",
- "rustc-hash",
  "serde",
- "serde_json",
+ "shareable_string",
+]
+
+[[package]]
+name = "expression_engine"
+version = "0.1.0"
+dependencies = [
+ "datastore",
  "shareable_string",
 ]
 

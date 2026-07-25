@@ -18,48 +18,22 @@
 //! - **Change Tracking**: Use `has_changed()` on a proxy to check if the store has been updated since the proxy was last synced.
 //! - **Updates**: Updates via proxies are pushed to the store. Other proxies must `pull()` to see these changes.
 //!
-//! ## Example
-//!
-//! ```rust
-//! use datastore::prelude::*;
-//!
-//! // 1. Define your data structure
-//! let mut builder = ObjectDefinition::builder("My Object");
-//! builder.insert_parameter(parameter_key!("p_name"), ItemDefinition::new("User Name", BasicDefinition::new_string("Name")));
-//! let def = builder.finish();
-//!
-//! // 2. Create a store and add an object
-//! let store = Store::new(Default::default());
-//! store.create_object(store_key!("user_1"), &def).unwrap();
-//!
-//! // 3. Access data via a proxy
-//! let mut user_proxy = store.object("user_1").unwrap();
-//! let mut name_proxy = user_proxy.parameter_basic("p_name").unwrap();
-//!
-//! name_proxy.set_value("Alice");
-//! name_proxy.push().unwrap();
-//!
-//! assert_eq!(name_proxy.value().as_str(), "Alice");
-//!
-//! // You can also access data directly via paths
-//! let mut name_proxy_direct = store.basic(&path!("user_1" / "p_name")).unwrap();
-//! assert_eq!(name_proxy_direct.value().as_str(), "Alice");
-//! ```
 
 /// Data structure definitions.
 pub mod definition;
+/// Editable data implementation.
+pub mod editable;
+/// Frozen data implementation for efficient persistence and access.
+pub mod frozen;
 /// Keys and associated traits.
 pub mod key;
 /// Path types for addressing data within the store.
 pub mod path;
 /// Convenience re-exports of the most common types and macros.
 pub mod prelude;
-/// Static store implementation for efficient persistence and access.
-pub mod static_store;
-/// Dynamic store implementation with proxy-based access.
-pub mod store;
+/// Traits used throughout the store.
+pub mod traits;
 
-use shareable_string::ShareableString;
 use std::fmt::{Display, Formatter};
 
 /// Error types for the store operations.
@@ -71,6 +45,8 @@ pub enum StoreError {
     KeyInvalidCharacter(String),
     /// The key is missing the required prefix (e.g. `p_` for parameter keys, `v_` for variable keys).
     KeyInvalidPrefix(String),
+    /// A key already exists.
+    KeyConflict(String),
     /// The requested object was not found.
     ObjectNotFound,
     /// An object with the specified key already exists.
@@ -95,10 +71,6 @@ pub enum StoreError {
     RedoNotAvailable,
     /// Failed to serialize or deserialize the store state.
     SerializationError(String),
-    /// A parameter conflict occurred during inheritance.
-    ParameterConflict(ShareableString),
-    /// A variable conflict occurred during inheritance.
-    VariableConflict(ShareableString),
     /// A schema mismatch occurred during update or conversion.
     SchemaMismatch(String),
     /// Nested containers are not supported in this context.
@@ -121,6 +93,7 @@ impl Display for StoreError {
                 "Invalid key: '{}'. Key is missing the required prefix",
                 s
             ),
+            StoreError::KeyConflict(s) => write!(f, "Key conflict: {}", s),
             StoreError::ObjectNotFound => write!(f, "Object not found"),
             StoreError::ObjectKeyAlreadyExists => write!(f, "Object key already exists"),
             StoreError::ParameterNotFound => write!(f, "Parameter not found"),
@@ -133,8 +106,6 @@ impl Display for StoreError {
             StoreError::UndoNotAvailable => write!(f, "Undo not available"),
             StoreError::RedoNotAvailable => write!(f, "Redo not available"),
             StoreError::SerializationError(s) => write!(f, "Serialization error: {}", s),
-            StoreError::ParameterConflict(s) => write!(f, "Parameter conflict: {}", s),
-            StoreError::VariableConflict(s) => write!(f, "Variable conflict: {}", s),
             StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {}", s),
             StoreError::NestedContainerNotSupported => {
                 write!(f, "Nested containers are not supported in this context")

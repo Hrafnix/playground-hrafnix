@@ -1,0 +1,31 @@
+/// Frozen choice data.
+pub mod frozen_choice;
+/// Frozen file data.
+pub mod frozen_file;
+/// Frozen item data.
+pub mod frozen_item;
+/// Frozen map data.
+pub mod frozen_map;
+/// Frozen number data.
+pub mod frozen_number;
+/// Frozen object data.
+pub mod frozen_object_global;
+/// Frozen parameter object data.
+pub mod frozen_object_parameter;
+/// Frozen variable object data.
+pub mod frozen_object_variable;
+/// Frozen string data.
+pub mod frozen_string;
+/// Frozen table data.
+pub mod frozen_table;
+
+pub use frozen_choice::*;
+pub use frozen_file::*;
+pub use frozen_item::*;
+pub use frozen_map::*;
+pub use frozen_number::*;
+pub use frozen_object_global::*;
+pub use frozen_object_parameter::*;
+pub use frozen_object_variable::*;
+pub use frozen_string::*;
+pub use frozen_table::*;

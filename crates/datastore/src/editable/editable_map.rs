@@ -1,0 +1,304 @@
+use crate::definition::{MapDefinition, MapItemDefinition};
+use crate::editable::{
+    ChoiceEditable, FileEditable, NumberEditable, StringEditable, TableEditable,
+};
+use crate::frozen::{MapEntryFrozen, MapFrozen, MapItemFrozen};
+use crate::key::StoreKey;
+use crate::traits::TreePrint;
+use serde::{Deserialize, Serialize};
+use shareable_string::ShareableString;
+use std::collections::BTreeMap;
+
+/// Represents an item within an editable map entry.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum MapItemEditable {
+    /// A choice value.
+    Choice(ChoiceEditable),
+    /// A file value.
+    File(FileEditable),
+    /// A number value.
+    Number(NumberEditable),
+    /// A string value.
+    String(StringEditable),
+    /// A table value.
+    Table(TableEditable),
+}
+
+impl MapItemEditable {
+    /// Creates a new `MapItemEditable` instance from a given `MapItemFrozen` value.
+    pub fn new(frozen_item: &MapItemFrozen) -> Self {
+        match frozen_item {
+            MapItemFrozen::Choice(choice) => MapItemEditable::Choice(ChoiceEditable::new(choice)),
+            MapItemFrozen::File(file) => MapItemEditable::File(FileEditable::new(file)),
+            MapItemFrozen::Number(number) => MapItemEditable::Number(NumberEditable::new(number)),
+            MapItemFrozen::String(basic) => MapItemEditable::String(StringEditable::new(basic)),
+            MapItemFrozen::Table(table) => MapItemEditable::Table(TableEditable::new(table)),
+        }
+    }
+
+    /// Converts the current `MapItemEditable` instance into a `MapItemFrozen` instance.
+    pub fn freeze(&self) -> MapItemFrozen {
+        match self {
+            MapItemEditable::Choice(choice) => MapItemFrozen::Choice(choice.freeze()),
+            MapItemEditable::File(file) => MapItemFrozen::File(file.freeze()),
+            MapItemEditable::Number(number) => MapItemFrozen::Number(number.freeze()),
+            MapItemEditable::String(basic) => MapItemFrozen::String(basic.freeze()),
+            MapItemEditable::Table(table) => MapItemFrozen::Table(table.freeze()),
+        }
+    }
+
+    /// Returns the string value if this item is a string value.
+    pub fn get_string(&self) -> Option<&StringEditable> {
+        match self {
+            MapItemEditable::String(string) => Some(string),
+            _ => None,
+        }
+    }
+
+    /// Returns the table value if this item is a table value.
+    pub fn get_table(&self) -> Option<&TableEditable> {
+        match self {
+            MapItemEditable::Table(table) => Some(table),
+            _ => None,
+        }
+    }
+
+    /// Returns the map item definition.
+    pub fn definition(&self) -> MapItemDefinition {
+        match self {
+            MapItemEditable::Choice(choice) => {
+                MapItemDefinition::Choice(choice.definition().clone())
+            }
+            MapItemEditable::File(file) => MapItemDefinition::File(file.definition().clone()),
+            MapItemEditable::Number(number) => {
+                MapItemDefinition::Number(number.definition().clone())
+            }
+            MapItemEditable::String(basic) => MapItemDefinition::String(basic.definition().clone()),
+            MapItemEditable::Table(table) => MapItemDefinition::Table(table.definition().clone()),
+        }
+    }
+}
+
+impl PartialEq<&MapItemEditable> for MapItemEditable {
+    fn eq(&self, other: &&MapItemEditable) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapItemEditable> for &MapItemEditable {
+    fn eq(&self, other: &MapItemEditable) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapItemEditable {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        match self {
+            MapItemEditable::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            MapItemEditable::File(file) => file.tree_print(f, label, prefix, last),
+            MapItemEditable::Number(number) => number.tree_print(f, label, prefix, last),
+            MapItemEditable::String(basic) => basic.tree_print(f, label, prefix, last),
+            MapItemEditable::Table(table) => table.tree_print(f, label, prefix, last),
+        }
+    }
+}
+
+/// Represents a single entry's value within an editable map, following the map's entry schema.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MapEntryEditable {
+    /// The items in the map entry.
+    items: BTreeMap<StoreKey, MapItemEditable>,
+}
+
+impl MapEntryEditable {
+    /// Creates a new `MapEntryEditable` from a `MapEntryFrozen`.
+    pub fn new(frozen_entry: &MapEntryFrozen) -> Self {
+        Self {
+            items: frozen_entry
+                .iter()
+                .map(|(key, value)| (key.clone(), MapItemEditable::new(value)))
+                .collect(),
+        }
+    }
+
+    /// Converts this `MapEntryEditable` into a `MapEntryFrozen`.
+    pub fn freeze(&self) -> MapEntryFrozen {
+        MapEntryFrozen::new_from_editable(self)
+    }
+
+    /// Returns a reference to the item with the specified key, if it exists.
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemEditable> {
+        self.items.get(&key.into())
+    }
+
+    /// Returns a mutable reference to the item with the specified key, if it exists.
+    pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapItemEditable> {
+        self.items.get_mut(key.as_ref())
+    }
+
+    /// Return the string value if this item is a string value.
+    pub fn get_string<S: Into<ShareableString>>(&self, key: S) -> Option<&StringEditable> {
+        if let Some(item) = self.get(key) {
+            item.get_string()
+        } else {
+            None
+        }
+    }
+
+    /// Return the table value if this item is a table value.
+    pub fn get_table<S: Into<ShareableString>>(&self, key: S) -> Option<&TableEditable> {
+        if let Some(item) = self.get(key) {
+            item.get_table()
+        } else {
+            None
+        }
+    }
+
+    /// Returns an iterator over the key-item pairs in the entry.
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapItemEditable)> {
+        self.items.iter()
+    }
+
+    /// Returns the schema of this entry, derived from its current items.
+    pub fn definition(&self) -> BTreeMap<StoreKey, MapItemDefinition> {
+        self.items
+            .iter()
+            .map(|(k, v)| (k.clone(), v.definition()))
+            .collect()
+    }
+}
+
+impl PartialEq<&MapEntryEditable> for MapEntryEditable {
+    fn eq(&self, other: &&MapEntryEditable) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapEntryEditable> for &MapEntryEditable {
+    fn eq(&self, other: &MapEntryEditable) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapEntryEditable {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(f, "{}{}{}", prefix, Self::branch_char(last), label)?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let item_count = self.items.len();
+
+        for (i, (key, item)) in self.items.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Represents a map of parameter in the editable data.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MapEditable {
+    /// The definition of the map.
+    definition: MapDefinition,
+    /// The items in the map.
+    items: BTreeMap<StoreKey, MapEntryEditable>,
+}
+
+impl MapEditable {
+    /// Creates a new `MapEditable` from a `MapFrozen`.
+    pub fn new(frozen_map: &MapFrozen) -> Self {
+        Self {
+            definition: frozen_map.definition().clone(),
+            items: frozen_map
+                .iter()
+                .map(|(key, value)| (key.clone(), MapEntryEditable::new(value)))
+                .collect(),
+        }
+    }
+
+    /// Converts this `MapEditable` into a `MapFrozen`.
+    pub fn freeze(&self) -> MapFrozen {
+        MapFrozen::new_from_editable(self)
+    }
+
+    /// Returns a reference to the item with the specified key, if it exists.
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapEntryEditable> {
+        self.items.get(&key.into())
+    }
+
+    /// Returns a mutable reference to the item with the specified key, if it exists.
+    pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapEntryEditable> {
+        self.items.get_mut(key.as_ref())
+    }
+
+    /// Returns an iterator over the key-item pairs in the map.
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapEntryEditable)> {
+        self.items.iter()
+    }
+
+    /// Returns a reference to the map definition.
+    pub fn definition(&self) -> &MapDefinition {
+        &self.definition
+    }
+
+    /// Returns the number of items in the map.
+    pub fn count(&self) -> usize {
+        self.items.len()
+    }
+}
+
+impl PartialEq<&MapEditable> for MapEditable {
+    fn eq(&self, other: &&MapEditable) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapEditable> for &MapEditable {
+    fn eq(&self, other: &MapEditable) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapEditable {
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}{}{} ({}) Map",
+            prefix,
+            Self::branch_char(last),
+            label,
+            self.definition.description(),
+        )?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let item_count = self.items.len();
+
+        for (i, (key, item)) in self.items.iter().enumerate() {
+            let is_last = i == item_count - 1;
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
+    }
+}

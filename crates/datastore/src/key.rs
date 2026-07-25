@@ -5,23 +5,6 @@ use shareable_string::string::ShareableString;
 use std::fmt::Display;
 use std::hash::Hash;
 
-/// Returns true if the key is not empty and only contains valid characters.
-/// The first character must be lowercase a-z.
-/// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
-pub const fn is_valid_key(s: &str) -> bool {
-    is_valid_key_with_prefix(s, "")
-}
-
-/// Returns true if the key starts with p_ and the rest is a valid key.
-pub const fn is_valid_parameter_key(s: &str) -> bool {
-    is_valid_key_with_prefix(s, "p_")
-}
-
-/// Returns true if the key starts with v_ and the rest is a valid key.
-pub const fn is_valid_variable_key(s: &str) -> bool {
-    is_valid_key_with_prefix(s, "v_")
-}
-
 const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     let s_bytes = s.as_bytes();
     let prefix_bytes = prefix.as_bytes();
@@ -59,6 +42,17 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     true
 }
 
+// =====================================================================
+// Store key section.
+// =====================================================================
+
+/// Returns true if the key is not empty and only contains valid characters.
+/// The first character must be lowercase a-z.
+/// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
+pub const fn is_valid_key(s: &str) -> bool {
+    is_valid_key_with_prefix(s, "")
+}
+
 /// Validates that a key is not empty and only contains valid characters.
 /// The first character must be lowercase a-z.
 /// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
@@ -68,32 +62,6 @@ fn validate_key(key: &ShareableString) -> Result<(), StoreError> {
         Ok(())
     } else if s.is_empty() {
         Err(StoreError::KeyEmpty)
-    } else {
-        Err(StoreError::KeyInvalidCharacter(s.to_string()))
-    }
-}
-
-fn validate_parameter_key(key: &ShareableString) -> Result<(), StoreError> {
-    let s = key.as_str();
-    if is_valid_parameter_key(s) {
-        Ok(())
-    } else if s.is_empty() {
-        Err(StoreError::KeyEmpty)
-    } else if !s.starts_with("p_") {
-        Err(StoreError::KeyInvalidPrefix(s.to_string()))
-    } else {
-        Err(StoreError::KeyInvalidCharacter(s.to_string()))
-    }
-}
-
-fn validate_variable_key(key: &ShareableString) -> Result<(), StoreError> {
-    let s = key.as_str();
-    if is_valid_variable_key(s) {
-        Ok(())
-    } else if s.is_empty() {
-        Err(StoreError::KeyEmpty)
-    } else if !s.starts_with("v_") {
-        Err(StoreError::KeyInvalidPrefix(s.to_string()))
     } else {
         Err(StoreError::KeyInvalidCharacter(s.to_string()))
     }
@@ -119,59 +87,7 @@ impl ConstStoreKey {
     }
 }
 
-/// A validated parameter key that is known at compile-time.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ConstParameterKey(pub(crate) &'static str);
-
-impl ConstParameterKey {
-    /// Creates a new `ConstParameterKey` from a validated literal.
-    /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_parameter_key(key) {
-            panic!("Invalid ParameterKey literal");
-        }
-        Self(key)
-    }
-
-    /// Returns the string slice.
-    pub const fn as_str(&self) -> &'static str {
-        self.0
-    }
-}
-
-/// A validated variable key that is known at compile-time.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ConstVariableKey(pub(crate) &'static str);
-
-impl ConstVariableKey {
-    /// Creates a new `ConstVariableKey` from a validated literal.
-    /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_variable_key(key) {
-            panic!("Invalid VariableKey literal");
-        }
-        Self(key)
-    }
-
-    /// Returns the string slice.
-    pub const fn as_str(&self) -> &'static str {
-        self.0
-    }
-}
-
 impl Display for ConstStoreKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Display for ConstParameterKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Display for ConstVariableKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -289,34 +205,15 @@ impl From<&ConstStoreKey> for StoreKey {
     }
 }
 
-impl From<ConstParameterKey> for ParameterKey {
-    fn from(value: ConstParameterKey) -> Self {
-        ParameterKey {
-            key: ShareableString::from(value.0),
-        }
+impl From<ConstStoreKey> for ShareableString {
+    fn from(value: ConstStoreKey) -> Self {
+        ShareableString::from(value.0)
     }
 }
 
-impl From<&ConstParameterKey> for ParameterKey {
-    fn from(value: &ConstParameterKey) -> Self {
-        ParameterKey {
-            key: ShareableString::from(value.0),
-        }
-    }
-}
-impl From<ConstVariableKey> for VariableKey {
-    fn from(value: ConstVariableKey) -> Self {
-        VariableKey {
-            key: ShareableString::from(value.0),
-        }
-    }
-}
-
-impl From<&ConstVariableKey> for VariableKey {
-    fn from(value: &ConstVariableKey) -> Self {
-        VariableKey {
-            key: ShareableString::from(value.0),
-        }
+impl From<&ConstStoreKey> for ShareableString {
+    fn from(value: &ConstStoreKey) -> Self {
+        ShareableString::from(value.0)
     }
 }
 
@@ -326,77 +223,6 @@ impl From<&ConstVariableKey> for VariableKey {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StoreKey {
     pub(crate) key: ShareableString,
-}
-
-/// A validated parameter key.
-/// Parameter keys must start with p_ and follow the rest of the StoreKey rules.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ParameterKey {
-    pub(crate) key: ShareableString,
-}
-
-/// A validated variable key.
-/// Variable keys must start with v_ and follow the rest of the StoreKey rules.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct VariableKey {
-    pub(crate) key: ShareableString,
-}
-
-impl Serialize for StoreKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.as_str())
-    }
-}
-
-impl Serialize for ParameterKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.as_str())
-    }
-}
-
-impl Serialize for VariableKey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.as_str())
-    }
-}
-
-impl<'de> Deserialize<'de> for StoreKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        StoreKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
-    }
-}
-
-impl<'de> Deserialize<'de> for ParameterKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        ParameterKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
-    }
-}
-
-impl<'de> Deserialize<'de> for VariableKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        VariableKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
-    }
 }
 
 impl StoreKey {
@@ -444,83 +270,22 @@ impl StoreKey {
     }
 }
 
-impl ParameterKey {
-    /// Creates a new `ParameterKey` from a `ShareableString`.
-    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
-    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
-        validate_parameter_key(&key)?;
-        Ok(Self { key })
-    }
-
-    /// Creates a new `ParameterKey` from a `ShareableString` without validating the key.
-    #[expect(unsafe_code)]
-    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
-        ParameterKey { key }
-    }
-
-    /// Returns the string slice.
-    pub fn as_str(&self) -> &str {
-        self.key.as_str()
-    }
-
-    /// Returns the underlying `ShareableString`.
-    pub fn as_shareable_string(&self) -> &ShareableString {
-        &self.key
-    }
-
-    /// Returns a new `StoreKey` with its string interned through the given `SharedStringStore`.
-    pub fn launder(&self, store: &SharedStringStore) -> Self {
-        let laundered_key = store.launder(self.key.clone());
-
-        #[expect(unsafe_code)]
-        unsafe {
-            Self::new_unsafe(laundered_key)
-        }
-    }
-
-    /// Returns the BLAKE3 hash of the key.
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
-        self.key.current_blake3_hash()
+impl Serialize for StoreKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
     }
 }
 
-impl VariableKey {
-    /// Creates a new `VariableKey` from a `ShareableString`.
-    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
-    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
-        validate_variable_key(&key)?;
-        Ok(Self { key })
-    }
-
-    /// Creates a new `VariableKey` from a `ShareableString` without validating the key.
-    #[expect(unsafe_code)]
-    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
-        Self { key }
-    }
-
-    /// Returns the string slice.
-    pub fn as_str(&self) -> &str {
-        self.key.as_str()
-    }
-
-    /// Returns the underlying `ShareableString`.
-    pub fn as_shareable_string(&self) -> &ShareableString {
-        &self.key
-    }
-
-    /// Returns a new `VariableKey` with its string interned through the given `SharedStringStore`.
-    pub fn launder(&self, store: &SharedStringStore) -> Self {
-        let laundered_key = store.launder(self.key.clone());
-
-        #[expect(unsafe_code)]
-        unsafe {
-            Self::new_unsafe(laundered_key)
-        }
-    }
-
-    /// Returns the BLAKE3 hash of the key.
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
-        self.key.current_blake3_hash()
+impl<'de> Deserialize<'de> for StoreKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        StoreKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
     }
 }
 
@@ -566,18 +331,6 @@ impl AsRef<str> for StoreKey {
     }
 }
 
-impl AsRef<str> for ParameterKey {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl AsRef<str> for VariableKey {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
 impl PartialOrd<&str> for StoreKey {
     fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(*other)
@@ -617,6 +370,470 @@ impl PartialOrd<StoreKey> for String {
 impl Display for StoreKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.key)
+    }
+}
+
+impl From<StoreKey> for ShareableString {
+    fn from(value: StoreKey) -> Self {
+        value.key
+    }
+}
+
+impl From<&StoreKey> for ShareableString {
+    fn from(value: &StoreKey) -> Self {
+        value.key.clone()
+    }
+}
+
+impl std::borrow::Borrow<str> for StoreKey {
+    fn borrow(&self) -> &str {
+        self.key.as_str()
+    }
+}
+
+impl std::borrow::Borrow<ShareableString> for StoreKey {
+    fn borrow(&self) -> &ShareableString {
+        &self.key
+    }
+}
+
+/// A macro to create a `ConstStoreKey` from a string literal.
+/// Validates the key at compile-time.
+#[macro_export]
+macro_rules! store_key {
+    ($key:expr) => {
+        $crate::key::ConstStoreKey::new($key)
+    };
+}
+
+// =====================================================================
+// Global key section.
+// =====================================================================
+
+/// Returns true if the key starts with g_ and the rest is a valid key.
+pub const fn is_valid_global_key(s: &str) -> bool {
+    is_valid_key_with_prefix(s, "g_")
+}
+
+fn validate_global_key(key: &ShareableString) -> Result<(), StoreError> {
+    let s = key.as_str();
+    if is_valid_global_key(s) {
+        Ok(())
+    } else if s.is_empty() {
+        Err(StoreError::KeyEmpty)
+    } else if !s.starts_with("g_") {
+        Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else {
+        Err(StoreError::KeyInvalidCharacter(s.to_string()))
+    }
+}
+
+/// A validated global key that is known at compile-time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ConstGlobalKey(pub(crate) &'static str);
+
+impl ConstGlobalKey {
+    /// Creates a new `ConstGlobalKey` from a validated literal.
+    /// Panics at compile-time if the key is invalid.
+    pub const fn new(key: &'static str) -> Self {
+        if !is_valid_global_key(key) {
+            panic!("Invalid GlobalKey literal");
+        }
+        Self(key)
+    }
+
+    /// Returns the string slice.
+    pub const fn as_str(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl Display for ConstGlobalKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<ConstGlobalKey> for GlobalKey {
+    fn from(value: ConstGlobalKey) -> Self {
+        GlobalKey {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<&ConstGlobalKey> for GlobalKey {
+    fn from(value: &ConstGlobalKey) -> Self {
+        GlobalKey {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<ConstGlobalKey> for ShareableString {
+    fn from(value: ConstGlobalKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+impl From<&ConstGlobalKey> for ShareableString {
+    fn from(value: &ConstGlobalKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+/// A validated global key.
+/// Global keys must start with g_ and follow the rest of the StoreKey rules.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct GlobalKey {
+    pub(crate) key: ShareableString,
+}
+
+impl GlobalKey {
+    /// Creates a new `GlobalKey` from a `ShareableString`.
+    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
+        validate_global_key(&key)?;
+        Ok(Self { key })
+    }
+
+    /// Creates a new `GlobalKey` from a `ShareableString` without validating the key.
+    #[expect(unsafe_code)]
+    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+        Self { key }
+    }
+
+    /// Returns the string slice.
+    pub fn as_str(&self) -> &str {
+        self.key.as_str()
+    }
+
+    /// Returns the underlying `ShareableString`.
+    pub fn as_shareable_string(&self) -> &ShareableString {
+        &self.key
+    }
+
+    /// Returns a new `GlobalKey` with its string interned through the given `SharedStringStore`.
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let laundered_key = store.launder(self.key.clone());
+
+        #[expect(unsafe_code)]
+        unsafe {
+            Self::new_unsafe(laundered_key)
+        }
+    }
+
+    /// Returns the BLAKE3 hash of the key.
+    pub fn current_blake3_hash(&self) -> [u8; 32] {
+        self.key.current_blake3_hash()
+    }
+}
+
+impl Serialize for GlobalKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for GlobalKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        GlobalKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
+    }
+}
+
+impl AsRef<str> for GlobalKey {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl PartialEq<&str> for GlobalKey {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
+    }
+}
+
+impl PartialEq<GlobalKey> for &str {
+    fn eq(&self, other: &GlobalKey) -> bool {
+        *self == other.as_str()
+    }
+}
+
+impl PartialEq<String> for GlobalKey {
+    fn eq(&self, other: &String) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<GlobalKey> for String {
+    fn eq(&self, other: &GlobalKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<ShareableString> for GlobalKey {
+    fn eq(&self, other: &ShareableString) -> bool {
+        self.key.as_ref() == other.as_ref()
+    }
+}
+
+impl PartialEq<GlobalKey> for ShareableString {
+    fn eq(&self, other: &GlobalKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialOrd<&str> for GlobalKey {
+    fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(*other)
+    }
+}
+
+impl PartialOrd<GlobalKey> for &str {
+    fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
+        (*self).partial_cmp(other.as_str())
+    }
+}
+
+impl PartialOrd<String> for GlobalKey {
+    fn partial_cmp(&self, other: &String) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.as_str())
+    }
+}
+
+impl PartialOrd<GlobalKey> for String {
+    fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.as_str())
+    }
+}
+
+impl PartialOrd<ShareableString> for GlobalKey {
+    fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
+        self.key.partial_cmp(other)
+    }
+}
+
+impl PartialOrd<GlobalKey> for ShareableString {
+    fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(other.as_str())
+    }
+}
+
+impl PartialEq<ConstGlobalKey> for GlobalKey {
+    fn eq(&self, other: &ConstGlobalKey) -> bool {
+        self.as_str() == other.0
+    }
+}
+
+impl PartialEq<GlobalKey> for ConstGlobalKey {
+    fn eq(&self, other: &GlobalKey) -> bool {
+        self.0 == other.as_str()
+    }
+}
+
+impl PartialOrd<ConstGlobalKey> for GlobalKey {
+    fn partial_cmp(&self, other: &ConstGlobalKey) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.0)
+    }
+}
+
+impl PartialOrd<GlobalKey> for ConstGlobalKey {
+    fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(other.as_str())
+    }
+}
+
+impl Display for GlobalKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.key)
+    }
+}
+
+impl From<GlobalKey> for ShareableString {
+    fn from(value: GlobalKey) -> Self {
+        value.key
+    }
+}
+
+impl From<&GlobalKey> for ShareableString {
+    fn from(value: &GlobalKey) -> Self {
+        value.key.clone()
+    }
+}
+
+impl std::borrow::Borrow<str> for GlobalKey {
+    fn borrow(&self) -> &str {
+        self.key.as_str()
+    }
+}
+
+impl std::borrow::Borrow<ShareableString> for GlobalKey {
+    fn borrow(&self) -> &ShareableString {
+        &self.key
+    }
+}
+
+/// A macro to create a `ConstGlobalKey` from a string literal.
+/// Validates the key at compile-time.
+#[macro_export]
+macro_rules! global_key {
+    ($key:expr) => {
+        $crate::key::ConstGlobalKey::new($key)
+    };
+}
+
+// =====================================================================
+// Parameter key section.
+// =====================================================================
+
+/// Returns true if the key starts with p_ and the rest is a valid key.
+pub const fn is_valid_parameter_key(s: &str) -> bool {
+    is_valid_key_with_prefix(s, "p_")
+}
+
+fn validate_parameter_key(key: &ShareableString) -> Result<(), StoreError> {
+    let s = key.as_str();
+    if is_valid_parameter_key(s) {
+        Ok(())
+    } else if s.is_empty() {
+        Err(StoreError::KeyEmpty)
+    } else if !s.starts_with("p_") {
+        Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else {
+        Err(StoreError::KeyInvalidCharacter(s.to_string()))
+    }
+}
+
+/// A validated parameter key that is known at compile-time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ConstParameterKey(pub(crate) &'static str);
+
+impl ConstParameterKey {
+    /// Creates a new `ConstParameterKey` from a validated literal.
+    /// Panics at compile-time if the key is invalid.
+    pub const fn new(key: &'static str) -> Self {
+        if !is_valid_parameter_key(key) {
+            panic!("Invalid ParameterKey literal");
+        }
+        Self(key)
+    }
+
+    /// Returns the string slice.
+    pub const fn as_str(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl Display for ConstParameterKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<ConstParameterKey> for ParameterKey {
+    fn from(value: ConstParameterKey) -> Self {
+        ParameterKey {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<&ConstParameterKey> for ParameterKey {
+    fn from(value: &ConstParameterKey) -> Self {
+        ParameterKey {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<ConstParameterKey> for ShareableString {
+    fn from(value: ConstParameterKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+impl From<&ConstParameterKey> for ShareableString {
+    fn from(value: &ConstParameterKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+/// A validated parameter key.
+/// Parameter keys must start with p_ and follow the rest of the StoreKey rules.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ParameterKey {
+    pub(crate) key: ShareableString,
+}
+
+impl ParameterKey {
+    /// Creates a new `ParameterKey` from a `ShareableString`.
+    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
+        validate_parameter_key(&key)?;
+        Ok(Self { key })
+    }
+
+    /// Creates a new `ParameterKey` from a `ShareableString` without validating the key.
+    #[expect(unsafe_code)]
+    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+        ParameterKey { key }
+    }
+
+    /// Returns the string slice.
+    pub fn as_str(&self) -> &str {
+        self.key.as_str()
+    }
+
+    /// Returns the underlying `ShareableString`.
+    pub fn as_shareable_string(&self) -> &ShareableString {
+        &self.key
+    }
+
+    /// Returns a new `ParameterKey` with its string interned through the given `SharedStringStore`.
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let laundered_key = store.launder(self.key.clone());
+
+        #[expect(unsafe_code)]
+        unsafe {
+            Self::new_unsafe(laundered_key)
+        }
+    }
+
+    /// Returns the BLAKE3 hash of the key.
+    pub fn current_blake3_hash(&self) -> [u8; 32] {
+        self.key.current_blake3_hash()
+    }
+}
+
+impl Serialize for ParameterKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for ParameterKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        ParameterKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
+    }
+}
+
+impl AsRef<str> for ParameterKey {
+    fn as_ref(&self) -> &str {
+        self.as_str()
     }
 }
 
@@ -692,6 +909,217 @@ impl PartialOrd<ParameterKey> for ShareableString {
     }
 }
 
+impl PartialEq<ConstParameterKey> for ParameterKey {
+    fn eq(&self, other: &ConstParameterKey) -> bool {
+        self.as_str() == other.0
+    }
+}
+
+impl PartialEq<ParameterKey> for ConstParameterKey {
+    fn eq(&self, other: &ParameterKey) -> bool {
+        self.0 == other.as_str()
+    }
+}
+
+impl PartialOrd<ConstParameterKey> for ParameterKey {
+    fn partial_cmp(&self, other: &ConstParameterKey) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.0)
+    }
+}
+
+impl PartialOrd<ParameterKey> for ConstParameterKey {
+    fn partial_cmp(&self, other: &ParameterKey) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(other.as_str())
+    }
+}
+
+impl Display for ParameterKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.key)
+    }
+}
+
+impl From<ParameterKey> for ShareableString {
+    fn from(value: ParameterKey) -> Self {
+        value.key
+    }
+}
+
+impl From<&ParameterKey> for ShareableString {
+    fn from(value: &ParameterKey) -> Self {
+        value.key.clone()
+    }
+}
+
+impl std::borrow::Borrow<str> for ParameterKey {
+    fn borrow(&self) -> &str {
+        self.key.as_str()
+    }
+}
+
+impl std::borrow::Borrow<ShareableString> for ParameterKey {
+    fn borrow(&self) -> &ShareableString {
+        &self.key
+    }
+}
+
+/// A macro to create a `ConstParameterKey` from a string literal.
+/// Validates the key at compile-time.
+#[macro_export]
+macro_rules! parameter_key {
+    ($key:expr) => {
+        $crate::key::ConstParameterKey::new($key)
+    };
+}
+
+// =====================================================================
+// Variable key section.
+// =====================================================================
+
+/// Returns true if the key starts with v_ and the rest is a valid key.
+pub const fn is_valid_variable_key(s: &str) -> bool {
+    is_valid_key_with_prefix(s, "v_")
+}
+
+fn validate_variable_key(key: &ShareableString) -> Result<(), StoreError> {
+    let s = key.as_str();
+    if is_valid_variable_key(s) {
+        Ok(())
+    } else if s.is_empty() {
+        Err(StoreError::KeyEmpty)
+    } else if !s.starts_with("v_") {
+        Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else {
+        Err(StoreError::KeyInvalidCharacter(s.to_string()))
+    }
+}
+
+/// A validated variable key that is known at compile-time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ConstVariableKey(pub(crate) &'static str);
+
+impl ConstVariableKey {
+    /// Creates a new `ConstVariableKey` from a validated literal.
+    /// Panics at compile-time if the key is invalid.
+    pub const fn new(key: &'static str) -> Self {
+        if !is_valid_variable_key(key) {
+            panic!("Invalid VariableKey literal");
+        }
+        Self(key)
+    }
+
+    /// Returns the string slice.
+    pub const fn as_str(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl Display for ConstVariableKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<ConstVariableKey> for VariableKey {
+    fn from(value: ConstVariableKey) -> Self {
+        VariableKey {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<&ConstVariableKey> for VariableKey {
+    fn from(value: &ConstVariableKey) -> Self {
+        VariableKey {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<ConstVariableKey> for ShareableString {
+    fn from(value: ConstVariableKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+impl From<&ConstVariableKey> for ShareableString {
+    fn from(value: &ConstVariableKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+/// A validated variable key.
+/// Variable keys must start with v_ and follow the rest of the StoreKey rules.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct VariableKey {
+    pub(crate) key: ShareableString,
+}
+
+impl VariableKey {
+    /// Creates a new `VariableKey` from a `ShareableString`.
+    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
+        validate_variable_key(&key)?;
+        Ok(Self { key })
+    }
+
+    /// Creates a new `VariableKey` from a `ShareableString` without validating the key.
+    #[expect(unsafe_code)]
+    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+        Self { key }
+    }
+
+    /// Returns the string slice.
+    pub fn as_str(&self) -> &str {
+        self.key.as_str()
+    }
+
+    /// Returns the underlying `ShareableString`.
+    pub fn as_shareable_string(&self) -> &ShareableString {
+        &self.key
+    }
+
+    /// Returns a new `VariableKey` with its string interned through the given `SharedStringStore`.
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let laundered_key = store.launder(self.key.clone());
+
+        #[expect(unsafe_code)]
+        unsafe {
+            Self::new_unsafe(laundered_key)
+        }
+    }
+
+    /// Returns the BLAKE3 hash of the key.
+    pub fn current_blake3_hash(&self) -> [u8; 32] {
+        self.key.current_blake3_hash()
+    }
+}
+
+impl Serialize for VariableKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for VariableKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        VariableKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
+    }
+}
+
+impl AsRef<str> for VariableKey {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl PartialEq<&str> for VariableKey {
     fn eq(&self, other: &&str) -> bool {
         self.as_str() == *other
@@ -764,18 +1192,6 @@ impl PartialOrd<VariableKey> for ShareableString {
     }
 }
 
-impl PartialEq<ConstParameterKey> for ParameterKey {
-    fn eq(&self, other: &ConstParameterKey) -> bool {
-        self.as_str() == other.0
-    }
-}
-
-impl PartialEq<ParameterKey> for ConstParameterKey {
-    fn eq(&self, other: &ParameterKey) -> bool {
-        self.0 == other.as_str()
-    }
-}
-
 impl PartialEq<ConstVariableKey> for VariableKey {
     fn eq(&self, other: &ConstVariableKey) -> bool {
         self.as_str() == other.0
@@ -785,6 +1201,74 @@ impl PartialEq<ConstVariableKey> for VariableKey {
 impl PartialEq<VariableKey> for ConstVariableKey {
     fn eq(&self, other: &VariableKey) -> bool {
         self.0 == other.as_str()
+    }
+}
+
+impl PartialOrd<ConstVariableKey> for VariableKey {
+    fn partial_cmp(&self, other: &ConstVariableKey) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.0)
+    }
+}
+
+impl PartialOrd<VariableKey> for ConstVariableKey {
+    fn partial_cmp(&self, other: &VariableKey) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(other.as_str())
+    }
+}
+
+impl Display for VariableKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.key)
+    }
+}
+
+impl From<VariableKey> for ShareableString {
+    fn from(value: VariableKey) -> Self {
+        value.key
+    }
+}
+
+impl From<&VariableKey> for ShareableString {
+    fn from(value: &VariableKey) -> Self {
+        value.key.clone()
+    }
+}
+
+impl std::borrow::Borrow<str> for VariableKey {
+    fn borrow(&self) -> &str {
+        self.key.as_str()
+    }
+}
+
+impl std::borrow::Borrow<ShareableString> for VariableKey {
+    fn borrow(&self) -> &ShareableString {
+        &self.key
+    }
+}
+
+/// A macro to create a `ConstVariableKey` from a string literal.
+/// Validates the key at compile-time.
+#[macro_export]
+macro_rules! variable_key {
+    ($key:expr) => {
+        $crate::key::ConstVariableKey::new($key)
+    };
+}
+
+// =====================================================================
+// Cross-key relationships.
+// =====================================================================
+
+// Equality between GlobalKey and StoreKey
+impl PartialEq<StoreKey> for GlobalKey {
+    fn eq(&self, other: &StoreKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<GlobalKey> for StoreKey {
+    fn eq(&self, other: &GlobalKey) -> bool {
+        self.as_str() == other.as_str()
     }
 }
 
@@ -828,6 +1312,18 @@ impl PartialEq<ParameterKey> for VariableKey {
 }
 
 // Equality between Const types and other Key types
+impl PartialEq<ConstGlobalKey> for StoreKey {
+    fn eq(&self, other: &ConstGlobalKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<StoreKey> for ConstGlobalKey {
+    fn eq(&self, other: &StoreKey) -> bool {
+        self.0 == other.as_str()
+    }
+}
+
 impl PartialEq<ConstParameterKey> for StoreKey {
     fn eq(&self, other: &ConstParameterKey) -> bool {
         self.as_str() == other.as_str()
@@ -852,177 +1348,6 @@ impl PartialEq<StoreKey> for ConstVariableKey {
     }
 }
 
-impl PartialOrd<ConstParameterKey> for ParameterKey {
-    fn partial_cmp(&self, other: &ConstParameterKey) -> Option<std::cmp::Ordering> {
-        self.as_str().partial_cmp(other.0)
-    }
-}
-
-impl PartialOrd<ParameterKey> for ConstParameterKey {
-    fn partial_cmp(&self, other: &ParameterKey) -> Option<std::cmp::Ordering> {
-        self.0.partial_cmp(other.as_str())
-    }
-}
-
-impl PartialOrd<ConstVariableKey> for VariableKey {
-    fn partial_cmp(&self, other: &ConstVariableKey) -> Option<std::cmp::Ordering> {
-        self.as_str().partial_cmp(other.0)
-    }
-}
-
-impl PartialOrd<VariableKey> for ConstVariableKey {
-    fn partial_cmp(&self, other: &VariableKey) -> Option<std::cmp::Ordering> {
-        self.0.partial_cmp(other.as_str())
-    }
-}
-
-impl Display for ParameterKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.key)
-    }
-}
-
-impl Display for VariableKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.key)
-    }
-}
-
-impl From<ConstStoreKey> for ShareableString {
-    fn from(value: ConstStoreKey) -> Self {
-        ShareableString::from(value.0)
-    }
-}
-
-impl From<&ConstStoreKey> for ShareableString {
-    fn from(value: &ConstStoreKey) -> Self {
-        ShareableString::from(value.0)
-    }
-}
-
-impl From<ConstParameterKey> for ShareableString {
-    fn from(value: ConstParameterKey) -> Self {
-        ShareableString::from(value.0)
-    }
-}
-
-impl From<&ConstParameterKey> for ShareableString {
-    fn from(value: &ConstParameterKey) -> Self {
-        ShareableString::from(value.0)
-    }
-}
-
-impl From<ConstVariableKey> for ShareableString {
-    fn from(value: ConstVariableKey) -> Self {
-        ShareableString::from(value.0)
-    }
-}
-
-impl From<&ConstVariableKey> for ShareableString {
-    fn from(value: &ConstVariableKey) -> Self {
-        ShareableString::from(value.0)
-    }
-}
-
-impl From<StoreKey> for ShareableString {
-    fn from(value: StoreKey) -> Self {
-        value.key
-    }
-}
-
-impl From<&StoreKey> for ShareableString {
-    fn from(value: &StoreKey) -> Self {
-        value.key.clone()
-    }
-}
-
-impl From<ParameterKey> for ShareableString {
-    fn from(value: ParameterKey) -> Self {
-        value.key
-    }
-}
-
-impl From<&ParameterKey> for ShareableString {
-    fn from(value: &ParameterKey) -> Self {
-        value.key.clone()
-    }
-}
-
-impl From<VariableKey> for ShareableString {
-    fn from(value: VariableKey) -> Self {
-        value.key
-    }
-}
-
-impl From<&VariableKey> for ShareableString {
-    fn from(value: &VariableKey) -> Self {
-        value.key.clone()
-    }
-}
-
-impl std::borrow::Borrow<str> for StoreKey {
-    fn borrow(&self) -> &str {
-        self.key.as_str()
-    }
-}
-
-impl std::borrow::Borrow<str> for ParameterKey {
-    fn borrow(&self) -> &str {
-        self.key.as_str()
-    }
-}
-
-impl std::borrow::Borrow<str> for VariableKey {
-    fn borrow(&self) -> &str {
-        self.key.as_str()
-    }
-}
-
-impl std::borrow::Borrow<ShareableString> for StoreKey {
-    fn borrow(&self) -> &ShareableString {
-        &self.key
-    }
-}
-
-impl std::borrow::Borrow<ShareableString> for ParameterKey {
-    fn borrow(&self) -> &ShareableString {
-        &self.key
-    }
-}
-
-impl std::borrow::Borrow<ShareableString> for VariableKey {
-    fn borrow(&self) -> &ShareableString {
-        &self.key
-    }
-}
-
-/// A macro to create a `ConstStoreKey` from a string literal.
-/// Validates the key at compile-time.
-#[macro_export]
-macro_rules! store_key {
-    ($key:expr) => {
-        $crate::key::ConstStoreKey::new($key)
-    };
-}
-
-/// A macro to create a `ConstParameterKey` from a string literal.
-/// Validates the key at compile-time.
-#[macro_export]
-macro_rules! parameter_key {
-    ($key:expr) => {
-        $crate::key::ConstParameterKey::new($key)
-    };
-}
-
-/// A macro to create a `ConstVariableKey` from a string literal.
-/// Validates the key at compile-time.
-#[macro_export]
-macro_rules! variable_key {
-    ($key:expr) => {
-        $crate::key::ConstVariableKey::new($key)
-    };
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1030,8 +1355,10 @@ mod tests {
     #[test]
     fn test_cross_key_equality() {
         let p_key = ParameterKey::new(ShareableString::from("p_test")).unwrap();
+        let g_key = GlobalKey::new(ShareableString::from("g_test")).unwrap();
         let v_key = VariableKey::new(ShareableString::from("v_test")).unwrap();
         let s_key_p = StoreKey::new(ShareableString::from("p_test")).unwrap();
+        let s_key_g = StoreKey::new(ShareableString::from("g_test")).unwrap();
         let s_key_v = StoreKey::new(ShareableString::from("v_test")).unwrap();
 
         assert_eq!(p_key, s_key_p);
@@ -1040,25 +1367,36 @@ mod tests {
         assert_eq!(v_key, s_key_v);
         assert_eq!(s_key_v, v_key);
 
+        assert_eq!(g_key, s_key_g);
+        assert_eq!(s_key_g, g_key);
+
         assert_eq!(p_key, p_key);
+        assert_eq!(g_key, g_key);
         assert_eq!(v_key, v_key);
 
         assert_ne!(p_key, v_key);
         assert_ne!(v_key, p_key);
         assert_ne!(p_key, s_key_v);
         assert_ne!(v_key, s_key_p);
+        assert_ne!(g_key, s_key_p);
+        assert_ne!(g_key, s_key_v);
 
         // Const equality
         const CP: ConstParameterKey = ConstParameterKey::new("p_test");
+        const CG: ConstGlobalKey = ConstGlobalKey::new("g_test");
         const CV: ConstVariableKey = ConstVariableKey::new("v_test");
 
         assert_eq!(CP, p_key);
         assert_eq!(p_key, CP);
         assert_eq!(CV, v_key);
         assert_eq!(v_key, CV);
+        assert_eq!(CG, g_key);
+        assert_eq!(g_key, CG);
 
         assert_eq!(CP, s_key_p);
         assert_eq!(s_key_p, CP);
+        assert_eq!(CG, s_key_g);
+        assert_eq!(s_key_g, CG);
         assert_eq!(CV, s_key_v);
         assert_eq!(s_key_v, CV);
     }
@@ -1134,6 +1472,19 @@ mod tests {
 
         assert!(ParameterKey::new(ShareableString::new("key")).is_err());
         assert!(ParameterKey::new(ShareableString::new("v_key")).is_err());
+    }
+
+    #[test]
+    fn test_global_key() {
+        let gk = GlobalKey::new(ShareableString::new("g_key")).unwrap();
+        assert_eq!(gk.as_str(), "g_key");
+
+        let gk2 = global_key!("g_const");
+        assert_eq!(gk2.as_str(), "g_const");
+
+        assert!(GlobalKey::new(ShareableString::new("key")).is_err());
+        assert!(GlobalKey::new(ShareableString::new("p_key")).is_err());
+        assert!(GlobalKey::new(ShareableString::new("v_key")).is_err());
     }
 
     #[test]

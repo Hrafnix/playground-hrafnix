@@ -1,19 +1,31 @@
-/// Definitions for basic data types (strings, numbers, etc.).
-pub mod basic_definition;
+/// Definitions for choice-based data structures.
+pub mod definition_choice;
+/// Definitions for file data structures.
+pub mod definition_file;
 /// Definitions for parameter within objects or containers.
-pub mod item_definition;
+pub mod definition_item;
 /// Definitions for map-based data structures.
-pub mod map_definition;
+pub mod definition_map;
+/// Definitions for number-based data structures.
+pub mod definition_number;
 /// Definitions for object-based data structures.
-pub mod object_definition;
-/// Definitions for struct-like data structures.
-pub mod struct_definition;
+pub mod definition_object_global;
+/// Definitions for object parameter configurations within data structures.
+pub mod definition_object_parameter;
+/// Definitions for object variable configurations within data structures.
+pub mod definition_object_variable;
+/// Definitions for string-based data structures.
+pub mod definition_string;
 /// Definitions for table-based data structures.
-pub mod table_definition;
+pub mod definition_table;
 
-pub use basic_definition::*;
-pub use item_definition::*;
-pub use map_definition::*;
-pub use object_definition::*;
-pub use struct_definition::*;
-pub use table_definition::*;
+pub use definition_choice::*;
+pub use definition_file::*;
+pub use definition_item::*;
+pub use definition_map::*;
+pub use definition_number::*;
+pub use definition_object_global::*;
+pub use definition_object_parameter::*;
+pub use definition_object_variable::*;
+pub use definition_string::*;
+pub use definition_table::*;
