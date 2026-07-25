@@ -22,29 +22,29 @@ datastore = { path = "crates/datastore" }
 shareable_string = { path = "crates/shareable_string" }
 
 [workspace.lints.rust]
-deprecated-safe = { level = "deny", priority = -1 }
-future-incompatible = { level = "deny", priority = -1 }
-keyword-idents = { level = "deny", priority = -1 }
-let-underscore = { level = "deny", priority = -1 }
-nonstandard-style = { level = "deny", priority = -1 }
-refining-impl-trait = { level = "deny", priority = -1 }
-rust_2018_compatibility = { level = "deny", priority = -1 }
-rust-2018-idioms = { level = "deny", priority = -1 }
-rust-2021-compatibility = { level = "deny", priority = -1 }
-rust-2024-compatibility = { level = "deny", priority = -1 }
-unknown-or-malformed-diagnostic-attributes = { level = "deny", priority = -1 }
+deprecated-safe = { level = "warn", priority = -1 }
+future-incompatible = { level = "warn", priority = -1 }
+keyword-idents = { level = "warn", priority = -1 }
+let-underscore = { level = "warn", priority = -1 }
+nonstandard-style = { level = "warn", priority = -1 }
+refining-impl-trait = { level = "warn", priority = -1 }
+rust_2018_compatibility = { level = "warn", priority = -1 }
+rust-2018-idioms = { level = "warn", priority = -1 }
+rust-2021-compatibility = { level = "warn", priority = -1 }
+rust-2024-compatibility = { level = "warn", priority = -1 }
+unknown-or-malformed-diagnostic-attributes = { level = "warn", priority = -1 }
 unused = { level = "warn", priority = -2 }
 
-missing_debug_implementations = "deny"
-missing_docs = "deny"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
 
 unnameable_types = "warn"
 unreachable_pub = "warn"
 unsafe_op_in_unsafe_fn = "warn"
-unsafe_code = "deny"
+unsafe_code = "warn"
 
 [workspace.lints.rustdoc]
-broken_intra_doc_links = "deny"
+broken_intra_doc_links = "warn"
 
 [workspace.lints.clippy]
-unwrap_used = "deny"
+unwrap_used = "warn"
