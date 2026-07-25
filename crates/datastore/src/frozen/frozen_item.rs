@@ -1,11 +1,15 @@
 use crate::definition::ItemDefinitionType;
-use crate::frozen::{ChoiceFrozen, FileFrozen, MapFrozen, NumberFrozen, StringFrozen, TableFrozen};
+use crate::frozen::{
+    BooleanFrozen, ChoiceFrozen, FileFrozen, MapFrozen, NumberFrozen, StringFrozen, TableFrozen,
+};
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 
 /// Represents a parameter value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ItemFrozen {
+    /// A boolean parameter.
+    Boolean(BooleanFrozen),
     /// A choice parameter.
     Choice(ChoiceFrozen),
     /// A file parameter.
@@ -30,6 +34,7 @@ impl ItemFrozen {
             ItemFrozen::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
             ItemFrozen::String(b) => ItemDefinitionType::String(b.definition().clone()),
             ItemFrozen::Table(t) => ItemDefinitionType::Table(t.definition().clone()),
+            ItemFrozen::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
         }
     }
 
@@ -42,6 +47,7 @@ impl ItemFrozen {
             Self::Number(n) => n.hash(),
             Self::String(s) => s.hash(),
             Self::Table(t) => t.hash(),
+            Self::Boolean(b) => b.hash(),
         }
     }
 
@@ -103,6 +109,7 @@ impl TreePrint for ItemFrozen {
         last: bool,
     ) -> std::fmt::Result {
         match self {
+            Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),

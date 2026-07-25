@@ -1,3 +1,5 @@
+/// Definitions for boolean-based data structures.
+pub mod definition_boolean;
 /// Definitions for choice-based data structures.
 pub mod definition_choice;
 /// Definitions for file data structures.
@@ -19,6 +21,7 @@ pub mod definition_string;
 /// Definitions for table-based data structures.
 pub mod definition_table;
 
+pub use definition_boolean::*;
 pub use definition_choice::*;
 pub use definition_file::*;
 pub use definition_item::*;

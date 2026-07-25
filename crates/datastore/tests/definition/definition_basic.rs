@@ -21,6 +21,26 @@ fn test_basic_definition_string_with_default() {
 }
 
 #[test]
+fn test_basic_definition_boolean() {
+    // Why: Test basic boolean definition creation and definition.
+    let def = BooleanDefinition::new("A Boolean parameter");
+
+    // Check the various data items of the boolean definition.
+    assert_eq!(def.description(), "A Boolean parameter");
+    assert_eq!(def.default_value(), "");
+}
+
+#[test]
+fn test_basic_definition_boolean_with_default() {
+    // Why: Test basic boolean definition creation with a default value.
+    let def = BooleanDefinition::new_with_default("A Boolean parameter", true);
+
+    // Check the various data items of the boolean definition.
+    assert_eq!(def.description(), "A Boolean parameter");
+    assert_eq!(def.default_value(), "true");
+}
+
+#[test]
 fn test_basic_definition_number() {
     // Why: Test basic number definition creation and definition.
     let def = NumberDefinition::new("A number parameter");

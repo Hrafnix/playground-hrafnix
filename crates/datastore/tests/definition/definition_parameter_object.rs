@@ -54,16 +54,20 @@ fn test_parameter_object_definition_print() {
         )
         .with(
             ParameterKey::new("p_p2".into()).unwrap(),
-            FileDefinition::new("D2", "ext", false),
+            BooleanDefinition::new("D2"),
         )
         .with(
             ParameterKey::new("p_p3".into()).unwrap(),
-            NumberDefinition::new("D3"),
+            FileDefinition::new("D3", "ext", false),
         )
         .with(
             ParameterKey::new("p_p4".into()).unwrap(),
+            NumberDefinition::new("D4"),
+        )
+        .with(
+            ParameterKey::new("p_p5".into()).unwrap(),
             ChoiceDefinition::new(
-                "D4",
+                "D5",
                 vec![
                     ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                     ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
@@ -71,9 +75,9 @@ fn test_parameter_object_definition_print() {
             ),
         )
         .with(
-            ParameterKey::new("p_p5".into()).unwrap(),
+            ParameterKey::new("p_p6".into()).unwrap(),
             TableDefinition::new(
-                "D5",
+                "D6",
                 vec![
                     (store_key!("col1"), NumberDefinition::new("C1")),
                     (
@@ -90,9 +94,9 @@ fn test_parameter_object_definition_print() {
             ),
         )
         .with(
-            ParameterKey::new("p_p6".into()).unwrap(),
+            ParameterKey::new("p_p7".into()).unwrap(),
             MapDefinition::new(
-                "P6",
+                "D7",
                 vec![
                     (
                         store_key!("col1"),
@@ -115,6 +119,6 @@ fn test_parameter_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\"\n    ├── p_p2 (D2) File - default: \"\" [ext]\n    ├── p_p3 (D3) Number - default: \"\"\n    ├── p_p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p_p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p_p6 (P6) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
+        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\"\n    ├── p_p2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── p_p3 (D3) File - default: \"\" [ext]\n    ├── p_p4 (D4) Number - default: \"\"\n    ├── p_p5 (D5) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p_p6 (D6) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p_p7 (D7) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
     );
 }

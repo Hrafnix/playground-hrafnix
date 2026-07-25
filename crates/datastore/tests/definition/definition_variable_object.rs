@@ -49,21 +49,25 @@ fn test_variable_object_definition_print() {
     // Why: Test variable object definition print.
     let def_1 = VariableObjectDefinitionBuilder::new("Test")
         .with(
-            VariableKey::new("v_p1".into()).unwrap(),
+            VariableKey::new("v_v1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .with(
-            VariableKey::new("v_p2".into()).unwrap(),
-            FileDefinition::new("D2", "ext", false),
+            VariableKey::new("v_v2".into()).unwrap(),
+            BooleanDefinition::new("D2"),
         )
         .with(
-            VariableKey::new("v_p3".into()).unwrap(),
-            NumberDefinition::new("D3"),
+            VariableKey::new("v_v3".into()).unwrap(),
+            FileDefinition::new("D3", "ext", false),
         )
         .with(
-            VariableKey::new("v_p4".into()).unwrap(),
+            VariableKey::new("v_v4".into()).unwrap(),
+            NumberDefinition::new("D4"),
+        )
+        .with(
+            VariableKey::new("v_v5".into()).unwrap(),
             ChoiceDefinition::new(
-                "D4",
+                "D5",
                 vec![
                     ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                     ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
@@ -71,9 +75,9 @@ fn test_variable_object_definition_print() {
             ),
         )
         .with(
-            VariableKey::new("v_p5".into()).unwrap(),
+            VariableKey::new("v_v6".into()).unwrap(),
             TableDefinition::new(
-                "D5",
+                "D6",
                 vec![
                     (store_key!("col1"), NumberDefinition::new("C1")),
                     (
@@ -90,9 +94,9 @@ fn test_variable_object_definition_print() {
             ),
         )
         .with(
-            VariableKey::new("v_p6".into()).unwrap(),
+            VariableKey::new("v_v7".into()).unwrap(),
             MapDefinition::new(
-                "D6",
+                "D7",
                 vec![
                     (
                         store_key!("col1"),
@@ -115,6 +119,6 @@ fn test_variable_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Variable Object Definition (Test)\n    ├── v_p1 (D1) String - default: \"\"\n    ├── v_p2 (D2) File - default: \"\" [ext]\n    ├── v_p3 (D3) Number - default: \"\"\n    ├── v_p4 (D4) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── v_p5 (D5) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── v_p6 (D6) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
+        "Variable Object Definition (Test)\n    ├── v_v1 (D1) String - default: \"\"\n    ├── v_v2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── v_v3 (D3) File - default: \"\" [ext]\n    ├── v_v4 (D4) Number - default: \"\"\n    ├── v_v5 (D5) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── v_v6 (D6) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── v_v7 (D7) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
     );
 }

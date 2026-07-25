@@ -1,5 +1,6 @@
 use crate::definition::{
-    ChoiceDefinition, MapDefinition, NumberDefinition, StringDefinition, TableDefinition,
+    BooleanDefinition, ChoiceDefinition, MapDefinition, NumberDefinition, StringDefinition,
+    TableDefinition,
 };
 use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
@@ -9,6 +10,8 @@ use shareable_string::SharedStringStore;
 /// The type of item definition.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ItemDefinitionType {
+    /// A boolean item.
+    Boolean(BooleanDefinition),
     /// A choice item.
     Choice(ChoiceDefinition),
     /// A file item.
@@ -26,6 +29,12 @@ pub enum ItemDefinitionType {
 impl From<StringDefinition> for ItemDefinitionType {
     fn from(definition: StringDefinition) -> Self {
         ItemDefinitionType::String(definition)
+    }
+}
+
+impl From<BooleanDefinition> for ItemDefinitionType {
+    fn from(definition: BooleanDefinition) -> Self {
+        ItemDefinitionType::Boolean(definition)
     }
 }
 
@@ -63,6 +72,7 @@ impl ItemDefinitionType {
     /// Returns a new `ItemDefinitionType` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
+            Self::Boolean(def) => Self::Boolean(def.launder(store)),
             Self::File(def) => Self::File(def.launder(store)),
             Self::Choice(def) => Self::Choice(def.launder(store)),
             Self::Map(def) => Self::Map(def.launder(store)),
@@ -94,6 +104,7 @@ impl TreePrint for ItemDefinitionType {
         last: bool,
     ) -> std::fmt::Result {
         match self {
+            Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::String(basic) => basic.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),

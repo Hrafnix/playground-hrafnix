@@ -1,3 +1,5 @@
+/// Frozen boolean data.
+pub mod frozen_boolean;
 /// Frozen choice data.
 pub mod frozen_choice;
 /// Frozen file data.
@@ -19,6 +21,7 @@ pub mod frozen_string;
 /// Frozen table data.
 pub mod frozen_table;
 
+pub use frozen_boolean::*;
 pub use frozen_choice::*;
 pub use frozen_file::*;
 pub use frozen_item::*;

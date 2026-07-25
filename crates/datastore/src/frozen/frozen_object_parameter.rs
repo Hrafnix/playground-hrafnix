@@ -25,6 +25,12 @@ impl ParameterObjectFrozen {
         for (item_key, item_definition_type) in definition.iter() {
             let key = item_key.clone();
             match item_definition_type {
+                ItemDefinitionType::Boolean(boolean_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Boolean(crate::frozen::BooleanFrozen::new(boolean_def.clone())),
+                    );
+                }
                 ItemDefinitionType::Choice(choice_def) => {
                     items.insert(
                         key,
