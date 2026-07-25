@@ -20,6 +20,24 @@ fn test_editable_string_roundtrip() {
 }
 
 #[test]
+fn test_editable_boolean_roundtrip() {
+    // Why: Editable boolean should thaw from frozen, allow edits, and freeze back correctly.
+    let frozen = BooleanFrozen::new(BooleanDefinition::new_with_default(
+        "A boolean parameter",
+        true,
+    ));
+    let mut editable = frozen.thaw();
+    assert_eq!(editable.value(), "true");
+
+    editable.set("false");
+    assert_eq!(editable.value(), "false");
+
+    let frozen_2 = editable.freeze();
+    assert_eq!(frozen_2.value(), "false");
+    assert_ne!(frozen_2.hash(), frozen.hash());
+}
+
+#[test]
 fn test_editable_number_roundtrip() {
     // Why: Editable number should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = NumberFrozen::new(NumberDefinition::new_with_default(

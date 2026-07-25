@@ -1,4 +1,4 @@
-use crate::BasicDefinition::{Choice, File, Number, String};
+use crate::BasicDefinition::{Boolean, Choice, File, Number, String};
 use crate::expression::parser::parse;
 use crate::expression::translator::{Expression, Literal, Operators, translate};
 use crate::{
@@ -41,6 +41,7 @@ fn evaluate_expression(
                     Ok(ComputedItem::Integer(-value))
                 }
                 (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
+                (Operators::Not, ComputedItem::Boolean(value)) => Ok(ComputedItem::Boolean(!value)),
                 _ => Err(ExpressionError::new(
                     ExpressionCategory::Evaluation,
                     "Invalid unary operation.".to_string(),
@@ -484,6 +485,20 @@ fn evaluate_basic_expression(
     let expression = parse_str(data.as_ref())?;
     let computed = evaluate_expression(computed_data, expression)?;
     match basic.definition() {
+        Boolean(_boolean_definition) => {
+            // Validate that the computed value is a boolean
+            if let ComputedItem::Boolean(_value) = &computed {
+                Ok(computed)
+            } else {
+                Err(ExpressionError::new(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Expected a boolean value for boolean definition, but got {:?}.",
+                        computed
+                    ),
+                ))
+            }
+        }
         Choice(choice_definition) => {
             // Validate that the computed value is one of the allowed choices
             if let ComputedItem::String(value) = &computed {
@@ -759,7 +774,7 @@ pub(crate) fn evaluator(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use datastore::definition::NumberDefinition;
+    use datastore::definition::{BooleanDefinition, NumberDefinition};
 
     fn create_number_basic_preprocessed_data(value: &str) -> ObjectItemPreprocessedData {
         let definition = Number(NumberDefinition::new("Test Number"));
@@ -781,6 +796,19 @@ mod tests {
         }
     }
 
+    fn create_boolean_basic_preprocessed_data(value: &str) -> ObjectItemPreprocessedData {
+        let definition = Boolean(BooleanDefinition::new("Test Boolean"));
+        let data = ShareableString::from(value.to_string());
+        ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(definition, data))
+    }
+
+    fn check_boolean(computed_item: &ComputedItem, expected_value: bool) {
+        match computed_item {
+            ComputedItem::Boolean(value) => assert_eq!(*value, expected_value),
+            _ => panic!("Expected a boolean computed item"),
+        }
+    }
+
     #[test]
     fn empty_test() {
         let computed_data = BTreeMap::new();
@@ -788,6 +816,70 @@ mod tests {
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(result.is_empty());
         assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn boolean_test() {
+        let computed_data = BTreeMap::new();
+        let input_data =
+            BTreeMap::from([("x".into(), create_boolean_basic_preprocessed_data("true"))]);
+
+        let (result, errors) = evaluator(computed_data, input_data);
+        assert!(!result.is_empty());
+        assert!(errors.is_empty());
+
+        check_boolean(&result["x"], true);
+    }
+
+    #[test]
+    fn boolean_expression_test() {
+        let computed_data = BTreeMap::new();
+        let input_data = BTreeMap::from([(
+            "x".into(),
+            create_boolean_basic_preprocessed_data("true && false || true"),
+        )]);
+
+        let (result, errors) = evaluator(computed_data, input_data);
+        assert!(!result.is_empty());
+        assert!(errors.is_empty());
+
+        check_boolean(&result["x"], true);
+    }
+
+    #[test]
+    fn multiple_boolean_expression_test() {
+        let computed_data = BTreeMap::new();
+        let input_data = BTreeMap::from([
+            (
+                "a".into(),
+                create_boolean_basic_preprocessed_data("true && false"),
+            ),
+            (
+                "b".into(),
+                create_boolean_basic_preprocessed_data("true || false"),
+            ),
+            ("c".into(), create_boolean_basic_preprocessed_data("!true")),
+            ("d".into(), create_boolean_basic_preprocessed_data("!false")),
+            (
+                "e".into(),
+                create_boolean_basic_preprocessed_data("true == false"),
+            ),
+            (
+                "f".into(),
+                create_boolean_basic_preprocessed_data("true != false"),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(computed_data, input_data);
+        assert!(!result.is_empty());
+        assert!(errors.is_empty());
+
+        check_boolean(&result["a"], false);
+        check_boolean(&result["b"], true);
+        check_boolean(&result["c"], false);
+        check_boolean(&result["d"], true);
+        check_boolean(&result["e"], false);
+        check_boolean(&result["f"], true);
     }
 
     #[test]

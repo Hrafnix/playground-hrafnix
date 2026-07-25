@@ -34,6 +34,39 @@ fn test_basic_frozen_string_with_default() {
 }
 
 #[test]
+fn test_basic_frozen_boolean() {
+    // Why: Test frozen basic boolean creation and definition.
+    let frozen_basic = BooleanFrozen::new(BooleanDefinition::new("A boolean parameter"));
+
+    // Check the various parameters of the boolean definition.
+    assert_eq!(
+        frozen_basic.definition().description(),
+        "A boolean parameter"
+    );
+    assert_eq!(frozen_basic.definition().default_value(), "");
+    assert_eq!(frozen_basic.value(), "");
+    assert_ne!(frozen_basic.hash(), [0u8; 32]);
+}
+
+#[test]
+fn test_basic_frozen_boolean_with_default() {
+    // Why: Test frozen basic boolean creation with a default value.
+    let frozen_basic = BooleanFrozen::new(BooleanDefinition::new_with_default(
+        "A boolean parameter",
+        true,
+    ));
+
+    // Check the frozen boolean object.
+    assert_eq!(
+        frozen_basic.definition().description(),
+        "A boolean parameter"
+    );
+    assert_eq!(frozen_basic.definition().default_value(), "true");
+    assert_eq!(frozen_basic.value(), "true");
+    assert_ne!(frozen_basic.hash(), [0u8; 32]);
+}
+
+#[test]
 fn test_basic_frozen_number() {
     // Why: Test frozen basic number creation and definition.
     let frozen_basic = NumberFrozen::new(NumberDefinition::new("A number parameter"));

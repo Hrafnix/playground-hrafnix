@@ -1,7 +1,9 @@
 //! Expression engine crate.
 
 use core::fmt;
-use datastore::definition::{ChoiceDefinition, FileDefinition, NumberDefinition, StringDefinition};
+use datastore::definition::{
+    BooleanDefinition, ChoiceDefinition, FileDefinition, NumberDefinition, StringDefinition,
+};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Processed data.
@@ -19,6 +21,8 @@ pub use preprocessed_data::*;
 /// expression engine.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BasicDefinition {
+    /// Holds a boolean value.
+    Boolean(BooleanDefinition),
     /// Holds a value from a fixed set of choices.
     Choice(ChoiceDefinition),
     /// Holds a file reference.
@@ -33,6 +37,7 @@ impl BasicDefinition {
     /// Returns a new `BasicDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
+            BasicDefinition::Boolean(boolean) => BasicDefinition::Boolean(boolean.launder(store)),
             BasicDefinition::Choice(choice) => BasicDefinition::Choice(choice.launder(store)),
             BasicDefinition::File(file) => BasicDefinition::File(file.launder(store)),
             BasicDefinition::Number(number) => BasicDefinition::Number(number.launder(store)),

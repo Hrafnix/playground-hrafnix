@@ -199,11 +199,11 @@ fn is_numeric_literal(value: &str) -> bool {
 /// looks like a number) or a `Variable` expression (otherwise).
 fn translate_atom(value: String) -> Result<Expression, ExpressionError> {
     if !is_numeric_literal(&value) {
-        return Ok(Expression::Literal(Literal::String(value)));
-    }
+        if let Ok(boolean) = value.parse::<bool>() {
+            return Ok(Expression::Literal(Literal::Boolean(boolean)));
+        }
 
-    if let Ok(boolean) = value.parse::<bool>() {
-        return Ok(Expression::Literal(Literal::Boolean(boolean)));
+        return Ok(Expression::Literal(Literal::String(value)));
     }
 
     if let Ok(integer) = value.parse::<i64>() {

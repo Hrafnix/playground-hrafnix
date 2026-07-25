@@ -5,6 +5,8 @@ use shareable_string::string::ShareableString;
 use std::fmt::Display;
 use std::hash::Hash;
 
+const KEY_WORDS: [&str; 2] = ["true", "false"];
+
 const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     let s_bytes = s.as_bytes();
     let prefix_bytes = prefix.as_bytes();
@@ -29,6 +31,29 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     let first_after_prefix = s_bytes[prefix_bytes.len()];
     if !first_after_prefix.is_ascii_lowercase() {
         return false;
+    }
+
+    if prefix_bytes.is_empty() {
+        let mut i = 0;
+        while i < KEY_WORDS.len() {
+            let keyword = KEY_WORDS[i];
+            let keyword_bytes = keyword.as_bytes();
+            if s_bytes.len() == keyword_bytes.len() {
+                let mut j = 0;
+                let mut matches = true;
+                while j < keyword_bytes.len() {
+                    if s_bytes[j] != keyword_bytes[j] {
+                        matches = false;
+                        break;
+                    }
+                    j += 1;
+                }
+                if matches {
+                    return false;
+                }
+            }
+            i += 1;
+        }
     }
 
     let mut i = prefix_bytes.len() + 1;

@@ -326,16 +326,20 @@ fn test_object_definition_launder() {
         )
         .with(
             GlobalKey::new("g_p2".into()).unwrap(),
-            FileDefinition::new("D2", "ext", false),
+            BooleanDefinition::new("D2"),
         )
         .with(
             GlobalKey::new("g_p3".into()).unwrap(),
-            NumberDefinition::new("D3"),
+            FileDefinition::new("D3", "ext", false),
         )
         .with(
             GlobalKey::new("g_p4".into()).unwrap(),
+            NumberDefinition::new("D4"),
+        )
+        .with(
+            GlobalKey::new("g_p5".into()).unwrap(),
             ChoiceDefinition::new(
-                "D4",
+                "D5",
                 vec![
                     ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
                     ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
@@ -343,9 +347,9 @@ fn test_object_definition_launder() {
             ),
         )
         .with(
-            GlobalKey::new("g_p5".into()).unwrap(),
+            GlobalKey::new("g_p6".into()).unwrap(),
             TableDefinition::new(
-                "D5",
+                "D6",
                 vec![
                     (store_key!("col1"), NumberDefinition::new("C1")),
                     (store_key!("col2"), NumberDefinition::new("C2")),
@@ -353,9 +357,9 @@ fn test_object_definition_launder() {
             ),
         )
         .with(
-            GlobalKey::new("g_p6".into()).unwrap(),
+            GlobalKey::new("g_p7".into()).unwrap(),
             MapDefinition::new(
-                "D6",
+                "D7",
                 vec![
                     (
                         store_key!("col1"),
@@ -372,13 +376,14 @@ fn test_object_definition_launder() {
 
     let laundered = def.launder(&store);
     assert_eq!(laundered.description().as_str(), "Test");
-    assert_eq!(laundered.count(), 6);
+    assert_eq!(laundered.count(), 7);
     assert!(laundered.contains("g_p1"));
     assert!(laundered.contains("g_p2"));
     assert!(laundered.contains("g_p3"));
     assert!(laundered.contains("g_p4"));
     assert!(laundered.contains("g_p5"));
     assert!(laundered.contains("g_p6"));
+    assert!(laundered.contains("g_p7"));
 
     assert!(store.contains("g_p1"));
     assert!(store.contains("g_p2"));
@@ -386,12 +391,14 @@ fn test_object_definition_launder() {
     assert!(store.contains("g_p4"));
     assert!(store.contains("g_p5"));
     assert!(store.contains("g_p6"));
+    assert!(store.contains("g_p7"));
     assert!(store.contains("D1"));
     assert!(store.contains("D2"));
     assert!(store.contains("D3"));
     assert!(store.contains("D4"));
     assert!(store.contains("D5"));
     assert!(store.contains("D6"));
+    assert!(store.contains("D7"));
     assert!(store.contains("ext"));
     assert!(store.contains("option_1"));
     assert!(store.contains("option_2"));

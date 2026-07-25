@@ -29,6 +29,15 @@ fn item_to_preprocessed_data(
     data: &ItemFrozen,
 ) {
     match data {
+        ItemFrozen::Boolean(boolean) => {
+            map.insert(
+                key,
+                ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                    BasicDefinition::Boolean(boolean.definition().clone()),
+                    boolean.value(),
+                )),
+            );
+        }
         ItemFrozen::Choice(choice) => {
             map.insert(
                 key,

@@ -1,3 +1,5 @@
+/// Editable boolean data.
+pub mod editable_boolean;
 /// Editable choice data.
 pub mod editable_choice;
 /// Editable file data.
@@ -19,6 +21,7 @@ pub mod editable_string;
 /// Editable table data.
 pub mod editable_table;
 
+pub use editable_boolean::*;
 pub use editable_choice::*;
 pub use editable_file::*;
 pub use editable_item::*;

@@ -1,6 +1,7 @@
 use crate::definition::ItemDefinitionType;
 use crate::editable::{
-    ChoiceEditable, FileEditable, MapEditable, NumberEditable, StringEditable, TableEditable,
+    BooleanEditable, ChoiceEditable, FileEditable, MapEditable, NumberEditable, StringEditable,
+    TableEditable,
 };
 use crate::frozen::ItemFrozen;
 use crate::traits::TreePrint;
@@ -9,6 +10,8 @@ use serde::{Deserialize, Serialize};
 /// Represents a parameter value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ItemEditable {
+    /// A boolean parameter.
+    Boolean(BooleanEditable),
     /// A choice parameter.
     Choice(ChoiceEditable),
     /// A file parameter.
@@ -27,6 +30,7 @@ impl ItemEditable {
     /// Creates a new `ItemEditable` instance from a given `ItemFrozen` value.
     pub fn new_from_frozen(static_item: &ItemFrozen) -> Self {
         match static_item {
+            ItemFrozen::Boolean(boolean) => ItemEditable::Boolean(BooleanEditable::new(boolean)),
             ItemFrozen::Choice(choice) => ItemEditable::Choice(ChoiceEditable::new(choice)),
             ItemFrozen::File(file) => ItemEditable::File(FileEditable::new(file)),
             ItemFrozen::Map(map) => ItemEditable::Map(MapEditable::new(map)),
@@ -39,6 +43,7 @@ impl ItemEditable {
     /// Converts the current `ItemEditable` instance into an `ItemFrozen` instance.
     pub fn freeze(&self) -> ItemFrozen {
         match self {
+            ItemEditable::Boolean(boolean) => ItemFrozen::Boolean(boolean.freeze()),
             ItemEditable::Choice(choice) => ItemFrozen::Choice(choice.freeze()),
             ItemEditable::File(file) => ItemFrozen::File(file.freeze()),
             ItemEditable::Map(map) => ItemFrozen::Map(map.freeze()),
@@ -51,6 +56,7 @@ impl ItemEditable {
     /// Returns the parameter definition.
     pub fn definition(&self) -> ItemDefinitionType {
         match self {
+            ItemEditable::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
             ItemEditable::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
             ItemEditable::File(f) => ItemDefinitionType::File(f.definition().clone()),
             ItemEditable::Map(m) => ItemDefinitionType::Map(m.definition().clone()),
@@ -118,6 +124,7 @@ impl TreePrint for ItemEditable {
         last: bool,
     ) -> std::fmt::Result {
         match self {
+            Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
