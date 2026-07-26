@@ -31,6 +31,7 @@ impl ItemFrozen {
     /// Returns the parameter definition.
     pub fn definition(&self) -> ItemDefinitionType {
         match self {
+            ItemFrozen::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
             ItemFrozen::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
             ItemFrozen::File(f) => ItemDefinitionType::File(f.definition().clone()),
             ItemFrozen::Integer(i) => ItemDefinitionType::Integer(i.definition().clone()),
@@ -38,13 +39,13 @@ impl ItemFrozen {
             ItemFrozen::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
             ItemFrozen::String(b) => ItemDefinitionType::String(b.definition().clone()),
             ItemFrozen::Table(t) => ItemDefinitionType::Table(t.definition().clone()),
-            ItemFrozen::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
         }
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the parameter.
     pub fn hash(&self) -> [u8; 32] {
         match self {
+            Self::Boolean(b) => b.hash(),
             Self::Choice(c) => c.hash(),
             Self::File(f) => f.hash(),
             Self::Integer(i) => i.hash(),
@@ -52,7 +53,6 @@ impl ItemFrozen {
             Self::Number(n) => n.hash(),
             Self::String(s) => s.hash(),
             Self::Table(t) => t.hash(),
-            Self::Boolean(b) => b.hash(),
         }
     }
 

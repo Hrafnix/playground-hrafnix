@@ -81,8 +81,8 @@ impl ItemDefinitionType {
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             Self::Boolean(def) => Self::Boolean(def.launder(store)),
-            Self::File(def) => Self::File(def.launder(store)),
             Self::Choice(def) => Self::Choice(def.launder(store)),
+            Self::File(def) => Self::File(def.launder(store)),
             Self::Integer(def) => Self::Integer(def.launder(store)),
             Self::Map(def) => Self::Map(def.launder(store)),
             Self::Number(def) => Self::Number(def.launder(store)),
@@ -114,13 +114,13 @@ impl TreePrint for ItemDefinitionType {
     ) -> std::fmt::Result {
         match self {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
-            Self::String(basic) => basic.tree_print(f, label, prefix, last),
+            Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
             Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
-            Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
-            Self::Number(number) => number.tree_print(f, label, prefix, last),
-            Self::Table(table) => table.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
+            Self::Number(number) => number.tree_print(f, label, prefix, last),
+            Self::String(basic) => basic.tree_print(f, label, prefix, last),
+            Self::Table(table) => table.tree_print(f, label, prefix, last),
         }
     }
 }
