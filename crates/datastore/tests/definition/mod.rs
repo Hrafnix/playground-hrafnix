@@ -1,8 +1,8 @@
 mod definition_basic;
-mod definition_builder;
 mod definition_comprehensive;
+mod definition_global_builder;
+mod definition_global_object;
 mod definition_map;
-mod definition_object;
 mod definition_parameter_builder;
 mod definition_parameter_object;
 mod definition_table;
