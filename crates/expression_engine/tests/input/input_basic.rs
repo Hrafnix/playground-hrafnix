@@ -1,28 +1,26 @@
 use datastore::prelude::*;
 use expression_engine::BasicDefinition;
-use expression_engine::preprocessed_data::{
-    BasicPreprocessedData, GlobalObjectPreprocessedData, ObjectItemPreprocessedData,
-};
+use expression_engine::input_data::{BasicInputData, GlobalObjectInputData, ObjectItemInputData};
 use std::collections::BTreeMap;
 
-/// Builds a `GlobalObjectPreprocessedData` with a single basic item and returns its
-/// `BasicPreprocessedData`, extracted via the crate's public conversion path (`new` on
-/// `BasicPreprocessedData` is crate-private, so this is how tests must construct instances).
-fn basic_data_for(item: ItemFrozen) -> BasicPreprocessedData {
+/// Builds a `GlobalObjectInputData` with a single basic item and returns its
+/// `BasicInputData`, extracted via the crate's public conversion path (`new` on
+/// `BasicInputData` is crate-private, so this is how tests must construct instances).
+fn basic_data_for(item: ItemFrozen) -> BasicInputData {
     let mut items = BTreeMap::new();
     items.insert(GlobalKey::new("g_field".into()).unwrap(), item);
     let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
-    let preprocessed = GlobalObjectPreprocessedData::new(frozen);
+    let input = GlobalObjectInputData::new(frozen);
 
-    match preprocessed.data().get("g_field").unwrap() {
-        ObjectItemPreprocessedData::Basic(basic) => basic.clone(),
-        ObjectItemPreprocessedData::Table(_) => panic!("expected basic data"),
+    match input.data().get("g_field").unwrap() {
+        ObjectItemInputData::Basic(basic) => basic.clone(),
+        ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
 }
 
 #[test]
-fn test_basic_preprocessed_data_string() {
-    // Why: Test basic preprocessed data extraction from a string item.
+fn test_basic_input_data_string() {
+    // Why: Test basic input data extraction from a string item.
     let data = basic_data_for(ItemFrozen::String(StringFrozen::new_from_editable(
         &StringEditable::new_with_value(
             StringDefinition::new("A string parameter"),
@@ -38,8 +36,8 @@ fn test_basic_preprocessed_data_string() {
 }
 
 #[test]
-fn test_basic_preprocessed_data_number() {
-    // Why: Test basic preprocessed data extraction from a number item, using its default value.
+fn test_basic_input_data_number() {
+    // Why: Test basic input data extraction from a number item, using its default value.
     let data = basic_data_for(ItemFrozen::Number(NumberFrozen::new(
         NumberDefinition::new_with_default("A number parameter", "42"),
     )));
@@ -55,8 +53,8 @@ fn test_basic_preprocessed_data_number() {
 }
 
 #[test]
-fn test_basic_preprocessed_data_file() {
-    // Why: Test basic preprocessed data extraction from a file item, using its default value.
+fn test_basic_input_data_file() {
+    // Why: Test basic input data extraction from a file item, using its default value.
     let data = basic_data_for(ItemFrozen::File(FileFrozen::new(
         FileDefinition::new_with_default("A file parameter", "txt", false, "test.txt"),
     )));
@@ -74,8 +72,8 @@ fn test_basic_preprocessed_data_file() {
 }
 
 #[test]
-fn test_basic_preprocessed_data_choice() {
-    // Why: Test basic preprocessed data extraction from a choice item, using its default value.
+fn test_basic_input_data_choice() {
+    // Why: Test basic input data extraction from a choice item, using its default value.
     let choices = vec![
         ChoiceItemDefinition::new(store_key!("a"), "A"),
         ChoiceItemDefinition::new(store_key!("b"), "B"),
@@ -96,8 +94,8 @@ fn test_basic_preprocessed_data_choice() {
 }
 
 #[test]
-fn test_basic_preprocessed_data_equality() {
-    // Why: Test that two basic preprocessed data items with the same content are considered
+fn test_basic_input_data_equality() {
+    // Why: Test that two basic input data items with the same content are considered
     // equal, and differ when their values diverge.
     let data_1 = basic_data_for(ItemFrozen::String(StringFrozen::new_from_editable(
         &StringEditable::new_with_value(StringDefinition::new("A string"), "hello".into()),
@@ -114,7 +112,7 @@ fn test_basic_preprocessed_data_equality() {
 }
 
 #[test]
-fn test_basic_preprocessed_data_launder() {
+fn test_basic_input_data_launder() {
     // Why: Laundering should replace strings with interned instances from the store while
     // preserving the definition and value contents.
     let store = SharedStringStore::new();

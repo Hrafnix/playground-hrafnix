@@ -2,9 +2,7 @@ use datastore::definition::{GlobalObjectDefinition, NumberDefinition, ParameterO
 use datastore::frozen::{GlobalObjectFrozen, ParameterObjectFrozen};
 use datastore::{global_key, parameter_key};
 use expression_engine::engine::ExpressionEngine;
-use expression_engine::{
-    ComputedItem, GlobalObjectPreprocessedData, ParameterObjectPreprocessedData,
-};
+use expression_engine::{ComputedItem, GlobalObjectInputData, ParameterObjectInputData};
 
 #[test]
 fn test_basic_data_integer() {
@@ -17,7 +15,7 @@ fn test_basic_data_integer() {
             .finish(),
     );
 
-    let data = ParameterObjectPreprocessedData::new(frozen);
+    let data = ParameterObjectInputData::new(frozen);
 
     let output = ExpressionEngine::new()
         .evaluate_parameters(data)
@@ -42,7 +40,7 @@ fn test_basic_data_integer_expression() {
             .finish(),
     );
 
-    let data = ParameterObjectPreprocessedData::new(frozen);
+    let data = ParameterObjectInputData::new(frozen);
 
     let output = ExpressionEngine::new()
         .evaluate_parameters(data)
@@ -76,8 +74,8 @@ fn test_basic_global_data_integer_expression() {
             .finish(),
     );
 
-    let global_data = GlobalObjectPreprocessedData::new(global_frozen);
-    let data = ParameterObjectPreprocessedData::new(frozen);
+    let global_data = GlobalObjectInputData::new(global_frozen);
+    let data = ParameterObjectInputData::new(frozen);
 
     let mut engine = ExpressionEngine::new();
     engine

@@ -1,24 +1,22 @@
 use datastore::prelude::*;
-use expression_engine::preprocessed_data::{
-    GlobalObjectPreprocessedData, ObjectItemPreprocessedData, TablePreprocessedData,
-};
+use expression_engine::input_data::{GlobalObjectInputData, ObjectItemInputData, TableInputData};
 use std::collections::BTreeMap;
 
-/// Builds a `GlobalObjectPreprocessedData` with a single table item and returns its
-/// `TablePreprocessedData`, extracted via the crate's public conversion path (`new` on
-/// `TablePreprocessedData` is crate-private, so this is how tests must construct instances).
-fn table_data_for(table: TableFrozen) -> TablePreprocessedData {
+/// Builds a `GlobalObjectInputData` with a single table item and returns its
+/// `TableInputData`, extracted via the crate's public conversion path (`new` on
+/// `TableInputData` is crate-private, so this is how tests must construct instances).
+fn table_data_for(table: TableFrozen) -> TableInputData {
     let mut items = BTreeMap::new();
     items.insert(
         GlobalKey::new("g_field".into()).unwrap(),
         ItemFrozen::Table(table),
     );
     let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
-    let preprocessed = GlobalObjectPreprocessedData::new(frozen);
+    let input = GlobalObjectInputData::new(frozen);
 
-    match preprocessed.data().get("g_field").unwrap() {
-        ObjectItemPreprocessedData::Table(table) => table.clone(),
-        ObjectItemPreprocessedData::Basic(_) => panic!("expected table data"),
+    match input.data().get("g_field").unwrap() {
+        ObjectItemInputData::Table(table) => table.clone(),
+        ObjectItemInputData::Basic(_) => panic!("expected table data"),
     }
 }
 
@@ -38,8 +36,8 @@ fn sample_table_frozen() -> TableFrozen {
 }
 
 #[test]
-fn test_table_preprocessed_data() {
-    // Why: Test table preprocessed data extraction and accessors.
+fn test_table_input_data() {
+    // Why: Test table input data extraction and accessors.
     let data = table_data_for(sample_table_frozen());
 
     assert_eq!(data.definition().description().as_ref(), "A table");
@@ -50,8 +48,8 @@ fn test_table_preprocessed_data() {
 }
 
 #[test]
-fn test_table_preprocessed_data_empty() {
-    // Why: Test table preprocessed data extraction with no rows.
+fn test_table_input_data_empty() {
+    // Why: Test table input data extraction with no rows.
     let definition = TableDefinition::new(
         "An empty table",
         vec![(store_key!("col1"), NumberDefinition::new("Column 1"))],
@@ -62,8 +60,8 @@ fn test_table_preprocessed_data_empty() {
 }
 
 #[test]
-fn test_table_preprocessed_data_equality() {
-    // Why: Test that two table preprocessed data items with the same content are considered
+fn test_table_input_data_equality() {
+    // Why: Test that two table input data items with the same content are considered
     // equal, and differ when their definitions diverge.
     let data_1 = table_data_for(sample_table_frozen());
     let data_2 = table_data_for(sample_table_frozen());
@@ -78,7 +76,7 @@ fn test_table_preprocessed_data_equality() {
 }
 
 #[test]
-fn test_table_preprocessed_data_launder() {
+fn test_table_input_data_launder() {
     // Why: Laundering should replace strings in both the definition and row values with
     // interned instances from the store while preserving content.
     let store = SharedStringStore::new();

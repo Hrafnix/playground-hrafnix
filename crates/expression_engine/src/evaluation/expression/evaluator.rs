@@ -2,8 +2,8 @@ use crate::BasicDefinition::{Boolean, Choice, File, Number, String};
 use crate::expression::parser::parse;
 use crate::expression::translator::{Expression, Literal, Operators, translate};
 use crate::{
-    BasicPreprocessedData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
-    ObjectItemPreprocessedData, TablePreprocessedData,
+    BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
+    ObjectItemInputData, TableInputData,
 };
 use datastore::definition::NumberConstraint;
 use shareable_string::ShareableString;
@@ -479,7 +479,7 @@ fn parse_str(s: &str) -> Result<Expression, ExpressionError> {
 
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
-    basic: BasicPreprocessedData,
+    basic: BasicInputData,
 ) -> Result<ComputedItem, ExpressionError> {
     let data = basic.data();
     let expression = parse_str(data.as_ref())?;
@@ -680,7 +680,7 @@ fn evaluate_basic_expression(
 
 fn evaluate_table_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
-    table: TablePreprocessedData,
+    table: TableInputData,
 ) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
     let definition = table.definition();
 
@@ -693,10 +693,10 @@ fn evaluate_table_expression(
                 .get_by_index(i)
                 .expect("Column definition should exist for each key in the row.");
 
-            let preprocessed_basic_data =
-                BasicPreprocessedData::new(Number(number_definition.clone()), basic_data.clone());
+            let basic_input_data =
+                BasicInputData::new(Number(number_definition.clone()), basic_data.clone());
 
-            match evaluate_basic_expression(computed_data, preprocessed_basic_data) {
+            match evaluate_basic_expression(computed_data, basic_input_data) {
                 Ok(ComputedItem::Integer(value)) => {
                     evaluated_row.push(value as f64);
                 }
@@ -726,7 +726,7 @@ fn evaluate_table_expression(
 /// along with any errors encountered during evaluation.
 pub(crate) fn evaluator(
     computed_data: BTreeMap<ShareableString, ComputedItem>,
-    input_data: BTreeMap<ShareableString, ObjectItemPreprocessedData>,
+    input_data: BTreeMap<ShareableString, ObjectItemInputData>,
 ) -> (
     BTreeMap<ShareableString, ComputedItem>,
     Vec<ExpressionError>,
@@ -736,7 +736,7 @@ pub(crate) fn evaluator(
 
     for (key, data) in input_data {
         match data {
-            ObjectItemPreprocessedData::Basic(basic_data) => {
+            ObjectItemInputData::Basic(basic_data) => {
                 match evaluate_basic_expression(&computed_data, basic_data) {
                     Ok(computed_item) => {
                         result.insert(key.clone(), computed_item);
@@ -746,7 +746,7 @@ pub(crate) fn evaluator(
                     }
                 }
             }
-            ObjectItemPreprocessedData::Table(table_data) => {
+            ObjectItemInputData::Table(table_data) => {
                 // For table data, we need to evaluate the expression for each row.
                 let keys = table_data
                     .definition()
@@ -776,10 +776,10 @@ mod tests {
     use super::*;
     use datastore::definition::{BooleanDefinition, NumberDefinition};
 
-    fn create_number_basic_preprocessed_data(value: &str) -> ObjectItemPreprocessedData {
+    fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Number(NumberDefinition::new("Test Number"));
         let data = ShareableString::from(value.to_string());
-        ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(definition, data))
+        ObjectItemInputData::Basic(BasicInputData::new(definition, data))
     }
 
     fn check_number_float(computed_item: &ComputedItem, expected_value: f64) {
@@ -796,10 +796,10 @@ mod tests {
         }
     }
 
-    fn create_boolean_basic_preprocessed_data(value: &str) -> ObjectItemPreprocessedData {
+    fn create_boolean_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Boolean(BooleanDefinition::new("Test Boolean"));
         let data = ShareableString::from(value.to_string());
-        ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(definition, data))
+        ObjectItemInputData::Basic(BasicInputData::new(definition, data))
     }
 
     fn check_boolean(computed_item: &ComputedItem, expected_value: bool) {
@@ -821,8 +821,7 @@ mod tests {
     #[test]
     fn boolean_test() {
         let computed_data = BTreeMap::new();
-        let input_data =
-            BTreeMap::from([("x".into(), create_boolean_basic_preprocessed_data("true"))]);
+        let input_data = BTreeMap::from([("x".into(), create_boolean_basic_input_data("true"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -836,7 +835,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([(
             "x".into(),
-            create_boolean_basic_preprocessed_data("true && false || true"),
+            create_boolean_basic_input_data("true && false || true"),
         )]);
 
         let (result, errors) = evaluator(computed_data, input_data);
@@ -850,24 +849,12 @@ mod tests {
     fn multiple_boolean_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([
-            (
-                "a".into(),
-                create_boolean_basic_preprocessed_data("true && false"),
-            ),
-            (
-                "b".into(),
-                create_boolean_basic_preprocessed_data("true || false"),
-            ),
-            ("c".into(), create_boolean_basic_preprocessed_data("!true")),
-            ("d".into(), create_boolean_basic_preprocessed_data("!false")),
-            (
-                "e".into(),
-                create_boolean_basic_preprocessed_data("true == false"),
-            ),
-            (
-                "f".into(),
-                create_boolean_basic_preprocessed_data("true != false"),
-            ),
+            ("a".into(), create_boolean_basic_input_data("true && false")),
+            ("b".into(), create_boolean_basic_input_data("true || false")),
+            ("c".into(), create_boolean_basic_input_data("!true")),
+            ("d".into(), create_boolean_basic_input_data("!false")),
+            ("e".into(), create_boolean_basic_input_data("true == false")),
+            ("f".into(), create_boolean_basic_input_data("true != false")),
         ]);
 
         let (result, errors) = evaluator(computed_data, input_data);
@@ -885,8 +872,7 @@ mod tests {
     #[test]
     fn integer_test() {
         let computed_data = BTreeMap::new();
-        let input_data =
-            BTreeMap::from([("x".into(), create_number_basic_preprocessed_data("42"))]);
+        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -898,10 +884,8 @@ mod tests {
     #[test]
     fn integer_expression_test() {
         let computed_data = BTreeMap::new();
-        let input_data = BTreeMap::from([(
-            "x".into(),
-            create_number_basic_preprocessed_data("1 + 2 * 3"),
-        )]);
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("1 + 2 * 3"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -914,22 +898,19 @@ mod tests {
     fn multiple_integer_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([
-            ("a".into(), create_number_basic_preprocessed_data("1 + 2")),
-            ("b".into(), create_number_basic_preprocessed_data("1 - 2")),
-            ("c".into(), create_number_basic_preprocessed_data("1 * 2")),
-            ("d".into(), create_number_basic_preprocessed_data("1 / 2")),
-            ("e".into(), create_number_basic_preprocessed_data("1 % 2")),
-            ("f".into(), create_number_basic_preprocessed_data("1 ^ 2")),
-            ("h".into(), create_number_basic_preprocessed_data("-1 + 2")),
+            ("a".into(), create_number_basic_input_data("1 + 2")),
+            ("b".into(), create_number_basic_input_data("1 - 2")),
+            ("c".into(), create_number_basic_input_data("1 * 2")),
+            ("d".into(), create_number_basic_input_data("1 / 2")),
+            ("e".into(), create_number_basic_input_data("1 % 2")),
+            ("f".into(), create_number_basic_input_data("1 ^ 2")),
+            ("h".into(), create_number_basic_input_data("-1 + 2")),
             (
                 "g".into(),
-                create_number_basic_preprocessed_data("1 + 2 * 3 - 4 / 5 ^ 6"),
+                create_number_basic_input_data("1 + 2 * 3 - 4 / 5 ^ 6"),
             ),
-            (
-                "i".into(),
-                create_number_basic_preprocessed_data("-(1 + 2)"),
-            ),
-            ("j".into(), create_number_basic_preprocessed_data("--1")),
+            ("i".into(), create_number_basic_input_data("-(1 + 2)")),
+            ("j".into(), create_number_basic_input_data("--1")),
         ]);
 
         let (result, errors) = evaluator(computed_data, input_data);
@@ -951,8 +932,7 @@ mod tests {
     #[test]
     fn float_test() {
         let computed_data = BTreeMap::new();
-        let input_data =
-            BTreeMap::from([("x".into(), create_number_basic_preprocessed_data("42.0"))]);
+        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42.0"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -966,7 +946,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([(
             "x".into(),
-            create_number_basic_preprocessed_data("1.0 + 2.0 * 3.0"),
+            create_number_basic_input_data("1.0 + 2.0 * 3.0"),
         )]);
 
         let (result, errors) = evaluator(computed_data, input_data);
@@ -980,43 +960,19 @@ mod tests {
     fn multiple_float_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([
-            (
-                "a".into(),
-                create_number_basic_preprocessed_data("1.0 + 2.0"),
-            ),
-            (
-                "b".into(),
-                create_number_basic_preprocessed_data("1.0 - 2.0"),
-            ),
-            (
-                "c".into(),
-                create_number_basic_preprocessed_data("1.0 * 2.0"),
-            ),
-            (
-                "d".into(),
-                create_number_basic_preprocessed_data("1.0 / 2.0"),
-            ),
-            (
-                "e".into(),
-                create_number_basic_preprocessed_data("1.0 % 2.0"),
-            ),
-            (
-                "f".into(),
-                create_number_basic_preprocessed_data("1.0 ^ 2.0"),
-            ),
+            ("a".into(), create_number_basic_input_data("1.0 + 2.0")),
+            ("b".into(), create_number_basic_input_data("1.0 - 2.0")),
+            ("c".into(), create_number_basic_input_data("1.0 * 2.0")),
+            ("d".into(), create_number_basic_input_data("1.0 / 2.0")),
+            ("e".into(), create_number_basic_input_data("1.0 % 2.0")),
+            ("f".into(), create_number_basic_input_data("1.0 ^ 2.0")),
             (
                 "g".into(),
-                create_number_basic_preprocessed_data("1.0 + 2.0 * 3.0 - 4.0 / 5.0 ^ 6.0"),
+                create_number_basic_input_data("1.0 + 2.0 * 3.0 - 4.0 / 5.0 ^ 6.0"),
             ),
-            (
-                "h".into(),
-                create_number_basic_preprocessed_data("-1.0 + 2.0"),
-            ),
-            (
-                "i".into(),
-                create_number_basic_preprocessed_data("-(1.0 + 2.0)"),
-            ),
-            ("j".into(), create_number_basic_preprocessed_data("--1.0")),
+            ("h".into(), create_number_basic_input_data("-1.0 + 2.0")),
+            ("i".into(), create_number_basic_input_data("-(1.0 + 2.0)")),
+            ("j".into(), create_number_basic_input_data("--1.0")),
         ]);
 
         let (result, errors) = evaluator(computed_data, input_data);
@@ -1103,10 +1059,8 @@ mod tests {
             "t".into(),
             create_table_computed_item(vec![vec![("col", 1.0)], vec![("col", 9.0)]]),
         )]);
-        let input_data = BTreeMap::from([(
-            "x".into(),
-            create_number_basic_preprocessed_data("t[1][col]"),
-        )]);
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(errors.is_empty());
@@ -1120,10 +1074,8 @@ mod tests {
             "t".into(),
             create_table_computed_item(vec![vec![("col", 1.0)], vec![("col", 9.0)]]),
         )]);
-        let input_data = BTreeMap::from([(
-            "x".into(),
-            create_number_basic_preprocessed_data("t[1][col]"),
-        )]);
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(errors.is_empty());

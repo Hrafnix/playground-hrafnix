@@ -1,8 +1,7 @@
 use crate::expression::evaluator::evaluator;
 use crate::{
-    ExpressionError, GlobalObjectComputedData, GlobalObjectPreprocessedData,
-    ParameterObjectComputedData, ParameterObjectPreprocessedData, VariableObjectComputedData,
-    VariableObjectPreprocessedData,
+    ExpressionError, GlobalObjectComputedData, GlobalObjectInputData, ParameterObjectComputedData,
+    ParameterObjectInputData, VariableObjectComputedData, VariableObjectInputData,
 };
 use std::collections::BTreeMap;
 
@@ -27,10 +26,10 @@ impl ExpressionEngine {
         }
     }
 
-    /// Evaluates the provided global preprocessed data and updates the engine's state with the computed results.
+    /// Evaluates the provided global input data and updates the engine's state with the computed results.
     pub fn evaluate_globals(
         &mut self,
-        globals: GlobalObjectPreprocessedData,
+        globals: GlobalObjectInputData,
     ) -> Result<(), Vec<ExpressionError>> {
         let (computed_data, errors) = evaluator(BTreeMap::new(), globals.data().clone());
 
@@ -46,7 +45,7 @@ impl ExpressionEngine {
     /// Evaluates the provided parameters against the engine's current global state and returns the computed results.
     pub fn evaluate_parameters(
         &self,
-        parameters: ParameterObjectPreprocessedData,
+        parameters: ParameterObjectInputData,
     ) -> Result<ParameterObjectComputedData, Vec<ExpressionError>> {
         let (computed_data, errors) =
             evaluator(self.globals.data().clone(), parameters.data().clone());
@@ -62,7 +61,7 @@ impl ExpressionEngine {
     pub fn evaluate_variables(
         &self,
         parameters: ParameterObjectComputedData,
-        variables: VariableObjectPreprocessedData,
+        variables: VariableObjectInputData,
     ) -> Result<VariableObjectComputedData, Vec<ExpressionError>> {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());
@@ -76,13 +75,13 @@ impl ExpressionEngine {
         Ok(VariableObjectComputedData::new(computed_data))
     }
 
-    /// Extends the engine's global state with the provided parameters, variables, and global preprocessed data.
+    /// Extends the engine's global state with the provided parameters, variables, and global input data.
     /// This method evaluates the provided data and updates the engine's state accordingly.
     pub fn extend_globals(
         &mut self,
         parameters: ParameterObjectComputedData,
         variables: VariableObjectComputedData,
-        globals: GlobalObjectPreprocessedData,
+        globals: GlobalObjectInputData,
     ) -> Result<(), Vec<ExpressionError>> {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());
@@ -105,7 +104,7 @@ impl ExpressionEngine {
         &self,
         parameters: ParameterObjectComputedData,
         variables: VariableObjectComputedData,
-        child_parameters: ParameterObjectPreprocessedData,
+        child_parameters: ParameterObjectInputData,
     ) -> Result<ParameterObjectComputedData, Vec<ExpressionError>> {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());

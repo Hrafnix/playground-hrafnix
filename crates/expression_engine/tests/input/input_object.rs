@@ -1,7 +1,6 @@
 use datastore::prelude::*;
-use expression_engine::preprocessed_data::{
-    GlobalObjectPreprocessedData, ObjectItemPreprocessedData, ParameterObjectPreprocessedData,
-    VariableObjectPreprocessedData,
+use expression_engine::input_data::{
+    GlobalObjectInputData, ObjectItemInputData, ParameterObjectInputData, VariableObjectInputData,
 };
 use std::collections::BTreeMap;
 
@@ -68,43 +67,43 @@ fn sample_items() -> BTreeMap<String, ItemFrozen> {
 }
 
 #[test]
-fn test_global_object_preprocessed_data() {
+fn test_global_object_input_data() {
     // Why: Test that every basic item kind is preserved when converting a `GlobalObjectFrozen`
-    // into its preprocessed representation.
+    // into its input representation.
     let items: BTreeMap<GlobalKey, ItemFrozen> = sample_items()
         .into_iter()
         .map(|(k, v)| (GlobalKey::new(format!("g_{}", k).into()).unwrap(), v))
         .collect();
     let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
 
-    let preprocessed = GlobalObjectPreprocessedData::new(frozen);
-    let data = preprocessed.data();
+    let input = GlobalObjectInputData::new(frozen);
+    let data = input.data();
 
     // Basic items should keep their key and be exposed as `Basic` entries.
     match data.get("g_string_field").unwrap() {
-        ObjectItemPreprocessedData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
-        ObjectItemPreprocessedData::Table(_) => panic!("expected basic data"),
+        ObjectItemInputData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
+        ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
 
     // Table items should keep their key and be exposed as `Table` entries.
     match data.get("g_table_field").unwrap() {
-        ObjectItemPreprocessedData::Table(table) => {
+        ObjectItemInputData::Table(table) => {
             assert_eq!(table.data().len(), 1);
             assert_eq!(table.data()[0][0].as_ref(), "1");
         }
-        ObjectItemPreprocessedData::Basic(_) => panic!("expected table data"),
+        ObjectItemInputData::Basic(_) => panic!("expected table data"),
     }
 
     // Map items should be flattened into `key[entry][field]` paths.
     match data.get("g_map_field[entry1][field1]").unwrap() {
-        ObjectItemPreprocessedData::Basic(basic) => {
+        ObjectItemInputData::Basic(basic) => {
             assert_eq!(basic.data().as_ref(), "entry1-value")
         }
-        ObjectItemPreprocessedData::Table(_) => panic!("expected basic data"),
+        ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
     match data.get("g_map_field[entry1][field2]").unwrap() {
-        ObjectItemPreprocessedData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
-        ObjectItemPreprocessedData::Table(_) => panic!("expected basic data"),
+        ObjectItemInputData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
+        ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
 
     // A map's flattened field should not remain accessible under its original path.
@@ -120,8 +119,8 @@ fn test_global_object_preprocessed_data() {
 }
 
 #[test]
-fn test_parameter_object_preprocessed_data() {
-    // Why: Test that `ParameterObjectPreprocessedData` extracts basic and table items the same
+fn test_parameter_object_input_data() {
+    // Why: Test that `ParameterObjectInputData` extracts basic and table items the same
     // way as the global variant.
     let items: BTreeMap<ParameterKey, ItemFrozen> = sample_items()
         .into_iter()
@@ -129,23 +128,23 @@ fn test_parameter_object_preprocessed_data() {
         .collect();
     let frozen = ParameterObjectFrozen::new_from_items("Test object", items);
 
-    let preprocessed = ParameterObjectPreprocessedData::new(frozen);
-    let data = preprocessed.data();
+    let input = ParameterObjectInputData::new(frozen);
+    let data = input.data();
 
     match data.get("p_string_field").unwrap() {
-        ObjectItemPreprocessedData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
-        ObjectItemPreprocessedData::Table(_) => panic!("expected basic data"),
+        ObjectItemInputData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
+        ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
     match data.get("p_table_field").unwrap() {
-        ObjectItemPreprocessedData::Table(table) => assert_eq!(table.data().len(), 1),
-        ObjectItemPreprocessedData::Basic(_) => panic!("expected table data"),
+        ObjectItemInputData::Table(table) => assert_eq!(table.data().len(), 1),
+        ObjectItemInputData::Basic(_) => panic!("expected table data"),
     }
     assert!(data.get("p_map_field[entry1][field1]").is_some());
 }
 
 #[test]
-fn test_variable_object_preprocessed_data() {
-    // Why: Test that `VariableObjectPreprocessedData` extracts basic and table items the same
+fn test_variable_object_input_data() {
+    // Why: Test that `VariableObjectInputData` extracts basic and table items the same
     // way as the global variant.
     let items: BTreeMap<VariableKey, ItemFrozen> = sample_items()
         .into_iter()
@@ -153,25 +152,25 @@ fn test_variable_object_preprocessed_data() {
         .collect();
     let frozen = VariableObjectFrozen::new_from_items("Test object", items);
 
-    let preprocessed = VariableObjectPreprocessedData::new(frozen);
-    let data = preprocessed.data();
+    let input = VariableObjectInputData::new(frozen);
+    let data = input.data();
 
     match data.get("v_string_field").unwrap() {
-        ObjectItemPreprocessedData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
-        ObjectItemPreprocessedData::Table(_) => panic!("expected basic data"),
+        ObjectItemInputData::Basic(basic) => assert_eq!(basic.data().as_ref(), ""),
+        ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
     match data.get("v_table_field").unwrap() {
-        ObjectItemPreprocessedData::Table(table) => assert_eq!(table.data().len(), 1),
-        ObjectItemPreprocessedData::Basic(_) => panic!("expected table data"),
+        ObjectItemInputData::Table(table) => assert_eq!(table.data().len(), 1),
+        ObjectItemInputData::Basic(_) => panic!("expected table data"),
     }
     assert!(data.get("v_map_field[entry1][field1]").is_some());
 }
 
 #[test]
-fn test_global_object_preprocessed_data_empty() {
-    // Why: An object with no items should produce an empty preprocessed data map.
+fn test_global_object_input_data_empty() {
+    // Why: An object with no items should produce an empty input data map.
     let frozen = GlobalObjectFrozen::new(GlobalObjectDefinition::builder("Empty object").finish());
-    let preprocessed = GlobalObjectPreprocessedData::new(frozen);
+    let input = GlobalObjectInputData::new(frozen);
 
-    assert!(preprocessed.data().is_empty());
+    assert!(input.data().is_empty());
 }
