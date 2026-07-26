@@ -3,8 +3,8 @@ use datastore::prelude::*;
 #[test]
 fn test_object_frozen_basic() {
     // Why: Test frozen object creation and items.
-    let frozen_1 = ObjectFrozen::new(
-        ObjectDefinition::builder("Test Object")
+    let frozen_1 = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
@@ -22,24 +22,24 @@ fn test_object_frozen_basic() {
 #[test]
 fn test_object_frozen_equality() {
     // Why: Test that two frozen objects with the same items are considered equal.
-    let frozen_1 = ObjectFrozen::new(
-        ObjectDefinition::builder("Test Object")
+    let frozen_1 = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
     );
-    let frozen_2 = ObjectFrozen::new(
-        ObjectDefinition::builder("Test Object")
+    let frozen_2 = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
     );
-    let frozen_3 = ObjectFrozen::new(
-        ObjectDefinition::builder("Test Object")
+    let frozen_3 = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D2"),
@@ -55,9 +55,9 @@ fn test_object_frozen_equality() {
 
 #[test]
 fn test_object_frozen_print_empty() {
-    // Why: Test frozen object print based on an ObjectDefinition.
-    let frozen_1 = ObjectFrozen::new(
-        ObjectDefinitionBuilder::new("Test")
+    // Why: Test frozen object print based on a GlobalObjectDefinition.
+    let frozen_1 = GlobalObjectFrozen::new(
+        GlobalObjectDefinitionBuilder::new("Test")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),

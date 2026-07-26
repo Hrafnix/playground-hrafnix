@@ -7,15 +7,15 @@ use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-/// Builder for creating an `ObjectDefinition`.
+/// Builder for creating a `GlobalObjectDefinition`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct ObjectDefinitionBuilder {
+pub struct GlobalObjectDefinitionBuilder {
     description: ShareableString,
     items: BTreeMap<GlobalKey, ItemDefinitionType>,
 }
 
-impl ObjectDefinitionBuilder {
-    /// Creates a new `ObjectDefinitionBuilder` with a description.
+impl GlobalObjectDefinitionBuilder {
+    /// Creates a new `GlobalObjectDefinitionBuilder` with a description.
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
@@ -23,22 +23,25 @@ impl ObjectDefinitionBuilder {
         }
     }
 
-    /// Returns a new builder with inherited from an existing `ObjectDefinition`.
+    /// Returns a new builder with inherited from an existing `GlobalObjectDefinition`.
     ///
     /// This method will overwrite existing parameter with the same keys.
-    pub fn inherit(mut self, definition: ObjectDefinition) -> Self {
+    pub fn inherit(mut self, definition: GlobalObjectDefinition) -> Self {
         self.items
             .extend(definition.items.iter().map(|(k, v)| (k.clone(), v.clone())));
         self
     }
 
-    /// Returns a new builder with inherited from an existing `ObjectDefinition`,
+    /// Returns a new builder with inherited from an existing `GlobalObjectDefinition`,
     /// checking for conflicts.
     ///
     /// # Errors
     ///
     /// Returns `StoreError::KeyConflict` if any key already exists in the builder.
-    pub fn inherit_with_check(mut self, definition: ObjectDefinition) -> Result<Self, StoreError> {
+    pub fn inherit_with_check(
+        mut self,
+        definition: GlobalObjectDefinition,
+    ) -> Result<Self, StoreError> {
         for key in definition.items.keys() {
             if self.items.contains_key(key) {
                 return Err(StoreError::KeyConflict(key.key.to_string()));
@@ -52,7 +55,7 @@ impl ObjectDefinitionBuilder {
     /// Returns a new builder inherited from another builder.
     ///
     /// This method will overwrite existing keys.
-    pub fn inherit_from_builder(mut self, builder: ObjectDefinitionBuilder) -> Self {
+    pub fn inherit_from_builder(mut self, builder: GlobalObjectDefinitionBuilder) -> Self {
         self.items.extend(builder.items);
         self
     }
@@ -64,7 +67,7 @@ impl ObjectDefinitionBuilder {
     /// Returns `StoreError::KeyConflict` if any key already exists in the builder.
     pub fn inherit_from_builder_with_check(
         mut self,
-        builder: ObjectDefinitionBuilder,
+        builder: GlobalObjectDefinitionBuilder,
     ) -> Result<Self, StoreError> {
         for key in builder.items.keys() {
             if self.items.contains_key(key) {
@@ -110,33 +113,36 @@ impl ObjectDefinitionBuilder {
         self.items.remove(&key.into());
     }
 
-    /// Builds the `ObjectDefinition`.
-    pub fn finish(self) -> ObjectDefinition {
-        ObjectDefinition {
+    /// Builds the `GlobalObjectDefinition`.
+    pub fn finish(self) -> GlobalObjectDefinition {
+        GlobalObjectDefinition {
             description: self.description,
             items: Arc::new(self.items),
         }
     }
 }
 
-/// Definition for an object, which is a collection of named items.
+/// Definition for a global object, which is a collection of named items.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-pub struct ObjectDefinition {
+pub struct GlobalObjectDefinition {
     description: ShareableString,
     items: Arc<BTreeMap<GlobalKey, ItemDefinitionType>>,
 }
 
-impl ObjectDefinition {
-    /// Returns a new `ObjectDefinitionBuilder` with the specified description.
-    pub fn builder<S: Into<ShareableString>>(description: S) -> ObjectDefinitionBuilder {
-        ObjectDefinitionBuilder::new(description)
+impl GlobalObjectDefinition {
+    /// Returns a new `GlobalObjectDefinitionBuilder` with the specified description.
+    pub fn builder<S: Into<ShareableString>>(description: S) -> GlobalObjectDefinitionBuilder {
+        GlobalObjectDefinitionBuilder::new(description)
     }
 
-    /// Returns a new `ObjectDefinitionBuilder` initialized with the items of this definition.
+    /// Returns a new `GlobalObjectDefinitionBuilder` initialized with the items of this definition.
     ///
     /// The new builder will have the specified description and a copy of the current items.
-    pub fn inherit<S: Into<ShareableString>>(&self, description: S) -> ObjectDefinitionBuilder {
-        ObjectDefinitionBuilder {
+    pub fn inherit<S: Into<ShareableString>>(
+        &self,
+        description: S,
+    ) -> GlobalObjectDefinitionBuilder {
+        GlobalObjectDefinitionBuilder {
             description: description.into(),
             items: BTreeMap::clone(&self.items),
         }
@@ -157,12 +163,12 @@ impl ObjectDefinition {
         self.items.len()
     }
 
-    /// Returns true if the object contains an item with the specified key.
+    /// Returns true if the global object contains an item with the specified key.
     pub fn contains<S: Into<ShareableString>>(&self, key: S) -> bool {
         self.items.contains_key(&key.into())
     }
 
-    /// Returns true if the object contains an item with the specified key string.
+    /// Returns true if the global object contains an item with the specified key string.
     pub fn contains_str(&self, key: &str) -> bool {
         self.items.contains_key(key)
     }
@@ -187,7 +193,7 @@ impl ObjectDefinition {
         self.items.iter()
     }
 
-    /// Returns a new `ObjectDefinition` with strings laundered through the provided store.
+    /// Returns a new `GlobalObjectDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -201,19 +207,19 @@ impl ObjectDefinition {
     }
 }
 
-impl PartialEq<&ObjectDefinition> for ObjectDefinition {
-    fn eq(&self, other: &&ObjectDefinition) -> bool {
+impl PartialEq<&GlobalObjectDefinition> for GlobalObjectDefinition {
+    fn eq(&self, other: &&GlobalObjectDefinition) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<ObjectDefinition> for &ObjectDefinition {
-    fn eq(&self, other: &ObjectDefinition) -> bool {
+impl PartialEq<GlobalObjectDefinition> for &GlobalObjectDefinition {
+    fn eq(&self, other: &GlobalObjectDefinition) -> bool {
         *self == other
     }
 }
 
-impl TreePrint for ObjectDefinition {
+impl TreePrint for GlobalObjectDefinition {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -221,7 +227,7 @@ impl TreePrint for ObjectDefinition {
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
-        writeln!(f, "Object Definition ({})", self.description())?;
+        writeln!(f, "Global Object Definition ({})", self.description())?;
 
         let child_prefix = Self::child_prefix(prefix, last);
 
@@ -236,7 +242,7 @@ impl TreePrint for ObjectDefinition {
     }
 }
 
-impl std::fmt::Display for ObjectDefinition {
+impl std::fmt::Display for GlobalObjectDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }

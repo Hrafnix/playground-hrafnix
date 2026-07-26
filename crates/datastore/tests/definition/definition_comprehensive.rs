@@ -2,7 +2,7 @@
 //!
 //! These tests complement the focused checks in `definition_checks` by building
 //! realistic composite definitions and verifying the interaction between
-//! [`StringDefinition`], [`ObjectDefinition`],
+//! [`StringDefinition`], [`GlobalObjectDefinition`],
 //! [`MapDefinition`], [`TableDefinition`], [`ChoiceDefinition`], and
 //! [`FileDefinition`].
 use datastore::prelude::*;
@@ -100,7 +100,7 @@ fn test_parameter_definition_comprehensive() {
 #[test]
 fn test_object_definition_comprehensive() {
     // Why: Test that an object definition correctly handles items added via the builder.
-    let obj_def = ObjectDefinition::builder("Obj Desc")
+    let obj_def = GlobalObjectDefinition::builder("Obj Desc")
         .with(global_key!("g_p1"), StringDefinition::new("D1"))
         .with(global_key!("g_p2"), NumberDefinition::new("D2"))
         .finish();
@@ -146,8 +146,8 @@ fn test_launder_comprehensive() {
     assert_eq!(laundered_map.description(), map_def.description());
     assert!(laundered_map.contains_key("field"));
 
-    // Test ObjectDefinition launder
-    let obj_def = ObjectDefinition::builder("Obj")
+    // Test GlobalObjectDefinition launder
+    let obj_def = GlobalObjectDefinition::builder("Obj")
         .with(global_key!("g_prop"), basic_def)
         .finish();
     let laundered_obj = obj_def.launder(&store);

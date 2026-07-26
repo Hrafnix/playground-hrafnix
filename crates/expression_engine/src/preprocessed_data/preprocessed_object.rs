@@ -2,7 +2,7 @@ use crate::BasicDefinition;
 use crate::preprocessed_data::preprocessed_basic::BasicPreprocessedData;
 use crate::preprocessed_data::preprocessed_table::TablePreprocessedData;
 use datastore::frozen::{
-    ItemFrozen, MapItemFrozen, ObjectFrozen, ParameterObjectFrozen, VariableObjectFrozen,
+    GlobalObjectFrozen, ItemFrozen, MapItemFrozen, ParameterObjectFrozen, VariableObjectFrozen,
 };
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -137,8 +137,8 @@ pub struct GlobalObjectPreprocessedData {
 }
 
 impl GlobalObjectPreprocessedData {
-    /// Creates a new `GlobalObjectPreprocessedData` instance from the given `ObjectFrozen`.
-    pub fn new(frozen_data: ObjectFrozen) -> Self {
+    /// Creates a new `GlobalObjectPreprocessedData` instance from the given `GlobalObjectFrozen`.
+    pub fn new(frozen_data: GlobalObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_preprocessed_data(&mut data, key.into(), item);

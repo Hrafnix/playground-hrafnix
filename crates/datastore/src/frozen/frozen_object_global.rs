@@ -1,5 +1,5 @@
-use crate::definition::{ItemDefinitionType, ObjectDefinition};
-use crate::editable::ObjectEditable;
+use crate::definition::{GlobalObjectDefinition, ItemDefinitionType};
+use crate::editable::GlobalObjectEditable;
 use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
 use crate::key::GlobalKey;
 use crate::traits::TreePrint;
@@ -9,18 +9,18 @@ use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ObjectFrozen {
+pub struct GlobalObjectFrozen {
     /// The definition of the object.
-    definition: ObjectDefinition,
+    definition: GlobalObjectDefinition,
     /// The items of the object.
     items: BTreeMap<GlobalKey, ItemFrozen>,
     /// The pre-calculated BLAKE3 hash of the object's content.
     hash: [u8; 32],
 }
 
-impl ObjectFrozen {
-    /// Creates a new `ObjectFrozen` with a definition.
-    pub fn new(definition: ObjectDefinition) -> Self {
+impl GlobalObjectFrozen {
+    /// Creates a new `GlobalObjectFrozen` with a definition.
+    pub fn new(definition: GlobalObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
             let key = item_key.clone();
@@ -70,12 +70,12 @@ impl ObjectFrozen {
         s
     }
 
-    /// Creates a new `ObjectFrozen` with a description and items.
+    /// Creates a new `GlobalObjectFrozen` with a description and items.
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<GlobalKey, ItemFrozen>,
     ) -> Self {
-        let mut builder = ObjectDefinition::builder(description);
+        let mut builder = GlobalObjectDefinition::builder(description);
         for (k, v) in &items {
             builder.insert(k.clone(), v.definition());
         }
@@ -89,8 +89,8 @@ impl ObjectFrozen {
         s
     }
 
-    /// Creates a new `ObjectFrozen` from a given `ObjectEditable` value.
-    pub fn new_from_editable(editable_object: &ObjectEditable) -> Self {
+    /// Creates a new `GlobalObjectFrozen` from a given `GlobalObjectEditable` value.
+    pub fn new_from_editable(editable_object: &GlobalObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
             .iter()
@@ -105,9 +105,9 @@ impl ObjectFrozen {
         s
     }
 
-    /// Converts the current `ObjectFrozen` instance into an `ObjectEditable` instance.
-    pub fn thaw(&self) -> ObjectEditable {
-        ObjectEditable::new_from_frozen(self)
+    /// Converts the current `GlobalObjectFrozen` instance into an `GlobalObjectEditable` instance.
+    pub fn thaw(&self) -> GlobalObjectEditable {
+        GlobalObjectEditable::new_from_frozen(self)
     }
 
     fn update_hash(&mut self) {
@@ -143,24 +143,24 @@ impl ObjectFrozen {
     }
 
     /// Returns a reference to the object definition.
-    pub fn definition(&self) -> &ObjectDefinition {
+    pub fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }
 }
 
-impl PartialEq<&ObjectFrozen> for ObjectFrozen {
-    fn eq(&self, other: &&ObjectFrozen) -> bool {
+impl PartialEq<&GlobalObjectFrozen> for GlobalObjectFrozen {
+    fn eq(&self, other: &&GlobalObjectFrozen) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<ObjectFrozen> for &ObjectFrozen {
-    fn eq(&self, other: &ObjectFrozen) -> bool {
+impl PartialEq<GlobalObjectFrozen> for &GlobalObjectFrozen {
+    fn eq(&self, other: &GlobalObjectFrozen) -> bool {
         *self == other
     }
 }
 
-impl TreePrint for ObjectFrozen {
+impl TreePrint for GlobalObjectFrozen {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -183,7 +183,7 @@ impl TreePrint for ObjectFrozen {
     }
 }
 
-impl std::fmt::Display for ObjectFrozen {
+impl std::fmt::Display for GlobalObjectFrozen {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }

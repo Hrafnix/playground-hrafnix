@@ -75,7 +75,7 @@ fn test_global_object_preprocessed_data() {
         .into_iter()
         .map(|(k, v)| (GlobalKey::new(format!("g_{}", k).into()).unwrap(), v))
         .collect();
-    let frozen = ObjectFrozen::new_from_items("Test object", items);
+    let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
 
     let preprocessed = GlobalObjectPreprocessedData::new(frozen);
     let data = preprocessed.data();
@@ -170,7 +170,7 @@ fn test_variable_object_preprocessed_data() {
 #[test]
 fn test_global_object_preprocessed_data_empty() {
     // Why: An object with no items should produce an empty preprocessed data map.
-    let frozen = ObjectFrozen::new(ObjectDefinition::builder("Empty object").finish());
+    let frozen = GlobalObjectFrozen::new(GlobalObjectDefinition::builder("Empty object").finish());
     let preprocessed = GlobalObjectPreprocessedData::new(frozen);
 
     assert!(preprocessed.data().is_empty());

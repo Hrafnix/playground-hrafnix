@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 fn basic_data_for(item: ItemFrozen) -> BasicPreprocessedData {
     let mut items = BTreeMap::new();
     items.insert(GlobalKey::new("g_field".into()).unwrap(), item);
-    let frozen = ObjectFrozen::new_from_items("Test object", items);
+    let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
     let preprocessed = GlobalObjectPreprocessedData::new(frozen);
 
     match preprocessed.data().get("g_field").unwrap() {
