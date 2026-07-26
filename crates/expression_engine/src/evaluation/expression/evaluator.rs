@@ -1,11 +1,11 @@
-use crate::BasicDefinition::{Boolean, Choice, File, Number, String};
+use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
 use crate::expression::parser::parse;
 use crate::expression::translator::{Expression, Literal, Operators, translate};
 use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
 };
-use datastore::definition::NumberConstraint;
+use datastore::definition::{IntegerConstraint, NumberConstraint};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
@@ -37,10 +37,10 @@ fn evaluate_expression(
         Expression::UnaryOperation { operator, operand } => {
             let operand_value = evaluate_expression(computed_data, *operand)?;
             match (operator, operand_value) {
+                (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
                 (Operators::Negate, ComputedItem::Integer(value)) => {
                     Ok(ComputedItem::Integer(-value))
                 }
-                (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
                 (Operators::Not, ComputedItem::Boolean(value)) => Ok(ComputedItem::Boolean(!value)),
                 _ => Err(ExpressionError::new(
                     ExpressionCategory::Evaluation,
@@ -56,75 +56,93 @@ fn evaluate_expression(
             let left_value = evaluate_expression(computed_data, *left)?;
             let right_value = evaluate_expression(computed_data, *right)?;
             match (left_value, right_value) {
-                (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
+                (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
                     match operator {
-                        Operators::Add => Ok(ComputedItem::Integer(left_int + right_int)),
-                        Operators::Subtract => Ok(ComputedItem::Integer(left_int - right_int)),
-                        Operators::Multiply => Ok(ComputedItem::Integer(left_int * right_int)),
-                        Operators::Divide => {
-                            if right_int == 0 {
-                                Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    "Division by zero.".to_string(),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Integer(left_int / right_int))
-                            }
-                        }
-                        Operators::Modulus => {
-                            if right_int == 0 {
-                                Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    "Modulus by zero.".to_string(),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Integer(left_int % right_int))
-                            }
-                        }
-                        Operators::Power => {
-                            Ok(ComputedItem::Integer(left_int.pow(right_int as u32)))
-                        }
-                        Operators::Equal => Ok(ComputedItem::Boolean(left_int == right_int)),
-                        Operators::NotEqual => Ok(ComputedItem::Boolean(left_int != right_int)),
-                        Operators::LessThan => Ok(ComputedItem::Boolean(left_int < right_int)),
-                        Operators::LessThanOrEqual => {
-                            Ok(ComputedItem::Boolean(left_int <= right_int))
-                        }
-                        Operators::GreaterThan => Ok(ComputedItem::Boolean(left_int > right_int)),
-                        Operators::GreaterThanOrEqual => {
-                            Ok(ComputedItem::Boolean(left_int >= right_int))
-                        }
+                        Operators::And => Ok(ComputedItem::Boolean(left_bool && right_bool)),
+                        Operators::Or => Ok(ComputedItem::Boolean(left_bool || right_bool)),
+                        Operators::Equal => Ok(ComputedItem::Boolean(left_bool == right_bool)),
+                        Operators::NotEqual => Ok(ComputedItem::Boolean(left_bool != right_bool)),
                         _ => Err(ExpressionError::new(
                             ExpressionCategory::Evaluation,
-                            format!("Unsupported operator for integers: {:?}", operator),
+                            format!("Unsupported operator for booleans: {:?}", operator),
                         )),
                     }
                 }
-                (ComputedItem::Integer(_left_int), ComputedItem::Boolean(_right_bool)) => {
+                (ComputedItem::Boolean(_left_bool), ComputedItem::File(_right_file)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Integer(_left_int), ComputedItem::Float(_right_float)) => {
+                (ComputedItem::Boolean(_left_bool), ComputedItem::Float(_right_float)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Integer(_left_int), ComputedItem::File(_right_file)) => {
+                (ComputedItem::Boolean(_left_bool), ComputedItem::Integer(_right_int)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Integer(_left_int), ComputedItem::String(_right_string)) => {
+                (ComputedItem::Boolean(_left_bool), ComputedItem::String(_right_string)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Integer(_left_int), ComputedItem::Table(_right_table)) => {
+                (ComputedItem::Boolean(_left_bool), ComputedItem::Table(_right_table)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::File(_left_file), ComputedItem::Boolean(_right_bool)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::File(left_file), ComputedItem::File(right_file)) => match operator {
+                    Operators::Equal => Ok(ComputedItem::Boolean(left_file == right_file)),
+                    Operators::NotEqual => Ok(ComputedItem::Boolean(left_file != right_file)),
+                    _ => Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for files: {:?}", operator),
+                    )),
+                },
+                (ComputedItem::File(_left_file), ComputedItem::Float(_right_float)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::File(_left_file), ComputedItem::Integer(_right_int)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::File(_left_file), ComputedItem::String(_right_string)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::File(_left_file), ComputedItem::Table(_right_table)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::Float(_left_float), ComputedItem::Boolean(_right_bool)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::Float(_left_float), ComputedItem::File(_right_file)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
@@ -172,12 +190,6 @@ fn evaluate_expression(
                         )),
                     }
                 }
-                (ComputedItem::Float(_left_float), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
                 (ComputedItem::Float(_left_float), ComputedItem::Integer(_right_int)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
@@ -190,55 +202,105 @@ fn evaluate_expression(
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Float(_left_float), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
                 (ComputedItem::Float(_left_float), ComputedItem::Table(_right_table)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
+                (ComputedItem::Integer(_left_int), ComputedItem::Boolean(_right_bool)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::Integer(_left_int), ComputedItem::File(_right_file)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::Integer(_left_int), ComputedItem::Float(_right_float)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
                     match operator {
-                        Operators::And => Ok(ComputedItem::Boolean(left_bool && right_bool)),
-                        Operators::Or => Ok(ComputedItem::Boolean(left_bool || right_bool)),
-                        Operators::Equal => Ok(ComputedItem::Boolean(left_bool == right_bool)),
-                        Operators::NotEqual => Ok(ComputedItem::Boolean(left_bool != right_bool)),
+                        Operators::Add => Ok(ComputedItem::Integer(left_int + right_int)),
+                        Operators::Subtract => Ok(ComputedItem::Integer(left_int - right_int)),
+                        Operators::Multiply => Ok(ComputedItem::Integer(left_int * right_int)),
+                        Operators::Divide => {
+                            if right_int == 0 {
+                                Err(ExpressionError::new(
+                                    ExpressionCategory::Evaluation,
+                                    "Division by zero.".to_string(),
+                                ))
+                            } else {
+                                Ok(ComputedItem::Integer(left_int / right_int))
+                            }
+                        }
+                        Operators::Modulus => {
+                            if right_int == 0 {
+                                Err(ExpressionError::new(
+                                    ExpressionCategory::Evaluation,
+                                    "Modulus by zero.".to_string(),
+                                ))
+                            } else {
+                                Ok(ComputedItem::Integer(left_int % right_int))
+                            }
+                        }
+                        Operators::Power => {
+                            Ok(ComputedItem::Integer(left_int.pow(right_int as u32)))
+                        }
+                        Operators::Equal => Ok(ComputedItem::Boolean(left_int == right_int)),
+                        Operators::NotEqual => Ok(ComputedItem::Boolean(left_int != right_int)),
+                        Operators::LessThan => Ok(ComputedItem::Boolean(left_int < right_int)),
+                        Operators::LessThanOrEqual => {
+                            Ok(ComputedItem::Boolean(left_int <= right_int))
+                        }
+                        Operators::GreaterThan => Ok(ComputedItem::Boolean(left_int > right_int)),
+                        Operators::GreaterThanOrEqual => {
+                            Ok(ComputedItem::Boolean(left_int >= right_int))
+                        }
                         _ => Err(ExpressionError::new(
                             ExpressionCategory::Evaluation,
-                            format!("Unsupported operator for booleans: {:?}", operator),
+                            format!("Unsupported operator for integers: {:?}", operator),
                         )),
                     }
                 }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::Integer(_right_int)) => {
+                (ComputedItem::Integer(_left_int), ComputedItem::String(_right_string)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::Float(_right_float)) => {
+                (ComputedItem::Integer(_left_int), ComputedItem::Table(_right_table)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::String(_right_string)) => {
+                (ComputedItem::String(_left_string), ComputedItem::Boolean(_right_bool)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::File(_right_file)) => {
+                (ComputedItem::String(_left_string), ComputedItem::File(_right_file)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::Table(_right_table)) => {
+                (ComputedItem::String(_left_string), ComputedItem::Float(_right_float)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
+                (ComputedItem::String(_left_string), ComputedItem::Integer(_right_int)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
@@ -256,78 +318,10 @@ fn evaluate_expression(
                         )),
                     }
                 }
-                (ComputedItem::String(_left_string), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
                 (ComputedItem::String(_left_string), ComputedItem::Table(_right_table)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::File(left_file), ComputedItem::File(right_file)) => match operator {
-                    Operators::Equal => Ok(ComputedItem::Boolean(left_file == right_file)),
-                    Operators::NotEqual => Ok(ComputedItem::Boolean(left_file != right_file)),
-                    _ => Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for files: {:?}", operator),
-                    )),
-                },
-                (ComputedItem::File(_left_file), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::String(_right_string)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                    ))
-                }
-                (ComputedItem::Table(_left_table), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for tables: {:?}", operator),
                     ))
                 }
                 (ComputedItem::Table(_left_table), ComputedItem::Boolean(_right_bool)) => {
@@ -336,7 +330,7 @@ fn evaluate_expression(
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Table(_left_table), ComputedItem::Integer(_right_int)) => {
+                (ComputedItem::Table(_left_table), ComputedItem::File(_right_file)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
@@ -348,16 +342,22 @@ fn evaluate_expression(
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
+                (ComputedItem::Table(_left_table), ComputedItem::Integer(_right_int)) => {
+                    Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("Unsupported operator for mixed types: {:?}", operator),
+                    ))
+                }
                 (ComputedItem::Table(_left_table), ComputedItem::String(_right_string)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for mixed types: {:?}", operator),
                     ))
                 }
-                (ComputedItem::Table(_left_table), ComputedItem::File(_right_file)) => {
+                (ComputedItem::Table(_left_table), ComputedItem::Table(_right_table)) => {
                     Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
+                        format!("Unsupported operator for tables: {:?}", operator),
                     ))
                 }
             }
@@ -535,66 +535,76 @@ fn evaluate_basic_expression(
                 ))
             }
         }
+        Integer(integer_definition) => {
+            // Validate that the computed value is an integer
+            if let ComputedItem::Integer(value) = &computed {
+                let constraint = integer_definition.constraint();
+                match constraint {
+                    IntegerConstraint::Min { min, inclusive } => {
+                        if *value < min || (!inclusive && *value == min) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is less than the minimum allowed value of {}.",
+                                    value, min
+                                ),
+                            ));
+                        }
+                        Ok(computed)
+                    }
+                    IntegerConstraint::Max { max, inclusive } => {
+                        if *value > max || (!inclusive && *value == max) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is greater than the maximum allowed value of {}.",
+                                    value, max
+                                ),
+                            ));
+                        }
+                        Ok(computed)
+                    }
+                    IntegerConstraint::Range {
+                        min,
+                        max,
+                        min_inclusive,
+                        max_inclusive,
+                    } => {
+                        if *value < min || (!min_inclusive && *value == min) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is less than the minimum allowed value of {}.",
+                                    value, min
+                                ),
+                            ));
+                        }
+                        if *value > max || (!max_inclusive && *value == max) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is greater than the maximum allowed value of {}.",
+                                    value, max
+                                ),
+                            ));
+                        }
+                        Ok(computed)
+                    }
+                    IntegerConstraint::None => Ok(computed),
+                }
+            } else {
+                Err(ExpressionError::new(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Expected an integer value for integer definition, but got {:?}.",
+                        computed
+                    ),
+                ))
+            }
+        }
         Number(number_definition) => {
             // Validate that the computed value is a number (integer or float)
             match &computed {
-                ComputedItem::Integer(value) => {
-                    let constraint = number_definition.constraint();
-                    match constraint {
-                        NumberConstraint::Min { min, inclusive } => {
-                            if (*value as f64) < min || (!inclusive && (*value as f64) == min) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is less than the minimum allowed value of {}.",
-                                        value, min
-                                    ),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraint::Max { max, inclusive } => {
-                            if (*value as f64) > max || (!inclusive && (*value as f64) == max) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is greater than the maximum allowed value of {}.",
-                                        value, max
-                                    ),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraint::Range {
-                            min,
-                            max,
-                            min_inclusive,
-                            max_inclusive,
-                        } => {
-                            if (*value as f64) < min || (!min_inclusive && (*value as f64) == min) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is less than the minimum allowed value of {}.",
-                                        value, min
-                                    ),
-                                ));
-                            }
-                            if (*value as f64) > max || (!max_inclusive && (*value as f64) == max) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is greater than the maximum allowed value of {}.",
-                                        value, max
-                                    ),
-                                ));
-                            }
-
-                            Ok(computed)
-                        }
-                        NumberConstraint::None => Ok(computed),
-                    }
-                }
                 ComputedItem::Float(value) => {
                     let constraint = number_definition.constraint();
                     match constraint {
@@ -774,7 +784,7 @@ pub(crate) fn evaluator(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use datastore::definition::{BooleanDefinition, NumberDefinition};
+    use datastore::definition::{BooleanDefinition, IntegerDefinition, NumberDefinition};
 
     fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Number(NumberDefinition::new("Test Number"));
@@ -787,6 +797,12 @@ mod tests {
             ComputedItem::Float(value) => assert_eq!(*value, expected_value),
             _ => panic!("Expected a numeric computed item"),
         }
+    }
+
+    fn create_integer_basic_input_data(value: &str) -> ObjectItemInputData {
+        let definition = Integer(IntegerDefinition::new("Test Integer"));
+        let data = ShareableString::from(value.to_string());
+        ObjectItemInputData::Basic(BasicInputData::new(definition, data))
     }
 
     fn check_number_integer(computed_item: &ComputedItem, expected_value: i64) {
@@ -872,7 +888,7 @@ mod tests {
     #[test]
     fn integer_test() {
         let computed_data = BTreeMap::new();
-        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42"))]);
+        let input_data = BTreeMap::from([("x".into(), create_integer_basic_input_data("42"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -885,7 +901,7 @@ mod tests {
     fn integer_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data =
-            BTreeMap::from([("x".into(), create_number_basic_input_data("1 + 2 * 3"))]);
+            BTreeMap::from([("x".into(), create_integer_basic_input_data("1 + 2 * 3"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -898,19 +914,19 @@ mod tests {
     fn multiple_integer_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([
-            ("a".into(), create_number_basic_input_data("1 + 2")),
-            ("b".into(), create_number_basic_input_data("1 - 2")),
-            ("c".into(), create_number_basic_input_data("1 * 2")),
-            ("d".into(), create_number_basic_input_data("1 / 2")),
-            ("e".into(), create_number_basic_input_data("1 % 2")),
-            ("f".into(), create_number_basic_input_data("1 ^ 2")),
-            ("h".into(), create_number_basic_input_data("-1 + 2")),
+            ("a".into(), create_integer_basic_input_data("1 + 2")),
+            ("b".into(), create_integer_basic_input_data("1 - 2")),
+            ("c".into(), create_integer_basic_input_data("1 * 2")),
+            ("d".into(), create_integer_basic_input_data("1 / 2")),
+            ("e".into(), create_integer_basic_input_data("1 % 2")),
+            ("f".into(), create_integer_basic_input_data("1 ^ 2")),
+            ("h".into(), create_integer_basic_input_data("-1 + 2")),
             (
                 "g".into(),
-                create_number_basic_input_data("1 + 2 * 3 - 4 / 5 ^ 6"),
+                create_integer_basic_input_data("1 + 2 * 3 - 4 / 5 ^ 6"),
             ),
-            ("i".into(), create_number_basic_input_data("-(1 + 2)")),
-            ("j".into(), create_number_basic_input_data("--1")),
+            ("i".into(), create_integer_basic_input_data("-(1 + 2)")),
+            ("j".into(), create_integer_basic_input_data("--1")),
         ]);
 
         let (result, errors) = evaluator(computed_data, input_data);

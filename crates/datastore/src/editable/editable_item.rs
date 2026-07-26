@@ -1,7 +1,7 @@
 use crate::definition::ItemDefinitionType;
 use crate::editable::{
-    BooleanEditable, ChoiceEditable, FileEditable, MapEditable, NumberEditable, StringEditable,
-    TableEditable,
+    BooleanEditable, ChoiceEditable, FileEditable, IntegerEditable, MapEditable, NumberEditable,
+    StringEditable, TableEditable,
 };
 use crate::frozen::ItemFrozen;
 use crate::traits::TreePrint;
@@ -16,6 +16,8 @@ pub enum ItemEditable {
     Choice(ChoiceEditable),
     /// A file parameter.
     File(FileEditable),
+    /// An integer parameter.
+    Integer(IntegerEditable),
     /// A map parameter.
     Map(MapEditable),
     /// A number parameter.
@@ -33,6 +35,7 @@ impl ItemEditable {
             ItemFrozen::Boolean(boolean) => ItemEditable::Boolean(BooleanEditable::new(boolean)),
             ItemFrozen::Choice(choice) => ItemEditable::Choice(ChoiceEditable::new(choice)),
             ItemFrozen::File(file) => ItemEditable::File(FileEditable::new(file)),
+            ItemFrozen::Integer(integer) => ItemEditable::Integer(IntegerEditable::new(integer)),
             ItemFrozen::Map(map) => ItemEditable::Map(MapEditable::new(map)),
             ItemFrozen::Number(number) => ItemEditable::Number(NumberEditable::new(number)),
             ItemFrozen::String(string) => ItemEditable::String(StringEditable::new(string)),
@@ -46,6 +49,7 @@ impl ItemEditable {
             ItemEditable::Boolean(boolean) => ItemFrozen::Boolean(boolean.freeze()),
             ItemEditable::Choice(choice) => ItemFrozen::Choice(choice.freeze()),
             ItemEditable::File(file) => ItemFrozen::File(file.freeze()),
+            ItemEditable::Integer(integer) => ItemFrozen::Integer(integer.freeze()),
             ItemEditable::Map(map) => ItemFrozen::Map(map.freeze()),
             ItemEditable::Number(number) => ItemFrozen::Number(number.freeze()),
             ItemEditable::String(string) => ItemFrozen::String(string.freeze()),
@@ -59,6 +63,7 @@ impl ItemEditable {
             ItemEditable::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
             ItemEditable::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
             ItemEditable::File(f) => ItemDefinitionType::File(f.definition().clone()),
+            ItemEditable::Integer(i) => ItemDefinitionType::Integer(i.definition().clone()),
             ItemEditable::Map(m) => ItemDefinitionType::Map(m.definition().clone()),
             ItemEditable::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
             ItemEditable::String(b) => ItemDefinitionType::String(b.definition().clone()),
@@ -127,6 +132,7 @@ impl TreePrint for ItemEditable {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
             Self::Number(number) => number.tree_print(f, label, prefix, last),
             Self::String(basic) => basic.tree_print(f, label, prefix, last),

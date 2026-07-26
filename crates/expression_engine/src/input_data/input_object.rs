@@ -56,6 +56,15 @@ fn item_to_input_data(
                 )),
             );
         }
+        ItemFrozen::Integer(integer) => {
+            map.insert(
+                key,
+                ObjectItemInputData::Basic(BasicInputData::new(
+                    BasicDefinition::Integer(integer.definition().clone()),
+                    integer.value(),
+                )),
+            );
+        }
         ItemFrozen::Map(item_map) => {
             // Maps are flattened: each field of each entry becomes its own
             // item, addressed by a `key[entry][field]` path.

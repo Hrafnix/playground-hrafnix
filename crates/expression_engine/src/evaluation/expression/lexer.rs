@@ -99,11 +99,11 @@ impl Lexer {
                 s.push(c);
                 if let Some(&next_c) = chars.peek() {
                     match (c, next_c) {
-                        ('=', '=')
-                        | ('!', '=')
-                        | ('<', '=')
-                        | ('>', '=')
+                        ('!', '=')
                         | ('&', '&')
+                        | ('<', '=')
+                        | ('=', '=')
+                        | ('>', '=')
                         | ('|', '|') => {
                             s.push(chars.next().expect("peeked value must be present"));
                         }

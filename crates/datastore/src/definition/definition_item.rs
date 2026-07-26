@@ -1,6 +1,6 @@
 use crate::definition::{
-    BooleanDefinition, ChoiceDefinition, MapDefinition, NumberDefinition, StringDefinition,
-    TableDefinition,
+    BooleanDefinition, ChoiceDefinition, IntegerDefinition, MapDefinition, NumberDefinition,
+    StringDefinition, TableDefinition,
 };
 use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
@@ -16,6 +16,8 @@ pub enum ItemDefinitionType {
     Choice(ChoiceDefinition),
     /// A file item.
     File(FileDefinition),
+    /// An integer item.
+    Integer(IntegerDefinition),
     /// A map item.
     Map(MapDefinition),
     /// A number item.
@@ -50,6 +52,12 @@ impl From<FileDefinition> for ItemDefinitionType {
     }
 }
 
+impl From<IntegerDefinition> for ItemDefinitionType {
+    fn from(definition: IntegerDefinition) -> Self {
+        ItemDefinitionType::Integer(definition)
+    }
+}
+
 impl From<MapDefinition> for ItemDefinitionType {
     fn from(definition: MapDefinition) -> Self {
         ItemDefinitionType::Map(definition)
@@ -73,8 +81,9 @@ impl ItemDefinitionType {
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             Self::Boolean(def) => Self::Boolean(def.launder(store)),
-            Self::File(def) => Self::File(def.launder(store)),
             Self::Choice(def) => Self::Choice(def.launder(store)),
+            Self::File(def) => Self::File(def.launder(store)),
+            Self::Integer(def) => Self::Integer(def.launder(store)),
             Self::Map(def) => Self::Map(def.launder(store)),
             Self::Number(def) => Self::Number(def.launder(store)),
             Self::String(def) => Self::String(def.launder(store)),
@@ -105,12 +114,13 @@ impl TreePrint for ItemDefinitionType {
     ) -> std::fmt::Result {
         match self {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
-            Self::String(basic) => basic.tree_print(f, label, prefix, last),
-            Self::File(file) => file.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
-            Self::Number(number) => number.tree_print(f, label, prefix, last),
-            Self::Table(table) => table.tree_print(f, label, prefix, last),
+            Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
+            Self::Number(number) => number.tree_print(f, label, prefix, last),
+            Self::String(basic) => basic.tree_print(f, label, prefix, last),
+            Self::Table(table) => table.tree_print(f, label, prefix, last),
         }
     }
 }
