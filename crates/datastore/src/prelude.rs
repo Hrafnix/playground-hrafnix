@@ -19,10 +19,11 @@ pub use crate::path::StorePath;
 
 // Definitions
 pub use crate::definition::{
-    BooleanDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition, ItemDefinitionType,
-    MapDefinition, MapItemDefinition, NumberConstraint, NumberDefinition, ObjectDefinition,
-    ObjectDefinitionBuilder, ParameterObjectDefinition, ParameterObjectDefinitionBuilder,
-    StringDefinition, TableDefinition, VariableObjectDefinition, VariableObjectDefinitionBuilder,
+    BooleanDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition,
+    GlobalObjectDefinition, GlobalObjectDefinitionBuilder, ItemDefinitionType, MapDefinition,
+    MapItemDefinition, NumberConstraint, NumberDefinition, ParameterObjectDefinition,
+    ParameterObjectDefinitionBuilder, StringDefinition, TableDefinition, VariableObjectDefinition,
+    VariableObjectDefinitionBuilder,
 };
 
 // Shareable strings
@@ -30,14 +31,14 @@ pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTrans
 
 // Frozen data
 pub use crate::frozen::{
-    BooleanFrozen, ChoiceFrozen, FileFrozen, ItemFrozen, MapEntryFrozen, MapFrozen, MapItemFrozen,
-    NumberFrozen, ObjectFrozen, ParameterObjectFrozen, StringFrozen, TableFrozen,
+    BooleanFrozen, ChoiceFrozen, FileFrozen, GlobalObjectFrozen, ItemFrozen, MapEntryFrozen,
+    MapFrozen, MapItemFrozen, NumberFrozen, ParameterObjectFrozen, StringFrozen, TableFrozen,
     VariableObjectFrozen,
 };
 
 // Editable data
 pub use crate::editable::{
-    BooleanEditable, ChoiceEditable, FileEditable, ItemEditable, MapEditable, MapEntryEditable,
-    MapItemEditable, NumberEditable, ObjectEditable, ParameterObjectEditable, StringEditable,
+    BooleanEditable, ChoiceEditable, FileEditable, GlobalObjectEditable, ItemEditable, MapEditable,
+    MapEntryEditable, MapItemEditable, NumberEditable, ParameterObjectEditable, StringEditable,
     TableEditable, VariableObjectEditable,
 };

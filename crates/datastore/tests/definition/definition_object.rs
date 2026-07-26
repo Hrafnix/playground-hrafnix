@@ -3,7 +3,7 @@ use datastore::prelude::*;
 #[test]
 fn test_object_definition_basic() {
     // Why: Test object definition creation and items.
-    let mut builder = ObjectDefinition::builder("Test Object");
+    let mut builder = GlobalObjectDefinition::builder("Test Object");
     builder.insert(
         GlobalKey::new("g_p1".into()).unwrap(),
         StringDefinition::new("D1"),
@@ -19,19 +19,19 @@ fn test_object_definition_basic() {
 #[test]
 fn test_object_definition_equality() {
     // Why: Test that two object definitions with the same items are considered equal.
-    let def_1 = ObjectDefinition::builder("Test Object")
+    let def_1 = GlobalObjectDefinition::builder("Test Object")
         .with(
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
-    let def_2 = ObjectDefinition::builder("Test Object")
+    let def_2 = GlobalObjectDefinition::builder("Test Object")
         .with(
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
         )
         .finish();
-    let def_3 = ObjectDefinition::builder("Test Object")
+    let def_3 = GlobalObjectDefinition::builder("Test Object")
         .with(
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
@@ -47,7 +47,7 @@ fn test_object_definition_equality() {
 #[test]
 fn test_object_definition_print() {
     // Why: Test object definition print.
-    let def_1 = ObjectDefinitionBuilder::new("Test")
+    let def_1 = GlobalObjectDefinitionBuilder::new("Test")
         .with(
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D1"),
@@ -119,6 +119,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── g_p3 (D3) File - default: \"\" [ext]\n    ├── g_p4 (D4) Number - default: \"\"\n    ├── g_p5 (D5) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p6 (D6) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p7 (D7) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
+        "Global Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── g_p3 (D3) File - default: \"\" [ext]\n    ├── g_p4 (D4) Number - default: \"\"\n    ├── g_p5 (D5) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p6 (D6) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p7 (D7) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
     );
 }

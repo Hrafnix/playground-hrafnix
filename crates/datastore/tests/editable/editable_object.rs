@@ -4,8 +4,8 @@ use datastore::prelude::*;
 fn test_editable_object_roundtrip() {
     // Why: Editable objects should thaw from frozen, allow item edits, and freeze back to an
     // equivalent frozen object reflecting those edits.
-    let frozen = ObjectFrozen::new(
-        ObjectDefinition::builder("Test Object")
+    let frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
@@ -39,8 +39,8 @@ fn test_editable_object_roundtrip() {
 #[test]
 fn test_editable_object_equality() {
     // Why: Two editable objects thawed from the same frozen object should be equal.
-    let frozen = ObjectFrozen::new(
-        ObjectDefinition::builder("Test Object")
+    let frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
             .with(
                 GlobalKey::new("g_p1".into()).unwrap(),
                 StringDefinition::new("D1"),

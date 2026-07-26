@@ -1,30 +1,30 @@
 use crate::BasicDefinition;
-use crate::preprocessed_data::preprocessed_basic::BasicPreprocessedData;
-use crate::preprocessed_data::preprocessed_table::TablePreprocessedData;
+use crate::input_data::input_basic::BasicInputData;
+use crate::input_data::input_table::TableInputData;
 use datastore::frozen::{
-    ItemFrozen, MapItemFrozen, ObjectFrozen, ParameterObjectFrozen, VariableObjectFrozen,
+    GlobalObjectFrozen, ItemFrozen, MapItemFrozen, ParameterObjectFrozen, VariableObjectFrozen,
 };
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
-/// Represents a single item of preprocessed data within an object,
-/// which can be either basic or table preprocessed data.
+/// Represents a single item of input data within an object,
+/// which can be either basic or table input data.
 #[derive(Debug, Clone, PartialEq)]
-pub enum ObjectItemPreprocessedData {
-    /// Basic preprocessed data item.
-    Basic(BasicPreprocessedData),
-    /// Table preprocessed data item.
-    Table(TablePreprocessedData),
+pub enum ObjectItemInputData {
+    /// Basic input data item.
+    Basic(BasicInputData),
+    /// Table input data item.
+    Table(TableInputData),
 }
 
-/// Converts a single `ItemFrozen` into one or more preprocessed data entries
+/// Converts a single `ItemFrozen` into one or more input data entries
 /// and inserts them into `map`, keyed by `key`.
 ///
 /// Most item kinds map to a single entry, but `Map` items are flattened:
 /// each field of each entry becomes its own item, addressed by a
 /// `key[entry].field` path.
-fn item_to_preprocessed_data(
-    map: &mut BTreeMap<ShareableString, ObjectItemPreprocessedData>,
+fn item_to_input_data(
+    map: &mut BTreeMap<ShareableString, ObjectItemInputData>,
     key: ShareableString,
     data: &ItemFrozen,
 ) {
@@ -32,7 +32,7 @@ fn item_to_preprocessed_data(
         ItemFrozen::Boolean(boolean) => {
             map.insert(
                 key,
-                ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                ObjectItemInputData::Basic(BasicInputData::new(
                     BasicDefinition::Boolean(boolean.definition().clone()),
                     boolean.value(),
                 )),
@@ -41,7 +41,7 @@ fn item_to_preprocessed_data(
         ItemFrozen::Choice(choice) => {
             map.insert(
                 key,
-                ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                ObjectItemInputData::Basic(BasicInputData::new(
                     BasicDefinition::Choice(choice.definition().clone()),
                     choice.value(),
                 )),
@@ -50,7 +50,7 @@ fn item_to_preprocessed_data(
         ItemFrozen::File(file) => {
             map.insert(
                 key,
-                ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                ObjectItemInputData::Basic(BasicInputData::new(
                     BasicDefinition::File(file.definition().clone()),
                     file.value(),
                 )),
@@ -63,46 +63,43 @@ fn item_to_preprocessed_data(
                 for (item_key, map_item) in entry.iter() {
                     let path: ShareableString =
                         format!("{}[{}][{}]", key, entry_key, item_key).into();
-                    let preprocessed_item = match map_item {
+                    let input_item = match map_item {
                         MapItemFrozen::Choice(choice) => {
-                            ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                            ObjectItemInputData::Basic(BasicInputData::new(
                                 BasicDefinition::Choice(choice.definition().clone()),
                                 choice.value(),
                             ))
                         }
                         MapItemFrozen::File(file) => {
-                            ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                            ObjectItemInputData::Basic(BasicInputData::new(
                                 BasicDefinition::File(file.definition().clone()),
                                 file.value(),
                             ))
                         }
                         MapItemFrozen::Number(number) => {
-                            ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                            ObjectItemInputData::Basic(BasicInputData::new(
                                 BasicDefinition::Number(number.definition().clone()),
                                 number.value(),
                             ))
                         }
                         MapItemFrozen::String(string) => {
-                            ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                            ObjectItemInputData::Basic(BasicInputData::new(
                                 BasicDefinition::String(string.definition().clone()),
                                 string.value(),
                             ))
                         }
-                        MapItemFrozen::Table(table) => {
-                            ObjectItemPreprocessedData::Table(TablePreprocessedData::new(
-                                table.definition().clone(),
-                                table.rows().to_vec(),
-                            ))
-                        }
+                        MapItemFrozen::Table(table) => ObjectItemInputData::Table(
+                            TableInputData::new(table.definition().clone(), table.rows().to_vec()),
+                        ),
                     };
-                    map.insert(path, preprocessed_item);
+                    map.insert(path, input_item);
                 }
             }
         }
         ItemFrozen::Number(number) => {
             map.insert(
                 key,
-                ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                ObjectItemInputData::Basic(BasicInputData::new(
                     BasicDefinition::Number(number.definition().clone()),
                     number.value(),
                 )),
@@ -111,7 +108,7 @@ fn item_to_preprocessed_data(
         ItemFrozen::String(string) => {
             map.insert(
                 key,
-                ObjectItemPreprocessedData::Basic(BasicPreprocessedData::new(
+                ObjectItemInputData::Basic(BasicInputData::new(
                     BasicDefinition::String(string.definition().clone()),
                     string.value(),
                 )),
@@ -120,7 +117,7 @@ fn item_to_preprocessed_data(
         ItemFrozen::Table(table) => {
             map.insert(
                 key,
-                ObjectItemPreprocessedData::Table(TablePreprocessedData::new(
+                ObjectItemInputData::Table(TableInputData::new(
                     table.definition().clone(),
                     table.rows().to_vec(),
                 )),
@@ -129,71 +126,71 @@ fn item_to_preprocessed_data(
     }
 }
 
-/// Represents preprocessed data for an object, mapping field names
-/// to their corresponding preprocessed data items.
+/// Represents input data for an object, mapping field names
+/// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
-pub struct GlobalObjectPreprocessedData {
-    data: BTreeMap<ShareableString, ObjectItemPreprocessedData>,
+pub struct GlobalObjectInputData {
+    data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
-impl GlobalObjectPreprocessedData {
-    /// Creates a new `GlobalObjectPreprocessedData` instance from the given `ObjectFrozen`.
-    pub fn new(frozen_data: ObjectFrozen) -> Self {
+impl GlobalObjectInputData {
+    /// Creates a new `GlobalObjectInputData` instance from the given `GlobalObjectFrozen`.
+    pub fn new(frozen_data: GlobalObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
-            item_to_preprocessed_data(&mut data, key.into(), item);
+            item_to_input_data(&mut data, key.into(), item);
         }
         Self { data }
     }
 
-    /// Returns a reference to the underlying `ObjectPreprocessedData`.
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemPreprocessedData> {
+    /// Returns a reference to the underlying `ObjectInputData`.
+    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }
 
-/// Represents preprocessed data for an object, mapping field names
-/// to their corresponding preprocessed data items.
+/// Represents input data for an object, mapping field names
+/// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ParameterObjectPreprocessedData {
-    data: BTreeMap<ShareableString, ObjectItemPreprocessedData>,
+pub struct ParameterObjectInputData {
+    data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
-impl ParameterObjectPreprocessedData {
-    /// Creates a new `ParameterObjectPreprocessedData` instance from the given `ParameterObjectFrozen`.
+impl ParameterObjectInputData {
+    /// Creates a new `ParameterObjectInputData` instance from the given `ParameterObjectFrozen`.
     pub fn new(frozen_data: ParameterObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
-            item_to_preprocessed_data(&mut data, key.into(), item);
+            item_to_input_data(&mut data, key.into(), item);
         }
         Self { data }
     }
 
-    /// Returns a reference to the underlying `ObjectPreprocessedData`.
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemPreprocessedData> {
+    /// Returns a reference to the underlying `ObjectInputData`.
+    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }
 
-/// Represents preprocessed data for an object, mapping field names
-/// to their corresponding preprocessed data items.
+/// Represents input data for an object, mapping field names
+/// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
-pub struct VariableObjectPreprocessedData {
-    data: BTreeMap<ShareableString, ObjectItemPreprocessedData>,
+pub struct VariableObjectInputData {
+    data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
-impl VariableObjectPreprocessedData {
-    /// Creates a new `VariableObjectPreprocessedData` instance from the given `VariableObjectFrozen`.
+impl VariableObjectInputData {
+    /// Creates a new `VariableObjectInputData` instance from the given `VariableObjectFrozen`.
     pub fn new(frozen_data: VariableObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
-            item_to_preprocessed_data(&mut data, key.into(), item);
+            item_to_input_data(&mut data, key.into(), item);
         }
         Self { data }
     }
 
-    /// Returns a reference to the underlying `ObjectPreprocessedData`.
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemPreprocessedData> {
+    /// Returns a reference to the underlying `ObjectInputData`.
+    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }

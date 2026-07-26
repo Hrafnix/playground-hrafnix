@@ -1,6 +1,6 @@
-use crate::definition::ObjectDefinition;
+use crate::definition::GlobalObjectDefinition;
 use crate::editable::ItemEditable;
-use crate::frozen::ObjectFrozen;
+use crate::frozen::GlobalObjectFrozen;
 use crate::key::GlobalKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -9,16 +9,16 @@ use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ObjectEditable {
+pub struct GlobalObjectEditable {
     /// The definition of the object.
-    definition: ObjectDefinition,
+    definition: GlobalObjectDefinition,
     /// The items of the object.
     items: BTreeMap<GlobalKey, ItemEditable>,
 }
 
-impl ObjectEditable {
-    /// Creates a new `ObjectEditable` from an `ObjectFrozen`.
-    pub fn new_from_frozen(frozen_object: &ObjectFrozen) -> Self {
+impl GlobalObjectEditable {
+    /// Creates a new `GlobalObjectEditable` from an `GlobalObjectFrozen`.
+    pub fn new_from_frozen(frozen_object: &GlobalObjectFrozen) -> Self {
         Self {
             definition: frozen_object.definition().clone(),
             items: frozen_object
@@ -28,9 +28,9 @@ impl ObjectEditable {
         }
     }
 
-    /// Creates a new `ObjectFrozen` from this `ObjectEditable`.
-    pub fn freeze(&self) -> ObjectFrozen {
-        ObjectFrozen::new_from_editable(self)
+    /// Creates a new `GlobalObjectFrozen` from this `GlobalObjectEditable`.
+    pub fn freeze(&self) -> GlobalObjectFrozen {
+        GlobalObjectFrozen::new_from_editable(self)
     }
 
     /// Returns a reference to the parameter with the specified key, if it exists.
@@ -49,24 +49,24 @@ impl ObjectEditable {
     }
 
     /// Returns a reference to the object definition.
-    pub fn definition(&self) -> &ObjectDefinition {
+    pub fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }
 }
 
-impl PartialEq<&ObjectEditable> for ObjectEditable {
-    fn eq(&self, other: &&ObjectEditable) -> bool {
+impl PartialEq<&GlobalObjectEditable> for GlobalObjectEditable {
+    fn eq(&self, other: &&GlobalObjectEditable) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<ObjectEditable> for &ObjectEditable {
-    fn eq(&self, other: &ObjectEditable) -> bool {
+impl PartialEq<GlobalObjectEditable> for &GlobalObjectEditable {
+    fn eq(&self, other: &GlobalObjectEditable) -> bool {
         *self == other
     }
 }
 
-impl TreePrint for ObjectEditable {
+impl TreePrint for GlobalObjectEditable {
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -89,7 +89,7 @@ impl TreePrint for ObjectEditable {
     }
 }
 
-impl std::fmt::Display for ObjectEditable {
+impl std::fmt::Display for GlobalObjectEditable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }

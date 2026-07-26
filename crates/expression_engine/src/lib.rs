@@ -10,12 +10,12 @@ use shareable_string::{ShareableString, SharedStringStore};
 pub mod computed_data;
 /// Evaluation engine.
 pub mod evaluation;
-/// Preprocessed data.
-pub mod preprocessed_data;
+/// Input data.
+pub mod input_data;
 
 pub use computed_data::*;
 pub use evaluation::*;
-pub use preprocessed_data::*;
+pub use input_data::*;
 
 /// A definition for one of the basic (non-composite) data types supported by the
 /// expression engine.
