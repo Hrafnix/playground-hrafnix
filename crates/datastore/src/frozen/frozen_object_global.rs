@@ -40,6 +40,12 @@ impl GlobalObjectFrozen {
                 ItemDefinitionType::File(file_def) => {
                     items.insert(key, ItemFrozen::File(FileFrozen::new(file_def.clone())));
                 }
+                ItemDefinitionType::Integer(integer_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Integer(crate::frozen::IntegerFrozen::new(integer_def.clone())),
+                    );
+                }
                 ItemDefinitionType::Map(map_def) => {
                     items.insert(key, ItemFrozen::Map(MapFrozen::new(map_def.clone())));
                 }

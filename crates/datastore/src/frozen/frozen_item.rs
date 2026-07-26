@@ -1,6 +1,7 @@
 use crate::definition::ItemDefinitionType;
 use crate::frozen::{
-    BooleanFrozen, ChoiceFrozen, FileFrozen, MapFrozen, NumberFrozen, StringFrozen, TableFrozen,
+    BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, MapFrozen, NumberFrozen, StringFrozen,
+    TableFrozen,
 };
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,8 @@ pub enum ItemFrozen {
     Choice(ChoiceFrozen),
     /// A file parameter.
     File(FileFrozen),
+    /// An integer parameter.
+    Integer(IntegerFrozen),
     /// A map parameter.
     Map(MapFrozen),
     /// A number parameter.
@@ -30,6 +33,7 @@ impl ItemFrozen {
         match self {
             ItemFrozen::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
             ItemFrozen::File(f) => ItemDefinitionType::File(f.definition().clone()),
+            ItemFrozen::Integer(i) => ItemDefinitionType::Integer(i.definition().clone()),
             ItemFrozen::Map(m) => ItemDefinitionType::Map(m.definition().clone()),
             ItemFrozen::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
             ItemFrozen::String(b) => ItemDefinitionType::String(b.definition().clone()),
@@ -43,6 +47,7 @@ impl ItemFrozen {
         match self {
             Self::Choice(c) => c.hash(),
             Self::File(f) => f.hash(),
+            Self::Integer(i) => i.hash(),
             Self::Map(m) => m.hash(),
             Self::Number(n) => n.hash(),
             Self::String(s) => s.hash(),
@@ -112,6 +117,7 @@ impl TreePrint for ItemFrozen {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
             Self::Number(number) => number.tree_print(f, label, prefix, last),
             Self::String(basic) => basic.tree_print(f, label, prefix, last),

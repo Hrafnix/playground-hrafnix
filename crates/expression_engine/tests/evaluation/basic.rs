@@ -1,4 +1,4 @@
-use datastore::definition::{GlobalObjectDefinition, NumberDefinition, ParameterObjectDefinition};
+use datastore::definition::{GlobalObjectDefinition, IntegerDefinition, ParameterObjectDefinition};
 use datastore::frozen::{GlobalObjectFrozen, ParameterObjectFrozen};
 use datastore::{global_key, parameter_key};
 use expression_engine::engine::ExpressionEngine;
@@ -10,7 +10,7 @@ fn test_basic_data_integer() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 parameter_key!("p_number"),
-                NumberDefinition::new_with_default("A number parameter", "42"),
+                IntegerDefinition::new_with_default("A number parameter", "42"),
             )
             .finish(),
     );
@@ -35,7 +35,7 @@ fn test_basic_data_integer_expression() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 parameter_key!("p_number"),
-                NumberDefinition::new_with_default("A number parameter", "42 + 55"),
+                IntegerDefinition::new_with_default("A number parameter", "42 + 55"),
             )
             .finish(),
     );
@@ -60,7 +60,7 @@ fn test_basic_global_data_integer_expression() {
         GlobalObjectDefinition::builder("Test Object")
             .with(
                 global_key!("g_number"),
-                NumberDefinition::new_with_default("A number parameter", "42"),
+                IntegerDefinition::new_with_default("A number parameter", "42"),
             )
             .finish(),
     );
@@ -69,7 +69,7 @@ fn test_basic_global_data_integer_expression() {
         ParameterObjectDefinition::builder("Test Object")
             .with(
                 parameter_key!("p_number"),
-                NumberDefinition::new_with_default("A number parameter", "g_number + 107"),
+                IntegerDefinition::new_with_default("A number parameter", "g_number + 107"),
             )
             .finish(),
     );

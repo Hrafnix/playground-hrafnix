@@ -4,6 +4,8 @@ pub mod editable_boolean;
 pub mod editable_choice;
 /// Editable file data.
 pub mod editable_file;
+/// Editable integer data.
+pub mod editable_integer;
 /// Editable item data.
 pub mod editable_item;
 /// Editable map data.
@@ -24,6 +26,7 @@ pub mod editable_table;
 pub use editable_boolean::*;
 pub use editable_choice::*;
 pub use editable_file::*;
+pub use editable_integer::*;
 pub use editable_item::*;
 pub use editable_map::*;
 pub use editable_number::*;

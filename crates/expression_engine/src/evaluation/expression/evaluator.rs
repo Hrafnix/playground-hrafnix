@@ -1,11 +1,11 @@
-use crate::BasicDefinition::{Boolean, Choice, File, Number, String};
+use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
 use crate::expression::parser::parse;
 use crate::expression::translator::{Expression, Literal, Operators, translate};
 use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
 };
-use datastore::definition::NumberConstraint;
+use datastore::definition::{IntegerConstraint, NumberConstraint};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
@@ -535,66 +535,76 @@ fn evaluate_basic_expression(
                 ))
             }
         }
+        Integer(integer_definition) => {
+            // Validate that the computed value is an integer
+            if let ComputedItem::Integer(value) = &computed {
+                let constraint = integer_definition.constraint();
+                match constraint {
+                    IntegerConstraint::Min { min, inclusive } => {
+                        if *value < min || (!inclusive && *value == min) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is less than the minimum allowed value of {}.",
+                                    value, min
+                                ),
+                            ));
+                        }
+                        Ok(computed)
+                    }
+                    IntegerConstraint::Max { max, inclusive } => {
+                        if *value > max || (!inclusive && *value == max) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is greater than the maximum allowed value of {}.",
+                                    value, max
+                                ),
+                            ));
+                        }
+                        Ok(computed)
+                    }
+                    IntegerConstraint::Range {
+                        min,
+                        max,
+                        min_inclusive,
+                        max_inclusive,
+                    } => {
+                        if *value < min || (!min_inclusive && *value == min) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is less than the minimum allowed value of {}.",
+                                    value, min
+                                ),
+                            ));
+                        }
+                        if *value > max || (!max_inclusive && *value == max) {
+                            return Err(ExpressionError::new(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Value {} is greater than the maximum allowed value of {}.",
+                                    value, max
+                                ),
+                            ));
+                        }
+                        Ok(computed)
+                    }
+                    IntegerConstraint::None => Ok(computed),
+                }
+            } else {
+                Err(ExpressionError::new(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Expected an integer value for integer definition, but got {:?}.",
+                        computed
+                    ),
+                ))
+            }
+        }
         Number(number_definition) => {
             // Validate that the computed value is a number (integer or float)
             match &computed {
-                ComputedItem::Integer(value) => {
-                    let constraint = number_definition.constraint();
-                    match constraint {
-                        NumberConstraint::Min { min, inclusive } => {
-                            if (*value as f64) < min || (!inclusive && (*value as f64) == min) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is less than the minimum allowed value of {}.",
-                                        value, min
-                                    ),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraint::Max { max, inclusive } => {
-                            if (*value as f64) > max || (!inclusive && (*value as f64) == max) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is greater than the maximum allowed value of {}.",
-                                        value, max
-                                    ),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraint::Range {
-                            min,
-                            max,
-                            min_inclusive,
-                            max_inclusive,
-                        } => {
-                            if (*value as f64) < min || (!min_inclusive && (*value as f64) == min) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is less than the minimum allowed value of {}.",
-                                        value, min
-                                    ),
-                                ));
-                            }
-                            if (*value as f64) > max || (!max_inclusive && (*value as f64) == max) {
-                                return Err(ExpressionError::new(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {} is greater than the maximum allowed value of {}.",
-                                        value, max
-                                    ),
-                                ));
-                            }
-
-                            Ok(computed)
-                        }
-                        NumberConstraint::None => Ok(computed),
-                    }
-                }
                 ComputedItem::Float(value) => {
                     let constraint = number_definition.constraint();
                     match constraint {
@@ -774,7 +784,7 @@ pub(crate) fn evaluator(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use datastore::definition::{BooleanDefinition, NumberDefinition};
+    use datastore::definition::{BooleanDefinition, IntegerDefinition, NumberDefinition};
 
     fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Number(NumberDefinition::new("Test Number"));
@@ -787,6 +797,12 @@ mod tests {
             ComputedItem::Float(value) => assert_eq!(*value, expected_value),
             _ => panic!("Expected a numeric computed item"),
         }
+    }
+
+    fn create_integer_basic_input_data(value: &str) -> ObjectItemInputData {
+        let definition = Integer(IntegerDefinition::new("Test Integer"));
+        let data = ShareableString::from(value.to_string());
+        ObjectItemInputData::Basic(BasicInputData::new(definition, data))
     }
 
     fn check_number_integer(computed_item: &ComputedItem, expected_value: i64) {
@@ -872,7 +888,7 @@ mod tests {
     #[test]
     fn integer_test() {
         let computed_data = BTreeMap::new();
-        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42"))]);
+        let input_data = BTreeMap::from([("x".into(), create_integer_basic_input_data("42"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -885,7 +901,7 @@ mod tests {
     fn integer_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data =
-            BTreeMap::from([("x".into(), create_number_basic_input_data("1 + 2 * 3"))]);
+            BTreeMap::from([("x".into(), create_integer_basic_input_data("1 + 2 * 3"))]);
 
         let (result, errors) = evaluator(computed_data, input_data);
         assert!(!result.is_empty());
@@ -898,19 +914,19 @@ mod tests {
     fn multiple_integer_expression_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([
-            ("a".into(), create_number_basic_input_data("1 + 2")),
-            ("b".into(), create_number_basic_input_data("1 - 2")),
-            ("c".into(), create_number_basic_input_data("1 * 2")),
-            ("d".into(), create_number_basic_input_data("1 / 2")),
-            ("e".into(), create_number_basic_input_data("1 % 2")),
-            ("f".into(), create_number_basic_input_data("1 ^ 2")),
-            ("h".into(), create_number_basic_input_data("-1 + 2")),
+            ("a".into(), create_integer_basic_input_data("1 + 2")),
+            ("b".into(), create_integer_basic_input_data("1 - 2")),
+            ("c".into(), create_integer_basic_input_data("1 * 2")),
+            ("d".into(), create_integer_basic_input_data("1 / 2")),
+            ("e".into(), create_integer_basic_input_data("1 % 2")),
+            ("f".into(), create_integer_basic_input_data("1 ^ 2")),
+            ("h".into(), create_integer_basic_input_data("-1 + 2")),
             (
                 "g".into(),
-                create_number_basic_input_data("1 + 2 * 3 - 4 / 5 ^ 6"),
+                create_integer_basic_input_data("1 + 2 * 3 - 4 / 5 ^ 6"),
             ),
-            ("i".into(), create_number_basic_input_data("-(1 + 2)")),
-            ("j".into(), create_number_basic_input_data("--1")),
+            ("i".into(), create_integer_basic_input_data("-(1 + 2)")),
+            ("j".into(), create_integer_basic_input_data("--1")),
         ]);
 
         let (result, errors) = evaluator(computed_data, input_data);

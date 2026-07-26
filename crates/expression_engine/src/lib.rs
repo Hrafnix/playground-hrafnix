@@ -2,7 +2,8 @@
 
 use core::fmt;
 use datastore::definition::{
-    BooleanDefinition, ChoiceDefinition, FileDefinition, NumberDefinition, StringDefinition,
+    BooleanDefinition, ChoiceDefinition, FileDefinition, IntegerDefinition, NumberDefinition,
+    StringDefinition,
 };
 use shareable_string::{ShareableString, SharedStringStore};
 
@@ -27,6 +28,8 @@ pub enum BasicDefinition {
     Choice(ChoiceDefinition),
     /// Holds a file reference.
     File(FileDefinition),
+    /// Holds an integer value.
+    Integer(IntegerDefinition),
     /// Holds numeric value.
     Number(NumberDefinition),
     /// Holds a string value.
@@ -40,6 +43,7 @@ impl BasicDefinition {
             BasicDefinition::Boolean(boolean) => BasicDefinition::Boolean(boolean.launder(store)),
             BasicDefinition::Choice(choice) => BasicDefinition::Choice(choice.launder(store)),
             BasicDefinition::File(file) => BasicDefinition::File(file.launder(store)),
+            BasicDefinition::Integer(integer) => BasicDefinition::Integer(integer.launder(store)),
             BasicDefinition::Number(number) => BasicDefinition::Number(number.launder(store)),
             BasicDefinition::String(string) => BasicDefinition::String(string.launder(store)),
         }

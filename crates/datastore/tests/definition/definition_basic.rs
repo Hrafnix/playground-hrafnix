@@ -41,6 +41,75 @@ fn test_basic_definition_boolean_with_default() {
 }
 
 #[test]
+fn test_basic_definition_integer() {
+    // Why: Test basic integer definition creation and definition.
+    let def = IntegerDefinition::new("A integer parameter");
+
+    // Check the various data items of the integer definition.
+    assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(def.constraint(), IntegerConstraint::None);
+    assert_eq!(def.default_value(), "");
+}
+
+#[test]
+fn test_basic_definition_integer_with_default() {
+    // Why: Test basic integer definition creation with a default value.
+    let def = IntegerDefinition::new_with_default("A integer parameter", "5");
+
+    // Check the various data items of the integer definition.
+    assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(def.constraint(), IntegerConstraint::None);
+    assert_eq!(def.default_value(), "5");
+}
+
+#[test]
+fn test_basic_definition_integer_with_constraint() {
+    // Why: Test basic integer definition creation with a constraint.
+    let def = IntegerDefinition::new_with_constraint(
+        "A integer parameter",
+        IntegerConstraint::Min {
+            min: 0,
+            inclusive: true,
+        },
+    );
+
+    // Check the various data items of the integer definition.
+    assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(
+        def.constraint(),
+        IntegerConstraint::Min {
+            min: 0,
+            inclusive: true
+        }
+    );
+    assert_eq!(def.default_value(), "");
+}
+
+#[test]
+fn test_basic_definition_integer_with_constraint_and_default() {
+    // Why: Test basic integer definition creation with a constraint and a default value.
+    let def = IntegerDefinition::new_with_constraint_and_default(
+        "A integer parameter",
+        IntegerConstraint::Max {
+            max: 10,
+            inclusive: true,
+        },
+        "5",
+    );
+
+    // Check the various data items of the integer definition.
+    assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(
+        def.constraint(),
+        IntegerConstraint::Max {
+            max: 10,
+            inclusive: true
+        }
+    );
+    assert_eq!(def.default_value(), "5");
+}
+
+#[test]
 fn test_basic_definition_number() {
     // Why: Test basic number definition creation and definition.
     let def = NumberDefinition::new("A number parameter");
