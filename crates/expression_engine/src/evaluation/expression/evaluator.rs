@@ -1,4 +1,5 @@
 use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
+use crate::evaluation::expression::function_definition::FunctionDefinitions;
 use crate::expression::parser::parse;
 use crate::expression::translator::{Expression, Literal, Operators, translate};
 use crate::{
@@ -25,6 +26,7 @@ fn lookup_variable(
 
 fn evaluate_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
+    functions: &FunctionDefinitions,
     expression: Expression,
 ) -> Result<ComputedItem, ExpressionError> {
     match expression {
@@ -35,7 +37,7 @@ fn evaluate_expression(
             Literal::Boolean(value) => Ok(ComputedItem::Boolean(value)),
         },
         Expression::UnaryOperation { operator, operand } => {
-            let operand_value = evaluate_expression(computed_data, *operand)?;
+            let operand_value = evaluate_expression(computed_data, functions, *operand)?;
             match (operator, operand_value) {
                 (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
                 (Operators::Negate, ComputedItem::Integer(value)) => {
@@ -53,8 +55,8 @@ fn evaluate_expression(
             operator,
             right,
         } => {
-            let left_value = evaluate_expression(computed_data, *left)?;
-            let right_value = evaluate_expression(computed_data, *right)?;
+            let left_value = evaluate_expression(computed_data, functions, *left)?;
+            let right_value = evaluate_expression(computed_data, functions, *right)?;
             match (left_value, right_value) {
                 (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
                     match operator {
@@ -362,12 +364,20 @@ fn evaluate_expression(
                 }
             }
         }
-        Expression::FunctionCall {
-            name: _name,
-            arguments: _arguments,
-        } => {
-            // Implement the logic to evaluate function calls
-            unimplemented!("Function call evaluation is not yet implemented.");
+        Expression::FunctionCall { name, arguments } => {
+            let definition = functions.get(&name).ok_or_else(|| {
+                ExpressionError::new(
+                    ExpressionCategory::Evaluation,
+                    format!("Function '{}' is not defined.", name),
+                )
+            })?;
+
+            let mut evaluated_arguments = Vec::with_capacity(arguments.len());
+            for argument in arguments {
+                evaluated_arguments.push(evaluate_expression(computed_data, functions, argument)?);
+            }
+
+            definition.call(&evaluated_arguments)
         }
         Expression::Index { name, index } => {
             if index.len() != 2 && index.len() != 4 {
@@ -392,7 +402,7 @@ fn evaluate_expression(
                             ComputedItem::String(ShareableString::from(name.clone()))
                         }
                     } else {
-                        evaluate_expression(computed_data, index_expression)?
+                        evaluate_expression(computed_data, functions, index_expression)?
                     };
                 indexes.push(index_value);
             }
@@ -479,11 +489,12 @@ fn parse_str(s: &str) -> Result<Expression, ExpressionError> {
 
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
+    functions: &FunctionDefinitions,
     basic: BasicInputData,
 ) -> Result<ComputedItem, ExpressionError> {
     let data = basic.data();
     let expression = parse_str(data.as_ref())?;
-    let computed = evaluate_expression(computed_data, expression)?;
+    let computed = evaluate_expression(computed_data, functions, expression)?;
     match basic.definition() {
         Boolean(_boolean_definition) => {
             // Validate that the computed value is a boolean
@@ -690,6 +701,7 @@ fn evaluate_basic_expression(
 
 fn evaluate_table_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
+    functions: &FunctionDefinitions,
     table: TableInputData,
 ) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
     let definition = table.definition();
@@ -706,7 +718,7 @@ fn evaluate_table_expression(
             let basic_input_data =
                 BasicInputData::new(Number(number_definition.clone()), basic_data.clone());
 
-            match evaluate_basic_expression(computed_data, basic_input_data) {
+            match evaluate_basic_expression(computed_data, functions, basic_input_data) {
                 Ok(ComputedItem::Integer(value)) => {
                     evaluated_row.push(value as f64);
                 }
@@ -736,6 +748,7 @@ fn evaluate_table_expression(
 /// along with any errors encountered during evaluation.
 pub(crate) fn evaluator(
     computed_data: BTreeMap<ShareableString, ComputedItem>,
+    functions: &FunctionDefinitions,
     input_data: BTreeMap<ShareableString, ObjectItemInputData>,
 ) -> (
     BTreeMap<ShareableString, ComputedItem>,
@@ -747,7 +760,7 @@ pub(crate) fn evaluator(
     for (key, data) in input_data {
         match data {
             ObjectItemInputData::Basic(basic_data) => {
-                match evaluate_basic_expression(&computed_data, basic_data) {
+                match evaluate_basic_expression(&computed_data, functions, basic_data) {
                     Ok(computed_item) => {
                         result.insert(key.clone(), computed_item);
                     }
@@ -763,7 +776,7 @@ pub(crate) fn evaluator(
                     .keys()
                     .map(ShareableString::from)
                     .collect();
-                match evaluate_table_expression(&computed_data, table_data) {
+                match evaluate_table_expression(&computed_data, functions, table_data) {
                     Ok(evaluated_table) => {
                         result.insert(
                             key.clone(),
@@ -784,7 +797,9 @@ pub(crate) fn evaluator(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::evaluation::expression::function_definition::FunctionDefinition;
     use datastore::definition::{BooleanDefinition, IntegerDefinition, NumberDefinition};
+    use datastore::store_key;
 
     fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Number(NumberDefinition::new("Test Number"));
@@ -829,7 +844,7 @@ mod tests {
     fn empty_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::new();
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(result.is_empty());
         assert!(errors.is_empty());
     }
@@ -839,7 +854,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_boolean_basic_input_data("true"))]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -854,7 +869,7 @@ mod tests {
             create_boolean_basic_input_data("true && false || true"),
         )]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -873,7 +888,7 @@ mod tests {
             ("f".into(), create_boolean_basic_input_data("true != false")),
         ]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -890,7 +905,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_integer_basic_input_data("42"))]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -903,7 +918,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_integer_basic_input_data("1 + 2 * 3"))]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -929,7 +944,7 @@ mod tests {
             ("j".into(), create_integer_basic_input_data("--1")),
         ]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -950,7 +965,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42.0"))]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -965,7 +980,7 @@ mod tests {
             create_number_basic_input_data("1.0 + 2.0 * 3.0"),
         )]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -991,7 +1006,7 @@ mod tests {
             ("j".into(), create_number_basic_input_data("--1.0")),
         ]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1031,7 +1046,9 @@ mod tests {
         )]);
 
         let expression = parse_str("t[5]").unwrap();
-        assert!(evaluate_expression(&computed_data, expression).is_err());
+        assert!(
+            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).is_err()
+        );
     }
 
     #[test]
@@ -1042,7 +1059,8 @@ mod tests {
         )]);
 
         let expression = parse_str("t[0][col]").unwrap();
-        let result = evaluate_expression(&computed_data, expression).unwrap();
+        let result =
+            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).unwrap();
 
         check_number_float(&result, 3.5);
     }
@@ -1055,7 +1073,9 @@ mod tests {
         )]);
 
         let expression = parse_str("t[0][missing]").unwrap();
-        assert!(evaluate_expression(&computed_data, expression).is_err());
+        assert!(
+            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).is_err()
+        );
     }
 
     #[test]
@@ -1066,7 +1086,9 @@ mod tests {
         )]);
 
         let expression = parse_str("t[col]").unwrap();
-        assert!(evaluate_expression(&computed_data, expression).is_err());
+        assert!(
+            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).is_err()
+        );
     }
 
     #[test]
@@ -1078,7 +1100,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(errors.is_empty());
 
         check_number_float(&result["x"], 9.0);
@@ -1093,7 +1115,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
-        let (result, errors) = evaluator(computed_data, input_data);
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
         assert!(errors.is_empty());
 
         check_number_float(&result["x"], 9.0);
@@ -1110,8 +1132,131 @@ mod tests {
         )]);
 
         let expression = parse_str("map[key][entry][1][col]").unwrap();
-        let result = evaluate_expression(&computed_data, expression).unwrap();
+        let result =
+            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).unwrap();
 
         check_number_float(&result, 9.0);
+    }
+
+    /// A helper that sums numeric arguments (Integer or Float) into a Float.
+    fn sum_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+        let mut total = 0.0;
+        for arg in args {
+            match arg {
+                ComputedItem::Float(v) => total += v,
+                ComputedItem::Integer(v) => total += *v as f64,
+                other => {
+                    return Err(ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!("sum() expects numeric arguments, got {other:?}"),
+                    ));
+                }
+            }
+        }
+        Ok(ComputedItem::Float(total))
+    }
+
+    /// A function with no arguments that always returns the float 42.
+    fn constant_function(_args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+        Ok(ComputedItem::Float(42.0))
+    }
+
+    #[test]
+    fn function_call_with_no_arguments_test() {
+        let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
+            store_key!("constant"),
+            "returns 42",
+            constant_function,
+        ));
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("constant()"))]);
+
+        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        assert!(errors.is_empty());
+        match result.get("x") {
+            Some(ComputedItem::Float(v)) => assert_eq!(*v, 42.0),
+            other => panic!("expected float 42.0, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn function_call_with_arguments_test() {
+        let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
+            store_key!("sum"),
+            "sums its arguments",
+            sum_function,
+        ));
+        let input_data = BTreeMap::from([(
+            "x".into(),
+            create_number_basic_input_data("sum(1.0, 2.0, 3.5)"),
+        )]);
+
+        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        assert!(errors.is_empty());
+        check_number_float(&result["x"], 6.5);
+    }
+
+    #[test]
+    fn function_call_with_variable_arguments_test() {
+        let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
+            store_key!("sum"),
+            "sums its arguments",
+            sum_function,
+        ));
+        let computed_data = BTreeMap::from([("a".into(), ComputedItem::Float(1.5))]);
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("sum(a, 2.0)"))]);
+
+        let (result, errors) = evaluator(computed_data, &functions, input_data);
+        assert!(errors.is_empty());
+        check_number_float(&result["x"], 3.5);
+    }
+
+    #[test]
+    fn nested_function_calls_test() {
+        let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
+            store_key!("sum"),
+            "sums its arguments",
+            sum_function,
+        ));
+        let input_data = BTreeMap::from([(
+            "x".into(),
+            create_number_basic_input_data("sum(sum(1.0, 2.0), sum(3.0, 4.0))"),
+        )]);
+
+        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        assert!(errors.is_empty());
+        check_number_float(&result["x"], 10.0);
+    }
+
+    #[test]
+    fn function_call_combined_with_operators_test() {
+        let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
+            store_key!("sum"),
+            "sums its arguments",
+            sum_function,
+        ));
+        let input_data = BTreeMap::from([(
+            "x".into(),
+            create_number_basic_input_data("sum(1.0, 2.0) * 3.0 + 1.0"),
+        )]);
+
+        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        assert!(errors.is_empty());
+        check_number_float(&result["x"], 10.0);
+    }
+
+    #[test]
+    fn undefined_function_call_returns_error_test() {
+        let functions = FunctionDefinitions::new();
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("undefined()"))]);
+
+        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 1);
+        let message = errors[0].to_string();
+        assert!(message.contains("[Evaluation]"));
+        assert!(message.contains("Function 'undefined' is not defined."));
     }
 }
