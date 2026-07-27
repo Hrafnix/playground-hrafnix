@@ -1,4 +1,6 @@
+use crate::evaluation::expression::function_definition::{FunctionDefinition, FunctionDefinitions};
 use crate::expression::evaluator::evaluator;
+use crate::expression::function_definitions_default::get_default_function_definitions;
 use crate::{
     ExpressionError, GlobalObjectComputedData, GlobalObjectInputData, ParameterObjectComputedData,
     ParameterObjectInputData, VariableObjectComputedData, VariableObjectInputData,
@@ -10,6 +12,7 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExpressionEngine {
     globals: GlobalObjectComputedData,
+    functions: FunctionDefinitions,
 }
 
 impl Default for ExpressionEngine {
@@ -23,7 +26,25 @@ impl ExpressionEngine {
     pub fn new() -> Self {
         Self {
             globals: GlobalObjectComputedData::new(BTreeMap::new()),
+            functions: get_default_function_definitions(),
         }
+    }
+
+    /// Registers a callable function that can be invoked from within an expression
+    /// using the syntax `name(arg, ...)`.
+    ///
+    /// Registering a function with a name that already exists replaces the previous
+    /// definition.
+    pub fn register_function(&mut self, func: FunctionDefinition) -> Result<(), ExpressionError> {
+        if func.name().as_str().trim().is_empty() {
+            return Err(ExpressionError::new(
+                crate::ExpressionCategory::Evaluation,
+                "Function name must not be empty.".to_string(),
+            ));
+        }
+
+        self.functions.insert(func);
+        Ok(())
     }
 
     /// Evaluates the provided global input data and updates the engine's state with the computed results.
@@ -31,7 +52,8 @@ impl ExpressionEngine {
         &mut self,
         globals: GlobalObjectInputData,
     ) -> Result<(), Vec<ExpressionError>> {
-        let (computed_data, errors) = evaluator(BTreeMap::new(), globals.data().clone());
+        let (computed_data, errors) =
+            evaluator(BTreeMap::new(), &self.functions, globals.data().clone());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -47,8 +69,11 @@ impl ExpressionEngine {
         &self,
         parameters: ParameterObjectInputData,
     ) -> Result<ParameterObjectComputedData, Vec<ExpressionError>> {
-        let (computed_data, errors) =
-            evaluator(self.globals.data().clone(), parameters.data().clone());
+        let (computed_data, errors) = evaluator(
+            self.globals.data().clone(),
+            &self.functions,
+            parameters.data().clone(),
+        );
 
         if !errors.is_empty() {
             return Err(errors);
@@ -66,7 +91,7 @@ impl ExpressionEngine {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());
 
-        let (computed_data, errors) = evaluator(data, variables.data().clone());
+        let (computed_data, errors) = evaluator(data, &self.functions, variables.data().clone());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -87,7 +112,7 @@ impl ExpressionEngine {
         data.extend(parameters.data().clone());
         data.extend(variables.data().clone());
 
-        let (computed_data, errors) = evaluator(data, globals.data().clone());
+        let (computed_data, errors) = evaluator(data, &self.functions, globals.data().clone());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -110,7 +135,11 @@ impl ExpressionEngine {
         data.extend(parameters.data().clone());
         data.extend(variables.data().clone());
 
-        let (computed_data, errors) = evaluator(data.clone(), child_parameters.data().clone());
+        let (computed_data, errors) = evaluator(
+            data.clone(),
+            &self.functions,
+            child_parameters.data().clone(),
+        );
 
         if !errors.is_empty() {
             return Err(errors);
@@ -122,5 +151,10 @@ impl ExpressionEngine {
     /// Returns a reference to the global computed data of the engine.
     pub fn globals(&self) -> &GlobalObjectComputedData {
         &self.globals
+    }
+
+    /// Returns a reference to the registered function definitions of the engine.
+    pub fn functions(&self) -> &FunctionDefinitions {
+        &self.functions
     }
 }
