@@ -3,13 +3,15 @@ use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Definition for a table, which is a collection of named columns each having a `BasicDefinition`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableDefinition {
     description: ShareableString,
-    columns: Arc<Vec<(StoreKey, NumberDefinition)>>,
+    ordered_keys: Vec<StoreKey>,
+    columns: Arc<BTreeMap<StoreKey, NumberDefinition>>,
 }
 
 impl TableDefinition {
@@ -18,14 +20,17 @@ impl TableDefinition {
         description: S1,
         columns: Vec<(K, NumberDefinition)>,
     ) -> Self {
+        let mut items = BTreeMap::new();
+        let mut ordered_keys = Vec::new();
+        for (k, v) in columns {
+            let key = k.into();
+            items.insert(key.clone(), v);
+            ordered_keys.push(key);
+        }
         Self {
             description: description.into(),
-            columns: Arc::new(
-                columns
-                    .into_iter()
-                    .map(|(id, item)| (id.into(), item))
-                    .collect(),
-            ),
+            ordered_keys,
+            columns: Arc::new(items),
         }
     }
 
@@ -37,7 +42,7 @@ impl TableDefinition {
     /// Returns true if the table contains a column with the specified key.
     pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
         let key = key.into();
-        for (column_key, _) in self.columns.iter() {
+        for column_key in self.columns.keys() {
             if column_key == &key {
                 return true;
             }
@@ -58,13 +63,15 @@ impl TableDefinition {
 
     /// Returns a reference to the column definition for the specified index.
     pub fn get_by_index(&self, index: usize) -> Option<&NumberDefinition> {
-        self.columns.get(index).map(|(_, v)| v)
+        self.ordered_keys
+            .get(index)
+            .and_then(|key| self.columns.get(key))
     }
 
     /// Returns the index of the column with the specified key.
     pub fn get_column_index_by_name<S: Into<ShareableString>>(&self, key: S) -> Option<usize> {
         let key = key.into();
-        for (index, (column_key, _)) in self.columns.iter().enumerate() {
+        for (index, column_key) in self.ordered_keys.iter().enumerate() {
             if column_key == &key {
                 return Some(index);
             }
@@ -74,25 +81,24 @@ impl TableDefinition {
 
     /// Returns true if the table contains a column with the specified key string.
     pub fn contains_key_str(&self, key: &str) -> bool {
-        self.columns.iter().any(|(k, _)| k.as_str() == key)
+        self.columns.contains_key(key)
     }
 
     /// Returns a reference to the column definition for the specified key string.
     pub fn get_str(&self, key: &str) -> Option<&NumberDefinition> {
-        self.columns
-            .iter()
-            .find(|(k, _)| k.as_str() == key)
-            .map(|(_, v)| v)
+        self.columns.get(key)
     }
 
     /// Returns an iterator over the keys of the columns.
     pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
-        self.columns.iter().map(|(k, _)| k)
+        self.ordered_keys.iter()
     }
 
     /// Returns an iterator over the column definitions.
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &NumberDefinition)> {
-        self.columns.iter().map(|(k, v)| (k, v))
+        self.ordered_keys
+            .iter()
+            .filter_map(move |key| self.columns.get(key).map(|v| (key, v)))
     }
 
     /// Returns the number of columns in the table.
@@ -115,6 +121,7 @@ impl TableDefinition {
                     .map(|(id, item)| (id.launder(store), item.launder(store)))
                     .collect(),
             ),
+            ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
         }
     }
 }

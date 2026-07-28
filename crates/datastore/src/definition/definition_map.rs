@@ -101,6 +101,7 @@ impl TreePrint for MapItemDefinition {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MapDefinition {
     description: ShareableString,
+    ordered_keys: Vec<StoreKey>,
     item_type: Arc<BTreeMap<StoreKey, MapItemDefinition>>,
 }
 
@@ -111,12 +112,15 @@ impl MapDefinition {
         item_type: Vec<(K, I)>,
     ) -> Self {
         let mut items = BTreeMap::new();
+        let mut ordered_keys = Vec::new();
         for (k, v) in item_type {
             let key = k.into();
-            items.insert(key, v.into());
+            items.insert(key.clone(), v.into());
+            ordered_keys.push(key);
         }
         Self {
             description: description.into(),
+            ordered_keys,
             item_type: Arc::new(items),
         }
     }
@@ -146,7 +150,7 @@ impl MapDefinition {
 
     /// Returns an iterator over the keys of the map's entry schema.
     pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
-        self.item_type.keys()
+        self.ordered_keys.iter()
     }
 
     /// Returns true if the map's entry schema contains an item with the specified key string.
@@ -156,7 +160,9 @@ impl MapDefinition {
 
     /// Returns an iterator over the map's entry item definitions.
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapItemDefinition)> {
-        self.item_type.iter()
+        self.ordered_keys
+            .iter()
+            .filter_map(move |key| self.item_type.get(key).map(|v| (key, v)))
     }
 
     /// Returns the number of items in the map's entry schema.
@@ -184,6 +190,7 @@ impl MapDefinition {
                     .map(|(k, v)| (k.launder(store), v.launder(store)))
                     .collect(),
             ),
+            ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
         }
     }
 }
