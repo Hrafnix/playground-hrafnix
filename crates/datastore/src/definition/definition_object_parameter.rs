@@ -11,6 +11,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ParameterObjectDefinitionBuilder {
     description: ShareableString,
+    ordered_keys: Vec<ParameterKey>,
     items: BTreeMap<ParameterKey, ItemDefinitionType>,
 }
 
@@ -19,21 +20,33 @@ impl ParameterObjectDefinitionBuilder {
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
+            ordered_keys: Vec::new(),
             items: BTreeMap::new(),
         }
     }
 
     /// Returns a new builder inherited from an existing `ParameterObjectDefinition`.
     ///
-    /// This method will overwrite existing parameter with the same keys.
+    /// This method will overwrite existing items with the same keys.
+    /// Will keep the order of the existing keys and append new keys at the end.
     pub fn inherit(mut self, definition: ParameterObjectDefinition) -> Self {
+        for key in definition.items.keys() {
+            if !self.items.contains_key(key) {
+                self.ordered_keys.push(key.clone());
+            }
+        }
+
         self.items
             .extend(definition.items.iter().map(|(k, v)| (k.clone(), v.clone())));
+
         self
     }
 
     /// Returns a new builder inherited from an existing `ParameterObjectDefinition`,
     /// checking for conflicts.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// Will keep the order of the existing keys and append new keys at the end.
     ///
     /// # Errors
     ///
@@ -47,24 +60,43 @@ impl ParameterObjectDefinitionBuilder {
                 return Err(StoreError::KeyConflict(key.key.to_string()));
             }
         }
+
+        for key in definition.items.keys() {
+            if !self.items.contains_key(key) {
+                self.ordered_keys.push(key.clone());
+            }
+        }
+
         self.items
             .extend(definition.items.iter().map(|(k, v)| (k.clone(), v.clone())));
+
         Ok(self)
     }
 
-    /// Returns a new builder with parameter inherited from another builder.
+    /// Returns a new builder inherited from another builder.
     ///
-    /// This method will overwrite existing parameter with the same keys.
+    /// This method will overwrite existing items with the same keys.
+    /// Will keep the order of the existing keys and append new keys at the end.
     pub fn inherit_from_builder(mut self, builder: ParameterObjectDefinitionBuilder) -> Self {
+        for key in builder.items.keys() {
+            if !self.items.contains_key(key) {
+                self.ordered_keys.push(key.clone());
+            }
+        }
+
         self.items.extend(builder.items);
+
         self
     }
 
     /// Returns a new builder inherited from another builder, checking for conflicts.
     ///
+    /// This method will overwrite existing items with the same keys.
+    /// Will keep the order of the existing keys and append new keys at the end.
+    ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyConflict` if any parameter key already exists in the builder.
+    /// Returns `StoreError::KeyConflict` if any key already exists in the builder.
     pub fn inherit_from_builder_with_check(
         mut self,
         builder: ParameterObjectDefinitionBuilder,
@@ -74,13 +106,22 @@ impl ParameterObjectDefinitionBuilder {
                 return Err(StoreError::KeyConflict(key.key.to_string()));
             }
         }
+
+        for key in builder.items.keys() {
+            if !self.items.contains_key(key) {
+                self.ordered_keys.push(key.clone());
+            }
+        }
+
         self.items.extend(builder.items);
+
         Ok(self)
     }
 
-    /// Returns a new builder with the parameter inserted.
+    /// Returns a new builder with the item inserted.
     ///
-    /// This method will overwrite existing parameter with the same keys.
+    /// This method will overwrite existing items with the same keys.
+    /// If the key does not exist, it will be appended to the end of the ordered keys.
     pub fn with<K: Into<ParameterKey>, T: Into<ItemDefinitionType>>(
         mut self,
         key: K,
@@ -90,33 +131,42 @@ impl ParameterObjectDefinitionBuilder {
         self
     }
 
-    /// Inserts a parameter into the current builder.
+    /// Inserts an item into the current builder.
     ///
-    /// This method will overwrite existing parameter with the same keys.
+    /// This method will overwrite existing items with the same keys.
+    /// If the key does not exist, it will be appended to the end of the ordered keys.
     pub fn insert<K: Into<ParameterKey>, T: Into<ItemDefinitionType>>(
         &mut self,
         key: K,
         parameter: T,
     ) {
         let key = key.into();
+
+        if !self.items.contains_key(&key) {
+            self.ordered_keys.push(key.clone());
+        }
+
         self.items.insert(key, parameter.into());
     }
 
-    /// Returns a new builder with the parameter removed.
+    /// Returns a new builder with the item removed.
     pub fn without<S: Into<ShareableString>>(mut self, key: S) -> Self {
         self.remove(key);
         self
     }
 
-    /// Removes a parameter from the current builder.
+    /// Removes an item from the current builder.
     pub fn remove<S: Into<ShareableString>>(&mut self, key: S) {
-        self.items.remove(&key.into());
+        let key = key.into();
+        self.ordered_keys.retain(|k| k != &key);
+        self.items.remove(&key);
     }
 
     /// Builds the `ParameterObjectDefinition`.
     pub fn finish(self) -> ParameterObjectDefinition {
         ParameterObjectDefinition {
             description: self.description,
+            ordered_keys: self.ordered_keys,
             items: Arc::new(self.items),
         }
     }
@@ -126,6 +176,7 @@ impl ParameterObjectDefinitionBuilder {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ParameterObjectDefinition {
     description: ShareableString,
+    ordered_keys: Vec<ParameterKey>,
     items: Arc<BTreeMap<ParameterKey, ItemDefinitionType>>,
 }
 
@@ -135,15 +186,16 @@ impl ParameterObjectDefinition {
         ParameterObjectDefinitionBuilder::new(description)
     }
 
-    /// Returns a new `ParameterObjectDefinitionBuilder` initialized with the parameter of this definition.
+    /// Returns a new `ParameterObjectDefinitionBuilder` initialized with the items of this definition.
     ///
-    /// The new builder will have the specified description and a copy of the current parameter.
+    /// The new builder will have the specified description and a copy of the current items.
     pub fn inherit<S: Into<ShareableString>>(
         &self,
         description: S,
     ) -> ParameterObjectDefinitionBuilder {
         ParameterObjectDefinitionBuilder {
             description: description.into(),
+            ordered_keys: self.ordered_keys.clone(),
             items: BTreeMap::clone(&self.items),
         }
     }
@@ -158,45 +210,48 @@ impl ParameterObjectDefinition {
         &self.description
     }
 
-    /// Returns the number of parameter in the object.
+    /// Returns the number of items in the object.
     pub fn count(&self) -> usize {
         self.items.len()
     }
 
-    /// Returns true if the object contains a parameter with the specified key.
+    /// Returns true if the object contains an item with the specified key.
     pub fn contains<S: Into<ShareableString>>(&self, key: S) -> bool {
         self.items.contains_key(&key.into())
     }
 
-    /// Returns true if the object contains a parameter with the specified key string.
+    /// Returns true if the object contains an item with the specified key string.
     pub fn contains_str(&self, key: &str) -> bool {
         self.items.contains_key(key)
     }
 
-    /// Returns a reference to the parameter definition for the specified key.
+    /// Returns a reference to the item definition for the specified key.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemDefinitionType> {
         self.items.get(&key.into())
     }
 
-    /// Returns a reference to the parameter definition for the specified key string.
+    /// Returns a reference to the item definition for the specified key string.
     pub fn get_str(&self, key: &str) -> Option<&ItemDefinitionType> {
         self.items.get(key)
     }
 
-    /// Returns an iterator over the keys of the parameter.
+    /// Returns an iterator over the keys of the items.
     pub fn keys(&self) -> impl Iterator<Item = &ParameterKey> {
-        self.items.keys()
+        self.ordered_keys.iter()
     }
 
-    /// Returns an iterator over the parameter definitions.
+    /// Returns an iterator over the item definitions.
     pub fn iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemDefinitionType)> {
-        self.items.iter()
+        self.ordered_keys
+            .iter()
+            .filter_map(move |k| self.items.get(k).map(|v| (k, v)))
     }
 
     /// Returns a new `ParameterObjectDefinition` with strings laundered through the provided store.
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
+            ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
             items: Arc::new(
                 self.items
                     .iter()
@@ -231,11 +286,13 @@ impl TreePrint for ParameterObjectDefinition {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let item_count = self.ordered_keys.len();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
+        for (i, key) in self.ordered_keys.iter().enumerate() {
             let is_last = i == item_count - 1;
-            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+            if let Some(item) = self.items.get(key) {
+                item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+            }
         }
 
         Ok(())
