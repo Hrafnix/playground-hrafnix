@@ -4,7 +4,7 @@ use datastore::definition::{
 use datastore::frozen::{GlobalObjectFrozen, ParameterObjectFrozen};
 use datastore::{global_key, parameter_key, store_key};
 use expression_engine::engine::ExpressionEngine;
-use expression_engine::expression::function_definition::FunctionDefinition;
+use expression_engine::expression::function_definition::{ArgumentCount, FunctionDefinition};
 use expression_engine::{ComputedItem, GlobalObjectInputData, ParameterObjectInputData};
 
 /// A function that sums its integer arguments.
@@ -57,6 +57,7 @@ fn registered_function_is_invoked_during_evaluation() {
         .register_function(FunctionDefinition::new(
             store_key!("add"),
             "sums integer arguments",
+            ArgumentCount::Unbounded,
             add_integers,
         ))
         .expect("function should register");
@@ -100,6 +101,7 @@ fn registered_function_can_reference_variables() {
         .register_function(FunctionDefinition::new(
             store_key!("add"),
             "sums integer arguments",
+            ArgumentCount::Unbounded,
             add_integers,
         ))
         .expect("function should register");
@@ -133,6 +135,7 @@ fn registered_function_combines_with_other_operators() {
         .register_function(FunctionDefinition::new(
             store_key!("add"),
             "sums integer arguments",
+            ArgumentCount::Unbounded,
             add_integers,
         ))
         .expect("function should register");
@@ -163,6 +166,7 @@ fn nested_registered_function_calls_evaluate_correctly() {
         .register_function(FunctionDefinition::new(
             store_key!("add"),
             "sums integer arguments",
+            ArgumentCount::Unbounded,
             add_integers,
         ))
         .expect("function should register");
@@ -193,6 +197,7 @@ fn float_returning_function_works_with_number_definition() {
         .register_function(FunctionDefinition::new(
             store_key!("multiply"),
             "multiplies two floats",
+            ArgumentCount::Exact { count: 2 },
             multiply_floats,
         ))
         .expect("function should register");

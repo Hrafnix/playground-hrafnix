@@ -9,11 +9,41 @@ use std::sync::Arc;
 type FunctionBody =
     Arc<dyn Fn(&[ComputedItem]) -> Result<ComputedItem, ExpressionError> + Send + Sync>;
 
+/// Represents the number of arguments a function expects.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ArgumentCount {
+    /// A function that accepts a minimum number of arguments, but no maximum.
+    Min {
+        /// Minimum number of arguments required.
+        min: usize,
+    },
+    /// A function that accepts a maximum number of arguments, but no minimum.
+    Max {
+        /// Maximum number of arguments allowed.
+        max: usize,
+    },
+    /// A function that accepts a range of arguments, inclusive.
+    Range {
+        /// Minimum number of arguments required.
+        min: usize,
+        /// Maximum number of arguments allowed.
+        max: usize,
+    },
+    /// A function that accepts an exact number of arguments.
+    Exact {
+        /// Exact number of arguments required.
+        count: usize,
+    },
+    /// A function that accepts any number of arguments.
+    Unbounded,
+}
+
 /// A function that can be invoked from within an expression via a call such as
 /// `add(2, 3)`.
 pub struct FunctionDefinition {
     name: ShareableString,
     description: ShareableString,
+    argument_count: ArgumentCount,
     function: FunctionBody,
 }
 
@@ -22,6 +52,7 @@ impl FunctionDefinition {
     pub fn new<F>(
         name: impl Into<StoreKey>,
         description: impl Into<ShareableString>,
+        argument_count: ArgumentCount,
         function: F,
     ) -> Self
     where
@@ -30,6 +61,7 @@ impl FunctionDefinition {
         Self {
             name: name.into().into(),
             description: description.into(),
+            argument_count,
             function: Arc::new(function),
         }
     }
@@ -42,6 +74,11 @@ impl FunctionDefinition {
     /// Returns a human-readable description of the function.
     pub fn description(&self) -> &ShareableString {
         &self.description
+    }
+
+    /// Returns the parameter constraints for the function.
+    pub fn parameter_constraints(&self) -> &ArgumentCount {
+        &self.argument_count
     }
 
     /// Invokes the function with the provided pre-evaluated arguments.
@@ -64,6 +101,7 @@ impl Clone for FunctionDefinition {
         Self {
             name: self.name.clone(),
             description: self.description.clone(),
+            argument_count: self.argument_count.clone(),
             function: Arc::clone(&self.function),
         }
     }
@@ -142,6 +180,7 @@ mod tests {
         definitions.insert(FunctionDefinition::new(
             store_key!("add"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             add,
         ));
 
@@ -162,6 +201,7 @@ mod tests {
         definitions.insert(FunctionDefinition::new(
             store_key!("add"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             add,
         ));
 
@@ -181,11 +221,13 @@ mod tests {
         definitions.insert(FunctionDefinition::new(
             store_key!("add"),
             "original",
+            ArgumentCount::Unbounded,
             |_| Ok(ComputedItem::Integer(1)),
         ));
         definitions.insert(FunctionDefinition::new(
             store_key!("add"),
             "replacement",
+            ArgumentCount::Unbounded,
             |_| Ok(ComputedItem::Integer(2)),
         ));
 
@@ -203,6 +245,7 @@ mod tests {
         definitions.insert(FunctionDefinition::new(
             store_key!("add"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             add,
         ));
 
