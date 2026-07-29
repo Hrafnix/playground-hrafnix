@@ -116,6 +116,27 @@ fn test_object_definition_print() {
                             },
                         )),
                     ),
+                    (
+                        store_key!("col3"),
+                        MapItemDefinition::Table(TableDefinition::new(
+                            "C3",
+                            vec![
+                                (store_key!("col3_1"), NumberDefinition::new("C3_1")),
+                                (
+                                    store_key!("col3_2"),
+                                    NumberDefinition::new_with_constraint(
+                                        "C3_2",
+                                        NumberConstraint::Range {
+                                            min: 0.0,
+                                            max: 10.0,
+                                            min_inclusive: true,
+                                            max_inclusive: false,
+                                        },
+                                    ),
+                                ),
+                            ],
+                        )),
+                    ),
                 ],
             ),
         )
@@ -123,6 +144,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{}", def_1),
-        "Global Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── g_p3 (D3) File - default: \"\" [ext]\n    ├── g_p4 (D4) Integer - default: \"\"\n    ├── g_p5 (D5) Number - default: \"\"\n    ├── g_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        └── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n"
+        "Global Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── g_p3 (D3) File - default: \"\" [ext]\n    ├── g_p4 (D4) Integer - default: \"\"\n    ├── g_p5 (D5) Number - default: \"\"\n    ├── g_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
     );
 }
