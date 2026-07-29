@@ -9,6 +9,7 @@ use shareable_string::ShareableString;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableEditable {
     definition: TableDefinition,
+    parameter: ShareableString,
     rows: Vec<Vec<ShareableString>>,
 }
 
@@ -17,6 +18,7 @@ impl TableEditable {
     pub fn new(frozen_table: &TableFrozen) -> Self {
         Self {
             definition: frozen_table.definition().clone(),
+            parameter: frozen_table.parameter().clone(),
             rows: frozen_table.rows().to_vec(),
         }
     }
@@ -114,6 +116,16 @@ impl TableEditable {
             self.rows.pop();
         }
     }
+
+    /// Set the parameter value for the table.
+    pub fn set_parameter<S: Into<ShareableString>>(&mut self, parameter: S) {
+        self.parameter = parameter.into();
+    }
+
+    /// Returns a reference to the parameter value for the table.
+    pub fn parameter(&self) -> &ShareableString {
+        &self.parameter
+    }
 }
 
 impl PartialEq<&TableEditable> for TableEditable {
@@ -151,18 +163,22 @@ impl TreePrint for TableEditable {
         let row_count = self.rows.len();
         let column_count = self.definition.count();
 
+        writeln!(f, "{}{}data", child_prefix, Self::branch_char(false),)?;
+
+        let data_prefix = Self::child_prefix(&child_prefix, false);
+
         for (i, row) in self.rows.iter().enumerate() {
             let is_last_row = i == row_count - 1;
 
             writeln!(
                 f,
                 "{}{}Row {}",
-                child_prefix,
+                data_prefix,
                 Self::branch_char(is_last_row),
                 i
             )?;
 
-            let row_prefix = Self::child_prefix(&child_prefix, is_last_row);
+            let row_prefix = Self::child_prefix(&data_prefix, is_last_row);
 
             for (j, value) in row.iter().enumerate() {
                 let is_last_key = j == column_count - 1;
@@ -180,6 +196,15 @@ impl TreePrint for TableEditable {
                 )?;
             }
         }
+
+        writeln!(
+            f,
+            "{}{}Parameter \"{}\"",
+            child_prefix,
+            Self::branch_char(true),
+            self.parameter
+        )?;
+
         Ok(())
     }
 }

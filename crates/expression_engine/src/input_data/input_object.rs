@@ -97,9 +97,13 @@ fn item_to_input_data(
                                 string.value(),
                             ))
                         }
-                        MapItemFrozen::Table(table) => ObjectItemInputData::Table(
-                            TableInputData::new(table.definition().clone(), table.rows().to_vec()),
-                        ),
+                        MapItemFrozen::Table(table) => {
+                            ObjectItemInputData::Table(TableInputData::new(
+                                table.definition().clone(),
+                                table.parameter().clone(),
+                                table.rows().to_vec(),
+                            ))
+                        }
                     };
                     map.insert(path, input_item);
                 }
@@ -128,6 +132,7 @@ fn item_to_input_data(
                 key,
                 ObjectItemInputData::Table(TableInputData::new(
                     table.definition().clone(),
+                    table.parameter().clone(),
                     table.rows().to_vec(),
                 )),
             );

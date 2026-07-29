@@ -704,6 +704,102 @@ fn evaluate_table_expression(
     functions: &FunctionDefinitions,
     table: TableInputData,
 ) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
+    let parameter = table.parameter();
+    if !parameter.as_str().is_empty() {
+        let referenced = lookup_variable(computed_data, parameter.as_str()).map_err(|e| vec![e])?;
+        match referenced {
+            ComputedItem::Table(referenced_table) => {
+                let table_definition = table.definition();
+                if table_definition.count() != referenced_table.keys().len() {
+                    return Err(vec![ExpressionError::new(
+                        ExpressionCategory::Evaluation,
+                        format!(
+                            "Parameter '{}' references a table with {} columns, but the current table expects {} columns.",
+                            parameter,
+                            referenced_table.keys().len(),
+                            table.definition().count()
+                        ),
+                    )]);
+                }
+
+                let mut errors = Vec::new();
+
+                for row in referenced_table.rows() {
+                    for (j, data) in row.iter().enumerate() {
+                        let column_definition = table_definition
+                            .get_by_index(j)
+                            .expect("Column definition should exist for each key in the row.");
+                        match column_definition.constraint() {
+                            NumberConstraint::Min { min, inclusive } => {
+                                if *data < min || (!inclusive && *data == min) {
+                                    errors.push(ExpressionError::new(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
+                                            data, column_definition.description(), min
+                                        ),
+                                    ));
+                                }
+                            }
+                            NumberConstraint::Max { max, inclusive } => {
+                                if *data > max || (!inclusive && *data == max) {
+                                    errors.push(ExpressionError::new(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
+                                            data, column_definition.description(), max
+                                        ),
+                                    ));
+                                }
+                            }
+                            NumberConstraint::Range {
+                                min,
+                                max,
+                                min_inclusive,
+                                max_inclusive,
+                            } => {
+                                if *data < min || (!min_inclusive && *data == min) {
+                                    errors.push(ExpressionError::new(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
+                                            data, column_definition.description(), min
+                                        ),
+                                    ));
+                                }
+                                if *data > max || (!max_inclusive && *data == max) {
+                                    errors.push(ExpressionError::new(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
+                                            data, column_definition.description(), max
+                                        ),
+                                    ));
+                                }
+                            }
+                            NumberConstraint::None => {}
+                        }
+                    }
+                }
+
+                if !errors.is_empty() {
+                    return Err(errors);
+                }
+
+                return Ok(referenced_table.rows().to_vec());
+            }
+            other => {
+                return Err(vec![ExpressionError::new(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Parameter '{}' is expected to reference a table, but got {:?}.",
+                        parameter, other
+                    ),
+                )]);
+            }
+        }
+    }
+
     let definition = table.definition();
 
     let mut evaluated_rows = Vec::new();
@@ -1258,5 +1354,182 @@ mod tests {
         let message = errors[0].to_string();
         assert!(message.contains("[Evaluation]"));
         assert!(message.contains("Function 'undefined' is not defined."));
+    }
+
+    use datastore::definition::TableDefinition;
+
+    #[test]
+    fn table_parameter_test() {
+        let computed_data = BTreeMap::from([(
+            "table".into(),
+            ComputedItem::Table(ComputedTable::new(
+                vec!["a".into(), "b".into()],
+                vec![vec![5.0, 6.0], vec![7.0, 8.0]],
+            )),
+        )]);
+
+        let table_definition = TableDefinition::new(
+            "Test Table",
+            vec![
+                (store_key!("col1"), NumberDefinition::new("")),
+                (store_key!("col2"), NumberDefinition::new("")),
+            ],
+        );
+        let table_data = vec![
+            vec![ShareableString::from("1.0"), ShareableString::from("2.0")],
+            vec![ShareableString::from("3.0"), ShareableString::from("4.0")],
+        ];
+        let table_input_data = ObjectItemInputData::Table(TableInputData::new(
+            table_definition.clone(),
+            "table".into(),
+            table_data,
+        ));
+
+        let input_data = BTreeMap::from([("table".into(), table_input_data)]);
+
+        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        assert!(errors.is_empty());
+
+        if let ComputedItem::Table(computed_table) = &result["table"] {
+            assert_eq!(computed_table.rows().len(), 2);
+            assert_eq!(computed_table.rows()[0], vec![5.0, 6.0]);
+            assert_eq!(computed_table.rows()[1], vec![7.0, 8.0]);
+        } else {
+            panic!("Expected a computed table");
+        }
+    }
+
+    #[test]
+    fn table_parameter_not_found_test() {
+        // Why: A parameter that names a non-existent variable produces an error.
+        let table_definition = TableDefinition::new(
+            "Test Table",
+            vec![(store_key!("col1"), NumberDefinition::new(""))],
+        );
+        let table_input_data = ObjectItemInputData::Table(TableInputData::new(
+            table_definition,
+            "missing".into(),
+            vec![vec![ShareableString::from("1.0")]],
+        ));
+
+        let input_data = BTreeMap::from([("t".into(), table_input_data)]);
+        let (_result, errors) = evaluator(BTreeMap::new(), &FunctionDefinitions::new(), input_data);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].to_string().contains("missing"));
+    }
+
+    #[test]
+    fn table_parameter_not_a_table_test() {
+        // Why: A parameter that references a non-table computed item produces an error.
+        let computed_data = BTreeMap::from([("not_a_table".into(), ComputedItem::Float(1.0))]);
+        let table_definition = TableDefinition::new(
+            "Test Table",
+            vec![(store_key!("col1"), NumberDefinition::new(""))],
+        );
+        let table_input_data = ObjectItemInputData::Table(TableInputData::new(
+            table_definition,
+            "not_a_table".into(),
+            vec![vec![ShareableString::from("1.0")]],
+        ));
+
+        let input_data = BTreeMap::from([("t".into(), table_input_data)]);
+        let (_result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].to_string().contains("not_a_table"));
+    }
+
+    #[test]
+    fn table_parameter_mismatched_size_test() {
+        let computed_data = BTreeMap::from([(
+            "table".into(),
+            ComputedItem::Table(ComputedTable::new(
+                vec!["a".into(), "b".into(), "c".into()],
+                vec![vec![5.0, 6.0, 7.0], vec![8.0, 9.0, 10.0]],
+            )),
+        )]);
+
+        let table_definition = TableDefinition::new(
+            "Test Table",
+            vec![
+                (store_key!("col1"), NumberDefinition::new("")),
+                (store_key!("col2"), NumberDefinition::new("")),
+            ],
+        );
+        let table_data = vec![
+            vec![ShareableString::from("1.0"), ShareableString::from("2.0")],
+            vec![ShareableString::from("3.0"), ShareableString::from("4.0")],
+        ];
+        let table_input_data = ObjectItemInputData::Table(TableInputData::new(
+            table_definition.clone(),
+            "table".into(),
+            table_data,
+        ));
+
+        let input_data = BTreeMap::from([("table".into(), table_input_data)]);
+
+        let (_, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].to_string().contains("Parameter 'table' references a table with 3 columns, but the current table expects 2 columns."));
+    }
+
+    #[test]
+    fn table_parameter_constraint_test() {
+        let computed_data = BTreeMap::from([(
+            "table".into(),
+            ComputedItem::Table(ComputedTable::new(
+                vec!["a".into(), "b".into()],
+                vec![vec![5.0, 6.1], vec![8.2, 9.0]],
+            )),
+        )]);
+
+        let table_definition = TableDefinition::new(
+            "Test Table",
+            vec![
+                (
+                    store_key!("col1"),
+                    NumberDefinition::new_with_constraint(
+                        "column 1",
+                        NumberConstraint::Max {
+                            max: 5.0,
+                            inclusive: true,
+                        },
+                    ),
+                ),
+                (
+                    store_key!("col2"),
+                    NumberDefinition::new_with_constraint(
+                        "column 2",
+                        NumberConstraint::Min {
+                            min: 10.0,
+                            inclusive: true,
+                        },
+                    ),
+                ),
+            ],
+        );
+        let table_data = vec![
+            vec![ShareableString::from("1.0"), ShareableString::from("2.0")],
+            vec![ShareableString::from("3.0"), ShareableString::from("4.0")],
+        ];
+        let table_input_data = ObjectItemInputData::Table(TableInputData::new(
+            table_definition.clone(),
+            "table".into(),
+            table_data,
+        ));
+
+        let input_data = BTreeMap::from([("table".into(), table_input_data)]);
+
+        let (_, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        assert_eq!(errors.len(), 3);
+        println!("{:?}", errors);
+        assert!(errors[0].to_string().contains(
+            "Value 6.1 in column 'column 2' is less than the minimum allowed value of 10."
+        ));
+        assert!(errors[1].to_string().contains(
+            "Value 8.2 in column 'column 1' is greater than the maximum allowed value of 5."
+        ));
+        assert!(errors[2].to_string().contains(
+            "Value 9 in column 'column 2' is less than the minimum allowed value of 10."
+        ));
     }
 }
