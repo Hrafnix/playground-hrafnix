@@ -1,7 +1,7 @@
 use datastore::prelude::*;
 
 #[test]
-fn test_editable_string_roundtrip() {
+fn test_editable_string_round_trip() {
     // Why: Editable string should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = StringFrozen::new(StringDefinition::new_with_default(
         "A string parameter",
@@ -20,7 +20,7 @@ fn test_editable_string_roundtrip() {
 }
 
 #[test]
-fn test_editable_boolean_roundtrip() {
+fn test_editable_boolean_round_trip() {
     // Why: Editable boolean should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = BooleanFrozen::new(BooleanDefinition::new_with_default(
         "A boolean parameter",
@@ -38,7 +38,7 @@ fn test_editable_boolean_roundtrip() {
 }
 
 #[test]
-fn test_editable_number_roundtrip() {
+fn test_editable_number_round_trip() {
     // Why: Editable number should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = NumberFrozen::new(NumberDefinition::new_with_default(
         "A number parameter",
@@ -56,7 +56,7 @@ fn test_editable_number_roundtrip() {
 }
 
 #[test]
-fn test_editable_file_roundtrip() {
+fn test_editable_file_round_trip() {
     // Why: Editable file should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = FileFrozen::new(FileDefinition::new("A file parameter", "txt", false));
     let mut editable = frozen.thaw();
@@ -71,7 +71,7 @@ fn test_editable_file_roundtrip() {
 }
 
 #[test]
-fn test_editable_choice_roundtrip() {
+fn test_editable_choice_round_trip() {
     // Why: Editable choice should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = ChoiceFrozen::new(ChoiceDefinition::new_with_default(
         "A choice parameter",

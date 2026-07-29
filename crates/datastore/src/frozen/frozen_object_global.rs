@@ -138,7 +138,7 @@ impl GlobalObjectFrozen {
         self.hash
     }
 
-    /// Returns a reference to the parameter with the specified key, if it exists.
+    /// Returns a reference to the parameter with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemFrozen> {
         self.items.get(&key.into())
     }

@@ -1,4 +1,4 @@
-# This template contains all of the possible sections and their default values
+# This template contains all the possible sections and their default values
 
 # Note that all fields that take a lint level have these possible values:
 # * deny - An error will be produced and the check will fail
@@ -55,7 +55,7 @@ no-default-features = false
 # When outputting inclusion graphs in diagnostics that include features, this
 # option can be used to specify the depth at which feature edges will be added.
 # This option is included since the graphs can be quite large and the addition
-# of features from the crate(s) to all of the graph roots can be far too verbose.
+# of features from the crate(s) to all the graph roots can be far too verbose.
 # This option can be overridden via `--feature-depth` on the cmd line
 feature-depth = 1
 

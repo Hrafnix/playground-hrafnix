@@ -2,7 +2,7 @@ use datastore::prelude::*;
 use std::collections::BTreeMap;
 
 #[test]
-fn test_editable_map_entry_roundtrip() {
+fn test_editable_map_entry_round_trip() {
     // Why: Editable map entries should thaw from frozen, allow edits to their items, and freeze
     // back to an equivalent frozen entry reflecting those edits.
     let item_type: BTreeMap<StoreKey, MapItemDefinition> = vec![
@@ -43,7 +43,7 @@ fn test_editable_map_entry_roundtrip() {
 }
 
 #[test]
-fn test_editable_map_roundtrip() {
+fn test_editable_map_round_trip() {
     // Why: Editable maps should thaw from frozen, expose their entries, and freeze back to an
     // equivalent frozen map.
     let entry_1 = MapEntryFrozen::new_from_items(

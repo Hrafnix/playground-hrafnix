@@ -1,4 +1,4 @@
-use crate::expression::lexer::{LexarToken, Lexer};
+use crate::expression::lexer::{Lexer, LexerToken};
 use crate::{ExpressionCategory, ExpressionError};
 use std::fmt;
 
@@ -34,7 +34,7 @@ pub(crate) fn parse(lexer: &Lexer) -> Result<ParserToken, ExpressionError> {
     let result = expr_bp(&mut lexer, 0)?;
 
     match lexer.peek() {
-        LexarToken::EndOfInput => Ok(result),
+        LexerToken::EndOfInput => Ok(result),
         t => Err(ExpressionError::new(
             ExpressionCategory::Parse,
             format!(
@@ -47,13 +47,13 @@ pub(crate) fn parse(lexer: &Lexer) -> Result<ParserToken, ExpressionError> {
 
 fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
     let mut lhs = match lexer.next() {
-        LexarToken::Atom(it) => ParserToken::Atom(it),
-        LexarToken::Operator(op) if op == "(" => {
+        LexerToken::Atom(it) => ParserToken::Atom(it),
+        LexerToken::Operator(op) if op == "(" => {
             let lhs = expr_bp(lexer, 0)?;
             expect_operator(lexer, ")")?;
             lhs
         }
-        LexarToken::Operator(op) => {
+        LexerToken::Operator(op) => {
             let ((), r_bp) = prefix_binding_power(&op)?;
             let rhs = expr_bp(lexer, r_bp)?;
             ParserToken::Operator(op, vec![rhs])
@@ -71,8 +71,8 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError
 
     loop {
         let op = match lexer.peek() {
-            LexarToken::EndOfInput => break,
-            LexarToken::Operator(op) => op,
+            LexerToken::EndOfInput => break,
+            LexerToken::Operator(op) => op,
             t => {
                 return Err(ExpressionError::new(
                     ExpressionCategory::Parse,
@@ -136,7 +136,7 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError
 fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, ExpressionError> {
     let mut arguments = Vec::new();
 
-    if lexer.peek() == LexarToken::Operator(")".to_string()) {
+    if lexer.peek() == LexerToken::Operator(")".to_string()) {
         expect_operator(lexer, ")")?;
         return Ok(arguments);
     }
@@ -144,7 +144,7 @@ fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Expressio
     loop {
         arguments.push(expr_bp(lexer, 0)?);
         match lexer.peek() {
-            LexarToken::Operator(comma) if comma == "," => {
+            LexerToken::Operator(comma) if comma == "," => {
                 lexer.next();
             }
             _ => break,
@@ -158,7 +158,7 @@ fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Expressio
 /// Consumes the next token from `lexer`, returning an error if it isn't the expected operator.
 fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionError> {
     match lexer.next() {
-        LexarToken::Operator(op) if op == expected => Ok(()),
+        LexerToken::Operator(op) if op == expected => Ok(()),
         t => Err(ExpressionError::new(
             ExpressionCategory::Parse,
             format!(
@@ -171,11 +171,11 @@ fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionEr
 }
 
 /// Returns a human-readable description of `token`, suitable for use in error messages.
-fn describe_token(token: &LexarToken) -> String {
+fn describe_token(token: &LexerToken) -> String {
     match token {
-        LexarToken::Atom(s) => format!("atom '{}'", s),
-        LexarToken::Operator(s) => format!("operator '{}'", s),
-        LexarToken::EndOfInput => "end of input".to_string(),
+        LexerToken::Atom(s) => format!("atom '{}'", s),
+        LexerToken::Operator(s) => format!("operator '{}'", s),
+        LexerToken::EndOfInput => "end of input".to_string(),
     }
 }
 
@@ -274,7 +274,7 @@ mod tests {
         let s = expr("f(a + b, c * d)").unwrap();
         assert_eq!(s.to_string(), "(f (+ a b) (* c d))");
 
-        // calls can be nested, and combined with other operators
+        // calls can be nested and combined with other operators
         let s = expr("f(g(a), h())").unwrap();
         assert_eq!(s.to_string(), "(f (g a) (h))");
 
