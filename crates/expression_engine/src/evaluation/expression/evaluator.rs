@@ -392,7 +392,7 @@ fn evaluate_expression(
 
             let mut indexes = Vec::new();
             for index_expression in index {
-                // A bare identifier used as an index (e.g. the `col` in `t[0][col]`) is a
+                // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
                 // literal field name, not a reference to a variable, so it is not looked up.
                 let index_value =
                     if let Expression::Literal(Literal::String(name)) = &index_expression {
@@ -707,7 +707,7 @@ fn evaluate_table_expression(
     let parameter = table.parameter();
     if !parameter.as_str().is_empty() {
         let referenced = lookup_variable(computed_data, parameter.as_str()).map_err(|e| vec![e])?;
-        match referenced {
+        return match referenced {
             ComputedItem::Table(referenced_table) => {
                 let table_definition = table.definition();
                 if table_definition.count() != referenced_table.keys().len() {
@@ -786,18 +786,16 @@ fn evaluate_table_expression(
                     return Err(errors);
                 }
 
-                return Ok(referenced_table.rows().to_vec());
+                Ok(referenced_table.rows().to_vec())
             }
-            other => {
-                return Err(vec![ExpressionError::new(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Parameter '{}' is expected to reference a table, but got {:?}.",
-                        parameter, other
-                    ),
-                )]);
-            }
-        }
+            other => Err(vec![ExpressionError::new(
+                ExpressionCategory::Evaluation,
+                format!(
+                    "Parameter '{}' is expected to reference a table, but got {:?}.",
+                    parameter, other
+                ),
+            )]),
+        };
     }
 
     let definition = table.definition();
@@ -1252,7 +1250,7 @@ mod tests {
         Ok(ComputedItem::Float(total))
     }
 
-    /// A function with no arguments that always returns the float 42.
+    /// A function with no arguments that always returns the float value of `42.0`.
     fn constant_function(_args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         Ok(ComputedItem::Float(42.0))
     }

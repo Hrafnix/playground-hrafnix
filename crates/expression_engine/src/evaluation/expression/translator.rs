@@ -143,7 +143,7 @@ fn translate_unary(
 
 /// Translates a `ParserToken::Operator("[", ...)` into an `Index` expression.
 ///
-/// When the collection being indexed is itself an `Index` expression (i.e. this is a chained
+/// When the collection being indexed is itself an `Index` expression (i.e., this is a chained
 /// index such as `arr[0][1]`), the new index is appended to the existing `Index`'s vector of
 /// indices rather than wrapping it in another `Index` expression.
 fn translate_index(operands: &[ParserToken]) -> Result<Expression, ExpressionError> {
@@ -177,7 +177,7 @@ fn translate_call(
     })
 }
 
-/// Returns whether `name` looks like a function/variable name (i.e. what the lexer would have
+/// Returns whether `name` looks like a function/variable name (i.e., what the lexer would have
 /// produced as an `Atom`), as opposed to an operator symbol such as `+` or `!`.
 fn is_function_name(name: &str) -> bool {
     name.chars()
@@ -185,7 +185,7 @@ fn is_function_name(name: &str) -> bool {
         .is_some_and(|c| c.is_alphanumeric() || c == '_')
 }
 
-/// Returns whether `value` looks like a numeric literal (i.e. what the lexer would have
+/// Returns whether `value` looks like a numeric literal (i.e., what the lexer would have
 /// produced as an `Atom` starting with a digit or a `.`), as opposed to a variable/function
 /// name.
 fn is_numeric_literal(value: &str) -> bool {

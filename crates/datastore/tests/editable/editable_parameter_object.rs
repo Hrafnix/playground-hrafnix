@@ -1,7 +1,7 @@
 use datastore::prelude::*;
 
 #[test]
-fn test_editable_parameter_object_roundtrip() {
+fn test_editable_parameter_object_round_trip() {
     // Why: Editable parameter objects should thaw from frozen, allow item edits, and freeze back
     // to an equivalent frozen object reflecting those edits.
     let frozen = ParameterObjectFrozen::new(

@@ -1,7 +1,7 @@
 //! Integration test root module.
 //!
-//! Declares sub-modules containing tests organized by topic.
-//! Each sub-module focuses on a specific area of the crate's functionality:
+//! Declares submodules containing tests organized by topic.
+//! Each submodule focuses on a specific area of the crate's functionality:
 //!
 //! - [`definition`] – tests for datastore definition types and their builders, ensuring
 //!   they correctly represent the intended structures and parameters.

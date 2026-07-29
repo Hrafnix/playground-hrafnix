@@ -38,7 +38,7 @@ impl TableFrozen {
         s
     }
 
-    /// Creates a new `TableFrozen` from an `TableEditable`.
+    /// Creates a new `TableFrozen` from a `TableEditable`.
     pub fn new_from_editable(editable_table: &TableEditable) -> Self {
         let mut s = Self {
             definition: editable_table.definition().clone(),
@@ -50,7 +50,7 @@ impl TableFrozen {
         s
     }
 
-    /// Converts the current `TableFrozen` instance into an `TableEditable` instance.
+    /// Converts the current `TableFrozen` instance into a `TableEditable` instance.
     pub fn thaw(&self) -> TableEditable {
         TableEditable::new(self)
     }

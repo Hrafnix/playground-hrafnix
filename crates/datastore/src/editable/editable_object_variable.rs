@@ -33,12 +33,12 @@ impl VariableObjectEditable {
         VariableObjectFrozen::new_from_editable(self)
     }
 
-    /// Returns a reference to the parameter with the specified key, if it exists.
+    /// Returns a reference to the parameter with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemEditable> {
         self.items.get(&key.into())
     }
 
-    /// Returns a mutable reference to the parameter with the specified key, if it exists.
+    /// Returns a mutable reference to the parameter with the specified key if it exists.
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut ItemEditable> {
         self.items.get_mut(key.as_ref())
     }

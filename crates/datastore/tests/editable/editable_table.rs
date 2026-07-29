@@ -1,7 +1,7 @@
 use datastore::prelude::*;
 
 #[test]
-fn test_editable_table_roundtrip() {
+fn test_editable_table_round_trip() {
     // Why: Editable table should thaw from frozen, allow row edits, and freeze back correctly.
     let frozen = TableFrozen::new(TableDefinition::new(
         "A table",
