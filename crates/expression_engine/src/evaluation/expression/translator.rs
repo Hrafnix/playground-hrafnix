@@ -399,6 +399,29 @@ mod tests {
     }
 
     #[test]
+    fn translates_scientific_notation_literals() {
+        assert_eq!(
+            translate_str("1e10").unwrap(),
+            Expression::Literal(Literal::Float(1e10))
+        );
+
+        assert_eq!(
+            translate_str("1.5e-3").unwrap(),
+            Expression::Literal(Literal::Float(1.5e-3))
+        );
+
+        assert_eq!(
+            translate_str(".5e+2").unwrap(),
+            Expression::Literal(Literal::Float(0.5e2))
+        );
+
+        assert_eq!(
+            translate_str("6.022e23").unwrap(),
+            Expression::Literal(Literal::Float(6.022e23))
+        );
+    }
+
+    #[test]
     fn translates_expressions_mixing_literals_and_variables() {
         assert_eq!(translate_str("a + 1").unwrap().to_string(), "(a + 1)");
         assert_eq!(

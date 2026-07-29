@@ -1,4 +1,6 @@
-use datastore::definition::{GlobalObjectDefinition, IntegerDefinition, ParameterObjectDefinition};
+use datastore::definition::{
+    GlobalObjectDefinition, IntegerDefinition, NumberDefinition, ParameterObjectDefinition,
+};
 use datastore::frozen::{GlobalObjectFrozen, ParameterObjectFrozen};
 use datastore::{global_key, parameter_key};
 use expression_engine::engine::ExpressionEngine;
@@ -51,6 +53,31 @@ fn test_basic_data_integer_expression() {
         assert_eq!(*number, 97);
     } else {
         panic!("expected integer data");
+    }
+}
+
+#[test]
+fn test_basic_data_scientific_notation_expression() {
+    let frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_number"),
+                NumberDefinition::new_with_default("A number parameter", "1.5e2 + 2.5e1"),
+            )
+            .finish(),
+    );
+
+    let data = ParameterObjectInputData::new(frozen);
+
+    let output = ExpressionEngine::new()
+        .evaluate_parameters(data)
+        .expect("evaluation should succeed");
+
+    let number = output.get("p_number").unwrap();
+    if let ComputedItem::Float(number) = number {
+        assert!((*number - 175.0).abs() < f64::EPSILON);
+    } else {
+        panic!("expected float data");
     }
 }
 

@@ -1,4 +1,6 @@
 use crate::{ExpressionCategory, ExpressionError};
+use std::iter::Peekable;
+use std::str::Chars;
 
 /// A simple lexer for tokenizing expressions.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +18,11 @@ pub(crate) enum LexarToken {
 /// Valid Tokens for Atoms:
 /// - Alphanumeric characters (a-z, 0-9)
 /// - Underscore (_)
+///
+/// Examples of valid atoms:
+/// - Identifiers: `variable_name`, `function1`, `my_var_2`
+/// - Numbers: `123`, `45.67`, `.89`, `0.001`
+/// - Numbers in scientific notation (e.g. `1e10`, `1.5e-3`, `.5e+2`)
 ///
 /// Valid Tokens for Operators:
 /// - Operators: +, -, *, /, (, ), \[, \], ==, <, >, <=, >=, !=, &&, ||, %, ^, !, ,
@@ -70,6 +77,7 @@ impl Lexer {
                 if s == "." {
                     self.tokens.push(LexarToken::Operator(s));
                 } else {
+                    Self::consume_exponent(&mut chars, &mut s);
                     self.tokens.push(LexarToken::Atom(s));
                 }
             } else if c.is_numeric() {
@@ -82,6 +90,7 @@ impl Lexer {
                         break;
                     }
                 }
+                Self::consume_exponent(&mut chars, &mut s);
                 self.tokens.push(LexarToken::Atom(s));
             } else if c.is_alphanumeric() || c == '_' {
                 let mut s = String::new();
@@ -149,6 +158,43 @@ impl Lexer {
         self.tokens.reverse();
 
         Ok(())
+    }
+
+    /// Attempts to consume a scientific notation exponent suffix (e.g. `e10`, `e+10`, `e-10`)
+    /// from `chars` and append it to `s`. If the characters following the current position
+    /// don't form a valid exponent (i.e. `e` optionally followed by a sign and at least one
+    /// digit), `chars` and `s` are left untouched.
+    fn consume_exponent(chars: &mut Peekable<Chars<'_>>, s: &mut String) {
+        let mut lookahead = chars.clone();
+        let mut exponent = String::new();
+
+        match lookahead.peek() {
+            Some(&'e') => {
+                exponent.push(lookahead.next().expect("peeked value must be present"));
+            }
+            _ => return,
+        }
+
+        if let Some(&sign) = lookahead.peek() {
+            if sign == '+' || sign == '-' {
+                exponent.push(lookahead.next().expect("peeked value must be present"));
+            }
+        }
+
+        let mut has_digit = false;
+        while let Some(&d) = lookahead.peek() {
+            if d.is_numeric() {
+                exponent.push(lookahead.next().expect("peeked value must be present"));
+                has_digit = true;
+            } else {
+                break;
+            }
+        }
+
+        if has_digit {
+            s.push_str(&exponent);
+            *chars = lookahead;
+        }
     }
 
     pub(crate) fn next(&mut self) -> LexarToken {
@@ -402,6 +448,52 @@ mod tests {
             LexarToken::Operator(")".to_string()),
             LexarToken::Operator("/".to_string()),
             LexarToken::Atom("p_value5".to_string()),
+        ];
+
+        for expected in expected_tokens {
+            let token = lexer.next();
+            assert_eq!(token, expected);
+        }
+
+        // Ensure that the lexer returns EndOfInput after all tokens are consumed
+        assert_eq!(lexer.next(), LexarToken::EndOfInput);
+    }
+
+    #[test]
+    fn test_scientific_notation() {
+        let input = "1e10 + 1.5e-3 - .5e+2 * 6.022e23";
+        let mut lexer = Lexer::new(input).unwrap();
+
+        let expected_tokens = vec![
+            LexarToken::Atom("1e10".to_string()),
+            LexarToken::Operator("+".to_string()),
+            LexarToken::Atom("1.5e-3".to_string()),
+            LexarToken::Operator("-".to_string()),
+            LexarToken::Atom(".5e+2".to_string()),
+            LexarToken::Operator("*".to_string()),
+            LexarToken::Atom("6.022e23".to_string()),
+        ];
+
+        for expected in expected_tokens {
+            let token = lexer.next();
+            assert_eq!(token, expected);
+        }
+
+        // Ensure that the lexer returns EndOfInput after all tokens are consumed
+        assert_eq!(lexer.next(), LexarToken::EndOfInput);
+    }
+
+    #[test]
+    fn test_scientific_notation_without_digits_falls_back_to_atom() {
+        let input = "1e + 1e_value";
+        let mut lexer = Lexer::new(input).unwrap();
+
+        let expected_tokens = vec![
+            LexarToken::Atom("1".to_string()),
+            LexarToken::Atom("e".to_string()),
+            LexarToken::Operator("+".to_string()),
+            LexarToken::Atom("1".to_string()),
+            LexarToken::Atom("e_value".to_string()),
         ];
 
         for expected in expected_tokens {
