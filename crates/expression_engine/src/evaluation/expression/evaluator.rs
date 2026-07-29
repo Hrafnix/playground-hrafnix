@@ -1,5 +1,6 @@
 use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
 use crate::evaluation::expression::function_definition::FunctionDefinitions;
+use crate::expression::function_definition::ArgumentCount;
 use crate::expression::parser::parse;
 use crate::expression::translator::{Expression, Literal, Operators, translate};
 use crate::{
@@ -375,6 +376,63 @@ fn evaluate_expression(
             let mut evaluated_arguments = Vec::with_capacity(arguments.len());
             for argument in arguments {
                 evaluated_arguments.push(evaluate_expression(computed_data, functions, argument)?);
+            }
+
+            match definition.parameter_constraints() {
+                ArgumentCount::Exact { count } => {
+                    if evaluated_arguments.len() != *count {
+                        return Err(ExpressionError::new(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Function '{}' requires exactly {} arguments, got {}.",
+                                name,
+                                count,
+                                evaluated_arguments.len()
+                            ),
+                        ));
+                    }
+                }
+                ArgumentCount::Min { min } => {
+                    if evaluated_arguments.len() < *min {
+                        return Err(ExpressionError::new(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Function '{}' requires at least {} arguments, got {}.",
+                                name,
+                                min,
+                                evaluated_arguments.len()
+                            ),
+                        ));
+                    }
+                }
+                ArgumentCount::Max { max } => {
+                    if evaluated_arguments.len() > *max {
+                        return Err(ExpressionError::new(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Function '{}' allows at most {} arguments, got {}.",
+                                name,
+                                max,
+                                evaluated_arguments.len()
+                            ),
+                        ));
+                    }
+                }
+                ArgumentCount::Range { min, max } => {
+                    if evaluated_arguments.len() < *min || evaluated_arguments.len() > *max {
+                        return Err(ExpressionError::new(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Function '{}' requires between {} and {} arguments, got {}.",
+                                name,
+                                min,
+                                max,
+                                evaluated_arguments.len()
+                            ),
+                        ));
+                    }
+                }
+                ArgumentCount::Unbounded => {}
             }
 
             definition.call(&evaluated_arguments)
@@ -1260,6 +1318,7 @@ mod tests {
         let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
             store_key!("constant"),
             "returns 42",
+            ArgumentCount::Unbounded,
             constant_function,
         ));
         let input_data =
@@ -1278,6 +1337,7 @@ mod tests {
         let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
             store_key!("sum"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             sum_function,
         ));
         let input_data = BTreeMap::from([(
@@ -1295,6 +1355,7 @@ mod tests {
         let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
             store_key!("sum"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             sum_function,
         ));
         let computed_data = BTreeMap::from([("a".into(), ComputedItem::Float(1.5))]);
@@ -1311,6 +1372,7 @@ mod tests {
         let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
             store_key!("sum"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             sum_function,
         ));
         let input_data = BTreeMap::from([(
@@ -1328,6 +1390,7 @@ mod tests {
         let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
             store_key!("sum"),
             "sums its arguments",
+            ArgumentCount::Unbounded,
             sum_function,
         ));
         let input_data = BTreeMap::from([(

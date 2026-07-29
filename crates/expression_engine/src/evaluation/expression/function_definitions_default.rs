@@ -1,15 +1,9 @@
 use crate::evaluation::expression::function_definition::{FunctionDefinition, FunctionDefinitions};
+use crate::expression::function_definition::ArgumentCount;
 use crate::{ComputedItem, ExpressionError};
 use datastore::store_key;
 
 fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
-    if args.len() != 1 {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "sin function requires exactly 1 argument".to_string(),
-        ));
-    }
-
     let arg = &args[0];
 
     match arg {
@@ -22,13 +16,6 @@ fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
-    if args.len() != 1 {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "cos function requires exactly 1 argument".to_string(),
-        ));
-    }
-
     let arg = &args[0];
 
     match arg {
@@ -41,13 +28,6 @@ fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
-    if args.len() != 1 {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "tan function requires exactly 1 argument".to_string(),
-        ));
-    }
-
     let arg = &args[0];
 
     match arg {
@@ -60,13 +40,6 @@ fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
-    if args.len() != 1 {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "arcsin function requires exactly 1 argument".to_string(),
-        ));
-    }
-
     let arg = &args[0];
 
     match arg {
@@ -79,13 +52,6 @@ fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
-    if args.len() != 1 {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "arccos function requires exactly 1 argument".to_string(),
-        ));
-    }
-
     let arg = &args[0];
 
     match arg {
@@ -98,13 +64,6 @@ fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
-    if args.len() != 1 {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "arctan function requires exactly 1 argument".to_string(),
-        ));
-    }
-
     let arg = &args[0];
 
     match arg {
@@ -122,41 +81,49 @@ pub(crate) fn get_default_function_definitions() -> FunctionDefinitions {
         .with(FunctionDefinition::new(
             store_key!("sin"),
             "sine function",
+            ArgumentCount::Exact { count: 1 },
             sin,
         ))
         .with(FunctionDefinition::new(
             store_key!("cos"),
             "cosine function",
+            ArgumentCount::Exact { count: 1 },
             cos,
         ))
         .with(FunctionDefinition::new(
             store_key!("tan"),
             "tangent function",
+            ArgumentCount::Exact { count: 1 },
             tan,
         ))
         .with(FunctionDefinition::new(
             store_key!("arcsin"),
             "inverse sine function",
+            ArgumentCount::Exact { count: 1 },
             arcsin,
         ))
         .with(FunctionDefinition::new(
             store_key!("arccos"),
             "inverse cosine function",
+            ArgumentCount::Exact { count: 1 },
             arccos,
         ))
         .with(FunctionDefinition::new(
             store_key!("arctan"),
             "inverse tangent function",
+            ArgumentCount::Exact { count: 1 },
             arctan,
         ))
         .with(FunctionDefinition::new(
             store_key!("arccos"),
             "inverse cosine function",
+            ArgumentCount::Exact { count: 1 },
             arccos,
         ))
         .with(FunctionDefinition::new(
             store_key!("arctan"),
             "inverse tangent function",
+            ArgumentCount::Exact { count: 1 },
             arctan,
         ))
 }
