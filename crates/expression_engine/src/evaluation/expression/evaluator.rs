@@ -744,6 +744,10 @@ fn evaluate_basic_expression(
             // Validate that the computed value is a string
             if let ComputedItem::String(_) = &computed {
                 Ok(computed)
+            } else if let ComputedItem::Float(value) = &computed {
+                Ok(ComputedItem::String(value.to_string().into()))
+            } else if let ComputedItem::Integer(value) = &computed {
+                Ok(ComputedItem::String(value.to_string().into()))
             } else {
                 Err(ExpressionError::new(
                     ExpressionCategory::Evaluation,

@@ -5,6 +5,39 @@
 
 use eframe::egui;
 
+use datastore::prelude::*;
+use expression_engine::ParameterObjectInputData;
+use expression_engine::evaluation::engine::ExpressionEngine;
+
+fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
+    let definition = ParameterObjectDefinition::builder("Calculator Input")
+        .with(
+            parameter_key!("p_expression"),
+            StringDefinition::new_with_default("The expression to evaluate", expression),
+        )
+        .finish();
+    let frozen = ParameterObjectFrozen::new(definition);
+    let input_data = ParameterObjectInputData::new(frozen);
+
+    engine
+        .evaluate_parameters(input_data)
+        .map(|output| {
+            if let Some(result) = output.get("p_expression") {
+                result.to_string()
+            } else {
+                "No result".to_string()
+            }
+        })
+        .unwrap_or_else(|err| {
+            let err_str = err
+                .first()
+                .map(|e| e.to_string())
+                .unwrap_or_else(|| "Unknown error".to_string());
+
+            format!("Error: {err_str}")
+        })
+}
+
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
@@ -13,23 +46,26 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
 
-    // Our application state:
-    let mut name = "Arthur".to_owned();
-    let mut age = 42;
+    let engine = ExpressionEngine::new();
 
-    eframe::run_ui_native("My egui App", options, move |ui, _frame| {
+    // Our application state:
+    let mut expression = "".to_owned();
+    let mut result = "".to_owned();
+
+    eframe::run_ui_native("Calculator", options, move |ui, _frame| {
         egui::CentralPanel::default().show(ui, |ui| {
-            ui.heading("My egui Application");
+            ui.heading("Calculator");
             ui.horizontal(|ui| {
-                let name_label = ui.label("Your name: ");
-                ui.text_edit_singleline(&mut name)
-                    .labelled_by(name_label.id);
+                let expression_label = ui.label("Expression: ");
+                ui.text_edit_singleline(&mut expression)
+                    .labelled_by(expression_label.id);
             });
-            ui.add(egui::Slider::new(&mut age, 0..=120).text("age"));
-            if ui.button("Increment").clicked() {
-                age += 1;
+
+            if ui.button("Evaluate").clicked() || ui.input(|i| i.key_released(egui::Key::Enter)) {
+                result = evaluate_expression(&engine, &expression);
             }
-            ui.label(format!("Hello '{name}', age {age}"));
+
+            ui.label(result.to_string());
         });
     })
 }
