@@ -14,6 +14,7 @@ pub mod evaluation;
 /// Input data.
 pub mod input_data;
 
+use crate::expression::span::SpanSet;
 pub use computed_data::*;
 pub use evaluation::*;
 pub use input_data::*;
@@ -61,6 +62,17 @@ pub enum ExpressionCategory {
     Evaluation,
 }
 
+/// Additional, less-commonly-needed context for an `ExpressionError`. This is kept
+/// out of `ExpressionError` itself (behind a `Box`) so that `Result<T, ExpressionError>`
+/// stays small and cheap to return from functions.
+#[derive(Debug, Clone, PartialEq, Default)]
+struct ExpressionErrorContext {
+    /// The original expression that caused the error.
+    original_expression: ShareableString,
+    /// The indices in the original expression where the error occurred.
+    marks: SpanSet,
+}
+
 /// An error produced while parsing or evaluating an expression.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExpressionError {
@@ -69,6 +81,8 @@ pub struct ExpressionError {
     /// The name of the expression, parameter, or function involved.
     /// A human-readable description of the error.
     message: ShareableString,
+    /// Additional context, boxed to keep `ExpressionError` small.
+    context: Box<ExpressionErrorContext>,
 }
 
 impl ExpressionError {
@@ -77,6 +91,24 @@ impl ExpressionError {
         Self {
             category,
             message: message.into(),
+            context: Box::default(),
+        }
+    }
+
+    /// Creates a new `ExpressionError` with additional context, including the original expression and the indices where the error occurred.
+    pub(crate) fn new_complex(
+        category: ExpressionCategory,
+        message: impl Into<ShareableString>,
+        original_expression: impl Into<ShareableString>,
+        marks: SpanSet,
+    ) -> Self {
+        Self {
+            category,
+            message: message.into(),
+            context: Box::new(ExpressionErrorContext {
+                original_expression: original_expression.into(),
+                marks,
+            }),
         }
     }
 
@@ -85,13 +117,58 @@ impl ExpressionError {
         Self {
             category: self.category.clone(),
             message: store.launder(&self.message),
+            context: Box::new(ExpressionErrorContext {
+                original_expression: store.launder(&self.context.original_expression),
+                marks: self.context.marks.clone(),
+            }),
+        }
+    }
+
+    /// Builds the underline string for the error: `~` characters under each marked
+    /// span and spaces elsewhere. Returns `None` when there is no expression text or
+    /// no mark falls within it.
+    ///
+    /// Indices are interpreted as character offsets (matching how the lexer produces
+    /// them via `input.chars().enumerate()`).
+    fn underline(&self) -> Option<String> {
+        let chars: Vec<char> = self.context.original_expression.as_ref().chars().collect();
+        let len = chars.len();
+        if len == 0 || self.context.marks.is_empty() {
+            return None;
+        }
+
+        let mut line = vec![' '; len];
+        let mut any = false;
+        for mark in self.context.marks.iter() {
+            let start = mark.start().min(len);
+            let end = mark.end().min(len);
+            if start < end {
+                for i in line.iter_mut().take(end).skip(start) {
+                    *i = '~';
+                }
+                any = true;
+            }
+        }
+
+        if any {
+            Some(line.into_iter().collect::<String>().trim_end().to_owned())
+        } else {
+            None
         }
     }
 }
 
 impl fmt::Display for ExpressionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[{:?}] {}", self.category, self.message)
+        write!(
+            f,
+            "[{:?}] {}\n{}",
+            self.category, self.message, self.context.original_expression
+        )?;
+        if let Some(underline) = self.underline() {
+            write!(f, "\n{}", underline)?;
+        }
+        writeln!(f)
     }
 }
 
