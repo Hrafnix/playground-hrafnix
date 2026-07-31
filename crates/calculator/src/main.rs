@@ -65,7 +65,7 @@ fn main() -> eframe::Result {
                 result = evaluate_expression(&engine, &expression);
             }
 
-            ui.label(result.to_string());
+            ui.label(egui::RichText::new(&result).monospace());
         });
     })
 }
