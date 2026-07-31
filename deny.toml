@@ -74,6 +74,9 @@ ignore = [
     #{ id = "RUSTSEC-0000-0000", reason = "you can specify a reason the advisory is ignored" },
     #"a-crate-that-is-yanked@0.1.1", # you can also ignore yanked crate versions if you wish
     #{ crate = "a-crate-that-is-yanked@0.1.1", reason = "you can specify why you are ignoring the yanked crate" },
+    { id = "RUSTSEC-2026-0194", reason = "quick-xml 0.38.4 is pulled in transitively via zbus_xml (accesskit_unix -> egui-winit -> eframe), which pins quick-xml to ^0.38; no upgrade is possible until that constraint is relaxed upstream" },
+    { id = "RUSTSEC-2026-0195", reason = "quick-xml 0.38.4 is pulled in transitively via zbus_xml (accesskit_unix -> egui-winit -> eframe), which pins quick-xml to ^0.38; no upgrade is possible until that constraint is relaxed upstream" },
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser is unmaintained and there is no safe upgrade available; it is a transitive dependency via owned_ttf_parser -> ab_glyph -> sctk-adwaita -> winit" },
 ]
 # If this is true, then cargo deny will use the git executable to fetch advisory database.
 # If this is false, then it uses a built-in git library.
@@ -93,6 +96,13 @@ allow = [
     "Apache-2.0",
     "Unicode-3.0",
     "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "ISC",
+    "OFL-1.1",
+    "Ubuntu-font-1.0",
+    "Zlib",
 ]
 # The confidence threshold for detecting a license from license text.
 # The higher the value, the more closely the license text must be to the
