@@ -137,7 +137,7 @@ fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Expressio
     let mut arguments = Vec::new();
 
     if lexer.peek() == LexerToken::Operator(")".to_string()) {
-        expect_operator(lexer, ")")?;
+        lexer.next();
         return Ok(arguments);
     }
 
