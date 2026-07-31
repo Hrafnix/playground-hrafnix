@@ -47,13 +47,13 @@ pub(crate) fn parse(lexer: &Lexer) -> Result<ParserToken, ExpressionError> {
 
 fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
     let mut lhs = match lexer.next() {
-        LexerToken::Atom(it) => ParserToken::Atom(it),
-        LexerToken::Operator(op) if op == "(" => {
+        LexerToken::Atom(_index, value) => ParserToken::Atom(value),
+        LexerToken::Operator(_index, op) if op == "(" => {
             let lhs = expr_bp(lexer, 0)?;
             expect_operator(lexer, ")")?;
             lhs
         }
-        LexerToken::Operator(op) => {
+        LexerToken::Operator(_index, op) => {
             let ((), r_bp) = prefix_binding_power(&op)?;
             let rhs = expr_bp(lexer, r_bp)?;
             ParserToken::Operator(op, vec![rhs])
@@ -72,7 +72,7 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError
     loop {
         let op = match lexer.peek() {
             LexerToken::EndOfInput => break,
-            LexerToken::Operator(op) => op,
+            LexerToken::Operator(_index, value) => value,
             t => {
                 return Err(ExpressionError::new(
                     ExpressionCategory::Parse,
@@ -135,16 +135,17 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError
 /// Parses a comma-separated list of call arguments, up to (but not including) the closing `)`.
 fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, ExpressionError> {
     let mut arguments = Vec::new();
-
-    if lexer.peek() == LexerToken::Operator(")".to_string()) {
-        lexer.next();
-        return Ok(arguments);
+    if let LexerToken::Operator(_index, value) = lexer.peek() {
+        if value == ")" {
+            lexer.next();
+            return Ok(arguments);
+        }
     }
 
     loop {
         arguments.push(expr_bp(lexer, 0)?);
         match lexer.peek() {
-            LexerToken::Operator(comma) if comma == "," => {
+            LexerToken::Operator(_index, value) if value == "," => {
                 lexer.next();
             }
             _ => break,
@@ -158,7 +159,7 @@ fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Expressio
 /// Consumes the next token from `lexer`, returning an error if it isn't the expected operator.
 fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionError> {
     match lexer.next() {
-        LexerToken::Operator(op) if op == expected => Ok(()),
+        LexerToken::Operator(_index, value) if value == expected => Ok(()),
         t => Err(ExpressionError::new(
             ExpressionCategory::Parse,
             format!(
@@ -173,8 +174,8 @@ fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionEr
 /// Returns a human-readable description of `token`, suitable for use in error messages.
 fn describe_token(token: &LexerToken) -> String {
     match token {
-        LexerToken::Atom(s) => format!("atom '{}'", s),
-        LexerToken::Operator(s) => format!("operator '{}'", s),
+        LexerToken::Atom(_index, value) => format!("atom '{}'", value),
+        LexerToken::Operator(_index, value) => format!("operator '{}'", value),
         LexerToken::EndOfInput => "end of input".to_string(),
     }
 }
