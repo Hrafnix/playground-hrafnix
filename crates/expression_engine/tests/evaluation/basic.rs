@@ -57,6 +57,31 @@ fn test_basic_data_integer_expression() {
 }
 
 #[test]
+fn test_basic_data_implicit_multiplication_before_parenthesis() {
+    let frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_number"),
+                IntegerDefinition::new_with_default("A number parameter", "5(3 + 2)"),
+            )
+            .finish(),
+    );
+
+    let data = ParameterObjectInputData::new(frozen);
+
+    let output = ExpressionEngine::new()
+        .evaluate_parameters(data)
+        .expect("evaluation should succeed");
+
+    let number = output.get("p_number").unwrap();
+    if let ComputedItem::Integer(number) = number {
+        assert_eq!(*number, 25);
+    } else {
+        panic!("expected integer data");
+    }
+}
+
+#[test]
 fn test_basic_data_scientific_notation_expression() {
     let frozen = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
