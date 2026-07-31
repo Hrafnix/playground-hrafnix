@@ -79,6 +79,10 @@ impl Lexer {
                 } else {
                     Self::consume_exponent(&mut chars, &mut s);
                     self.tokens.push(LexerToken::Atom(s));
+
+                    if let Some(&'(') = chars.peek() {
+                        self.tokens.push(LexerToken::Operator("*".to_string()));
+                    }
                 }
             } else if c.is_numeric() {
                 let mut s = String::new();
@@ -92,6 +96,10 @@ impl Lexer {
                 }
                 Self::consume_exponent(&mut chars, &mut s);
                 self.tokens.push(LexerToken::Atom(s));
+
+                if let Some(&'(') = chars.peek() {
+                    self.tokens.push(LexerToken::Operator("*".to_string()));
+                }
             } else if c.is_alphanumeric() || c == '_' {
                 let mut s = String::new();
                 s.push(c);
@@ -439,6 +447,7 @@ mod tests {
             LexerToken::Atom("p_value2".to_string()),
             LexerToken::Operator("*".to_string()),
             LexerToken::Atom("6.0".to_string()),
+            LexerToken::Operator("*".to_string()),
             LexerToken::Operator("(".to_string()),
             LexerToken::Atom(".87".to_string()),
             LexerToken::Atom("p_value3".to_string()),
@@ -448,6 +457,34 @@ mod tests {
             LexerToken::Operator(")".to_string()),
             LexerToken::Operator("/".to_string()),
             LexerToken::Atom("p_value5".to_string()),
+        ];
+
+        for expected in expected_tokens {
+            let token = lexer.next();
+            assert_eq!(token, expected);
+        }
+
+        // Ensure that the lexer returns EndOfInput after all tokens are consumed
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn test_implicit_multiplication_before_parenthesis() {
+        let input = "5(.2(3 + 2))";
+        let mut lexer = Lexer::new(input).unwrap();
+
+        let expected_tokens = vec![
+            LexerToken::Atom("5".to_string()),
+            LexerToken::Operator("*".to_string()),
+            LexerToken::Operator("(".to_string()),
+            LexerToken::Atom(".2".to_string()),
+            LexerToken::Operator("*".to_string()),
+            LexerToken::Operator("(".to_string()),
+            LexerToken::Atom("3".to_string()),
+            LexerToken::Operator("+".to_string()),
+            LexerToken::Atom("2".to_string()),
+            LexerToken::Operator(")".to_string()),
+            LexerToken::Operator(")".to_string()),
         ];
 
         for expected in expected_tokens {
