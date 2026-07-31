@@ -2,7 +2,7 @@ use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
 use crate::evaluation::expression::function_definition::FunctionDefinitions;
 use crate::expression::function_definition::ArgumentCount;
 use crate::expression::parser::parse;
-use crate::expression::translator::{Expression, Literal, Operators, translate};
+use crate::expression::translator::{Expression, Literal, Operators, Translator, translate};
 use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
@@ -31,13 +31,17 @@ fn evaluate_expression(
     expression: Expression,
 ) -> Result<ComputedItem, ExpressionError> {
     match expression {
-        Expression::Literal(literal) => match literal {
+        Expression::Literal(_, literal) => match literal {
             Literal::Integer(value) => Ok(ComputedItem::Integer(value)),
             Literal::Float(value) => Ok(ComputedItem::Float(value)),
             Literal::String(value) => Ok(lookup_variable(computed_data, &value)?),
             Literal::Boolean(value) => Ok(ComputedItem::Boolean(value)),
         },
-        Expression::UnaryOperation { operator, operand } => {
+        Expression::UnaryOperation {
+            span: _,
+            operator,
+            operand,
+        } => {
             let operand_value = evaluate_expression(computed_data, functions, *operand)?;
             match (operator, operand_value) {
                 (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
@@ -52,6 +56,7 @@ fn evaluate_expression(
             }
         }
         Expression::BinaryOperation {
+            span: _,
             left,
             operator,
             right,
@@ -365,7 +370,11 @@ fn evaluate_expression(
                 }
             }
         }
-        Expression::FunctionCall { name, arguments } => {
+        Expression::FunctionCall {
+            span: _,
+            name,
+            arguments,
+        } => {
             let definition = functions.get(&name).ok_or_else(|| {
                 ExpressionError::new(
                     ExpressionCategory::Evaluation,
@@ -437,7 +446,11 @@ fn evaluate_expression(
 
             definition.call(&evaluated_arguments)
         }
-        Expression::Index { name, index } => {
+        Expression::Index {
+            span: _,
+            name,
+            index,
+        } => {
             if index.len() != 2 && index.len() != 4 {
                 return Err(ExpressionError::new(
                     ExpressionCategory::Evaluation,
@@ -453,7 +466,7 @@ fn evaluate_expression(
                 // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
                 // literal field name, not a reference to a variable, so it is not looked up.
                 let index_value =
-                    if let Expression::Literal(Literal::String(name)) = &index_expression {
+                    if let Expression::Literal(_, Literal::String(name)) = &index_expression {
                         if let Ok(value) = lookup_variable(computed_data, name) {
                             value
                         } else {
@@ -539,10 +552,10 @@ fn evaluate_expression(
     }
 }
 
-fn parse_str(s: &str) -> Result<Expression, ExpressionError> {
+fn parse_str(s: &str) -> Result<Translator, ExpressionError> {
     let lexer = crate::expression::lexer::Lexer::new(s)?;
-    let parser_token = parse(&lexer)?;
-    translate(parser_token.get_token().clone())
+    let parser = parse(&lexer)?;
+    translate(parser)
 }
 
 fn evaluate_basic_expression(
@@ -551,8 +564,8 @@ fn evaluate_basic_expression(
     basic: BasicInputData,
 ) -> Result<ComputedItem, ExpressionError> {
     let data = basic.data();
-    let expression = parse_str(data.as_ref())?;
-    let computed = evaluate_expression(computed_data, functions, expression)?;
+    let translation = parse_str(data.as_ref())?;
+    let computed = evaluate_expression(computed_data, functions, translation.expression().clone())?;
     match basic.definition() {
         Boolean(_boolean_definition) => {
             // Validate that the computed value is a boolean
@@ -1201,9 +1214,14 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 1.0)]]),
         )]);
 
-        let expression = parse_str("t[5]").unwrap();
+        let translation = parse_str("t[5]").unwrap();
         assert!(
-            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).is_err()
+            evaluate_expression(
+                &computed_data,
+                &FunctionDefinitions::new(),
+                translation.expression().clone()
+            )
+            .is_err()
         );
     }
 
@@ -1214,9 +1232,13 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 3.5)]]),
         )]);
 
-        let expression = parse_str("t[0][col]").unwrap();
-        let result =
-            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).unwrap();
+        let translator = parse_str("t[0][col]").unwrap();
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            translator.expression().clone(),
+        )
+        .unwrap();
 
         check_number_float(&result, 3.5);
     }
@@ -1230,7 +1252,12 @@ mod tests {
 
         let expression = parse_str("t[0][missing]").unwrap();
         assert!(
-            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).is_err()
+            evaluate_expression(
+                &computed_data,
+                &FunctionDefinitions::new(),
+                expression.expression().clone()
+            )
+            .is_err()
         );
     }
 
@@ -1241,9 +1268,14 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 1.0)], vec![("col", 2.0)]]),
         )]);
 
-        let expression = parse_str("t[col]").unwrap();
+        let translation = parse_str("t[col]").unwrap();
         assert!(
-            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).is_err()
+            evaluate_expression(
+                &computed_data,
+                &FunctionDefinitions::new(),
+                translation.expression().clone()
+            )
+            .is_err()
         );
     }
 
@@ -1287,9 +1319,13 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 1.0)], vec![("col", 9.0)]]),
         )]);
 
-        let expression = parse_str("map[key][entry][1][col]").unwrap();
-        let result =
-            evaluate_expression(&computed_data, &FunctionDefinitions::new(), expression).unwrap();
+        let translation = parse_str("map[key][entry][1][col]").unwrap();
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            translation.expression().clone(),
+        )
+        .unwrap();
 
         check_number_float(&result, 9.0);
     }

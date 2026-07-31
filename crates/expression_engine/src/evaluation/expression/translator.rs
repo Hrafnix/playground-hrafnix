@@ -1,5 +1,7 @@
-use crate::expression::parser::ParserToken;
+use crate::expression::parser::{Parser, ParserToken};
+use crate::expression::span::Span;
 use crate::{ExpressionCategory, ExpressionError};
+use shareable_string::ShareableString;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -67,21 +69,26 @@ impl fmt::Display for Operators {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Expression {
-    Literal(Literal),
+    Literal(Span, Literal),
     BinaryOperation {
+        span: Span,
+        operator_span: Span,
         left: Box<Expression>,
         operator: Operators,
         right: Box<Expression>,
     },
     UnaryOperation {
+        span: Span,
         operator: Operators,
         operand: Box<Expression>,
     },
     FunctionCall {
+        span: Span,
         name: String,
         arguments: Vec<Expression>,
     },
     Index {
+        span: Span,
         name: String,
         index: Vec<Expression>,
     },
@@ -90,16 +97,26 @@ pub(crate) enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Literal(literal) => write!(f, "{}", literal),
+            Expression::Literal(_, literal) => write!(f, "{}", literal),
             Expression::BinaryOperation {
+                span: _,
+                operator_span: _,
                 left,
                 operator,
                 right,
             } => write!(f, "({} {} {})", left, operator, right),
-            Expression::UnaryOperation { operator, operand } => {
+            Expression::UnaryOperation {
+                span: _,
+                operator,
+                operand,
+            } => {
                 write!(f, "({}{})", operator, operand)
             }
-            Expression::FunctionCall { name, arguments } => {
+            Expression::FunctionCall {
+                span: _,
+                name,
+                arguments,
+            } => {
                 let args = arguments
                     .iter()
                     .map(|arg| arg.to_string())
@@ -107,7 +124,11 @@ impl fmt::Display for Expression {
                     .join(", ");
                 write!(f, "{}({})", name, args)
             }
-            Expression::Index { name, index } => {
+            Expression::Index {
+                span: _,
+                name,
+                index,
+            } => {
                 write!(f, "{}", name)?;
                 for idx in index {
                     write!(f, "[{}]", idx)?;
@@ -118,26 +139,72 @@ impl fmt::Display for Expression {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct Translator {
+    expression: Expression,
+    source: ShareableString,
+}
+
+impl Translator {
+    pub(crate) fn new(expression: Expression, source: ShareableString) -> Self {
+        Self { expression, source }
+    }
+
+    pub(crate) fn expression(&self) -> &Expression {
+        &self.expression
+    }
+
+    pub(crate) fn source(&self) -> &ShareableString {
+        &self.source
+    }
+}
+
+/// Returns the span associated with the given expression.
+pub(crate) fn expression_span(expression: &Expression) -> Span {
+    match expression {
+        Expression::Literal(span, _) => *span,
+        Expression::BinaryOperation { span, .. } => *span,
+        Expression::UnaryOperation { span, .. } => *span,
+        Expression::FunctionCall { span, .. } => *span,
+        Expression::Index { span, .. } => *span,
+    }
+}
+
 /// Translates a binary `ParserToken::Operator` into a `BinaryOperation` expression.
 fn translate_binary(
+    span: Span,
     operands: &[ParserToken],
     operator: Operators,
 ) -> Result<Expression, ExpressionError> {
+    let left = translate_token(operands[0].clone())?;
+    let right = translate_token(operands[1].clone())?;
+    let operator_span = span;
+    let combined_span = span
+        .join(&expression_span(&left))
+        .join(&expression_span(&right));
+
     Ok(Expression::BinaryOperation {
-        left: Box::new(translate(operands[0].clone())?),
+        span: combined_span,
+        operator_span,
+        left: Box::new(left),
         operator,
-        right: Box::new(translate(operands[1].clone())?),
+        right: Box::new(right),
     })
 }
 
 /// Translates a unary `ParserToken::Operator` into a `UnaryOperation` expression.
 fn translate_unary(
+    span: Span,
     operands: &[ParserToken],
     operator: Operators,
 ) -> Result<Expression, ExpressionError> {
+    let operand = translate_token(operands[0].clone())?;
+    let combined_span = span.join(&expression_span(&operand));
+
     Ok(Expression::UnaryOperation {
+        span: combined_span,
         operator,
-        operand: Box::new(translate(operands[0].clone())?),
+        operand: Box::new(operand),
     })
 }
 
@@ -146,16 +213,28 @@ fn translate_unary(
 /// When the collection being indexed is itself an `Index` expression (i.e., this is a chained
 /// index such as `arr[0][1]`), the new index is appended to the existing `Index`'s vector of
 /// indices rather than wrapping it in another `Index` expression.
-fn translate_index(operands: &[ParserToken]) -> Result<Expression, ExpressionError> {
-    let target = translate(operands[0].clone())?;
-    let new_index = translate(operands[1].clone())?;
+fn translate_index(span: Span, operands: &[ParserToken]) -> Result<Expression, ExpressionError> {
+    let target = translate_token(operands[0].clone())?;
+    let new_index = translate_token(operands[1].clone())?;
+    let combined_span = span
+        .join(&expression_span(&target))
+        .join(&expression_span(&new_index));
 
     match target {
-        Expression::Index { name, mut index } => {
+        Expression::Index {
+            span: _,
+            name,
+            mut index,
+        } => {
             index.push(new_index);
-            Ok(Expression::Index { name, index })
+            Ok(Expression::Index {
+                span: combined_span,
+                name,
+                index,
+            })
         }
         other => Ok(Expression::Index {
+            span: combined_span,
             name: other.to_string(),
             index: vec![new_index],
         }),
@@ -165,15 +244,25 @@ fn translate_index(operands: &[ParserToken]) -> Result<Expression, ExpressionErr
 /// Translates a `ParserToken::Operator` whose head is a function name (rather than a known
 /// operator symbol) into a `FunctionCall` expression.
 fn translate_call(
+    span: Span,
     name: String,
     arguments: Vec<ParserToken>,
 ) -> Result<Expression, ExpressionError> {
+    let arguments = arguments
+        .into_iter()
+        .map(translate_token)
+        .collect::<Result<Vec<_>, _>>()?;
+    let combined_span = arguments
+        .iter()
+        .fold(span, |acc, argument| acc.join(&expression_span(argument)));
+    // Extend the span by one to account for the closing `)`, which isn't captured by any
+    // operand's span but is still part of the call's textual representation.
+    let combined_span = combined_span.join(&Span::new(combined_span.end(), 1));
+
     Ok(Expression::FunctionCall {
+        span: combined_span,
         name,
-        arguments: arguments
-            .into_iter()
-            .map(translate)
-            .collect::<Result<Vec<_>, _>>()?,
+        arguments,
     })
 }
 
@@ -197,21 +286,21 @@ fn is_numeric_literal(value: &str) -> bool {
 
 /// Translates a `ParserToken::Atom` into either a numeric `Literal` expression (when the atom
 /// looks like a number) or a `Variable` expression (otherwise).
-fn translate_atom(value: String) -> Result<Expression, ExpressionError> {
+fn translate_atom(span: Span, value: String) -> Result<Expression, ExpressionError> {
     if !is_numeric_literal(&value) {
         if let Ok(boolean) = value.parse::<bool>() {
-            return Ok(Expression::Literal(Literal::Boolean(boolean)));
+            return Ok(Expression::Literal(span, Literal::Boolean(boolean)));
         }
 
-        return Ok(Expression::Literal(Literal::String(value)));
+        return Ok(Expression::Literal(span, Literal::String(value)));
     }
 
     if let Ok(integer) = value.parse::<i64>() {
-        return Ok(Expression::Literal(Literal::Integer(integer)));
+        return Ok(Expression::Literal(span, Literal::Integer(integer)));
     }
 
     if let Ok(float) = value.parse::<f64>() {
-        return Ok(Expression::Literal(Literal::Float(float)));
+        return Ok(Expression::Literal(span, Literal::Float(float)));
     }
 
     Err(ExpressionError::new(
@@ -220,35 +309,42 @@ fn translate_atom(value: String) -> Result<Expression, ExpressionError> {
     ))
 }
 
-pub(crate) fn translate(parser_token: ParserToken) -> Result<Expression, ExpressionError> {
+fn translate_token(parser_token: ParserToken) -> Result<Expression, ExpressionError> {
     match parser_token {
-        ParserToken::Atom(_index, value) => translate_atom(value),
-        ParserToken::Operator(_index, op, operands) => match (op.as_str(), operands.len()) {
-            ("+", 1) => translate(operands[0].clone()),
-            ("-", 1) => translate_unary(&operands, Operators::Negate),
-            ("!", 1) => translate_unary(&operands, Operators::Not),
-            ("+", 2) => translate_binary(&operands, Operators::Add),
-            ("-", 2) => translate_binary(&operands, Operators::Subtract),
-            ("*", 2) => translate_binary(&operands, Operators::Multiply),
-            ("/", 2) => translate_binary(&operands, Operators::Divide),
-            ("%", 2) => translate_binary(&operands, Operators::Modulus),
-            ("^", 2) => translate_binary(&operands, Operators::Power),
-            ("==", 2) => translate_binary(&operands, Operators::Equal),
-            ("!=", 2) => translate_binary(&operands, Operators::NotEqual),
-            ("<", 2) => translate_binary(&operands, Operators::LessThan),
-            ("<=", 2) => translate_binary(&operands, Operators::LessThanOrEqual),
-            (">", 2) => translate_binary(&operands, Operators::GreaterThan),
-            (">=", 2) => translate_binary(&operands, Operators::GreaterThanOrEqual),
-            ("&&", 2) => translate_binary(&operands, Operators::And),
-            ("||", 2) => translate_binary(&operands, Operators::Or),
-            ("[", 2) => translate_index(&operands),
-            _ if is_function_name(op.as_str()) => translate_call(op, operands),
+        ParserToken::Atom(span, value) => translate_atom(span, value),
+        ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
+            ("+", 1) => translate_token(operands[0].clone()),
+            ("-", 1) => translate_unary(span, &operands, Operators::Negate),
+            ("!", 1) => translate_unary(span, &operands, Operators::Not),
+            ("+", 2) => translate_binary(span, &operands, Operators::Add),
+            ("-", 2) => translate_binary(span, &operands, Operators::Subtract),
+            ("*", 2) => translate_binary(span, &operands, Operators::Multiply),
+            ("/", 2) => translate_binary(span, &operands, Operators::Divide),
+            ("%", 2) => translate_binary(span, &operands, Operators::Modulus),
+            ("^", 2) => translate_binary(span, &operands, Operators::Power),
+            ("==", 2) => translate_binary(span, &operands, Operators::Equal),
+            ("!=", 2) => translate_binary(span, &operands, Operators::NotEqual),
+            ("<", 2) => translate_binary(span, &operands, Operators::LessThan),
+            ("<=", 2) => translate_binary(span, &operands, Operators::LessThanOrEqual),
+            (">", 2) => translate_binary(span, &operands, Operators::GreaterThan),
+            (">=", 2) => translate_binary(span, &operands, Operators::GreaterThanOrEqual),
+            ("&&", 2) => translate_binary(span, &operands, Operators::And),
+            ("||", 2) => translate_binary(span, &operands, Operators::Or),
+            ("[", 2) => translate_index(span, &operands),
+            _ if is_function_name(op.as_str()) => translate_call(span, op, operands),
             _ => Err(ExpressionError::new(
                 ExpressionCategory::Parse,
                 format!("Unsupported operator: {}", op),
             )),
         },
     }
+}
+
+pub(crate) fn translate(parser: Parser) -> Result<Translator, ExpressionError> {
+    let parser_token = parser.get_token().clone();
+    let source = parser.get_source().clone();
+
+    translate_token(parser_token).map(|expression| Translator::new(expression, source))
 }
 
 #[cfg(test)]
@@ -259,8 +355,8 @@ mod tests {
 
     fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
         let lexer = crate::expression::lexer::Lexer::new(s)?;
-        let parser_token = parse(&lexer)?;
-        translate(parser_token.get_token().clone())
+        let parser = parse(&lexer)?;
+        translate(parser).map(|translator| translator.expression().clone())
     }
 
     #[test]
@@ -318,7 +414,7 @@ mod tests {
                     ParserToken::Atom(Span::new(0, 0), "b".to_string()),
                 ],
             );
-            let err = translate(token).unwrap_err().to_string();
+            let err = translate_token(token).unwrap_err().to_string();
             assert!(err.starts_with("[Parse]"));
             assert!(err.contains(&format!("Unsupported operator: {}", op)));
         }
@@ -381,7 +477,7 @@ mod tests {
     fn translates_integer_literals() {
         assert_eq!(
             translate_str("42").unwrap(),
-            Expression::Literal(Literal::Integer(42))
+            Expression::Literal(Span::new(0, 2), Literal::Integer(42))
         );
         assert_eq!(translate_str("42").unwrap().to_string(), "42");
     }
@@ -390,13 +486,13 @@ mod tests {
     fn translates_float_literals() {
         assert_eq!(
             translate_str("2.5").unwrap(),
-            Expression::Literal(Literal::Float(2.5))
+            Expression::Literal(Span::new(0, 3), Literal::Float(2.5))
         );
         assert_eq!(translate_str("2.5").unwrap().to_string(), "2.5");
 
         assert_eq!(
             translate_str(".87").unwrap(),
-            Expression::Literal(Literal::Float(0.87))
+            Expression::Literal(Span::new(0, 3), Literal::Float(0.87))
         );
     }
 
@@ -404,22 +500,22 @@ mod tests {
     fn translates_scientific_notation_literals() {
         assert_eq!(
             translate_str("1e10").unwrap(),
-            Expression::Literal(Literal::Float(1e10))
+            Expression::Literal(Span::new(0, 4), Literal::Float(1e10))
         );
 
         assert_eq!(
             translate_str("1.5e-3").unwrap(),
-            Expression::Literal(Literal::Float(1.5e-3))
+            Expression::Literal(Span::new(0, 6), Literal::Float(1.5e-3))
         );
 
         assert_eq!(
             translate_str(".5e+2").unwrap(),
-            Expression::Literal(Literal::Float(0.5e2))
+            Expression::Literal(Span::new(0, 5), Literal::Float(0.5e2))
         );
 
         assert_eq!(
             translate_str("6.022e23").unwrap(),
-            Expression::Literal(Literal::Float(6.022e23))
+            Expression::Literal(Span::new(0, 8), Literal::Float(6.022e23))
         );
     }
 
@@ -430,5 +526,31 @@ mod tests {
             translate_str("f(1, b, 2.5)").unwrap().to_string(),
             "f(1, b, 2.5)"
         );
+    }
+
+    #[test]
+    fn function_call_span_includes_closing_parenthesis() {
+        let expr = translate_str("sin(1.0)").unwrap();
+        let span = expression_span(&expr);
+        assert_eq!(span.start(), 0);
+        assert_eq!(span.end(), 8);
+    }
+
+    #[test]
+    fn binary_operation_operator_span() {
+        let expr = translate_str("5.0*sin(3.)+1.0+1").unwrap();
+        match expr {
+            Expression::BinaryOperation {
+                span,
+                operator_span,
+                ..
+            } => {
+                assert_eq!(span.start(), 0);
+                assert_eq!(span.end(), 17);
+                assert_eq!(operator_span.start(), 15);
+                assert_eq!(operator_span.end(), 16);
+            }
+            other => panic!("expected BinaryOperation, got {:?}", other),
+        }
     }
 }
