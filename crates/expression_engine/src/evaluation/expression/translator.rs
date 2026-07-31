@@ -222,8 +222,8 @@ fn translate_atom(value: String) -> Result<Expression, ExpressionError> {
 
 pub(crate) fn translate(parser_token: ParserToken) -> Result<Expression, ExpressionError> {
     match parser_token {
-        ParserToken::Atom(value) => translate_atom(value),
-        ParserToken::Operator(op, operands) => match (op.as_str(), operands.len()) {
+        ParserToken::Atom(_index, value) => translate_atom(value),
+        ParserToken::Operator(_index, op, operands) => match (op.as_str(), operands.len()) {
             ("+", 1) => translate(operands[0].clone()),
             ("-", 1) => translate_unary(&operands, Operators::Negate),
             ("!", 1) => translate_unary(&operands, Operators::Not),
@@ -255,11 +255,12 @@ pub(crate) fn translate(parser_token: ParserToken) -> Result<Expression, Express
 mod tests {
     use super::*;
     use crate::expression::parser::parse;
+    use crate::expression::span::Span;
 
     fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
         let lexer = crate::expression::lexer::Lexer::new(s)?;
         let parser_token = parse(&lexer)?;
-        translate(parser_token)
+        translate(parser_token.get_token().clone())
     }
 
     #[test]
@@ -310,10 +311,11 @@ mod tests {
     fn unsupported_operator_returns_error() {
         for op in &["=", "&", "|"] {
             let token = ParserToken::Operator(
+                Span::new(0, 0),
                 op.to_string(),
                 vec![
-                    ParserToken::Atom("a".to_string()),
-                    ParserToken::Atom("b".to_string()),
+                    ParserToken::Atom(Span::new(0, 0), "a".to_string()),
+                    ParserToken::Atom(Span::new(0, 0), "b".to_string()),
                 ],
             );
             let err = translate(token).unwrap_err().to_string();

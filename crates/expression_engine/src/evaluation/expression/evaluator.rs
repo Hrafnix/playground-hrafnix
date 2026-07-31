@@ -542,7 +542,7 @@ fn evaluate_expression(
 fn parse_str(s: &str) -> Result<Expression, ExpressionError> {
     let lexer = crate::expression::lexer::Lexer::new(s)?;
     let parser_token = parse(&lexer)?;
-    translate(parser_token)
+    translate(parser_token.get_token().clone())
 }
 
 fn evaluate_basic_expression(
