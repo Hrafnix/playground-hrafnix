@@ -3,6 +3,52 @@ use crate::expression::function_definition::ArgumentCount;
 use crate::{ComputedItem, ExpressionError};
 use datastore::store_key;
 
+const MAX_EXACT_INTEGER_IN_F64: i64 = 9_007_199_254_740_992;
+const I64_MIN_F64: f64 = -9_223_372_036_854_775_808.0;
+const I64_MAX_F64: f64 = 9_223_372_036_854_775_807.0;
+
+fn truncated_f64_to_i64(value: f64, function_name: &str) -> Result<i64, ExpressionError> {
+    if !value.is_finite() {
+        return Err(ExpressionError::new(
+            crate::ExpressionCategory::Evaluation,
+            format!("{function_name} function argument must be finite"),
+        ));
+    }
+
+    let truncated = value.trunc();
+    if !(I64_MIN_F64..=I64_MAX_F64).contains(&truncated) {
+        return Err(ExpressionError::new(
+            crate::ExpressionCategory::Evaluation,
+            format!("{function_name} function argument is out of range for an integer"),
+        ));
+    }
+
+    format!("{truncated:.0}").parse::<i64>().map_err(|_| {
+        ExpressionError::new(
+            crate::ExpressionCategory::Evaluation,
+            format!("{function_name} function argument could not be converted to an integer"),
+        )
+    })
+}
+
+fn i64_to_f64(value: i64, function_name: &str) -> Result<f64, ExpressionError> {
+    if !(-MAX_EXACT_INTEGER_IN_F64..=MAX_EXACT_INTEGER_IN_F64).contains(&value) {
+        return Err(ExpressionError::new(
+            crate::ExpressionCategory::Evaluation,
+            format!(
+                "{function_name} function argument is too large to convert to a float without losing precision"
+            ),
+        ));
+    }
+
+    value.to_string().parse::<f64>().map_err(|_| {
+        ExpressionError::new(
+            crate::ExpressionCategory::Evaluation,
+            format!("{function_name} function argument could not be converted to a float"),
+        )
+    })
+}
+
 fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = &args[0];
 
@@ -294,7 +340,15 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = &args[0];
 
     match arg {
-        ComputedItem::String(value) => Ok(ComputedItem::Integer(value.as_str().len() as i64)),
+        ComputedItem::String(value) => {
+            let len = i64::try_from(value.as_str().len()).map_err(|_| {
+                ExpressionError::new(
+                    crate::ExpressionCategory::Evaluation,
+                    "len function result is too large to fit in an integer",
+                )
+            })?;
+            Ok(ComputedItem::Integer(len))
+        }
         _ => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "len function argument must be a string".to_string(),
@@ -305,7 +359,10 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match &args[0] {
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
-        ComputedItem::Float(value) => Ok(ComputedItem::Integer(*value as i64)),
+        ComputedItem::Float(value) => {
+            let int_value = truncated_f64_to_i64(*value, "to_int")?;
+            Ok(ComputedItem::Integer(int_value))
+        }
         _ => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "to_int function argument must be a number".to_string(),
@@ -316,7 +373,10 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match &args[0] {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(*value)),
-        ComputedItem::Integer(value) => Ok(ComputedItem::Float(*value as f64)),
+        ComputedItem::Integer(value) => {
+            let float_value = i64_to_f64(*value, "to_float")?;
+            Ok(ComputedItem::Float(float_value))
+        }
         _ => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "to_float function argument must be a number".to_string(),

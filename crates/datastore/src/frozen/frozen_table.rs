@@ -62,9 +62,14 @@ impl TableFrozen {
         h.update(&[0x01]);
         h.update(b"Table");
 
-        h.update(&(self.rows.len() as u64).to_le_bytes());
+        h.update(
+            &u64::try_from(self.rows.len())
+                .unwrap_or(u64::MAX)
+                .to_le_bytes(),
+        );
+
         for row in &self.rows {
-            h.update(&(row.len() as u64).to_le_bytes());
+            h.update(&u64::try_from(row.len()).unwrap_or(u64::MAX).to_le_bytes());
             for value in row {
                 h.update(&value.current_blake3_hash());
             }

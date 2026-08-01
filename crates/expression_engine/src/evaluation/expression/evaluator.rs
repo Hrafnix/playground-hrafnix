@@ -321,7 +321,16 @@ fn evaluate_expression(
                             }
                         }
                         Operators::Power => {
-                            Ok(ComputedItem::Integer(left_int.pow(right_int as u32)))
+                            let exponent = u32::try_from(right_int).map_err(|_| {
+                                ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    "Integer exponent must be non-negative and fit within `u32`."
+                                        .to_string(),
+                                    source.clone(),
+                                    SpanSet::from_span(operator_span),
+                                )
+                            })?;
+                            Ok(ComputedItem::Integer(left_int.pow(exponent)))
                         }
                         Operators::Equal => Ok(ComputedItem::Boolean(left_int == right_int)),
                         Operators::NotEqual => Ok(ComputedItem::Boolean(left_int != right_int)),
@@ -602,8 +611,12 @@ fn evaluate_expression(
 
                 let row_index = match index_1 {
                     ComputedItem::Integer(i) => {
-                        if *i < 0 || (*i as usize) >= table.row_count() {
-                            return Err(ExpressionError::new_complex(
+                        let size = usize::try_from(*i)
+                            .ok()
+                            .filter(|size| *size < table.row_count());
+
+                        size.ok_or_else(|| {
+                            ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
                                 format!(
                                     "Row index {} is out of bounds for a table with {} rows.",
@@ -612,9 +625,8 @@ fn evaluate_expression(
                                 ),
                                 source.clone(),
                                 SpanSet::from_span(span),
-                            ));
-                        }
-                        *i as usize
+                            )
+                        })?
                     }
                     _ => {
                         return Err(ExpressionError::new_complex(
@@ -640,7 +652,24 @@ fn evaluate_expression(
                         }
                     }
                     ComputedItem::Integer(i) => {
-                        if let Some(value) = table.get_cell(row_index, *i as usize) {
+                        let size = usize::try_from(*i)
+                            .ok()
+                            .filter(|size| *size < table.column_count());
+
+                        let size = size.ok_or_else(|| {
+                            ExpressionError::new_complex(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Column index {} is out of bounds for a table with {} columns.",
+                                    i,
+                                    table.column_count()
+                                ),
+                                source.clone(),
+                                SpanSet::from_span(span),
+                            )
+                        })?;
+
+                        if let Some(value) = table.get_cell(row_index, size) {
                             Ok(ComputedItem::Float(value))
                         } else {
                             Err(ExpressionError::new_complex(
@@ -1061,9 +1090,6 @@ fn evaluate_table_expression(
                 BasicInputData::new(Number(number_definition.clone()), basic_data.clone());
 
             match evaluate_basic_expression(computed_data, functions, basic_input_data) {
-                Ok(ComputedItem::Integer(value)) => {
-                    evaluated_row.push(value as f64);
-                }
                 Ok(ComputedItem::Float(value)) => {
                     evaluated_row.push(value);
                 }

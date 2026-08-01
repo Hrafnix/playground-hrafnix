@@ -122,7 +122,11 @@ impl GlobalObjectFrozen {
         h.update(&[0x01]);
         h.update(b"Object");
 
-        h.update(&(self.items.len() as u64).to_le_bytes());
+        h.update(
+            &u64::try_from(self.items.len())
+                .unwrap_or(u64::MAX)
+                .to_le_bytes(),
+        );
 
         for (key, item) in &self.items {
             h.update(&key.current_blake3_hash());

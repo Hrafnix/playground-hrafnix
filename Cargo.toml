@@ -49,3 +49,4 @@ broken_intra_doc_links = "warn"
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
+as_conversions = "warn"
