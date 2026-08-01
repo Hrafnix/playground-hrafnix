@@ -84,8 +84,12 @@ impl TableEditable {
         };
 
         if let Some(row_data) = self.rows.get_mut(row) {
-            row_data[column_index] = value.into();
-            Ok(())
+            if let Some(column_data) = row_data.get_mut(column_index) {
+                *column_data = value.into();
+                Ok(())
+            } else {
+                Err(StoreError::IndexNotFound)
+            }
         } else {
             Err(StoreError::IndexNotFound)
         }

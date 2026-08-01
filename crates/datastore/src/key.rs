@@ -13,6 +13,10 @@ macro_rules! const_assert {
     };
 }
 
+#[allow(
+    clippy::indexing_slicing,
+    reason = "All indexed access is guarded by explicit length and loop-bound checks."
+)]
 const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     let s_bytes = s.as_bytes();
     let prefix_bytes = prefix.as_bytes();

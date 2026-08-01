@@ -655,7 +655,24 @@ fn evaluate_expression(
                 indexes.push(index_value);
             }
 
-            let map_lookup = format!("{}[{}][{}]", name.clone(), indexes[0], indexes[1]);
+            let index_1 = indexes.first().ok_or_else(|| {
+                ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Missing first index.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )
+            })?;
+            let index_2 = indexes.get(1).ok_or_else(|| {
+                ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Missing second index.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )
+            })?;
+
+            let map_lookup = format!("{}[{}][{}]", name.clone(), index_1, index_2);
             let item = if let Ok(value) = lookup_variable(computed_data, &map_lookup, source, span)
             {
                 indexes.drain(0..2);
@@ -669,8 +686,22 @@ fn evaluate_expression(
                     return Ok(ComputedItem::Table(table));
                 }
 
-                let index_1 = &indexes[0];
-                let index_2 = &indexes[1];
+                let index_1 = indexes.first().ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        "Missing first index.".to_string(),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?;
+                let index_2 = indexes.get(1).ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        "Missing second index.".to_string(),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?;
 
                 let row_index = match index_1 {
                     ComputedItem::Integer(i) => {

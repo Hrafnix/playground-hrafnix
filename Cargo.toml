@@ -49,6 +49,7 @@ broken_intra_doc_links = "warn"
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
+indexing_slicing = "warn"
 arithmetic_side_effects = "warn"
 unreachable = "warn"
 unimplemented = "warn"
