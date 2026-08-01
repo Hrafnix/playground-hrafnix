@@ -199,7 +199,9 @@ impl Lexer {
                         ));
                     }
                 }
-                LexerToken::EndOfInput => unreachable!(),
+                // `EndOfInput` is only ever synthesized on-demand by `next()`/`peek()`
+                // when `self.tokens` is empty; it is never pushed into `self.tokens`.
+                LexerToken::EndOfInput => {}
             }
         }
 
