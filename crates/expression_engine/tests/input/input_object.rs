@@ -76,7 +76,7 @@ fn test_global_object_input_data() {
         .collect();
     let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
 
-    let input = GlobalObjectInputData::new(frozen);
+    let input = GlobalObjectInputData::new(&frozen);
     let data = input.data();
 
     // Basic items should keep their key and be exposed as `Basic` entries.
@@ -128,7 +128,7 @@ fn test_parameter_object_input_data() {
         .collect();
     let frozen = ParameterObjectFrozen::new_from_items("Test object", items);
 
-    let input = ParameterObjectInputData::new(frozen);
+    let input = ParameterObjectInputData::new(&frozen);
     let data = input.data();
 
     match data.get("p_string_field").unwrap() {
@@ -152,7 +152,7 @@ fn test_variable_object_input_data() {
         .collect();
     let frozen = VariableObjectFrozen::new_from_items("Test object", items);
 
-    let input = VariableObjectInputData::new(frozen);
+    let input = VariableObjectInputData::new(&frozen);
     let data = input.data();
 
     match data.get("v_string_field").unwrap() {
@@ -170,7 +170,7 @@ fn test_variable_object_input_data() {
 fn test_global_object_input_data_empty() {
     // Why: An object with no items should produce an empty input data map.
     let frozen = GlobalObjectFrozen::new(GlobalObjectDefinition::builder("Empty object").finish());
-    let input = GlobalObjectInputData::new(frozen);
+    let input = GlobalObjectInputData::new(&frozen);
 
     assert!(input.data().is_empty());
 }

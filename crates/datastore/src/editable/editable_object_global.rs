@@ -18,6 +18,7 @@ pub struct GlobalObjectEditable {
 
 impl GlobalObjectEditable {
     /// Creates a new `GlobalObjectEditable` from an `GlobalObjectFrozen`.
+    #[must_use]
     pub fn new_from_frozen(frozen_object: &GlobalObjectFrozen) -> Self {
         Self {
             definition: frozen_object.definition().clone(),
@@ -29,6 +30,7 @@ impl GlobalObjectEditable {
     }
 
     /// Creates a new `GlobalObjectFrozen` from this `GlobalObjectEditable`.
+    #[must_use]
     pub fn freeze(&self) -> GlobalObjectFrozen {
         GlobalObjectFrozen::new_from_editable(self)
     }
@@ -49,6 +51,7 @@ impl GlobalObjectEditable {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }

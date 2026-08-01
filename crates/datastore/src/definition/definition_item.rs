@@ -78,6 +78,7 @@ impl From<TableDefinition> for ItemDefinitionType {
 
 impl ItemDefinitionType {
     /// Returns a new `ItemDefinitionType` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             Self::Boolean(def) => Self::Boolean(def.launder(store)),

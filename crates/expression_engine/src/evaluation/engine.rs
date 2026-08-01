@@ -23,6 +23,7 @@ impl Default for ExpressionEngine {
 
 impl ExpressionEngine {
     /// Creates a new instance of the `Engine`.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             globals: GlobalObjectComputedData::new(BTreeMap::new()),
@@ -35,6 +36,10 @@ impl ExpressionEngine {
     ///
     /// Registering a function with a name that already exists replaces the previous
     /// definition.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `func`'s name is empty or only whitespace.
     pub fn register_function(&mut self, func: FunctionDefinition) -> Result<(), ExpressionError> {
         if func.name().as_str().trim().is_empty() {
             return Err(ExpressionError::new(
@@ -48,12 +53,15 @@ impl ExpressionEngine {
     }
 
     /// Evaluates the provided global input data and updates the engine's state with the computed results.
+    ///
+    /// # Errors
+    ///
+    /// Returns the list of evaluation errors encountered while evaluating `globals`.
     pub fn evaluate_globals(
         &mut self,
-        globals: GlobalObjectInputData,
+        globals: &GlobalObjectInputData,
     ) -> Result<(), Vec<ExpressionError>> {
-        let (computed_data, errors) =
-            evaluator(BTreeMap::new(), &self.functions, globals.data().clone());
+        let (computed_data, errors) = evaluator(&BTreeMap::new(), &self.functions, globals.data());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -65,15 +73,16 @@ impl ExpressionEngine {
     }
 
     /// Evaluates the provided parameters against the engine's current global state and returns the computed results.
+    ///
+    /// # Errors
+    ///
+    /// Returns the list of evaluation errors encountered while evaluating `parameters`.
     pub fn evaluate_parameters(
         &self,
-        parameters: ParameterObjectInputData,
+        parameters: &ParameterObjectInputData,
     ) -> Result<ParameterObjectComputedData, Vec<ExpressionError>> {
-        let (computed_data, errors) = evaluator(
-            self.globals.data().clone(),
-            &self.functions,
-            parameters.data().clone(),
-        );
+        let (computed_data, errors) =
+            evaluator(self.globals.data(), &self.functions, parameters.data());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -83,15 +92,19 @@ impl ExpressionEngine {
     }
 
     /// Evaluates the provided variables against the engine's current global state and returns the computed results.
+    ///
+    /// # Errors
+    ///
+    /// Returns the list of evaluation errors encountered while evaluating `variables`.
     pub fn evaluate_variables(
         &self,
-        parameters: ParameterObjectComputedData,
-        variables: VariableObjectInputData,
+        parameters: &ParameterObjectComputedData,
+        variables: &VariableObjectInputData,
     ) -> Result<VariableObjectComputedData, Vec<ExpressionError>> {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());
 
-        let (computed_data, errors) = evaluator(data, &self.functions, variables.data().clone());
+        let (computed_data, errors) = evaluator(&data, &self.functions, variables.data());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -102,17 +115,21 @@ impl ExpressionEngine {
 
     /// Extends the engine's global state with the provided parameters, variables, and global input data.
     /// This method evaluates the provided data and updates the engine's state accordingly.
+    ///
+    /// # Errors
+    ///
+    /// Returns the list of evaluation errors encountered while evaluating `globals`.
     pub fn extend_globals(
         &mut self,
-        parameters: ParameterObjectComputedData,
-        variables: VariableObjectComputedData,
-        globals: GlobalObjectInputData,
+        parameters: &ParameterObjectComputedData,
+        variables: &VariableObjectComputedData,
+        globals: &GlobalObjectInputData,
     ) -> Result<(), Vec<ExpressionError>> {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());
         data.extend(variables.data().clone());
 
-        let (computed_data, errors) = evaluator(data, &self.functions, globals.data().clone());
+        let (computed_data, errors) = evaluator(&data, &self.functions, globals.data());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -125,21 +142,21 @@ impl ExpressionEngine {
 
     /// Evaluates the provided child parameters against the engine's current global state, parameters, and variables.
     /// Returns the computed results for the child parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns the list of evaluation errors encountered while evaluating `child_parameters`.
     pub fn evaluate_child_parameters(
         &self,
-        parameters: ParameterObjectComputedData,
-        variables: VariableObjectComputedData,
-        child_parameters: ParameterObjectInputData,
+        parameters: &ParameterObjectComputedData,
+        variables: &VariableObjectComputedData,
+        child_parameters: &ParameterObjectInputData,
     ) -> Result<ParameterObjectComputedData, Vec<ExpressionError>> {
         let mut data = self.globals.data().clone();
         data.extend(parameters.data().clone());
         data.extend(variables.data().clone());
 
-        let (computed_data, errors) = evaluator(
-            data.clone(),
-            &self.functions,
-            child_parameters.data().clone(),
-        );
+        let (computed_data, errors) = evaluator(&data, &self.functions, child_parameters.data());
 
         if !errors.is_empty() {
             return Err(errors);
@@ -149,11 +166,13 @@ impl ExpressionEngine {
     }
 
     /// Returns a reference to the global computed data of the engine.
+    #[must_use]
     pub fn globals(&self) -> &GlobalObjectComputedData {
         &self.globals
     }
 
     /// Returns a reference to the registered function definitions of the engine.
+    #[must_use]
     pub fn functions(&self) -> &FunctionDefinitions {
         &self.functions
     }

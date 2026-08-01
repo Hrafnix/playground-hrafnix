@@ -85,15 +85,12 @@ impl Display for StoreError {
             StoreError::KeyEmpty => write!(f, "Invalid key: Key cannot be empty"),
             StoreError::KeyInvalidCharacter(s) => write!(
                 f,
-                "Invalid key: '{}'. Keys must only contain a-z, 0-9 and _",
-                s
+                "Invalid key: '{s}'. Keys must only contain a-z, 0-9 and _"
             ),
-            StoreError::KeyInvalidPrefix(s) => write!(
-                f,
-                "Invalid key: '{}'. Key is missing the required prefix",
-                s
-            ),
-            StoreError::KeyConflict(s) => write!(f, "Key conflict: {}", s),
+            StoreError::KeyInvalidPrefix(s) => {
+                write!(f, "Invalid key: '{s}'. Key is missing the required prefix")
+            }
+            StoreError::KeyConflict(s) => write!(f, "Key conflict: {s}"),
             StoreError::ObjectNotFound => write!(f, "Object not found"),
             StoreError::ObjectKeyAlreadyExists => write!(f, "Object key already exists"),
             StoreError::ParameterNotFound => write!(f, "Parameter not found"),
@@ -101,16 +98,16 @@ impl Display for StoreError {
             StoreError::ExpiredProxy => write!(f, "Proxy is invalid"),
             StoreError::KeyNotFound => write!(f, "Key not found"),
             StoreError::InvalidPath => write!(f, "Invalid path"),
-            StoreError::InvalidPathSegment(s) => write!(f, "Invalid path segment: {}", s),
+            StoreError::InvalidPathSegment(s) => write!(f, "Invalid path segment: {s}"),
             StoreError::IndexNotFound => write!(f, "Index not found"),
             StoreError::UndoNotAvailable => write!(f, "Undo not available"),
             StoreError::RedoNotAvailable => write!(f, "Redo not available"),
-            StoreError::SerializationError(s) => write!(f, "Serialization error: {}", s),
-            StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {}", s),
+            StoreError::SerializationError(s) => write!(f, "Serialization error: {s}"),
+            StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {s}"),
             StoreError::NestedContainerNotSupported => {
                 write!(f, "Nested containers are not supported in this context")
             }
-            StoreError::MissingSchema(s) => write!(f, "Missing schema: {}", s),
+            StoreError::MissingSchema(s) => write!(f, "Missing schema: {s}"),
         }
     }
 }

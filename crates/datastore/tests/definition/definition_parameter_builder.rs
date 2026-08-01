@@ -169,7 +169,7 @@ fn test_parameter_object_definition_inherit() {
         .finish();
 
     let child_def = ParameterObjectDefinitionBuilder::new("Child")
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .with(
             ParameterKey::new("p_c1".into()).unwrap(),
             StringDefinition::new("D2"),
@@ -200,7 +200,7 @@ fn test_parameter_object_definition_inherit_overwrite() {
             ParameterKey::new("p_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .finish();
 
     assert_eq!(child_def.count(), 1);
@@ -221,7 +221,7 @@ fn test_parameter_object_definition_inherit_with_check() {
             ParameterKey::new("p_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Ok(_)));
 
@@ -248,7 +248,7 @@ fn test_parameter_object_definition_inherit_with_check_error() {
             ParameterKey::new("p_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Err(StoreError::KeyConflict(_))));
 }

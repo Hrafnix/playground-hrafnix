@@ -14,6 +14,7 @@ pub struct FileFrozen {
 
 impl FileFrozen {
     /// Creates a new `FileFrozen` instance.
+    #[must_use]
     pub fn new(definition: FileDefinition) -> Self {
         let value = definition.default_value();
 
@@ -27,6 +28,7 @@ impl FileFrozen {
     }
 
     /// Creates a new `FileFrozen` instance with a specified value.
+    #[must_use]
     pub fn new_with_value(definition: FileDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -38,6 +40,7 @@ impl FileFrozen {
     }
 
     /// Creates a new `FileFrozen` instance from a given `FileEditable` value.
+    #[must_use]
     pub fn new_from_editable(basic: &FileEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value().clone();
@@ -51,6 +54,7 @@ impl FileFrozen {
     }
 
     /// Converts the current `FileFrozen` instance into a `FileEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> FileEditable {
         FileEditable::new(self)
     }
@@ -69,16 +73,19 @@ impl FileFrozen {
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the file definition.
+    #[must_use]
     pub fn definition(&self) -> &FileDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }

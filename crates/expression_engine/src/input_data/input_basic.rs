@@ -17,16 +17,19 @@ impl BasicInputData {
     }
 
     /// Returns a reference to the definition of the basic input data.
+    #[must_use]
     pub fn definition(&self) -> &BasicDefinition {
         &self.definition
     }
 
     /// Returns a reference to the data of the basic input data.
+    #[must_use]
     pub fn data(&self) -> &ShareableString {
         &self.data
     }
 
     /// Returns a new `BasicInputData` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             definition: self.definition.launder(store),

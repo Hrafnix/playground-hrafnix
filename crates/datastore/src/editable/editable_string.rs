@@ -13,6 +13,7 @@ pub struct StringEditable {
 
 impl StringEditable {
     /// Creates a new `StringEditable` instance from a given `StringFrozen` value.
+    #[must_use]
     pub fn new(frozen_string: &StringFrozen) -> Self {
         Self {
             definition: frozen_string.definition().clone(),
@@ -21,21 +22,25 @@ impl StringEditable {
     }
 
     /// Converts the current `StringEditable` instance into a `StringFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> StringFrozen {
         StringFrozen::new_from_editable(self)
     }
 
     /// Creates a new `StringEditable` instance with a specified value.
+    #[must_use]
     pub fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
         Self { definition, value }
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the string definition.
+    #[must_use]
     pub fn definition(&self) -> &StringDefinition {
         &self.definition
     }

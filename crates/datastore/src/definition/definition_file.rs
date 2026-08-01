@@ -22,7 +22,7 @@ impl FileDefinition {
             description: description.into(),
             extension_filter: extension_filter.into(),
             bundle_on_archive,
-            default_value: Default::default(),
+            default_value: ShareableString::default(),
         }
     }
 
@@ -46,21 +46,25 @@ impl FileDefinition {
     }
 
     /// Returns the extension filter.
+    #[must_use]
     pub fn extension_filter(&self) -> ShareableString {
         self.extension_filter.clone()
     }
 
     /// Returns a reference to the extension filter.
+    #[must_use]
     pub fn extension_filter_ref(&self) -> &ShareableString {
         &self.extension_filter
     }
 
     /// Returns whether the file should be bundled on archive.
+    #[must_use]
     pub fn bundle_on_archive(&self) -> bool {
         self.bundle_on_archive
     }
 
     /// Returns a new `FileDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -71,21 +75,25 @@ impl FileDefinition {
     }
 
     /// Returns the description of the parameter.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the default value of the parameter.
+    #[must_use]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
 
     /// Returns a reference to the default value.
+    #[must_use]
     pub fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }

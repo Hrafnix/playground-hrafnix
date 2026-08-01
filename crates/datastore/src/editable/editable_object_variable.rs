@@ -18,6 +18,7 @@ pub struct VariableObjectEditable {
 
 impl VariableObjectEditable {
     /// Creates a new `VariableObjectEditable` from a `VariableObjectFrozen`.
+    #[must_use]
     pub fn new_from_frozen(frozen_object: &VariableObjectFrozen) -> Self {
         Self {
             definition: frozen_object.definition().clone(),
@@ -29,6 +30,7 @@ impl VariableObjectEditable {
     }
 
     /// Creates a new `VariableObjectFrozen` from this `VariableObjectEditable`.
+    #[must_use]
     pub fn freeze(&self) -> VariableObjectFrozen {
         VariableObjectFrozen::new_from_editable(self)
     }
@@ -49,6 +51,7 @@ impl VariableObjectEditable {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &VariableObjectDefinition {
         &self.definition
     }

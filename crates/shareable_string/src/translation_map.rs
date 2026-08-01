@@ -1,6 +1,7 @@
 use crate::{ShareableString, SharedStringStore};
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::hash::RandomState;
 use std::sync::Arc;
 
 /// A thread-safe map for storing translations of `ShareableString`s.
@@ -62,6 +63,7 @@ impl SharedStringTranslationMap {
     }
 
     /// Returns the fallback language.
+    #[must_use]
     pub fn get_fallback_language(&self) -> &ShareableString {
         &self.fallback_language
     }
@@ -95,7 +97,8 @@ impl SharedStringTranslationMap {
         V2: Into<ShareableString> + AsRef<str> + Clone,
     {
         let interned_key = self.store.launder(key);
-        let mut interned_data = HashMap::with_capacity_and_hasher(data.len(), Default::default());
+        let mut interned_data =
+            HashMap::with_capacity_and_hasher(data.len(), RandomState::default());
         for (lang, translation) in data {
             let interned_lang = self.store.launder(lang.clone());
             let interned_translation = self.store.launder(translation.clone());
@@ -110,7 +113,7 @@ impl SharedStringTranslationMap {
     /// For each key-value pair in the provided map's data, it sets the key and its
     /// respective translations into the current map. The operation launders all keys
     /// and translations into the current map's store.
-    pub fn insert_translation_map(&mut self, translation_map: Self) {
+    pub fn insert_translation_map(&mut self, translation_map: &Self) {
         let read_lock = translation_map.data.read();
         for (key, translations) in read_lock.iter() {
             self.set_translation_key(key.clone(), translations.clone());
@@ -127,6 +130,7 @@ pub struct TranslateMessage {
 
 impl TranslateMessage {
     /// Creates a new `TranslateMessage` with the given message key and parameters.
+    #[must_use]
     pub fn new(
         message_key: ShareableString,
         message_params: HashMap<ShareableString, ShareableString>,
@@ -138,6 +142,7 @@ impl TranslateMessage {
     }
 
     /// Translates the message using the given translation map and language.
+    #[must_use]
     pub fn translate(
         &self,
         translation_map: &SharedStringTranslationMap,
@@ -147,6 +152,7 @@ impl TranslateMessage {
     }
 
     /// Launders the message key and parameters using the provided `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         TranslateMessage {
             message_key: store.launder(&self.message_key),

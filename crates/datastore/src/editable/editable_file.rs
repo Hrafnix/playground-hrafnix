@@ -13,6 +13,7 @@ pub struct FileEditable {
 
 impl FileEditable {
     /// Creates a new `FileEditable` instance from a given `FileFrozen` value.
+    #[must_use]
     pub fn new(frozen_file: &FileFrozen) -> Self {
         Self {
             definition: frozen_file.definition().clone(),
@@ -21,16 +22,19 @@ impl FileEditable {
     }
 
     /// Converts the current `FileEditable` instance into a `FileFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> FileFrozen {
         FileFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the file definition.
+    #[must_use]
     pub fn definition(&self) -> &FileDefinition {
         &self.definition
     }

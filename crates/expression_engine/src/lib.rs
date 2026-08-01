@@ -39,6 +39,7 @@ pub enum BasicDefinition {
 
 impl BasicDefinition {
     /// Returns a new `BasicDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             BasicDefinition::Boolean(boolean) => BasicDefinition::Boolean(boolean.launder(store)),
@@ -113,6 +114,7 @@ impl ExpressionError {
     }
 
     /// Returns a new `ExpressionError` with the message laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             category: self.category.clone(),
@@ -166,7 +168,7 @@ impl fmt::Display for ExpressionError {
             self.category, self.message, self.context.original_expression
         )?;
         if let Some(underline) = self.underline() {
-            write!(f, "\n{}", underline)?;
+            write!(f, "\n{underline}")?;
         }
         writeln!(f)
     }

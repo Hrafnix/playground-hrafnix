@@ -20,6 +20,7 @@ pub struct ParameterObjectFrozen {
 
 impl ParameterObjectFrozen {
     /// Creates a new `ParameterObjectFrozen` with a definition.
+    #[must_use]
     pub fn new(definition: ParameterObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -96,6 +97,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Creates a new `ParameterObjectFrozen` from a given `ParameterObjectEditable` value.
+    #[must_use]
     pub fn new_from_editable(editable_object: &ParameterObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -112,6 +114,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Converts the current `ParameterObjectFrozen` instance into a `ParameterObjectEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> ParameterObjectEditable {
         ParameterObjectEditable::new_from_frozen(self)
     }
@@ -138,6 +141,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
@@ -153,6 +157,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }

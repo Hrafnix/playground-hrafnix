@@ -23,11 +23,13 @@ impl TableInputData {
     }
 
     /// Returns a reference to the definition of the table input data.
+    #[must_use]
     pub fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
     /// Returns a reference to the data of the table input data.
+    #[must_use]
     pub fn data(&self) -> &[Vec<ShareableString>] {
         &self.data
     }
@@ -36,11 +38,13 @@ impl TableInputData {
     ///
     /// When non-empty, this name is bound to the current row index while each
     /// row's cell expressions are evaluated.
+    #[must_use]
     pub fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
 
     /// Returns a new `TableInputData` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &shareable_string::SharedStringStore) -> Self {
         let laundered_definition = self.definition.launder(store);
         let laundered_data = self

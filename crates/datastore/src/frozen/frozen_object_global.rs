@@ -20,6 +20,7 @@ pub struct GlobalObjectFrozen {
 
 impl GlobalObjectFrozen {
     /// Creates a new `GlobalObjectFrozen` with a definition.
+    #[must_use]
     pub fn new(definition: GlobalObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -96,6 +97,7 @@ impl GlobalObjectFrozen {
     }
 
     /// Creates a new `GlobalObjectFrozen` from a given `GlobalObjectEditable` value.
+    #[must_use]
     pub fn new_from_editable(editable_object: &GlobalObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -112,6 +114,7 @@ impl GlobalObjectFrozen {
     }
 
     /// Converts the current `GlobalObjectFrozen` instance into an `GlobalObjectEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> GlobalObjectEditable {
         GlobalObjectEditable::new_from_frozen(self)
     }
@@ -138,6 +141,7 @@ impl GlobalObjectFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
@@ -153,6 +157,7 @@ impl GlobalObjectFrozen {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }

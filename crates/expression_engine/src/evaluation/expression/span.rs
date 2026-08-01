@@ -67,7 +67,7 @@ impl SpanSet {
     }
 
     fn sort_and_merge(&mut self) {
-        self.indices.sort_by_key(|index| index.start());
+        self.indices.sort_by_key(Span::start);
         let mut merged_indices: Vec<Span> = Vec::new();
         for index in &self.indices {
             if let Some(last) = merged_indices.last_mut() {

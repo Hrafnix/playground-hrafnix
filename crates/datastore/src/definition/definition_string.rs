@@ -14,7 +14,7 @@ impl StringDefinition {
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
-            default_value: Default::default(),
+            default_value: ShareableString::default(),
         }
     }
 
@@ -30,6 +30,7 @@ impl StringDefinition {
     }
 
     /// Returns a new `StringDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -38,21 +39,25 @@ impl StringDefinition {
     }
 
     /// Returns the description of the parameter.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the default value of the parameter.
+    #[must_use]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
 
     /// Returns a reference to the default value.
+    #[must_use]
     pub fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }

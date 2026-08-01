@@ -14,6 +14,7 @@ pub struct NumberFrozen {
 
 impl NumberFrozen {
     /// Creates a new `NumberFrozen` instance.
+    #[must_use]
     pub fn new(definition: NumberDefinition) -> Self {
         let value = definition.default_value();
 
@@ -27,6 +28,7 @@ impl NumberFrozen {
     }
 
     /// Creates a new `NumberFrozen` instance with a specified value.
+    #[must_use]
     pub fn new_with_value(definition: NumberDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -38,6 +40,7 @@ impl NumberFrozen {
     }
 
     /// Creates a new `NumberFrozen` instance from a given `NumberEditable` value.
+    #[must_use]
     pub fn new_from_editable(basic: &NumberEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value().clone();
@@ -51,6 +54,7 @@ impl NumberFrozen {
     }
 
     /// Converts the current `NumberFrozen` instance into a `NumberEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> NumberEditable {
         NumberEditable::new(self)
     }
@@ -69,16 +73,19 @@ impl NumberFrozen {
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the number definition.
+    #[must_use]
     pub fn definition(&self) -> &NumberDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }

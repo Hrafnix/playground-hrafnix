@@ -35,6 +35,7 @@ impl TableDefinition {
     }
 
     /// Returns the description of the table.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -62,6 +63,7 @@ impl TableDefinition {
     }
 
     /// Returns a reference to the column definition for the specified index.
+    #[must_use]
     pub fn get_by_index(&self, index: usize) -> Option<&NumberDefinition> {
         self.ordered_keys
             .get(index)
@@ -80,11 +82,13 @@ impl TableDefinition {
     }
 
     /// Returns true if the table contains a column with the specified key string.
+    #[must_use]
     pub fn contains_key_str(&self, key: &str) -> bool {
         self.columns.contains_key(key)
     }
 
     /// Returns a reference to the column definition for the specified key string.
+    #[must_use]
     pub fn get_str(&self, key: &str) -> Option<&NumberDefinition> {
         self.columns.get(key)
     }
@@ -102,16 +106,19 @@ impl TableDefinition {
     }
 
     /// Returns the number of columns in the table.
+    #[must_use]
     pub fn count(&self) -> usize {
         self.columns.len()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns a new `TableDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),

@@ -148,7 +148,7 @@ fn test_variable_object_definition_inherit() {
         .finish();
 
     let child_def = VariableObjectDefinitionBuilder::new("Child")
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .with(
             VariableKey::new("v_c1".into()).unwrap(),
             StringDefinition::new("D2"),
@@ -179,7 +179,7 @@ fn test_variable_object_definition_inherit_overwrite() {
             VariableKey::new("v_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .finish();
 
     assert_eq!(child_def.count(), 1);
@@ -200,7 +200,7 @@ fn test_variable_object_definition_inherit_with_check() {
             VariableKey::new("v_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Ok(_)));
 
@@ -227,7 +227,7 @@ fn test_variable_object_definition_inherit_with_check_error() {
             VariableKey::new("v_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Err(StoreError::KeyConflict(_))));
 }

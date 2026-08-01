@@ -15,10 +15,10 @@ pub(crate) enum Literal {
 impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Literal::Integer(value) => write!(f, "{}", value),
-            Literal::Float(value) => write!(f, "{}", value),
-            Literal::String(value) => write!(f, "{}", value),
-            Literal::Boolean(value) => write!(f, "{}", value),
+            Literal::Integer(value) => write!(f, "{value}"),
+            Literal::Float(value) => write!(f, "{value}"),
+            Literal::String(value) => write!(f, "{value}"),
+            Literal::Boolean(value) => write!(f, "{value}"),
         }
     }
 }
@@ -47,12 +47,11 @@ impl fmt::Display for Operators {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let symbol = match self {
             Operators::Add => "+",
-            Operators::Subtract => "-",
+            Operators::Subtract | Operators::Negate => "-",
             Operators::Multiply => "*",
             Operators::Divide => "/",
             Operators::Modulus => "%",
             Operators::Power => "^",
-            Operators::Negate => "-",
             Operators::Equal => "==",
             Operators::NotEqual => "!=",
             Operators::LessThan => "<",
@@ -63,7 +62,7 @@ impl fmt::Display for Operators {
             Operators::Or => "||",
             Operators::Not => "!",
         };
-        write!(f, "{}", symbol)
+        write!(f, "{symbol}")
     }
 }
 
@@ -97,20 +96,20 @@ pub(crate) enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Literal(_, literal) => write!(f, "{}", literal),
+            Expression::Literal(_, literal) => write!(f, "{literal}"),
             Expression::BinaryOperation {
                 span: _,
                 operator_span: _,
                 left,
                 operator,
                 right,
-            } => write!(f, "({} {} {})", left, operator, right),
+            } => write!(f, "({left} {operator} {right})"),
             Expression::UnaryOperation {
                 span: _,
                 operator,
                 operand,
             } => {
-                write!(f, "({}{})", operator, operand)
+                write!(f, "({operator}{operand})")
             }
             Expression::FunctionCall {
                 span: _,
@@ -119,19 +118,19 @@ impl fmt::Display for Expression {
             } => {
                 let args = arguments
                     .iter()
-                    .map(|arg| arg.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
-                write!(f, "{}({})", name, args)
+                write!(f, "{name}({args})")
             }
             Expression::Index {
                 span: _,
                 name,
                 index,
             } => {
-                write!(f, "{}", name)?;
+                write!(f, "{name}")?;
                 for idx in index {
-                    write!(f, "[{}]", idx)?;
+                    write!(f, "[{idx}]")?;
                 }
                 Ok(())
             }
@@ -162,11 +161,11 @@ impl Translator {
 /// Returns the span associated with the given expression.
 pub(crate) fn expression_span(expression: &Expression) -> Span {
     match expression {
-        Expression::Literal(span, _) => *span,
-        Expression::BinaryOperation { span, .. } => *span,
-        Expression::UnaryOperation { span, .. } => *span,
-        Expression::FunctionCall { span, .. } => *span,
-        Expression::Index { span, .. } => *span,
+        Expression::Literal(span, _)
+        | Expression::BinaryOperation { span, .. }
+        | Expression::UnaryOperation { span, .. }
+        | Expression::FunctionCall { span, .. }
+        | Expression::Index { span, .. } => *span,
     }
 }
 
@@ -362,7 +361,7 @@ fn translate_atom(span: Span, value: String) -> Result<Expression, ExpressionErr
 
     Err(ExpressionError::new(
         ExpressionCategory::Parse,
-        format!("Invalid numeric literal: {}", value),
+        format!("Invalid numeric literal: {value}"),
     ))
 }
 
@@ -404,13 +403,13 @@ fn translate_token(
             _ if is_function_name(op.as_str()) => translate_call(span, op, operands, source),
             _ => Err(ExpressionError::new(
                 ExpressionCategory::Parse,
-                format!("Unsupported operator: {}", op),
+                format!("Unsupported operator: {op}"),
             )),
         },
     }
 }
 
-pub(crate) fn translate(parser: Parser) -> Result<Translator, ExpressionError> {
+pub(crate) fn translate(parser: &Parser) -> Result<Translator, ExpressionError> {
     let parser_token = parser.get_token().clone();
     let source = parser.get_source().clone();
 
@@ -426,7 +425,7 @@ mod tests {
     fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
         let lexer = crate::expression::lexer::Lexer::new(s)?;
         let parser = parse(&lexer)?;
-        translate(parser).map(|translator| translator.expression().clone())
+        translate(&parser).map(|translator| translator.expression().clone())
     }
 
     #[test]

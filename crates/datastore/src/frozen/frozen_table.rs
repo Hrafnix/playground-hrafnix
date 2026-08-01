@@ -15,6 +15,7 @@ pub struct TableFrozen {
 
 impl TableFrozen {
     /// Creates a new `TableFrozen` with a definition.
+    #[must_use]
     pub fn new(definition: TableDefinition) -> Self {
         let mut s = Self {
             definition,
@@ -27,6 +28,7 @@ impl TableFrozen {
     }
 
     /// Creates a new `TableFrozen` with a definition and rows.
+    #[must_use]
     pub fn new_from_rows(definition: TableDefinition, rows: Vec<Vec<ShareableString>>) -> Self {
         let mut s = Self {
             definition,
@@ -39,6 +41,7 @@ impl TableFrozen {
     }
 
     /// Creates a new `TableFrozen` from a `TableEditable`.
+    #[must_use]
     pub fn new_from_editable(editable_table: &TableEditable) -> Self {
         let mut s = Self {
             definition: editable_table.definition().clone(),
@@ -51,6 +54,7 @@ impl TableFrozen {
     }
 
     /// Converts the current `TableFrozen` instance into a `TableEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> TableEditable {
         TableEditable::new(self)
     }
@@ -80,6 +84,7 @@ impl TableFrozen {
     }
 
     /// Returns the value of a cell by row and column index.
+    #[must_use]
     pub fn cell_by_index(&self, row: usize, column: usize) -> Option<&ShareableString> {
         self.rows.get(row)?.get(column)
     }
@@ -97,36 +102,43 @@ impl TableFrozen {
     }
 
     /// Returns the row at the specified index.
+    #[must_use]
     pub fn row(&self, row: usize) -> Option<&Vec<ShareableString>> {
         self.rows.get(row)
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the table.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
     /// Returns a reference to all rows in the table.
+    #[must_use]
     pub fn rows(&self) -> &[Vec<ShareableString>] {
         &self.rows
     }
 
     /// Returns a reference to the table definition.
+    #[must_use]
     pub fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
     /// Returns the number of rows in the table.
+    #[must_use]
     pub fn row_count(&self) -> usize {
         self.rows.len()
     }
 
     /// Returns the number of columns in the table.
+    #[must_use]
     pub fn column_count(&self) -> usize {
         self.definition.count()
     }
 
     /// Returns a reference to the parameter value for the table.
+    #[must_use]
     pub fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
@@ -164,7 +176,7 @@ impl TreePrint for TableFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        writeln!(f, "{}{}data", child_prefix, Self::branch_char(false),)?;
+        writeln!(f, "{}{}data", child_prefix, Self::branch_char(false))?;
 
         let data_prefix = Self::child_prefix(&child_prefix, false);
 

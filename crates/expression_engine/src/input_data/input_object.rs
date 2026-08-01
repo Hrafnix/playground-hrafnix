@@ -70,8 +70,7 @@ fn item_to_input_data(
             // item, addressed by a `key[entry][field]` path.
             for (entry_key, entry) in item_map.iter() {
                 for (item_key, map_item) in entry.iter() {
-                    let path: ShareableString =
-                        format!("{}[{}][{}]", key, entry_key, item_key).into();
+                    let path: ShareableString = format!("{key}[{entry_key}][{item_key}]").into();
                     let input_item = match map_item {
                         MapItemFrozen::Choice(choice) => {
                             ObjectItemInputData::Basic(BasicInputData::new(
@@ -149,7 +148,8 @@ pub struct GlobalObjectInputData {
 
 impl GlobalObjectInputData {
     /// Creates a new `GlobalObjectInputData` instance from the given `GlobalObjectFrozen`.
-    pub fn new(frozen_data: GlobalObjectFrozen) -> Self {
+    #[must_use]
+    pub fn new(frozen_data: &GlobalObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_input_data(&mut data, key.into(), item);
@@ -158,6 +158,7 @@ impl GlobalObjectInputData {
     }
 
     /// Returns a reference to the underlying `ObjectInputData`.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
@@ -172,7 +173,8 @@ pub struct ParameterObjectInputData {
 
 impl ParameterObjectInputData {
     /// Creates a new `ParameterObjectInputData` instance from the given `ParameterObjectFrozen`.
-    pub fn new(frozen_data: ParameterObjectFrozen) -> Self {
+    #[must_use]
+    pub fn new(frozen_data: &ParameterObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_input_data(&mut data, key.into(), item);
@@ -181,6 +183,7 @@ impl ParameterObjectInputData {
     }
 
     /// Returns a reference to the underlying `ObjectInputData`.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
@@ -195,7 +198,8 @@ pub struct VariableObjectInputData {
 
 impl VariableObjectInputData {
     /// Creates a new `VariableObjectInputData` instance from the given `VariableObjectFrozen`.
-    pub fn new(frozen_data: VariableObjectFrozen) -> Self {
+    #[must_use]
+    pub fn new(frozen_data: &VariableObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_input_data(&mut data, key.into(), item);
@@ -204,6 +208,7 @@ impl VariableObjectInputData {
     }
 
     /// Returns a reference to the underlying `ObjectInputData`.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }

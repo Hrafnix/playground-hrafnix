@@ -48,7 +48,7 @@ impl IntegerDefinition {
         Self {
             description: description.into(),
             constraint: IntegerConstraint::None,
-            default_value: Default::default(),
+            default_value: ShareableString::default(),
         }
     }
 
@@ -72,7 +72,7 @@ impl IntegerDefinition {
         Self {
             description: description.into(),
             constraint,
-            default_value: Default::default(),
+            default_value: ShareableString::default(),
         }
     }
 
@@ -90,16 +90,19 @@ impl IntegerDefinition {
     }
 
     /// Returns the constraint.
+    #[must_use]
     pub fn constraint(&self) -> IntegerConstraint {
         self.constraint.clone()
     }
 
     /// Returns a reference to the constraint.
+    #[must_use]
     pub fn constraint_ref(&self) -> &IntegerConstraint {
         &self.constraint
     }
 
     /// Returns a new `IntegerDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -109,21 +112,25 @@ impl IntegerDefinition {
     }
 
     /// Returns the description of the parameter.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the default value of the parameter.
+    #[must_use]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
 
     /// Returns a reference to the default value.
+    #[must_use]
     pub fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
@@ -182,7 +189,7 @@ impl TreePrint for IntegerDefinition {
                 };
                 format!(" [Range({}, {}, {}, {})]", *min, *max, min_type, max_type)
             }
-            IntegerConstraint::None => "".to_string(),
+            IntegerConstraint::None => String::new(),
         };
 
         writeln!(

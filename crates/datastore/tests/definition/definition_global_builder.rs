@@ -162,7 +162,7 @@ fn test_object_definition_inherit() {
         .finish();
 
     let child_def = GlobalObjectDefinitionBuilder::new("Child")
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .with(
             GlobalKey::new("g_c1".into()).unwrap(),
             StringDefinition::new("D2"),
@@ -193,7 +193,7 @@ fn test_object_definition_inherit_overwrite() {
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .finish();
 
     assert_eq!(child_def.count(), 1);
@@ -214,7 +214,7 @@ fn test_object_definition_inherit_with_check() {
             GlobalKey::new("g_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Ok(_)));
 
@@ -241,7 +241,7 @@ fn test_object_definition_inherit_with_check_error() {
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Err(StoreError::KeyConflict(_))));
 }

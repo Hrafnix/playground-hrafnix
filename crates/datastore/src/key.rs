@@ -84,6 +84,7 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
 /// Returns true if the key is not empty and only contains valid characters.
 /// The first character must be lowercase a-z.
 /// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
+#[must_use]
 pub const fn is_valid_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "")
 }
@@ -114,12 +115,14 @@ impl ConstStoreKey {
     /// which wraps this in a `const { }` block so invalid keys are caught
     /// at compile-time rather than only when the code path runs.
     #[doc(hidden)]
+    #[must_use]
     pub const fn __new(key: &'static str) -> Self {
         const_assert!(is_valid_key(key), "Invalid StoreKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -265,6 +268,9 @@ pub struct StoreKey {
 
 impl StoreKey {
     /// Creates a new `StoreKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty` or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_key(&key)?;
@@ -278,16 +284,19 @@ impl StoreKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `StoreKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -298,11 +307,13 @@ impl StoreKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
 
     /// Returns true if the key starts with the given prefix.
+    #[must_use]
     pub fn starts_with(&self, prefix: &str) -> bool {
         self.key.as_str().starts_with(prefix)
     }
@@ -453,6 +464,7 @@ macro_rules! store_key {
 // =====================================================================
 
 /// Returns true if the key starts with g_ and the rest is a valid key.
+#[must_use]
 pub const fn is_valid_global_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "g_")
 }
@@ -482,12 +494,14 @@ impl ConstGlobalKey {
     /// which wraps this in a `const { }` block so invalid keys are caught
     /// at compile-time rather than only when the code path runs.
     #[doc(hidden)]
+    #[must_use]
     pub const fn __new(key: &'static str) -> Self {
         const_assert!(is_valid_global_key(key), "Invalid GlobalKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -528,7 +542,7 @@ impl From<&ConstGlobalKey> for ShareableString {
 }
 
 /// A validated global key.
-/// Global keys must start with g_ and follow the rest of the StoreKey rules.
+/// Global keys must start with g_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GlobalKey {
     pub(crate) key: ShareableString,
@@ -536,6 +550,9 @@ pub struct GlobalKey {
 
 impl GlobalKey {
     /// Creates a new `GlobalKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_global_key(&key)?;
@@ -549,16 +566,19 @@ impl GlobalKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `GlobalKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -569,6 +589,7 @@ impl GlobalKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
@@ -743,6 +764,7 @@ macro_rules! global_key {
 // =====================================================================
 
 /// Returns true if the key starts with p_ and the rest is a valid key.
+#[must_use]
 pub const fn is_valid_parameter_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "p_")
 }
@@ -772,12 +794,14 @@ impl ConstParameterKey {
     /// which wraps this in a `const { }` block so invalid keys are caught
     /// at compile-time rather than only when the code path runs.
     #[doc(hidden)]
+    #[must_use]
     pub const fn __new(key: &'static str) -> Self {
         const_assert!(is_valid_parameter_key(key), "Invalid ParameterKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -818,7 +842,7 @@ impl From<&ConstParameterKey> for ShareableString {
 }
 
 /// A validated parameter key.
-/// Parameter keys must start with p_ and follow the rest of the StoreKey rules.
+/// Parameter keys must start with p_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParameterKey {
     pub(crate) key: ShareableString,
@@ -826,6 +850,9 @@ pub struct ParameterKey {
 
 impl ParameterKey {
     /// Creates a new `ParameterKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_parameter_key(&key)?;
@@ -839,16 +866,19 @@ impl ParameterKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `ParameterKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -859,6 +889,7 @@ impl ParameterKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
@@ -1033,6 +1064,7 @@ macro_rules! parameter_key {
 // =====================================================================
 
 /// Returns true if the key starts with v_ and the rest is a valid key.
+#[must_use]
 pub const fn is_valid_variable_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "v_")
 }
@@ -1062,12 +1094,14 @@ impl ConstVariableKey {
     /// which wraps this in a `const { }` block so invalid keys are caught
     /// at compile-time rather than only when the code path runs.
     #[doc(hidden)]
+    #[must_use]
     pub const fn __new(key: &'static str) -> Self {
         const_assert!(is_valid_variable_key(key), "Invalid VariableKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -1108,7 +1142,7 @@ impl From<&ConstVariableKey> for ShareableString {
 }
 
 /// A validated variable key.
-/// Variable keys must start with v_ and follow the rest of the StoreKey rules.
+/// Variable keys must start with v_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VariableKey {
     pub(crate) key: ShareableString,
@@ -1116,6 +1150,9 @@ pub struct VariableKey {
 
 impl VariableKey {
     /// Creates a new `VariableKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_variable_key(&key)?;
@@ -1129,16 +1166,19 @@ impl VariableKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `VariableKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -1149,6 +1189,7 @@ impl VariableKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }

@@ -63,7 +63,7 @@ impl Lexer {
             if !c.is_ascii() {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Lexer,
-                    format!("Invalid character in expression: '{}'", c),
+                    format!("Invalid character in expression: '{c}'"),
                     input,
                     SpanSet::from_span(Span::new(index, 1)),
                 ));
@@ -73,7 +73,7 @@ impl Lexer {
             if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,".contains(c) {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Lexer,
-                    format!("Invalid character in expression: '{}'", c),
+                    format!("Invalid character in expression: '{c}'"),
                     input,
                     SpanSet::from_span(Span::new(index, 1)),
                 ));
@@ -163,12 +163,7 @@ impl Lexer {
                 let start = index;
                 if let Some(&(_, next_c)) = chars.peek() {
                     match (c, next_c) {
-                        ('!', '=')
-                        | ('&', '&')
-                        | ('<', '=')
-                        | ('=', '=')
-                        | ('>', '=')
-                        | ('|', '|') => {
+                        ('!' | '<' | '=' | '>', '=') | ('&', '&') | ('|', '|') => {
                             if let Some((_, next_char)) = chars.next() {
                                 s.push(next_char);
                             }
@@ -183,13 +178,13 @@ impl Lexer {
             }
         }
 
-        for token in self.tokens.iter() {
+        for token in &self.tokens {
             match token {
                 LexerToken::Atom(index, s) => {
-                    if s.starts_with("_") {
+                    if s.starts_with('_') {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
-                            format!("Invalid string in expression: '{}'", s),
+                            format!("Invalid string in expression: '{s}'"),
                             input,
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));
@@ -200,7 +195,7 @@ impl Lexer {
                     {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
-                            format!("Invalid number in expression: '{}'", s),
+                            format!("Invalid number in expression: '{s}'"),
                             input,
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));
@@ -210,7 +205,7 @@ impl Lexer {
                     if s == "&" || s == "|" || s == "=" || s == "." {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
-                            format!("Invalid operator in expression: '{}'", s),
+                            format!("Invalid operator in expression: '{s}'"),
                             input,
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));

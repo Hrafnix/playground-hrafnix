@@ -66,7 +66,7 @@ impl Display for StorePath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.object_key)?;
         for seg in &self.segments {
-            write!(f, "/{}", seg)?;
+            write!(f, "/{seg}")?;
         }
         Ok(())
     }
@@ -82,11 +82,13 @@ impl StorePath {
     }
 
     /// Returns the object key part of the path.
+    #[must_use]
     pub fn object_key(&self) -> &StoreKey {
         &self.object_key
     }
 
     /// Returns the segments of the path after the object key.
+    #[must_use]
     pub fn segments(&self) -> &Vec<StoreKey> {
         &self.segments
     }
@@ -94,6 +96,11 @@ impl StorePath {
     /// Parses a string into a `StorePath`.
     ///
     /// The string should be in the format `object/segment1/segment2/...`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StoreError::KeyEmpty` if `s` is empty, or an error from
+    /// [`StoreKey::new`] if any segment is not a valid key.
     pub fn parse(s: &str) -> Result<Self, StoreError> {
         if s.is_empty() {
             return Err(StoreError::KeyEmpty);
@@ -116,12 +123,14 @@ impl StorePath {
     }
 
     /// Pushes a segment key onto the path and returns the new path.
+    #[must_use]
     pub fn with_segment(mut self, key: impl Into<StoreKey>) -> Self {
         self.segments.push(key.into());
         self
     }
 
     /// Returns a path that points only to the object.
+    #[must_use]
     pub fn get_object(&self) -> Self {
         Self {
             object_key: self.object_key.clone(),
@@ -130,6 +139,7 @@ impl StorePath {
     }
 
     /// Returns the last key in the path (either the object key or the last segment's key).
+    #[must_use]
     pub fn get_last_key(&self) -> StoreKey {
         self.segments
             .last()

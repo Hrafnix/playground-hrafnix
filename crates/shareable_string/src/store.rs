@@ -18,6 +18,7 @@ impl Default for SharedStringStore {
 
 impl SharedStringStore {
     /// Creates a new, empty `SharedStringStore`.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             string_store: Arc::new(RwLock::new(FxHashSet::default())),
@@ -33,16 +34,19 @@ impl SharedStringStore {
     }
 
     /// Returns the number of unique strings in the store.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.string_store.read().len()
     }
 
     /// Checks if the internal string store is empty.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.string_store.read().is_empty()
     }
 
     /// Returns true if the store contains the specified string.
+    #[must_use]
     pub fn contains(&self, key: &str) -> bool {
         self.string_store.read().contains(key)
     }

@@ -20,6 +20,7 @@ pub struct VariableObjectFrozen {
 
 impl VariableObjectFrozen {
     /// Creates a new `VariableObjectFrozen` with a definition.
+    #[must_use]
     pub fn new(definition: VariableObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -96,6 +97,7 @@ impl VariableObjectFrozen {
     }
 
     /// Creates a new `VariableObjectFrozen` from a given `VariableObjectEditable` value.
+    #[must_use]
     pub fn new_from_editable(editable_object: &VariableObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -112,6 +114,7 @@ impl VariableObjectFrozen {
     }
 
     /// Converts the current `VariableObjectFrozen` instance into a `VariableObjectEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> VariableObjectEditable {
         VariableObjectEditable::new_from_frozen(self)
     }
@@ -138,6 +141,7 @@ impl VariableObjectFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
@@ -153,6 +157,7 @@ impl VariableObjectFrozen {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &VariableObjectDefinition {
         &self.definition
     }

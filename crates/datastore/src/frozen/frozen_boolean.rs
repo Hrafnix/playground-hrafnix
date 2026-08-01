@@ -14,6 +14,7 @@ pub struct BooleanFrozen {
 
 impl BooleanFrozen {
     /// Creates a new `BooleanFrozen` instance.
+    #[must_use]
     pub fn new(definition: BooleanDefinition) -> Self {
         let value = definition.default_value();
 
@@ -27,6 +28,7 @@ impl BooleanFrozen {
     }
 
     /// Creates a new `BooleanFrozen` instance with a specified value.
+    #[must_use]
     pub fn new_with_value(definition: BooleanDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -38,6 +40,7 @@ impl BooleanFrozen {
     }
 
     /// Creates a new `BooleanFrozen` instance from a given `BooleanEditable` value.
+    #[must_use]
     pub fn new_from_editable(basic: &BooleanEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value().clone();
@@ -51,6 +54,7 @@ impl BooleanFrozen {
     }
 
     /// Converts the current `BooleanFrozen` instance into a `BooleanEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> BooleanEditable {
         BooleanEditable::new(self)
     }
@@ -69,16 +73,19 @@ impl BooleanFrozen {
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the choice definition.
+    #[must_use]
     pub fn definition(&self) -> &BooleanDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }

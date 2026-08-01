@@ -18,6 +18,7 @@ pub struct ParameterObjectEditable {
 
 impl ParameterObjectEditable {
     /// Creates a new `ParameterObjectEditable` from a `ParameterObjectFrozen`.
+    #[must_use]
     pub fn new_from_frozen(frozen_object: &ParameterObjectFrozen) -> Self {
         Self {
             definition: frozen_object.definition().clone(),
@@ -29,6 +30,7 @@ impl ParameterObjectEditable {
     }
 
     /// Creates a new `ParameterObjectFrozen` from this `ParameterObjectEditable`.
+    #[must_use]
     pub fn freeze(&self) -> ParameterObjectFrozen {
         ParameterObjectFrozen::new_from_editable(self)
     }
@@ -49,6 +51,7 @@ impl ParameterObjectEditable {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }
