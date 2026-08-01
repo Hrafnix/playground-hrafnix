@@ -286,10 +286,10 @@ impl TreePrint for GlobalObjectDefinition {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.ordered_keys.len();
+        let mut item_iter = self.ordered_keys.iter().peekable();
 
-        for (i, key) in self.ordered_keys.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some(key) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             if let Some(item) = self.items.get(key) {
                 item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
             }

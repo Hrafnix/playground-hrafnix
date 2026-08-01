@@ -164,15 +164,14 @@ impl TreePrint for TableFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let row_count = self.rows.len();
-        let column_count = self.definition.count();
-
         writeln!(f, "{}{}data", child_prefix, Self::branch_char(false),)?;
 
         let data_prefix = Self::child_prefix(&child_prefix, false);
 
-        for (i, row) in self.rows.iter().enumerate() {
-            let is_last_row = i == row_count - 1;
+        let mut row_iter = self.rows.iter().enumerate().peekable();
+
+        while let Some((i, row)) = row_iter.next() {
+            let is_last_row = row_iter.peek().is_none();
 
             writeln!(
                 f,
@@ -184,8 +183,9 @@ impl TreePrint for TableFrozen {
 
             let row_prefix = Self::child_prefix(&data_prefix, is_last_row);
 
-            for (j, value) in row.iter().enumerate() {
-                let is_last_key = j == column_count - 1;
+            let mut column_iter = row.iter().enumerate().peekable();
+            while let Some((j, value)) = column_iter.next() {
+                let is_last_key = column_iter.peek().is_none();
                 let key = match self.definition.keys().nth(j) {
                     Some(k) => k.as_str(),
                     None => "Unknown",

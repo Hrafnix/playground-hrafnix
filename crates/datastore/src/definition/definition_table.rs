@@ -157,10 +157,10 @@ impl TreePrint for TableDefinition {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let column_count = self.columns.len();
+        let mut column_iter = self.columns.iter().peekable();
 
-        for (i, (key, column)) in self.columns.iter().enumerate() {
-            let is_last = i == column_count - 1;
+        while let Some((key, column)) = column_iter.next() {
+            let is_last = column_iter.peek().is_none();
             column.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 

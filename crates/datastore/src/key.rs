@@ -26,10 +26,10 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
         if s_bytes[i] != prefix_bytes[i] {
             return false;
         }
-        i += 1;
+        i = i.saturating_add(1);
     }
 
-    let rest = s_bytes.len() - prefix_bytes.len();
+    let rest = s_bytes.len().saturating_sub(prefix_bytes.len());
     if rest == 0 {
         return false;
     }
@@ -52,23 +52,23 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
                         matches = false;
                         break;
                     }
-                    j += 1;
+                    j = j.saturating_add(1);
                 }
                 if matches {
                     return false;
                 }
             }
-            i += 1;
+            i = i.saturating_add(1);
         }
     }
 
-    let mut i = prefix_bytes.len() + 1;
+    let mut i = prefix_bytes.len().saturating_add(1);
     while i < s_bytes.len() {
         let c = s_bytes[i];
         if !c.is_ascii_lowercase() && !c.is_ascii_digit() && c != b'_' {
             return false;
         }
-        i += 1;
+        i = i.saturating_add(1);
     }
     true
 }

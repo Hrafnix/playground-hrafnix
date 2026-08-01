@@ -102,7 +102,10 @@ impl Lexer {
 
                     if let Some(&(_, '(')) = chars.peek() {
                         self.tokens.push(LexerToken::Operator(
-                            Span::new((start + number_len - 1).max(start), 2),
+                            Span::new(
+                                (start.saturating_add(number_len).saturating_sub(1)).max(start),
+                                2,
+                            ),
                             "*".to_string(),
                         ));
                     }
@@ -125,7 +128,13 @@ impl Lexer {
 
                 if let Some(&(_, '(')) = chars.peek() {
                     self.tokens.push(LexerToken::Operator(
-                        Span::new((start + number_len - 1).max(start), 2),
+                        Span::new(
+                            start
+                                .saturating_add(number_len)
+                                .saturating_sub(1)
+                                .max(start),
+                            2,
+                        ),
                         "*".to_string(),
                     ));
                 }

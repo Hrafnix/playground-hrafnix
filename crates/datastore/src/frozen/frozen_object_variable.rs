@@ -186,10 +186,10 @@ impl TreePrint for VariableObjectFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 

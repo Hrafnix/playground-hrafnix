@@ -53,9 +53,16 @@ fn evaluate_expression(
             let operand_value = evaluate_expression(computed_data, functions, source, *operand)?;
             match (operator, operand_value) {
                 (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
-                (Operators::Negate, ComputedItem::Integer(value)) => {
-                    Ok(ComputedItem::Integer(-value))
-                }
+                (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
+                    value.checked_mul(-1).ok_or_else(|| {
+                        ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            "Integer overflow.".to_string(),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        )
+                    })?,
+                )),
                 (Operators::Not, ComputedItem::Boolean(value)) => Ok(ComputedItem::Boolean(!value)),
                 _ => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
@@ -293,31 +300,87 @@ fn evaluate_expression(
                 }
                 (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
                     match operator {
-                        Operators::Add => Ok(ComputedItem::Integer(left_int + right_int)),
-                        Operators::Subtract => Ok(ComputedItem::Integer(left_int - right_int)),
-                        Operators::Multiply => Ok(ComputedItem::Integer(left_int * right_int)),
-                        Operators::Divide => {
-                            if right_int == 0 {
-                                Err(ExpressionError::new_complex(
+                        Operators::Add => {
+                            let checked_add = left_int.checked_add(right_int);
+                            match checked_add {
+                                Some(result) => Ok(ComputedItem::Integer(result)),
+                                None => Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
-                                    "Division by zero.".to_string(),
+                                    "Integer overflow.".to_string(),
                                     source.clone(),
                                     SpanSet::from_span(operator_span),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Integer(left_int / right_int))
+                                )),
+                            }
+                        }
+                        Operators::Subtract => {
+                            let checked_sub = left_int.checked_sub(right_int);
+                            match checked_sub {
+                                Some(result) => Ok(ComputedItem::Integer(result)),
+                                None => Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    "Integer overflow.".to_string(),
+                                    source.clone(),
+                                    SpanSet::from_span(operator_span),
+                                )),
+                            }
+                        }
+                        Operators::Multiply => {
+                            let checked_mul = left_int.checked_mul(right_int);
+                            match checked_mul {
+                                Some(result) => Ok(ComputedItem::Integer(result)),
+                                None => Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    "Integer overflow.".to_string(),
+                                    source.clone(),
+                                    SpanSet::from_span(operator_span),
+                                )),
+                            }
+                        }
+                        Operators::Divide => {
+                            let checked_div = left_int.checked_div(right_int);
+
+                            match checked_div {
+                                Some(result) => Ok(ComputedItem::Integer(result)),
+                                None => {
+                                    if right_int == 0 {
+                                        Err(ExpressionError::new_complex(
+                                            ExpressionCategory::Evaluation,
+                                            "Division by zero.".to_string(),
+                                            source.clone(),
+                                            SpanSet::from_span(operator_span),
+                                        ))
+                                    } else {
+                                        Err(ExpressionError::new_complex(
+                                            ExpressionCategory::Evaluation,
+                                            "Integer overflow.".to_string(),
+                                            source.clone(),
+                                            SpanSet::from_span(operator_span),
+                                        ))
+                                    }
+                                }
                             }
                         }
                         Operators::Modulus => {
-                            if right_int == 0 {
-                                Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    "Modulus by zero.".to_string(),
-                                    source.clone(),
-                                    SpanSet::from_span(operator_span),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Integer(left_int % right_int))
+                            let checked_mod = left_int.checked_rem(right_int);
+                            match checked_mod {
+                                Some(result) => Ok(ComputedItem::Integer(result)),
+                                None => {
+                                    if right_int == 0 {
+                                        Err(ExpressionError::new_complex(
+                                            ExpressionCategory::Evaluation,
+                                            "Modulus by zero.".to_string(),
+                                            source.clone(),
+                                            SpanSet::from_span(operator_span),
+                                        ))
+                                    } else {
+                                        Err(ExpressionError::new_complex(
+                                            ExpressionCategory::Evaluation,
+                                            "Integer overflow.".to_string(),
+                                            source.clone(),
+                                            SpanSet::from_span(operator_span),
+                                        ))
+                                    }
+                                }
                             }
                         }
                         Operators::Power => {
