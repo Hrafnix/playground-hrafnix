@@ -49,6 +49,7 @@ broken_intra_doc_links = "warn"
 
 [workspace.lints.clippy]
 unwrap_used = "warn"
+string_slice = "warn"
 panic_in_result_fn = "warn"
 panic = "warn"
 exit = "warn"
