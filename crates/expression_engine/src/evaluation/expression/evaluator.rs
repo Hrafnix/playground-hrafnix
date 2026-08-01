@@ -1087,9 +1087,18 @@ fn evaluate_table_expression(
 
                 for row in referenced_table.rows() {
                     for (j, data) in row.iter().enumerate() {
-                        let column_definition = table_definition
-                            .get_by_index(j)
-                            .expect("Column definition should exist for each key in the row.");
+                        let Some(column_definition) = table_definition.get_by_index(j) else {
+                            errors.push(ExpressionError::new_complex(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Parameter '{}' references a table with no column definition at index {}.",
+                                    parameter, j
+                                ),
+                                parameter_source.clone(),
+                                SpanSet::from_span(parameter_span),
+                            ));
+                            continue;
+                        };
                         match column_definition.constraint() {
                             NumberConstraint::Min { min, inclusive } => {
                                 if *data < min || (!inclusive && *data == min) {
@@ -1176,9 +1185,16 @@ fn evaluate_table_expression(
     for row in table.data() {
         let mut evaluated_row = Vec::new();
         for (i, basic_data) in row.iter().enumerate() {
-            let number_definition = definition
-                .get_by_index(i)
-                .expect("Column definition should exist for each key in the row.");
+            let Some(number_definition) = definition.get_by_index(i) else {
+                let cell_source = ShareableString::from(basic_data.as_str().to_string());
+                let cell_span = Span::new(0, basic_data.as_str().chars().count());
+                return Err(vec![ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("No column definition exists for table cell at index {}.", i),
+                    cell_source,
+                    SpanSet::from_span(cell_span),
+                )]);
+            };
 
             let basic_input_data =
                 BasicInputData::new(Number(number_definition.clone()), basic_data.clone());

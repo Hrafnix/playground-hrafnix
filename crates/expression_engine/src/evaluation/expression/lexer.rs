@@ -85,7 +85,9 @@ impl Lexer {
                 let start = index;
                 while let Some(&(_, c)) = chars.peek() {
                     if c.is_numeric() || c == '.' {
-                        s.push(chars.next().expect("peeked value must be present").1);
+                        if let Some((_, next_char)) = chars.next() {
+                            s.push(next_char);
+                        }
                     } else {
                         break;
                     }
@@ -116,7 +118,9 @@ impl Lexer {
                 let start = index;
                 while let Some(&(_, c)) = chars.peek() {
                     if c.is_numeric() || c == '.' {
-                        s.push(chars.next().expect("peeked value must be present").1);
+                        if let Some((_, next_char)) = chars.next() {
+                            s.push(next_char);
+                        }
                     } else {
                         break;
                     }
@@ -144,7 +148,9 @@ impl Lexer {
                 let start = index;
                 while let Some(&(_, c)) = chars.peek() {
                     if c.is_alphanumeric() || c == '_' || c == '.' {
-                        s.push(chars.next().expect("peeked value must be present").1);
+                        if let Some((_, next_char)) = chars.next() {
+                            s.push(next_char);
+                        }
                     } else {
                         break;
                     }
@@ -163,7 +169,9 @@ impl Lexer {
                         | ('=', '=')
                         | ('>', '=')
                         | ('|', '|') => {
-                            s.push(chars.next().expect("peeked value must be present").1);
+                            if let Some((_, next_char)) = chars.next() {
+                                s.push(next_char);
+                            }
                         }
                         _ => {}
                     }
@@ -229,21 +237,27 @@ impl Lexer {
 
         match lookahead.peek() {
             Some(&(_, 'e')) => {
-                exponent.push(lookahead.next().expect("peeked value must be present").1);
+                if let Some((_, next_char)) = lookahead.next() {
+                    exponent.push(next_char);
+                }
             }
             _ => return,
         }
 
         if let Some(&(_, sign)) = lookahead.peek() {
             if sign == '+' || sign == '-' {
-                exponent.push(lookahead.next().expect("peeked value must be present").1);
+                if let Some((_, next_char)) = lookahead.next() {
+                    exponent.push(next_char);
+                }
             }
         }
 
         let mut has_digit = false;
         while let Some(&(_, d)) = lookahead.peek() {
             if d.is_numeric() {
-                exponent.push(lookahead.next().expect("peeked value must be present").1);
+                if let Some((_, next_char)) = lookahead.next() {
+                    exponent.push(next_char);
+                }
                 has_digit = true;
             } else {
                 break;
