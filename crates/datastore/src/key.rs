@@ -7,6 +7,12 @@ use std::hash::Hash;
 
 const KEY_WORDS: [&str; 2] = ["true", "false"];
 
+macro_rules! const_assert {
+    ($x:expr, $msg:expr $(,)?) => {
+        let _: () = ::core::assert!($x, $msg);
+    };
+}
+
 const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     let s_bytes = s.as_bytes();
     let prefix_bytes = prefix.as_bytes();
@@ -99,10 +105,13 @@ pub struct ConstStoreKey(pub(crate) &'static str);
 impl ConstStoreKey {
     /// Creates a new `ConstStoreKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_key(key) {
-            panic!("Invalid StoreKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `store_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_key(key), "Invalid StoreKey literal");
         Self(key)
     }
 
@@ -423,11 +432,15 @@ impl std::borrow::Borrow<ShareableString> for StoreKey {
 }
 
 /// A macro to create a `ConstStoreKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! store_key {
     ($key:expr) => {
-        $crate::key::ConstStoreKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstStoreKey::__new($key)
+        }
     };
 }
 
@@ -460,10 +473,13 @@ pub struct ConstGlobalKey(pub(crate) &'static str);
 impl ConstGlobalKey {
     /// Creates a new `ConstGlobalKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_global_key(key) {
-            panic!("Invalid GlobalKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `global_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_global_key(key), "Invalid GlobalKey literal");
         Self(key)
     }
 
@@ -706,11 +722,15 @@ impl std::borrow::Borrow<ShareableString> for GlobalKey {
 }
 
 /// A macro to create a `ConstGlobalKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! global_key {
     ($key:expr) => {
-        $crate::key::ConstGlobalKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstGlobalKey::__new($key)
+        }
     };
 }
 
@@ -743,10 +763,13 @@ pub struct ConstParameterKey(pub(crate) &'static str);
 impl ConstParameterKey {
     /// Creates a new `ConstParameterKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_parameter_key(key) {
-            panic!("Invalid ParameterKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `parameter_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_parameter_key(key), "Invalid ParameterKey literal");
         Self(key)
     }
 
@@ -989,11 +1012,15 @@ impl std::borrow::Borrow<ShareableString> for ParameterKey {
 }
 
 /// A macro to create a `ConstParameterKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! parameter_key {
     ($key:expr) => {
-        $crate::key::ConstParameterKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstParameterKey::__new($key)
+        }
     };
 }
 
@@ -1026,10 +1053,13 @@ pub struct ConstVariableKey(pub(crate) &'static str);
 impl ConstVariableKey {
     /// Creates a new `ConstVariableKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_variable_key(key) {
-            panic!("Invalid VariableKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `variable_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_variable_key(key), "Invalid VariableKey literal");
         Self(key)
     }
 
@@ -1272,11 +1302,15 @@ impl std::borrow::Borrow<ShareableString> for VariableKey {
 }
 
 /// A macro to create a `ConstVariableKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! variable_key {
     ($key:expr) => {
-        $crate::key::ConstVariableKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstVariableKey::__new($key)
+        }
     };
 }
 
@@ -1407,9 +1441,9 @@ mod tests {
         assert_ne!(g_key, s_key_v);
 
         // Const equality
-        const CP: ConstParameterKey = ConstParameterKey::new("p_test");
-        const CG: ConstGlobalKey = ConstGlobalKey::new("g_test");
-        const CV: ConstVariableKey = ConstVariableKey::new("v_test");
+        const CP: ConstParameterKey = parameter_key!("p_test");
+        const CG: ConstGlobalKey = global_key!("g_test");
+        const CV: ConstVariableKey = variable_key!("v_test");
 
         assert_eq!(CP, p_key);
         assert_eq!(p_key, CP);
@@ -1456,7 +1490,7 @@ mod tests {
 
     #[test]
     fn test_const_store_key_comparisons() {
-        let csk = ConstStoreKey::new("key");
+        let csk = store_key!("key");
         let sk = StoreKey::new(ShareableString::new("key")).unwrap();
         let ss = ShareableString::new("key");
         let s = "key";
@@ -1542,7 +1576,7 @@ mod tests {
 
     #[test]
     fn test_const_store_key() {
-        const KEY: ConstStoreKey = ConstStoreKey::new("valid_key");
+        const KEY: ConstStoreKey = store_key!("valid_key");
         assert_eq!(KEY.as_str(), "valid_key");
         assert_eq!(format!("{}", KEY), "valid_key");
 
@@ -1564,7 +1598,45 @@ mod tests {
     #[test]
     #[should_panic(expected = "Invalid StoreKey literal")]
     fn test_const_store_key_invalid() {
-        let _ = ConstStoreKey::new("Invalid");
+        // Bypasses the `store_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstStoreKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid GlobalKey literal")]
+    fn test_const_global_key_invalid() {
+        // Bypasses the `global_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstGlobalKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid ParameterKey literal")]
+    fn test_const_parameter_key_invalid() {
+        // Bypasses the `parameter_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstParameterKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid VariableKey literal")]
+    fn test_const_variable_key_invalid() {
+        // Bypasses the `variable_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstVariableKey::__new("Invalid");
     }
 
     #[test]
