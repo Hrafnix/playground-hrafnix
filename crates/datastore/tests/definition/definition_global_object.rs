@@ -61,8 +61,65 @@ fn test_object_definition_print() {
             FileDefinition::new("D3", "ext", false),
         )
         .with(
-            GlobalKey::new("g_p4".into()).unwrap(),
+            GlobalKey::new("g_p4_v1".into()).unwrap(),
             IntegerDefinition::new("D4"),
+        )
+        .with(
+            GlobalKey::new("g_p4_v2".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Min {
+                min: 0,
+                inclusive: true,
+            }),
+        )
+        .with(
+            GlobalKey::new("g_p4_v3".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Min {
+                min: 20,
+                inclusive: false,
+            }),
+        )
+        .with(
+            GlobalKey::new("g_p4_v4".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Max {
+                max: 10,
+                inclusive: true,
+            }),
+        )
+        .with(
+            GlobalKey::new("g_p4_v5".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
+                min: 0,
+                max: 10,
+                min_inclusive: true,
+                max_inclusive: true,
+            }),
+        )
+        .with(
+            GlobalKey::new("g_p4_v6".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
+                min: 32,
+                max: 80,
+                min_inclusive: false,
+                max_inclusive: true,
+            }),
+        )
+        .with(
+            GlobalKey::new("g_p4_v7".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
+                min: 10,
+                max: 150,
+                min_inclusive: false,
+                max_inclusive: true,
+            }),
+        )
+        .with(
+            GlobalKey::new("g_p4_v8".into()).unwrap(),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
+                min: 40,
+                max: 100,
+                min_inclusive: false,
+                max_inclusive: false,
+            }),
         )
         .with(
             GlobalKey::new("g_p5".into()).unwrap(),
@@ -144,6 +201,6 @@ fn test_object_definition_print() {
 
     assert_eq!(
         format!("{def_1}"),
-        "Global Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) Boolean - default: \"\" [true (True), false (False)]\n    ├── g_p3 (D3) File - default: \"\" [ext]\n    ├── g_p4 (D4) Integer - default: \"\"\n    ├── g_p5 (D5) Number - default: \"\"\n    ├── g_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
+        "Global Object Definition (Test)\n    ├── g_p1 (D1) String - default: \"\"\n    ├── g_p2 (D2) Boolean - default: \"\" [true (True), false (False)]\n    ├── g_p3 (D3) File - default: \"\" [ext]\n    ├── g_p4_v1 (D4) Integer - default: \"\"\n    ├── g_p4_v2 (D4) Integer - default: \"\" [Min(0, inclusive)]\n    ├── g_p4_v3 (D4) Integer - default: \"\" [Min(20, exclusive)]\n    ├── g_p4_v4 (D4) Integer - default: \"\" [Max(10, inclusive)]\n    ├── g_p4_v5 (D4) Integer - default: \"\" [Range(0, 10, inclusive, inclusive)]\n    ├── g_p4_v6 (D4) Integer - default: \"\" [Range(32, 80, exclusive, inclusive)]\n    ├── g_p4_v7 (D4) Integer - default: \"\" [Range(10, 150, exclusive, inclusive)]\n    ├── g_p4_v8 (D4) Integer - default: \"\" [Range(40, 100, exclusive, exclusive)]\n    ├── g_p5 (D5) Number - default: \"\"\n    ├── g_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── g_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── g_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
     );
 }

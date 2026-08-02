@@ -74,8 +74,11 @@ fn test_basic_definition_integer() {
 
     // Check the various data items of the integer definition.
     assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(def.description_ref(), "A integer parameter");
     assert_eq!(def.constraint(), IntegerConstraint::None);
+    assert_eq!(def.constraint_ref(), &IntegerConstraint::None);
     assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
 }
 
 #[test]
@@ -85,8 +88,11 @@ fn test_basic_definition_integer_with_default() {
 
     // Check the various data items of the integer definition.
     assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(def.description_ref(), "A integer parameter");
     assert_eq!(def.constraint(), IntegerConstraint::None);
+    assert_eq!(def.constraint_ref(), &IntegerConstraint::None);
     assert_eq!(def.default_value(), "5");
+    assert_eq!(def.default_value_ref(), "5");
 }
 
 #[test]
@@ -102,6 +108,7 @@ fn test_basic_definition_integer_with_constraint() {
 
     // Check the various data items of the integer definition.
     assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(def.description_ref(), "A integer parameter");
     assert_eq!(
         def.constraint(),
         IntegerConstraint::Min {
@@ -109,7 +116,12 @@ fn test_basic_definition_integer_with_constraint() {
             inclusive: true
         }
     );
+    assert_eq!(def.constraint_ref(), &IntegerConstraint::Min {
+        min: 0,
+        inclusive: true
+    });
     assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
 }
 
 #[test]
@@ -126,6 +138,7 @@ fn test_basic_definition_integer_with_constraint_and_default() {
 
     // Check the various data items of the integer definition.
     assert_eq!(def.description(), "A integer parameter");
+    assert_eq!(def.description_ref(), "A integer parameter");
     assert_eq!(
         def.constraint(),
         IntegerConstraint::Max {
@@ -133,7 +146,52 @@ fn test_basic_definition_integer_with_constraint_and_default() {
             inclusive: true
         }
     );
+    assert_eq!(def.constraint_ref(), &IntegerConstraint::Max {
+        max: 10,
+        inclusive: true
+    });
     assert_eq!(def.default_value(), "5");
+    assert_eq!(def.default_value_ref(), "5");
+}
+
+#[test]
+fn test_basic_definition_integer_equality() {
+    // Why: Test basic integer definition equality.
+    let def_1 = IntegerDefinition::new_with_constraint_and_default(
+        "A integer parameter",
+        IntegerConstraint::Max {
+            max: 10,
+            inclusive: true,
+        },
+        "5",
+    );
+    let def_2 = IntegerDefinition::new_with_constraint_and_default(
+        "A integer parameter",
+        IntegerConstraint::Max {
+            max: 10,
+            inclusive: true,
+        },
+        "5",
+    );
+    let def_3 = IntegerDefinition::new_with_constraint_and_default(
+        "A integer parameter",
+        IntegerConstraint::Max {
+            max: 10,
+            inclusive: true,
+        },
+        "6",
+    );
+
+    // Check equality of the three integer definitions.
+    assert_eq!(def_1, def_2);
+    assert_eq!(def_1, &def_2);
+    assert_eq!(&def_1, def_2);
+    assert_eq!(&def_1, &def_2);
+
+    assert_ne!(def_1, def_3);
+    assert_ne!(&def_1, def_3);
+    assert_ne!(def_1, &def_3);
+    assert_ne!(&def_1, &def_3);
 }
 
 #[test]
@@ -212,21 +270,27 @@ fn test_basic_definition_file() {
 
     // Check the various data items of the file definition.
     assert_eq!(def.description(), "A file parameter");
+    assert_eq!(def.description_ref(), "A file parameter");
     assert_eq!(def.extension_filter(), "txt");
+    assert_eq!(def.extension_filter_ref(), "txt");
     assert!(!def.bundle_on_archive());
     assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
 }
 
 #[test]
 fn test_basic_definition_file_with_default() {
     // Why: Test basic file definition creation with a default value.
-    let def = FileDefinition::new_with_default("A file parameter", "txt", true, "test.txt");
+    let def = FileDefinition::new_with_default("A Default file parameter", "exe", true, "test.exe");
 
     // Check the various data items of the file definition.
-    assert_eq!(def.description(), "A file parameter");
-    assert_eq!(def.extension_filter(), "txt");
+    assert_eq!(def.description(), "A Default file parameter");
+    assert_eq!(def.description_ref(), "A Default file parameter");
+    assert_eq!(def.extension_filter(), "exe");
+    assert_eq!(def.extension_filter_ref(), "exe");
     assert!(def.bundle_on_archive());
-    assert_eq!(def.default_value(), "test.txt");
+    assert_eq!(def.default_value(), "test.exe");
+    assert_eq!(def.default_value_ref(), "test.exe");
 }
 
 #[test]
@@ -244,10 +308,10 @@ fn test_basic_definition_file_equality() {
     assert_ne!(def_1, def_4);
     assert_ne!(def_1, def_5);
     assert_ne!(def_1, def_6);
-    assert_eq!(&def_1, &def_2);
-    assert_ne!(&def_1, &def_3);
-    assert_ne!(&def_1, &def_4);
-    assert_ne!(&def_1, &def_5);
+    assert_eq!(def_1, &def_2);
+    assert_ne!(&def_1, def_3);
+    assert_ne!(def_1, &def_4);
+    assert_ne!(&def_1, def_5);
     assert_ne!(&def_1, &def_6);
 }
 
