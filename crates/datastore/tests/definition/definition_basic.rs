@@ -21,6 +21,25 @@ fn test_basic_definition_string_with_default() {
 }
 
 #[test]
+fn test_basic_definition_string_equality() {
+    // Why: Test basic string definition equality.
+    let def_1 = StringDefinition::new_with_default("A string parameter", "default value");
+    let def_2 = StringDefinition::new_with_default("A string parameter", "default value");
+    let def_3 = StringDefinition::new_with_default("A string parameter", "different value");
+
+    // Check equality of the three string definitions.
+    assert_eq!(def_1, def_2);
+    assert_eq!(def_1, &def_2);
+    assert_eq!(&def_1, def_2);
+    assert_eq!(&def_1, &def_2);
+
+    assert_ne!(def_1, def_3);
+    assert_ne!(&def_1, def_3);
+    assert_ne!(def_1, &def_3);
+    assert_ne!(&def_1, &def_3);
+}
+
+#[test]
 fn test_basic_definition_boolean() {
     // Why: Test basic boolean definition creation and definition.
     let def_1 = BooleanDefinition::new("A Boolean parameter");
