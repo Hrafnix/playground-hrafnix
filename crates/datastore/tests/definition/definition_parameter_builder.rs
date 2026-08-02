@@ -180,7 +180,10 @@ fn test_parameter_object_definition_inherit() {
     assert!(child_def.contains("p_p1"));
     assert!(child_def.contains("p_c1"));
 
-    let keys: Vec<_> = child_def.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<_> = child_def
+        .keys()
+        .map(datastore::key::ParameterKey::as_str)
+        .collect();
     assert_eq!(keys[0], "p_p1");
     assert_eq!(keys[1], "p_c1");
 }
@@ -223,12 +226,15 @@ fn test_parameter_object_definition_inherit_with_check() {
         )
         .inherit_with_check(&parent_def);
 
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 
     let child_def_builder = result.unwrap();
     let child_def = child_def_builder.finish();
 
-    let keys: Vec<_> = child_def.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<_> = child_def
+        .keys()
+        .map(datastore::key::ParameterKey::as_str)
+        .collect();
     assert_eq!(keys[0], "p_p2");
     assert_eq!(keys[1], "p_p1");
 }
@@ -284,7 +290,7 @@ fn test_parameter_object_definition_inherit_from_builder_with_check() {
         )
         .inherit_from_builder_with_check(b1);
 
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 }
 
 #[test]

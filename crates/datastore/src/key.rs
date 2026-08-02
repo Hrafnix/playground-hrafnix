@@ -1458,6 +1458,10 @@ mod tests {
 
     #[test]
     fn test_cross_key_equality() {
+        const CP: ConstParameterKey = parameter_key!("p_test");
+        const CG: ConstGlobalKey = global_key!("g_test");
+        const CV: ConstVariableKey = variable_key!("v_test");
+
         let p_key = ParameterKey::new(ShareableString::from("p_test")).unwrap();
         let g_key = GlobalKey::new(ShareableString::from("g_test")).unwrap();
         let v_key = VariableKey::new(ShareableString::from("v_test")).unwrap();
@@ -1486,10 +1490,6 @@ mod tests {
         assert_ne!(g_key, s_key_v);
 
         // Const equality
-        const CP: ConstParameterKey = parameter_key!("p_test");
-        const CG: ConstGlobalKey = global_key!("g_test");
-        const CV: ConstVariableKey = variable_key!("v_test");
-
         assert_eq!(CP, p_key);
         assert_eq!(p_key, CP);
         assert_eq!(CV, v_key);
@@ -1623,7 +1623,7 @@ mod tests {
     fn test_const_store_key() {
         const KEY: ConstStoreKey = store_key!("valid_key");
         assert_eq!(KEY.as_str(), "valid_key");
-        assert_eq!(format!("{}", KEY), "valid_key");
+        assert_eq!(format!("{KEY}"), "valid_key");
 
         // From<ConstStoreKey>
         let store_key: StoreKey = KEY.into();

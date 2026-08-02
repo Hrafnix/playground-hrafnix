@@ -479,16 +479,11 @@ mod tests {
         let err = err.to_string();
         assert!(
             err.starts_with("[Parse]"),
-            "expected a Parse error for input {:?}, got: {}",
-            s,
-            err
+            "expected a Parse error for input {s:?}, got: {err}"
         );
         assert!(
             err.contains(expected_message),
-            "expected error message for input {:?} to contain {:?}, got: {}",
-            s,
-            expected_message,
-            err
+            "expected error message for input {s:?} to contain {expected_message:?}, got: {err}"
         );
     }
 

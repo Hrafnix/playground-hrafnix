@@ -334,12 +334,12 @@ mod tests {
         assert!(*"m" >= s);
 
         // ShareableString with String
-        assert!(s > String::from("a"));
-        assert!(s < String::from("z"));
+        assert!(s > "a");
+        assert!(s < "z");
 
         // String with ShareableString
-        assert!(String::from("a") < s);
-        assert!(String::from("z") > s);
+        assert!("a" < s);
+        assert!("z" > s);
     }
 
     #[test]

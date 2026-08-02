@@ -1812,7 +1812,7 @@ mod tests {
 
         let (_, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 3);
-        println!("{:?}", errors);
+        println!("{errors:?}");
         assert!(errors[0].to_string().contains(
             "Value 6.1 in column 'column 2' is less than the minimum allowed value of 10."
         ));

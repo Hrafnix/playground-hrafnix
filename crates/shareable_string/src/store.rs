@@ -235,19 +235,19 @@ mod tests {
     fn test_store_len() {
         let store = SharedStringStore::new();
         assert_eq!(store.len(), 0);
-        assert_eq!(store.is_empty(), true);
+        assert!(store.is_empty());
 
         let _a = store.get("a");
         assert_eq!(store.len(), 1);
-        assert_eq!(store.is_empty(), false);
+        assert!(!store.is_empty());
 
         let _a = store.get("a");
         assert_eq!(store.len(), 1);
-        assert_eq!(store.is_empty(), false);
+        assert!(!store.is_empty());
 
         let _b = store.get("b");
         assert_eq!(store.len(), 2);
-        assert_eq!(store.is_empty(), false);
+        assert!(!store.is_empty());
     }
 
     #[test]
@@ -422,6 +422,6 @@ mod tests {
     fn test_store_default() {
         let store = SharedStringStore::default();
         assert_eq!(store.len(), 0);
-        assert_eq!(store.is_empty(), true);
+        assert!(store.is_empty());
     }
 }

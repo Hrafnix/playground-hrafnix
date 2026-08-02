@@ -110,7 +110,7 @@ fn test_object_frozen_print_empty() {
     );
 
     assert_eq!(
-        format!("{}", frozen_1),
+        format!("{frozen_1}"),
         "Frozen Object (Test)\n    ├── g_p1 (D1) String - \"\"\n    ├── g_p2 (D2) File - \"\"\n    ├── g_p3 (D3) Number - \"\"\n    ├── g_p4 (D4) Choice - \"\"\n    ├── g_p5 (D5) Table 0 rows\n    │   ├── data\n    │   └── Parameter \"\"\n    └── g_p6 (D6) Map\n"
     );
 }

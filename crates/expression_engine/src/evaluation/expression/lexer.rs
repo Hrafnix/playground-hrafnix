@@ -673,14 +673,14 @@ mod tests {
                 && !"+_-*/()[]<>=!&|%^.,".contains(ch)
                 && !ch.is_whitespace()
             {
-                let input = format!("a + b * (c - d) {} e", ch);
+                let input = format!("a + b * (c - d) {ch} e");
                 let result = Lexer::new(&input);
                 assert!(result.is_err());
                 let error = result.err().unwrap();
                 assert_eq!(error.category, ExpressionCategory::Lexer);
                 assert_eq!(
                     error.message,
-                    format!("Invalid character in expression: '{}'", ch)
+                    format!("Invalid character in expression: '{ch}'")
                 );
             }
         }
@@ -713,14 +713,14 @@ mod tests {
     fn test_invalid_characters_4() {
         for c in "=&|.".chars() {
             let ch = c as u8 as char;
-            let input = format!("a + b * (c - d) {} e", ch);
+            let input = format!("a + b * (c - d) {ch} e");
             let result = Lexer::new(&input);
             assert!(result.is_err());
             let error = result.err().unwrap();
             assert_eq!(error.category, ExpressionCategory::Lexer);
             assert_eq!(
                 error.message,
-                format!("Invalid operator in expression: '{}'", ch)
+                format!("Invalid operator in expression: '{ch}'")
             );
         }
     }
@@ -729,14 +729,14 @@ mod tests {
     fn test_invalid_characters_5() {
         for c in "_".chars() {
             let ch = c as u8 as char;
-            let input = format!("a + b * (c - d) {} e", ch);
+            let input = format!("a + b * (c - d) {ch} e");
             let result = Lexer::new(&input);
             assert!(result.is_err());
             let error = result.err().unwrap();
             assert_eq!(error.category, ExpressionCategory::Lexer);
             assert_eq!(
                 error.message,
-                format!("Invalid string in expression: '{}'", ch)
+                format!("Invalid string in expression: '{ch}'")
             );
         }
     }

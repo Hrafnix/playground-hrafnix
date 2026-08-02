@@ -487,7 +487,7 @@ mod tests {
                 .unwrap_err()
                 .to_string();
             assert!(err.starts_with("[Parse]"));
-            assert!(err.contains(&format!("Unsupported operator: {}", op)));
+            assert!(err.contains(&format!("Unsupported operator: {op}")));
         }
     }
 
@@ -621,7 +621,7 @@ mod tests {
                 assert_eq!(operator_span.start(), 15);
                 assert_eq!(operator_span.end(), 16);
             }
-            other => panic!("expected BinaryOperation, got {:?}", other),
+            other => panic!("expected BinaryOperation, got {other:?}"),
         }
     }
 }

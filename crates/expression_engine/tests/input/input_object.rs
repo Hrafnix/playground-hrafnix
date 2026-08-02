@@ -72,7 +72,7 @@ fn test_global_object_input_data() {
     // into its input representation.
     let items: BTreeMap<GlobalKey, ItemFrozen> = sample_items()
         .into_iter()
-        .map(|(k, v)| (GlobalKey::new(format!("g_{}", k).into()).unwrap(), v))
+        .map(|(k, v)| (GlobalKey::new(format!("g_{k}").into()).unwrap(), v))
         .collect();
     let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
 
@@ -97,7 +97,7 @@ fn test_global_object_input_data() {
     // Map items should be flattened into `key[entry][field]` paths.
     match data.get("g_map_field[entry1][field1]").unwrap() {
         ObjectItemInputData::Basic(basic) => {
-            assert_eq!(basic.data().as_ref(), "entry1-value")
+            assert_eq!(basic.data().as_ref(), "entry1-value");
         }
         ObjectItemInputData::Table(_) => panic!("expected basic data"),
     }
@@ -124,7 +124,7 @@ fn test_parameter_object_input_data() {
     // way as the global variant.
     let items: BTreeMap<ParameterKey, ItemFrozen> = sample_items()
         .into_iter()
-        .map(|(k, v)| (ParameterKey::new(format!("p_{}", k).into()).unwrap(), v))
+        .map(|(k, v)| (ParameterKey::new(format!("p_{k}").into()).unwrap(), v))
         .collect();
     let frozen = ParameterObjectFrozen::new_from_items("Test object", items);
 
@@ -148,7 +148,7 @@ fn test_variable_object_input_data() {
     // way as the global variant.
     let items: BTreeMap<VariableKey, ItemFrozen> = sample_items()
         .into_iter()
-        .map(|(k, v)| (VariableKey::new(format!("v_{}", k).into()).unwrap(), v))
+        .map(|(k, v)| (VariableKey::new(format!("v_{k}").into()).unwrap(), v))
         .collect();
     let frozen = VariableObjectFrozen::new_from_items("Test object", items);
 
