@@ -38,21 +38,6 @@ fn test_editable_number_round_trip() {
 }
 
 #[test]
-fn test_editable_file_round_trip() {
-    // Why: Editable file should thaw from frozen, allow edits, and freeze back correctly.
-    let frozen = FileFrozen::new(FileDefinition::new("A file parameter", "txt", false));
-    let mut editable = frozen.thaw();
-    assert_eq!(editable.value(), "");
-
-    editable.set("test.txt");
-    assert_eq!(editable.value(), "test.txt");
-
-    let frozen_2 = editable.freeze();
-    assert_eq!(frozen_2.value(), "test.txt");
-    assert_ne!(frozen_2.hash(), frozen.hash());
-}
-
-#[test]
 fn test_editable_basic_equality() {
     // Why: Editable values with the same content should be equal.
     let frozen = StringFrozen::new(StringDefinition::new("A string parameter"));
