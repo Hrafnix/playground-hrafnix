@@ -1,5 +1,6 @@
 mod editable_basic;
 mod editable_boolean;
+mod editable_choice;
 mod editable_global_object;
 mod editable_map;
 mod editable_parameter_object;
