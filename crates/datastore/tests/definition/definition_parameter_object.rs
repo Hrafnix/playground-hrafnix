@@ -105,8 +105,96 @@ fn test_parameter_object_definition_print() {
             ),
         )
         .with(
-            ParameterKey::new("p_p5".into()).unwrap(),
+            ParameterKey::new("p_p5_v1".into()).unwrap(),
             NumberDefinition::new("D5"),
+        )
+        .with(
+            ParameterKey::new("p_p5_v2".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Min {
+                    min: 1.0,
+                    inclusive: true,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v3".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Max {
+                    max: 21.0,
+                    inclusive: false,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v4".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Max {
+                    max: 11.0,
+                    inclusive: true,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v5".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Max {
+                    max: 100.0,
+                    inclusive: false,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v6".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Range {
+                    min: 2.0,
+                    max: 12.0,
+                    min_inclusive: true,
+                    max_inclusive: false,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v7".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Range {
+                    min: 3.0,
+                    max: 99.0,
+                    min_inclusive: false,
+                    max_inclusive: false,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v8".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Range {
+                    min: 5.0,
+                    max: 70.0,
+                    min_inclusive: false,
+                    max_inclusive: true,
+                },
+            ),
+        )
+        .with(
+            ParameterKey::new("p_p5_v9".into()).unwrap(),
+            NumberDefinition::new_with_constraint(
+                "D5",
+                NumberConstraint::Range {
+                    min: 6.0,
+                    max: 1200.0,
+                    min_inclusive: true,
+                    max_inclusive: true,
+                },
+            ),
         )
         .with(
             ParameterKey::new("p_p6".into()).unwrap(),
@@ -184,6 +272,6 @@ fn test_parameter_object_definition_print() {
 
     assert_eq!(
         format!("{def_1}"),
-        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\"\n    ├── p_p2 (D2) Boolean - default: \"\" [true (True), false (False)]\n    ├── p_p3 (D3) File - default: \"\" [ext]\n    ├── p_p4_v1 (D4) Integer - default: \"\"\n    ├── p_p4_v2 (D4) Integer - default: \"\" [Min(0, inclusive)]\n    ├── p_p4_v3 (D4) Integer - default: \"\" [Min(20, exclusive)]\n    ├── p_p4_v4 (D4) Integer - default: \"\" [Max(10, inclusive)]\n    ├── p_p4_v5 (D4) Integer - default: \"\" [Range(0, 10, inclusive, inclusive)]\n    ├── p_p4_v6 (D4) Integer - default: \"\" [Range(32, 80, exclusive, inclusive)]\n    ├── p_p4_v7 (D4) Integer - default: \"\" [Range(10, 150, exclusive, inclusive)]\n    ├── p_p4_v8 (D4) Integer - default: \"\" [Range(40, 100, exclusive, exclusive)]\n    ├── p_p5 (D5) Number - default: \"\"\n    ├── p_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
+        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\"\n    ├── p_p2 (D2) Boolean - default: \"\" [true (True), false (False)]\n    ├── p_p3 (D3) File - default: \"\" [ext]\n    ├── p_p4_v1 (D4) Integer - default: \"\"\n    ├── p_p4_v2 (D4) Integer - default: \"\" [Min(0, inclusive)]\n    ├── p_p4_v3 (D4) Integer - default: \"\" [Min(20, exclusive)]\n    ├── p_p4_v4 (D4) Integer - default: \"\" [Max(10, inclusive)]\n    ├── p_p4_v5 (D4) Integer - default: \"\" [Range(0, 10, inclusive, inclusive)]\n    ├── p_p4_v6 (D4) Integer - default: \"\" [Range(32, 80, exclusive, inclusive)]\n    ├── p_p4_v7 (D4) Integer - default: \"\" [Range(10, 150, exclusive, inclusive)]\n    ├── p_p4_v8 (D4) Integer - default: \"\" [Range(40, 100, exclusive, exclusive)]\n    ├── p_p5_v1 (D5) Number - default: \"\"\n    ├── p_p5_v2 (D5) Number - default: \"\" [Min(1.0, inclusive)]\n    ├── p_p5_v3 (D5) Number - default: \"\" [Max(21.0, exclusive)]\n    ├── p_p5_v4 (D5) Number - default: \"\" [Max(11.0, inclusive)]\n    ├── p_p5_v5 (D5) Number - default: \"\" [Max(100.0, exclusive)]\n    ├── p_p5_v6 (D5) Number - default: \"\" [Range(2.0, 12.0, inclusive, exclusive)]\n    ├── p_p5_v7 (D5) Number - default: \"\" [Range(3.0, 99.0, exclusive, exclusive)]\n    ├── p_p5_v8 (D5) Number - default: \"\" [Range(5.0, 70.0, exclusive, inclusive)]\n    ├── p_p5_v9 (D5) Number - default: \"\" [Range(6.0, 1200.0, inclusive, inclusive)]\n    ├── p_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
     );
 }

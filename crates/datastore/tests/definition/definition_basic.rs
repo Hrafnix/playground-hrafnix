@@ -309,24 +309,30 @@ fn test_basic_definition_number() {
 
     // Check the various data items of the number definition.
     assert_eq!(def.description(), "A number parameter");
+    assert_eq!(def.description_ref(), "A number parameter");
     assert_eq!(def.constraint(), NumberConstraint::None);
+    assert_eq!(def.constraint_ref(), &NumberConstraint::None);
     assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
 }
 
 #[test]
 fn test_basic_definition_number_with_default() {
     // Why: Test basic number definition creation with a default value.
-    let def = NumberDefinition::new_with_default("A number parameter", "5.0");
+    let def = NumberDefinition::new_with_default("A Default number parameter", "5.0");
 
     // Check the various data items of the number definition.
-    assert_eq!(def.description(), "A number parameter");
+    assert_eq!(def.description(), "A Default number parameter");
+    assert_eq!(def.description_ref(), "A Default number parameter");
     assert_eq!(def.constraint(), NumberConstraint::None);
+    assert_eq!(def.constraint_ref(), &NumberConstraint::None);
     assert_eq!(def.default_value(), "5.0");
+    assert_eq!(def.default_value_ref(), "5.0");
 }
 
 #[test]
-fn test_basic_definition_number_with_constraint() {
-    // Why: Test basic number definition creation with a constraint.
+fn test_basic_definition_number_with_min_constraint() {
+    // Why: Test basic number definition creation with a minimum constraint.
     let def = NumberDefinition::new_with_constraint(
         "A number parameter",
         NumberConstraint::Min {
@@ -337,6 +343,7 @@ fn test_basic_definition_number_with_constraint() {
 
     // Check the various data items of the number definition.
     assert_eq!(def.description(), "A number parameter");
+    assert_eq!(def.description_ref(), "A number parameter");
     assert_eq!(
         def.constraint(),
         NumberConstraint::Min {
@@ -344,7 +351,85 @@ fn test_basic_definition_number_with_constraint() {
             inclusive: true
         }
     );
+    assert_eq!(
+        def.constraint_ref(),
+        &NumberConstraint::Min {
+            min: 0.0,
+            inclusive: true
+        }
+    );
     assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
+}
+
+#[test]
+fn test_basic_definition_number_with_max_constraint() {
+    // Why: Test basic number definition creation with a maximum constraint.
+    let def = NumberDefinition::new_with_constraint(
+        "A number parameter",
+        NumberConstraint::Max {
+            max: 10.0,
+            inclusive: true,
+        },
+    );
+
+    // Check the various data items of the number definition.
+    assert_eq!(def.description(), "A number parameter");
+    assert_eq!(def.description_ref(), "A number parameter");
+    assert_eq!(
+        def.constraint(),
+        NumberConstraint::Max {
+            max: 10.0,
+            inclusive: true
+        }
+    );
+    assert_eq!(
+        def.constraint_ref(),
+        &NumberConstraint::Max {
+            max: 10.0,
+            inclusive: true
+        }
+    );
+    assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
+}
+
+#[test]
+fn test_basic_definition_number_with_range_constraint() {
+    // Why: Test basic number definition creation with a range constraint.
+    let def = NumberDefinition::new_with_constraint(
+        "A number parameter",
+        NumberConstraint::Range {
+            min: 0.0,
+            max: 10.0,
+            min_inclusive: true,
+            max_inclusive: true,
+        },
+    );
+
+    // Check the various data items of the number definition.
+    assert_eq!(def.description(), "A number parameter");
+    assert_eq!(def.description_ref(), "A number parameter");
+    assert_eq!(
+        def.constraint(),
+        NumberConstraint::Range {
+            min: 0.0,
+            max: 10.0,
+            min_inclusive: true,
+            max_inclusive: true
+        }
+    );
+    assert_eq!(
+        def.constraint_ref(),
+        &NumberConstraint::Range {
+            min: 0.0,
+            max: 10.0,
+            min_inclusive: true,
+            max_inclusive: true
+        }
+    );
+    assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
 }
 
 #[test]
@@ -369,6 +454,46 @@ fn test_basic_definition_number_with_constraint_and_default() {
         }
     );
     assert_eq!(def.default_value(), "5.0");
+}
+
+#[test]
+fn test_basic_definition_number_equality() {
+    // Why: Test basic number definition equality.
+    let def_1 = NumberDefinition::new_with_constraint_and_default(
+        "A number parameter",
+        NumberConstraint::Max {
+            max: 10.0,
+            inclusive: true,
+        },
+        "5",
+    );
+    let def_2 = NumberDefinition::new_with_constraint_and_default(
+        "A number parameter",
+        NumberConstraint::Max {
+            max: 10.0,
+            inclusive: true,
+        },
+        "5",
+    );
+    let def_3 = NumberDefinition::new_with_constraint_and_default(
+        "A number parameter",
+        NumberConstraint::Max {
+            max: 10.0,
+            inclusive: true,
+        },
+        "6",
+    );
+
+    // Check equality of the three number definitions.
+    assert_eq!(def_1, def_2);
+    assert_eq!(def_1, &def_2);
+    assert_eq!(&def_1, def_2);
+    assert_eq!(&def_1, &def_2);
+
+    assert_ne!(def_1, def_3);
+    assert_ne!(&def_1, def_3);
+    assert_ne!(def_1, &def_3);
+    assert_ne!(&def_1, &def_3);
 }
 
 #[test]
