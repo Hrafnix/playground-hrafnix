@@ -264,6 +264,7 @@ fn test_basic_definition_choice() {
 
     // Check the various data items of the choice definition.
     assert_eq!(def.description(), "A choice parameter");
+    assert_eq!(def.description_ref(), "A choice parameter");
     let choices = def.choices();
     assert_eq!(choices.len(), 2);
     assert_eq!(choices[0].id(), "a");
@@ -271,13 +272,42 @@ fn test_basic_definition_choice() {
     assert_eq!(choices[1].id(), "b");
     assert_eq!(choices[1].description(), "B");
     assert_eq!(def.default_value(), "");
+    assert_eq!(def.default_value_ref(), "");
+    assert!(def.contains("a"));
+    assert!(!def.contains("c"));
+    assert_eq!(def.ids(), vec!["a", "b"]);
+    assert_eq!(def.descriptions(), vec!["A", "B"]);
+}
+
+#[test]
+fn test_basic_definition_choice_items() {
+    // Why: Test basic choice definition creation and definition.
+    let def = ChoiceDefinition::new(
+        "A choice parameter",
+        vec![
+            ChoiceItemDefinition::new(store_key!("a"), "A"),
+            ChoiceItemDefinition::new(store_key!("b"), "B"),
+        ],
+    );
+
+    // Check the various child items of the choice definition.
+    let choices = def.choices();
+    assert_eq!(choices.len(), 2);
+
+    assert_eq!(choices[0].id(), "a");
+    assert_eq!(choices[0].description(), "A");
+    assert_eq!(choices[0].description_ref(), "A");
+
+    assert_eq!(choices[1].id(), "b");
+    assert_eq!(choices[1].description(), "B");
+    assert_eq!(choices[1].description_ref(), "B");
 }
 
 #[test]
 fn test_basic_definition_choice_with_default() {
     // Why: Test basic choice definition creation with a default value.
     let def = ChoiceDefinition::new_with_default(
-        "A choice parameter",
+        "A Default choice parameter",
         vec![
             ChoiceItemDefinition::new(store_key!("a"), "A"),
             ChoiceItemDefinition::new(store_key!("b"), "B"),
@@ -286,7 +316,8 @@ fn test_basic_definition_choice_with_default() {
     );
 
     // Check the various data items of the choice definition.
-    assert_eq!(def.description(), "A choice parameter");
+    assert_eq!(def.description(), "A Default choice parameter");
+    assert_eq!(def.description_ref(), "A Default choice parameter");
     let choices = def.choices();
     assert_eq!(choices.len(), 2);
     assert_eq!(choices[0].id(), "a");
@@ -294,6 +325,11 @@ fn test_basic_definition_choice_with_default() {
     assert_eq!(choices[1].id(), "b");
     assert_eq!(choices[1].description(), "B");
     assert_eq!(def.default_value(), "a");
+    assert_eq!(def.default_value_ref(), "a");
+    assert!(def.contains("a"));
+    assert!(!def.contains("c"));
+    assert_eq!(def.ids(), vec!["a", "b"]);
+    assert_eq!(def.descriptions(), vec!["A", "B"]);
 }
 
 #[test]
