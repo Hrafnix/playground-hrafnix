@@ -10,7 +10,7 @@ use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
 };
-use datastore::definition::{IntegerConstraint, NumberConstraint};
+use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
@@ -765,7 +765,7 @@ fn evaluate_basic_expression(
             if let ComputedItem::Integer(value) = &computed {
                 let constraint = integer_definition.constraint();
                 match constraint {
-                    IntegerConstraint::Min { min, inclusive } => {
+                    IntegerConstraintEnum::Min { min, inclusive } => {
                         if *value < min || (!inclusive && *value == min) {
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
@@ -778,7 +778,7 @@ fn evaluate_basic_expression(
                         }
                         Ok(computed)
                     }
-                    IntegerConstraint::Max { max, inclusive } => {
+                    IntegerConstraintEnum::Max { max, inclusive } => {
                         if *value > max || (!inclusive && *value == max) {
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
@@ -791,7 +791,7 @@ fn evaluate_basic_expression(
                         }
                         Ok(computed)
                     }
-                    IntegerConstraint::Range {
+                    IntegerConstraintEnum::Range {
                         min,
                         max,
                         min_inclusive,
@@ -819,7 +819,7 @@ fn evaluate_basic_expression(
                         }
                         Ok(computed)
                     }
-                    IntegerConstraint::None => Ok(computed),
+                    IntegerConstraintEnum::None => Ok(computed),
                 }
             } else {
                 Err(ExpressionError::new_complex(
@@ -838,7 +838,7 @@ fn evaluate_basic_expression(
                 ComputedItem::Float(value) => {
                     let constraint = number_definition.constraint();
                     match constraint {
-                        NumberConstraint::Min { min, inclusive } => {
+                        NumberConstraintEnum::Min { min, inclusive } => {
                             if (*value) < min || (!inclusive && (*value) <= min) {
                                 return Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
@@ -851,7 +851,7 @@ fn evaluate_basic_expression(
                             }
                             Ok(computed)
                         }
-                        NumberConstraint::Max { max, inclusive } => {
+                        NumberConstraintEnum::Max { max, inclusive } => {
                             if (*value) > max || (!inclusive && (*value) >= max) {
                                 return Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
@@ -864,7 +864,7 @@ fn evaluate_basic_expression(
                             }
                             Ok(computed)
                         }
-                        NumberConstraint::Range {
+                        NumberConstraintEnum::Range {
                             min,
                             max,
                             min_inclusive,
@@ -893,7 +893,7 @@ fn evaluate_basic_expression(
 
                             Ok(computed)
                         }
-                        NumberConstraint::None => Ok(computed),
+                        NumberConstraintEnum::None => Ok(computed),
                     }
                 }
                 _ => Err(ExpressionError::new_complex(
@@ -975,7 +975,7 @@ fn evaluate_table_expression(
                             continue;
                         };
                         match column_definition.constraint() {
-                            NumberConstraint::Min { min, inclusive } => {
+                            NumberConstraintEnum::Min { min, inclusive } => {
                                 if *data < min || (!inclusive && *data <= min) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
@@ -988,7 +988,7 @@ fn evaluate_table_expression(
                                     ));
                                 }
                             }
-                            NumberConstraint::Max { max, inclusive } => {
+                            NumberConstraintEnum::Max { max, inclusive } => {
                                 if *data > max || (!inclusive && *data >= max) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
@@ -1001,7 +1001,7 @@ fn evaluate_table_expression(
                                     ));
                                 }
                             }
-                            NumberConstraint::Range {
+                            NumberConstraintEnum::Range {
                                 min,
                                 max,
                                 min_inclusive,
@@ -1030,7 +1030,7 @@ fn evaluate_table_expression(
                                     ));
                                 }
                             }
-                            NumberConstraint::None => {}
+                            NumberConstraintEnum::None => {}
                         }
                     }
                 }
@@ -1151,7 +1151,9 @@ pub(crate) fn evaluator(
 mod tests {
     use super::*;
     use crate::evaluation::expression::function_definition::FunctionDefinition;
-    use datastore::definition::{BooleanDefinition, IntegerDefinition, NumberDefinition};
+    use datastore::definition::{
+        BooleanDefinition, IntegerDefinition, NumberConstraint, NumberDefinition,
+    };
     use datastore::store_key;
 
     fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
@@ -1780,20 +1782,14 @@ mod tests {
                     store_key!("col1"),
                     NumberDefinition::new_with_constraint(
                         "column 1",
-                        NumberConstraint::Max {
-                            max: 5.0,
-                            inclusive: true,
-                        },
+                        NumberConstraint::max(5.0, true),
                     ),
                 ),
                 (
                     store_key!("col2"),
                     NumberDefinition::new_with_constraint(
                         "column 2",
-                        NumberConstraint::Min {
-                            min: 10.0,
-                            inclusive: true,
-                        },
+                        NumberConstraint::min(10.0, true),
                     ),
                 ),
             ],

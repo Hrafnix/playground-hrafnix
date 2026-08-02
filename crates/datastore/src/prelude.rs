@@ -20,10 +20,11 @@ pub use crate::path::StorePath;
 // Definitions
 pub use crate::definition::{
     BooleanDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition,
-    GlobalObjectDefinition, GlobalObjectDefinitionBuilder, IntegerConstraint, IntegerDefinition,
-    ItemDefinitionType, MapDefinition, MapItemDefinition, NumberConstraint, NumberDefinition,
-    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StringDefinition, TableDefinition,
-    VariableObjectDefinition, VariableObjectDefinitionBuilder,
+    GlobalObjectDefinition, GlobalObjectDefinitionBuilder, IntegerConstraint,
+    IntegerConstraintEnum, IntegerDefinition, ItemDefinitionType, MapDefinition, MapItemDefinition,
+    NumberConstraint, NumberConstraintEnum, NumberDefinition, ParameterObjectDefinition,
+    ParameterObjectDefinitionBuilder, StringDefinition, TableDefinition, VariableObjectDefinition,
+    VariableObjectDefinitionBuilder,
 };
 
 // Shareable strings

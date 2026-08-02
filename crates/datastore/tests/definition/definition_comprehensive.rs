@@ -8,8 +8,8 @@
 use datastore::prelude::*;
 
 #[test]
-fn test_basic_definition_comprehensive() {
-    // Why: Test that various types of basic definitions can be created and hold correct values.
+fn test_definition_comprehensive() {
+    // Why: Test that various types of definitions can be created and hold correct values.
     let def = StringDefinition::new_with_default("Desc", "Default");
     assert_eq!(def.description_ref().as_ref(), "Desc");
     assert_eq!(def.default_value_ref().as_ref(), "Default");
@@ -34,7 +34,7 @@ fn test_basic_definition_comprehensive() {
 
 #[test]
 fn test_table_definition_comprehensive() {
-    // Why: Test that a table definition correctly stores column definitions and supports basic operations.
+    // Why: Test that a table definition correctly stores column definitions and supports operations.
     let table_def = TableDefinition::new(
         "Table Desc",
         vec![
@@ -92,7 +92,7 @@ fn test_map_definition_comprehensive() {
 
 #[test]
 fn test_parameter_definition_comprehensive() {
-    // Why: Test that an item definition correctly wraps a basic definition.
+    // Why: Test that an item definition correctly wraps a definition.
     let basic_def = StringDefinition::new("Basic");
     assert_eq!(basic_def.description_ref().as_ref(), "Basic");
 }
