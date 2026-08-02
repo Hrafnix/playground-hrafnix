@@ -40,7 +40,7 @@ fn test_complex_map_definition() {
 
 #[test]
 fn test_map_definition_all_basic_definition() {
-    // Why: Test map definition creation with all basic definitions.
+    // Why: Test map definition creation with all definitions.
     let map_def = MapDefinition::new(
         "A map",
         vec![

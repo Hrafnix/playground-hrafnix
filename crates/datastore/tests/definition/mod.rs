@@ -1,10 +1,15 @@
-mod definition_basic;
+mod definition_boolean;
+mod definition_choice;
 mod definition_comprehensive;
+mod definition_file;
 mod definition_global_builder;
 mod definition_global_object;
+mod definition_integer;
 mod definition_map;
+mod definition_number;
 mod definition_parameter_builder;
 mod definition_parameter_object;
+mod definition_string;
 mod definition_table;
 mod definition_variable_builder;
 mod definition_variable_object;
