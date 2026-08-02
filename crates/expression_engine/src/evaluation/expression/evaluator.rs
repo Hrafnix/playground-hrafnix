@@ -10,7 +10,7 @@ use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
 };
-use datastore::definition::{IntegerConstraint, NumberConstraint};
+use datastore::definition::{IntegerConstraintEnum, NumberConstraint};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
@@ -765,7 +765,7 @@ fn evaluate_basic_expression(
             if let ComputedItem::Integer(value) = &computed {
                 let constraint = integer_definition.constraint();
                 match constraint {
-                    IntegerConstraint::Min { min, inclusive } => {
+                    IntegerConstraintEnum::Min { min, inclusive } => {
                         if *value < min || (!inclusive && *value == min) {
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
@@ -778,7 +778,7 @@ fn evaluate_basic_expression(
                         }
                         Ok(computed)
                     }
-                    IntegerConstraint::Max { max, inclusive } => {
+                    IntegerConstraintEnum::Max { max, inclusive } => {
                         if *value > max || (!inclusive && *value == max) {
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
@@ -791,7 +791,7 @@ fn evaluate_basic_expression(
                         }
                         Ok(computed)
                     }
-                    IntegerConstraint::Range {
+                    IntegerConstraintEnum::Range {
                         min,
                         max,
                         min_inclusive,
@@ -819,7 +819,7 @@ fn evaluate_basic_expression(
                         }
                         Ok(computed)
                     }
-                    IntegerConstraint::None => Ok(computed),
+                    IntegerConstraintEnum::None => Ok(computed),
                 }
             } else {
                 Err(ExpressionError::new_complex(

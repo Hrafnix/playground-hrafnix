@@ -66,60 +66,43 @@ fn test_variable_object_definition_print() {
         )
         .with(
             VariableKey::new("v_p4_v2".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Min {
-                min: 0,
-                inclusive: true,
-            }),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::min(0, true)),
         )
         .with(
             VariableKey::new("v_p4_v3".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Min {
-                min: 20,
-                inclusive: false,
-            }),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::min(20, false)),
         )
         .with(
             VariableKey::new("v_p4_v4".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Max {
-                max: 10,
-                inclusive: true,
-            }),
+            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::max(10, true)),
         )
         .with(
             VariableKey::new("v_p4_v5".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
-                min: 0,
-                max: 10,
-                min_inclusive: true,
-                max_inclusive: true,
-            }),
+            IntegerDefinition::new_with_constraint(
+                "D4",
+                IntegerConstraint::range(0, 10, true, true),
+            ),
         )
         .with(
             VariableKey::new("v_p4_v6".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
-                min: 32,
-                max: 80,
-                min_inclusive: false,
-                max_inclusive: true,
-            }),
+            IntegerDefinition::new_with_constraint(
+                "D4",
+                IntegerConstraint::range(32, 80, false, true),
+            ),
         )
         .with(
             VariableKey::new("v_p4_v7".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
-                min: 10,
-                max: 150,
-                min_inclusive: false,
-                max_inclusive: true,
-            }),
+            IntegerDefinition::new_with_constraint(
+                "D4",
+                IntegerConstraint::range(10, 150, false, true),
+            ),
         )
         .with(
             VariableKey::new("v_p4_v8".into()).unwrap(),
-            IntegerDefinition::new_with_constraint("D4", IntegerConstraint::Range {
-                min: 40,
-                max: 100,
-                min_inclusive: false,
-                max_inclusive: false,
-            }),
+            IntegerDefinition::new_with_constraint(
+                "D4",
+                IntegerConstraint::range(40, 100, false, false),
+            ),
         )
         .with(
             VariableKey::new("v_p5".into()).unwrap(),
