@@ -16,8 +16,8 @@ impl BooleanDefinition {
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
-            true_description: ShareableString::new("true"),
-            false_description: ShareableString::new("false"),
+            true_description: ShareableString::new("True"),
+            false_description: ShareableString::new("False"),
             default_value: ShareableString::new(""),
         }
     }
@@ -26,8 +26,8 @@ impl BooleanDefinition {
     pub fn new_with_default<S: Into<ShareableString>>(description: S, default_value: bool) -> Self {
         Self {
             description: description.into(),
-            true_description: ShareableString::new("true"),
-            false_description: ShareableString::new("false"),
+            true_description: ShareableString::new("True"),
+            false_description: ShareableString::new("False"),
             default_value: ShareableString::new(if default_value { "true" } else { "false" }),
         }
     }
