@@ -3,6 +3,7 @@ mod editable_boolean;
 mod editable_choice;
 mod editable_file;
 mod editable_global_object;
+mod editable_integer;
 mod editable_map;
 mod editable_parameter_object;
 mod editable_table;
