@@ -17,6 +17,34 @@ pub enum ObjectItemInputData {
     Table(TableInputData),
 }
 
+/// Converts a single `MapItemFrozen` (an entry within a `Map` item) into its
+/// corresponding `ObjectItemInputData`.
+fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
+    match map_item {
+        MapItemFrozen::Choice(choice) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Choice(choice.definition().clone()),
+            choice.value(),
+        )),
+        MapItemFrozen::File(file) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::File(file.definition().clone()),
+            file.value(),
+        )),
+        MapItemFrozen::Number(number) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Number(number.definition().clone()),
+            number.value(),
+        )),
+        MapItemFrozen::String(string) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::String(string.definition().clone()),
+            string.value(),
+        )),
+        MapItemFrozen::Table(table) => ObjectItemInputData::Table(TableInputData::new(
+            table.definition().clone(),
+            table.parameter().clone(),
+            table.rows().to_vec(),
+        )),
+    }
+}
+
 /// Converts a single `ItemFrozen` into one or more input data entries
 /// and inserts them into `map`, keyed by `key`.
 ///
@@ -71,40 +99,7 @@ fn item_to_input_data(
             for (entry_key, entry) in item_map.iter() {
                 for (item_key, map_item) in entry.iter() {
                     let path: ShareableString = format!("{key}[{entry_key}][{item_key}]").into();
-                    let input_item = match map_item {
-                        MapItemFrozen::Choice(choice) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::Choice(choice.definition().clone()),
-                                choice.value(),
-                            ))
-                        }
-                        MapItemFrozen::File(file) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::File(file.definition().clone()),
-                                file.value(),
-                            ))
-                        }
-                        MapItemFrozen::Number(number) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::Number(number.definition().clone()),
-                                number.value(),
-                            ))
-                        }
-                        MapItemFrozen::String(string) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::String(string.definition().clone()),
-                                string.value(),
-                            ))
-                        }
-                        MapItemFrozen::Table(table) => {
-                            ObjectItemInputData::Table(TableInputData::new(
-                                table.definition().clone(),
-                                table.parameter().clone(),
-                                table.rows().to_vec(),
-                            ))
-                        }
-                    };
-                    map.insert(path, input_item);
+                    map.insert(path, map_item_to_input_data(map_item));
                 }
             }
         }
