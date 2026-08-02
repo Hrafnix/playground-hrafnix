@@ -20,21 +20,25 @@ impl ChoiceItemDefinition {
     }
 
     /// Returns the ID of the choice item.
+    #[must_use]
     pub fn id(&self) -> StoreKey {
         self.id.clone()
     }
 
     /// Returns the description of the choice item.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns a new `ChoiceItemDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             id: self.id.launder(store),
@@ -60,7 +64,7 @@ impl ChoiceDefinition {
         Self {
             description: description.into(),
             choices,
-            default_value: Default::default(),
+            default_value: ShareableString::default(),
         }
     }
 
@@ -78,6 +82,7 @@ impl ChoiceDefinition {
     }
 
     /// Returns a reference to the list of choices.
+    #[must_use]
     pub fn choices(&self) -> &[ChoiceItemDefinition] {
         &self.choices
     }
@@ -89,19 +94,22 @@ impl ChoiceDefinition {
     }
 
     /// Returns a vector of IDs for the choices.
+    #[must_use]
     pub fn ids(&self) -> Vec<StoreKey> {
-        self.choices.iter().map(|choice| choice.id()).collect()
+        self.choices.iter().map(ChoiceItemDefinition::id).collect()
     }
 
     /// Returns a vector of descriptions for the choices.
+    #[must_use]
     pub fn descriptions(&self) -> Vec<ShareableString> {
         self.choices
             .iter()
-            .map(|choice| choice.description())
+            .map(ChoiceItemDefinition::description)
             .collect()
     }
 
     /// Returns a new `ChoiceDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -115,21 +123,25 @@ impl ChoiceDefinition {
     }
 
     /// Returns the description of the parameter.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the default value of the parameter.
+    #[must_use]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
 
     /// Returns a reference to the default value.
+    #[must_use]
     pub fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }

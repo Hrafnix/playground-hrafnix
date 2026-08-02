@@ -20,6 +20,7 @@ pub struct ParameterObjectFrozen {
 
 impl ParameterObjectFrozen {
     /// Creates a new `ParameterObjectFrozen` with a definition.
+    #[must_use]
     pub fn new(definition: ParameterObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -96,6 +97,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Creates a new `ParameterObjectFrozen` from a given `ParameterObjectEditable` value.
+    #[must_use]
     pub fn new_from_editable(editable_object: &ParameterObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -112,6 +114,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Converts the current `ParameterObjectFrozen` instance into a `ParameterObjectEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> ParameterObjectEditable {
         ParameterObjectEditable::new_from_frozen(self)
     }
@@ -122,7 +125,11 @@ impl ParameterObjectFrozen {
         h.update(&[0x01]);
         h.update(b"ParameterObject");
 
-        h.update(&(self.items.len() as u64).to_le_bytes());
+        h.update(
+            &u64::try_from(self.items.len())
+                .unwrap_or(u64::MAX)
+                .to_le_bytes(),
+        );
 
         for (key, item) in &self.items {
             h.update(&key.current_blake3_hash());
@@ -134,6 +141,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
@@ -149,6 +157,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }
@@ -182,10 +191,10 @@ impl TreePrint for ParameterObjectFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 

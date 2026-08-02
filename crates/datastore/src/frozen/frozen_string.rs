@@ -14,6 +14,7 @@ pub struct StringFrozen {
 
 impl StringFrozen {
     /// Creates a new `StringFrozen` instance.
+    #[must_use]
     pub fn new(definition: StringDefinition) -> Self {
         let value = definition.default_value();
 
@@ -27,6 +28,7 @@ impl StringFrozen {
     }
 
     /// Creates a new `StringFrozen` instance with a specified value.
+    #[must_use]
     pub fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -38,6 +40,7 @@ impl StringFrozen {
     }
 
     /// Creates a new `StringFrozen` instance from a given `StringEditable` value.
+    #[must_use]
     pub fn new_from_editable(basic: &StringEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value().clone();
@@ -51,6 +54,7 @@ impl StringFrozen {
     }
 
     /// Converts the current `StringFrozen` instance into a `StringEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> StringEditable {
         StringEditable::new(self)
     }
@@ -69,16 +73,19 @@ impl StringFrozen {
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the string definition.
+    #[must_use]
     pub fn definition(&self) -> &StringDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }

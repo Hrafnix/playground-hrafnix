@@ -18,6 +18,7 @@ impl Default for SharedStringStore {
 
 impl SharedStringStore {
     /// Creates a new, empty `SharedStringStore`.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             string_store: Arc::new(RwLock::new(FxHashSet::default())),
@@ -33,16 +34,19 @@ impl SharedStringStore {
     }
 
     /// Returns the number of unique strings in the store.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.string_store.read().len()
     }
 
     /// Checks if the internal string store is empty.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.string_store.read().is_empty()
     }
 
     /// Returns true if the store contains the specified string.
+    #[must_use]
     pub fn contains(&self, key: &str) -> bool {
         self.string_store.read().contains(key)
     }
@@ -231,19 +235,19 @@ mod tests {
     fn test_store_len() {
         let store = SharedStringStore::new();
         assert_eq!(store.len(), 0);
-        assert_eq!(store.is_empty(), true);
+        assert!(store.is_empty());
 
         let _a = store.get("a");
         assert_eq!(store.len(), 1);
-        assert_eq!(store.is_empty(), false);
+        assert!(!store.is_empty());
 
         let _a = store.get("a");
         assert_eq!(store.len(), 1);
-        assert_eq!(store.is_empty(), false);
+        assert!(!store.is_empty());
 
         let _b = store.get("b");
         assert_eq!(store.len(), 2);
-        assert_eq!(store.is_empty(), false);
+        assert!(!store.is_empty());
     }
 
     #[test]
@@ -418,6 +422,6 @@ mod tests {
     fn test_store_default() {
         let store = SharedStringStore::default();
         assert_eq!(store.len(), 0);
-        assert_eq!(store.is_empty(), true);
+        assert!(store.is_empty());
     }
 }

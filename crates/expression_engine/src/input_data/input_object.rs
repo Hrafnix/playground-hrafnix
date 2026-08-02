@@ -17,6 +17,34 @@ pub enum ObjectItemInputData {
     Table(TableInputData),
 }
 
+/// Converts a single `MapItemFrozen` (an entry within a `Map` item) into its
+/// corresponding `ObjectItemInputData`.
+fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
+    match map_item {
+        MapItemFrozen::Choice(choice) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Choice(choice.definition().clone()),
+            choice.value(),
+        )),
+        MapItemFrozen::File(file) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::File(file.definition().clone()),
+            file.value(),
+        )),
+        MapItemFrozen::Number(number) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Number(number.definition().clone()),
+            number.value(),
+        )),
+        MapItemFrozen::String(string) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::String(string.definition().clone()),
+            string.value(),
+        )),
+        MapItemFrozen::Table(table) => ObjectItemInputData::Table(TableInputData::new(
+            table.definition().clone(),
+            table.parameter().clone(),
+            table.rows().to_vec(),
+        )),
+    }
+}
+
 /// Converts a single `ItemFrozen` into one or more input data entries
 /// and inserts them into `map`, keyed by `key`.
 ///
@@ -70,42 +98,8 @@ fn item_to_input_data(
             // item, addressed by a `key[entry][field]` path.
             for (entry_key, entry) in item_map.iter() {
                 for (item_key, map_item) in entry.iter() {
-                    let path: ShareableString =
-                        format!("{}[{}][{}]", key, entry_key, item_key).into();
-                    let input_item = match map_item {
-                        MapItemFrozen::Choice(choice) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::Choice(choice.definition().clone()),
-                                choice.value(),
-                            ))
-                        }
-                        MapItemFrozen::File(file) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::File(file.definition().clone()),
-                                file.value(),
-                            ))
-                        }
-                        MapItemFrozen::Number(number) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::Number(number.definition().clone()),
-                                number.value(),
-                            ))
-                        }
-                        MapItemFrozen::String(string) => {
-                            ObjectItemInputData::Basic(BasicInputData::new(
-                                BasicDefinition::String(string.definition().clone()),
-                                string.value(),
-                            ))
-                        }
-                        MapItemFrozen::Table(table) => {
-                            ObjectItemInputData::Table(TableInputData::new(
-                                table.definition().clone(),
-                                table.parameter().clone(),
-                                table.rows().to_vec(),
-                            ))
-                        }
-                    };
-                    map.insert(path, input_item);
+                    let path: ShareableString = format!("{key}[{entry_key}][{item_key}]").into();
+                    map.insert(path, map_item_to_input_data(map_item));
                 }
             }
         }
@@ -149,7 +143,8 @@ pub struct GlobalObjectInputData {
 
 impl GlobalObjectInputData {
     /// Creates a new `GlobalObjectInputData` instance from the given `GlobalObjectFrozen`.
-    pub fn new(frozen_data: GlobalObjectFrozen) -> Self {
+    #[must_use]
+    pub fn new(frozen_data: &GlobalObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_input_data(&mut data, key.into(), item);
@@ -158,6 +153,7 @@ impl GlobalObjectInputData {
     }
 
     /// Returns a reference to the underlying `ObjectInputData`.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
@@ -172,7 +168,8 @@ pub struct ParameterObjectInputData {
 
 impl ParameterObjectInputData {
     /// Creates a new `ParameterObjectInputData` instance from the given `ParameterObjectFrozen`.
-    pub fn new(frozen_data: ParameterObjectFrozen) -> Self {
+    #[must_use]
+    pub fn new(frozen_data: &ParameterObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_input_data(&mut data, key.into(), item);
@@ -181,6 +178,7 @@ impl ParameterObjectInputData {
     }
 
     /// Returns a reference to the underlying `ObjectInputData`.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
@@ -195,7 +193,8 @@ pub struct VariableObjectInputData {
 
 impl VariableObjectInputData {
     /// Creates a new `VariableObjectInputData` instance from the given `VariableObjectFrozen`.
-    pub fn new(frozen_data: VariableObjectFrozen) -> Self {
+    #[must_use]
+    pub fn new(frozen_data: &VariableObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
             item_to_input_data(&mut data, key.into(), item);
@@ -204,6 +203,7 @@ impl VariableObjectInputData {
     }
 
     /// Returns a reference to the underlying `ObjectInputData`.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }

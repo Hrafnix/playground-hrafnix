@@ -18,6 +18,7 @@ pub struct GlobalObjectEditable {
 
 impl GlobalObjectEditable {
     /// Creates a new `GlobalObjectEditable` from an `GlobalObjectFrozen`.
+    #[must_use]
     pub fn new_from_frozen(frozen_object: &GlobalObjectFrozen) -> Self {
         Self {
             definition: frozen_object.definition().clone(),
@@ -29,6 +30,7 @@ impl GlobalObjectEditable {
     }
 
     /// Creates a new `GlobalObjectFrozen` from this `GlobalObjectEditable`.
+    #[must_use]
     pub fn freeze(&self) -> GlobalObjectFrozen {
         GlobalObjectFrozen::new_from_editable(self)
     }
@@ -49,6 +51,7 @@ impl GlobalObjectEditable {
     }
 
     /// Returns a reference to the object definition.
+    #[must_use]
     pub fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }
@@ -78,10 +81,10 @@ impl TreePrint for GlobalObjectEditable {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 

@@ -17,10 +17,10 @@ fn test_basic_data_integer() {
             .finish(),
     );
 
-    let data = ParameterObjectInputData::new(frozen);
+    let data = ParameterObjectInputData::new(&frozen);
 
     let output = ExpressionEngine::new()
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     let number = output.get("p_number").unwrap();
@@ -42,10 +42,10 @@ fn test_basic_data_integer_expression() {
             .finish(),
     );
 
-    let data = ParameterObjectInputData::new(frozen);
+    let data = ParameterObjectInputData::new(&frozen);
 
     let output = ExpressionEngine::new()
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     let number = output.get("p_number").unwrap();
@@ -67,10 +67,10 @@ fn test_basic_data_implicit_multiplication_before_parenthesis() {
             .finish(),
     );
 
-    let data = ParameterObjectInputData::new(frozen);
+    let data = ParameterObjectInputData::new(&frozen);
 
     let output = ExpressionEngine::new()
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     let number = output.get("p_number").unwrap();
@@ -92,10 +92,10 @@ fn test_basic_data_scientific_notation_expression() {
             .finish(),
     );
 
-    let data = ParameterObjectInputData::new(frozen);
+    let data = ParameterObjectInputData::new(&frozen);
 
     let output = ExpressionEngine::new()
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     let number = output.get("p_number").unwrap();
@@ -126,16 +126,16 @@ fn test_basic_global_data_integer_expression() {
             .finish(),
     );
 
-    let global_data = GlobalObjectInputData::new(global_frozen);
-    let data = ParameterObjectInputData::new(frozen);
+    let global_data = GlobalObjectInputData::new(&global_frozen);
+    let data = ParameterObjectInputData::new(&frozen);
 
     let mut engine = ExpressionEngine::new();
     engine
-        .evaluate_globals(global_data)
+        .evaluate_globals(&global_data)
         .expect("evaluation should succeed");
 
     let output = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     let number = output.get("p_number").unwrap();

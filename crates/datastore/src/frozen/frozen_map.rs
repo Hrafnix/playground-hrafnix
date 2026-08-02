@@ -25,6 +25,7 @@ pub enum MapItemFrozen {
 
 impl MapItemFrozen {
     /// Returns the string value if this item is a string value.
+    #[must_use]
     pub fn get_string(&self) -> Option<&StringFrozen> {
         match self {
             MapItemFrozen::String(string) => Some(string),
@@ -33,6 +34,7 @@ impl MapItemFrozen {
     }
 
     /// Returns the table value if this item is a table value.
+    #[must_use]
     pub fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             MapItemFrozen::Table(table) => Some(table),
@@ -41,6 +43,7 @@ impl MapItemFrozen {
     }
 
     /// Returns the map item definition.
+    #[must_use]
     pub fn definition(&self) -> MapItemDefinition {
         match self {
             MapItemFrozen::Choice(choice) => MapItemDefinition::Choice(choice.definition().clone()),
@@ -52,6 +55,7 @@ impl MapItemFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the item.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         match self {
             MapItemFrozen::Choice(choice) => choice.hash(),
@@ -63,6 +67,7 @@ impl MapItemFrozen {
     }
 
     /// Creates a new `MapItemFrozen` instance from a given `MapItemEditable` value.
+    #[must_use]
     pub fn new_from_editable(item: &MapItemEditable) -> Self {
         match item {
             MapItemEditable::Choice(choice) => {
@@ -82,6 +87,7 @@ impl MapItemFrozen {
     }
 
     /// Converts the current `MapItemFrozen` instance into a `MapItemEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> MapItemEditable {
         MapItemEditable::new(self)
     }
@@ -128,6 +134,7 @@ pub struct MapEntryFrozen {
 
 impl MapEntryFrozen {
     /// Creates a new `MapEntryFrozen` from the map's entry schema.
+    #[must_use]
     pub fn new(item_type: &BTreeMap<StoreKey, MapItemDefinition>) -> Self {
         let mut items = BTreeMap::new();
         for (key, item_definition) in item_type {
@@ -174,6 +181,7 @@ impl MapEntryFrozen {
     }
 
     /// Creates a new `MapEntryFrozen` from a set of items.
+    #[must_use]
     pub fn new_from_items(items: BTreeMap<StoreKey, MapItemFrozen>) -> Self {
         let mut s = Self {
             items,
@@ -184,6 +192,7 @@ impl MapEntryFrozen {
     }
 
     /// Creates a new `MapEntryFrozen` from a given `MapEntryEditable` value.
+    #[must_use]
     pub fn new_from_editable(editable_entry: &MapEntryEditable) -> Self {
         let items = editable_entry
             .iter()
@@ -193,6 +202,7 @@ impl MapEntryFrozen {
     }
 
     /// Converts the current `MapEntryFrozen` instance into a `MapEntryEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> MapEntryEditable {
         MapEntryEditable::new(self)
     }
@@ -203,7 +213,11 @@ impl MapEntryFrozen {
         h.update(&[0x01]);
         h.update(b"MapEntry");
 
-        h.update(&(self.items.len() as u64).to_le_bytes());
+        h.update(
+            &u64::try_from(self.items.len())
+                .unwrap_or(u64::MAX)
+                .to_le_bytes(),
+        );
 
         for (key, item) in &self.items {
             h.update(&key.current_blake3_hash());
@@ -215,6 +229,7 @@ impl MapEntryFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the entry.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
@@ -248,6 +263,7 @@ impl MapEntryFrozen {
     }
 
     /// Returns the schema of this entry, derived from its current items.
+    #[must_use]
     pub fn definition(&self) -> BTreeMap<StoreKey, MapItemDefinition> {
         self.items
             .iter()
@@ -280,10 +296,10 @@ impl TreePrint for MapEntryFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 
@@ -304,6 +320,7 @@ pub struct MapFrozen {
 
 impl MapFrozen {
     /// Creates a new `MapFrozen` with a definition.
+    #[must_use]
     pub fn new(definition: MapDefinition) -> Self {
         let mut s = Self {
             definition,
@@ -315,6 +332,11 @@ impl MapFrozen {
     }
 
     /// Creates a new `MapFrozen` with a description and items.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StoreError::SchemaMismatch` if the items do not all share the same
+    /// entry schema, or `StoreError::MissingSchema` if `items` is empty.
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<StoreKey, MapEntryFrozen>,
@@ -325,8 +347,7 @@ impl MapFrozen {
                 let schema = item.definition();
                 if first_schema != schema {
                     return Err(StoreError::SchemaMismatch(format!(
-                        "FrozenMap items must have the same entry schema. Expected: {:?}, Found: {:?}",
-                        first_schema, schema
+                        "FrozenMap items must have the same entry schema. Expected: {first_schema:?}, Found: {schema:?}"
                     )));
                 }
             }
@@ -348,6 +369,7 @@ impl MapFrozen {
     }
 
     /// Creates a new `MapFrozen` from a given `MapEditable` value.
+    #[must_use]
     pub fn new_from_editable(editable_map: &MapEditable) -> Self {
         let definition = editable_map.definition().clone();
         let items = editable_map
@@ -364,6 +386,7 @@ impl MapFrozen {
     }
 
     /// Converts the current `MapFrozen` instance into a `MapEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> MapEditable {
         MapEditable::new(self)
     }
@@ -374,7 +397,11 @@ impl MapFrozen {
         h.update(&[0x01]);
         h.update(b"Map");
 
-        h.update(&(self.items.len() as u64).to_le_bytes());
+        h.update(
+            &u64::try_from(self.items.len())
+                .unwrap_or(u64::MAX)
+                .to_le_bytes(),
+        );
 
         for (key, item) in &self.items {
             h.update(&key.current_blake3_hash());
@@ -386,6 +413,7 @@ impl MapFrozen {
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the map.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }
@@ -401,11 +429,13 @@ impl MapFrozen {
     }
 
     /// Returns a reference to the map definition.
+    #[must_use]
     pub fn definition(&self) -> &MapDefinition {
         &self.definition
     }
 
     /// Returns the number of items in the map.
+    #[must_use]
     pub fn count(&self) -> usize {
         self.items.len()
     }
@@ -442,10 +472,10 @@ impl TreePrint for MapFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 

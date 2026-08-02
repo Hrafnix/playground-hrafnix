@@ -143,7 +143,7 @@ fn test_variable_object_definition_print() {
         .finish();
 
     assert_eq!(
-        format!("{}", def_1),
+        format!("{def_1}"),
         "Variable Object Definition (Test)\n    ├── v_p1 (D1) String - default: \"\"\n    ├── v_p2 (D2) Boolean - default: \"\" [true (true), false (false)]\n    ├── v_p3 (D3) File - default: \"\" [ext]\n    ├── v_p4 (D4) Integer - default: \"\"\n    ├── v_p5 (D5) Number - default: \"\"\n    ├── v_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── v_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── v_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
     );
 }

@@ -148,7 +148,7 @@ fn test_variable_object_definition_inherit() {
         .finish();
 
     let child_def = VariableObjectDefinitionBuilder::new("Child")
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .with(
             VariableKey::new("v_c1".into()).unwrap(),
             StringDefinition::new("D2"),
@@ -159,7 +159,10 @@ fn test_variable_object_definition_inherit() {
     assert!(child_def.contains("v_p1"));
     assert!(child_def.contains("v_c1"));
 
-    let keys: Vec<_> = child_def.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<_> = child_def
+        .keys()
+        .map(datastore::key::VariableKey::as_str)
+        .collect();
     assert_eq!(keys[0], "v_p1");
     assert_eq!(keys[1], "v_c1");
 }
@@ -179,7 +182,7 @@ fn test_variable_object_definition_inherit_overwrite() {
             VariableKey::new("v_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .finish();
 
     assert_eq!(child_def.count(), 1);
@@ -200,14 +203,17 @@ fn test_variable_object_definition_inherit_with_check() {
             VariableKey::new("v_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 
     let child_def_builder = result.unwrap();
     let child_def = child_def_builder.finish();
 
-    let keys: Vec<_> = child_def.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<_> = child_def
+        .keys()
+        .map(datastore::key::VariableKey::as_str)
+        .collect();
     assert_eq!(keys[0], "v_p2");
     assert_eq!(keys[1], "v_p1");
 }
@@ -227,7 +233,7 @@ fn test_variable_object_definition_inherit_with_check_error() {
             VariableKey::new("v_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Err(StoreError::KeyConflict(_))));
 }
@@ -263,7 +269,7 @@ fn test_variable_object_definition_inherit_from_builder_with_check() {
         )
         .inherit_from_builder_with_check(b1);
 
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 }
 
 #[test]

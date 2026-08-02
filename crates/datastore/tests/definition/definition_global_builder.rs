@@ -162,7 +162,7 @@ fn test_object_definition_inherit() {
         .finish();
 
     let child_def = GlobalObjectDefinitionBuilder::new("Child")
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .with(
             GlobalKey::new("g_c1".into()).unwrap(),
             StringDefinition::new("D2"),
@@ -173,7 +173,10 @@ fn test_object_definition_inherit() {
     assert!(child_def.contains("g_p1"));
     assert!(child_def.contains("g_c1"));
 
-    let keys: Vec<_> = child_def.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<_> = child_def
+        .keys()
+        .map(datastore::key::GlobalKey::as_str)
+        .collect();
     assert_eq!(keys[0], "g_p1");
     assert_eq!(keys[1], "g_c1");
 }
@@ -193,7 +196,7 @@ fn test_object_definition_inherit_overwrite() {
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit(parent_def)
+        .inherit(&parent_def)
         .finish();
 
     assert_eq!(child_def.count(), 1);
@@ -214,14 +217,17 @@ fn test_object_definition_inherit_with_check() {
             GlobalKey::new("g_p2".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 
     let child_def_builder = result.unwrap();
     let child_def = child_def_builder.finish();
 
-    let keys: Vec<_> = child_def.keys().map(|key| key.as_str()).collect();
+    let keys: Vec<_> = child_def
+        .keys()
+        .map(datastore::key::GlobalKey::as_str)
+        .collect();
     assert_eq!(keys[0], "g_p2");
     assert_eq!(keys[1], "g_p1");
 }
@@ -241,7 +247,7 @@ fn test_object_definition_inherit_with_check_error() {
             GlobalKey::new("g_p1".into()).unwrap(),
             StringDefinition::new("D2"),
         )
-        .inherit_with_check(parent_def);
+        .inherit_with_check(&parent_def);
 
     assert!(matches!(result, Err(StoreError::KeyConflict(_))));
 }
@@ -277,7 +283,7 @@ fn test_object_definition_inherit_from_builder_with_check() {
         )
         .inherit_from_builder_with_check(b1);
 
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 }
 
 #[test]

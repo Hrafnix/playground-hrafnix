@@ -1,0 +1,12 @@
+# Disallow calling the internal `Const*Key::__new` constructors directly.
+# They skip the compile-time-forcing `const { }` block that the
+# `store_key!` / `global_key!` / `parameter_key!` / `variable_key!` macros
+# wrap around them, so invalid key literals would only panic at runtime
+# instead of failing to compile.
+disallowed-methods = [
+    { path = "datastore::key::ConstStoreKey::__new", reason = "construct via the `store_key!` macro instead so invalid keys fail to compile" },
+    { path = "datastore::key::ConstGlobalKey::__new", reason = "construct via the `global_key!` macro instead so invalid keys fail to compile" },
+    { path = "datastore::key::ConstParameterKey::__new", reason = "construct via the `parameter_key!` macro instead so invalid keys fail to compile" },
+    { path = "datastore::key::ConstVariableKey::__new", reason = "construct via the `variable_key!` macro instead so invalid keys fail to compile" },
+]
+too-many-lines-threshold = 225

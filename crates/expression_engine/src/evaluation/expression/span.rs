@@ -19,13 +19,13 @@ impl Span {
     }
 
     pub(crate) fn end(&self) -> usize {
-        self.start + self.size
+        self.start.saturating_add(self.size)
     }
 
     pub(crate) fn join(&self, other: &Span) -> Span {
         let new_start = self.start.min(other.start);
         let new_end = self.end().max(other.end());
-        let new_size = (new_end - new_start).max(1);
+        let new_size = new_end.saturating_sub(new_start).max(1);
         Span::new(new_start, new_size)
     }
 
@@ -67,7 +67,7 @@ impl SpanSet {
     }
 
     fn sort_and_merge(&mut self) {
-        self.indices.sort_by_key(|index| index.start());
+        self.indices.sort_by_key(Span::start);
         let mut merged_indices: Vec<Span> = Vec::new();
         for index in &self.indices {
             if let Some(last) = merged_indices.last_mut() {

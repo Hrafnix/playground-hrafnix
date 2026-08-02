@@ -7,6 +7,16 @@ use std::hash::Hash;
 
 const KEY_WORDS: [&str; 2] = ["true", "false"];
 
+macro_rules! const_assert {
+    ($x:expr, $msg:expr $(,)?) => {
+        let _: () = ::core::assert!($x, $msg);
+    };
+}
+
+#[allow(
+    clippy::indexing_slicing,
+    reason = "All indexed access is guarded by explicit length and loop-bound checks."
+)]
 const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     let s_bytes = s.as_bytes();
     let prefix_bytes = prefix.as_bytes();
@@ -20,10 +30,10 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
         if s_bytes[i] != prefix_bytes[i] {
             return false;
         }
-        i += 1;
+        i = i.saturating_add(1);
     }
 
-    let rest = s_bytes.len() - prefix_bytes.len();
+    let rest = s_bytes.len().saturating_sub(prefix_bytes.len());
     if rest == 0 {
         return false;
     }
@@ -46,23 +56,23 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
                         matches = false;
                         break;
                     }
-                    j += 1;
+                    j = j.saturating_add(1);
                 }
                 if matches {
                     return false;
                 }
             }
-            i += 1;
+            i = i.saturating_add(1);
         }
     }
 
-    let mut i = prefix_bytes.len() + 1;
+    let mut i = prefix_bytes.len().saturating_add(1);
     while i < s_bytes.len() {
         let c = s_bytes[i];
         if !c.is_ascii_lowercase() && !c.is_ascii_digit() && c != b'_' {
             return false;
         }
-        i += 1;
+        i = i.saturating_add(1);
     }
     true
 }
@@ -74,6 +84,7 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
 /// Returns true if the key is not empty and only contains valid characters.
 /// The first character must be lowercase a-z.
 /// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
+#[must_use]
 pub const fn is_valid_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "")
 }
@@ -99,14 +110,19 @@ pub struct ConstStoreKey(pub(crate) &'static str);
 impl ConstStoreKey {
     /// Creates a new `ConstStoreKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_key(key) {
-            panic!("Invalid StoreKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `store_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_key(key), "Invalid StoreKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -252,6 +268,9 @@ pub struct StoreKey {
 
 impl StoreKey {
     /// Creates a new `StoreKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty` or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_key(&key)?;
@@ -265,16 +284,19 @@ impl StoreKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `StoreKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -285,11 +307,13 @@ impl StoreKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
 
     /// Returns true if the key starts with the given prefix.
+    #[must_use]
     pub fn starts_with(&self, prefix: &str) -> bool {
         self.key.as_str().starts_with(prefix)
     }
@@ -423,11 +447,15 @@ impl std::borrow::Borrow<ShareableString> for StoreKey {
 }
 
 /// A macro to create a `ConstStoreKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! store_key {
     ($key:expr) => {
-        $crate::key::ConstStoreKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstStoreKey::__new($key)
+        }
     };
 }
 
@@ -436,6 +464,7 @@ macro_rules! store_key {
 // =====================================================================
 
 /// Returns true if the key starts with g_ and the rest is a valid key.
+#[must_use]
 pub const fn is_valid_global_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "g_")
 }
@@ -460,14 +489,19 @@ pub struct ConstGlobalKey(pub(crate) &'static str);
 impl ConstGlobalKey {
     /// Creates a new `ConstGlobalKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_global_key(key) {
-            panic!("Invalid GlobalKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `global_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_global_key(key), "Invalid GlobalKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -508,7 +542,7 @@ impl From<&ConstGlobalKey> for ShareableString {
 }
 
 /// A validated global key.
-/// Global keys must start with g_ and follow the rest of the StoreKey rules.
+/// Global keys must start with g_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GlobalKey {
     pub(crate) key: ShareableString,
@@ -516,6 +550,9 @@ pub struct GlobalKey {
 
 impl GlobalKey {
     /// Creates a new `GlobalKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_global_key(&key)?;
@@ -529,16 +566,19 @@ impl GlobalKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `GlobalKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -549,6 +589,7 @@ impl GlobalKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
@@ -706,11 +747,15 @@ impl std::borrow::Borrow<ShareableString> for GlobalKey {
 }
 
 /// A macro to create a `ConstGlobalKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! global_key {
     ($key:expr) => {
-        $crate::key::ConstGlobalKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstGlobalKey::__new($key)
+        }
     };
 }
 
@@ -719,6 +764,7 @@ macro_rules! global_key {
 // =====================================================================
 
 /// Returns true if the key starts with p_ and the rest is a valid key.
+#[must_use]
 pub const fn is_valid_parameter_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "p_")
 }
@@ -743,14 +789,19 @@ pub struct ConstParameterKey(pub(crate) &'static str);
 impl ConstParameterKey {
     /// Creates a new `ConstParameterKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_parameter_key(key) {
-            panic!("Invalid ParameterKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `parameter_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_parameter_key(key), "Invalid ParameterKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -791,7 +842,7 @@ impl From<&ConstParameterKey> for ShareableString {
 }
 
 /// A validated parameter key.
-/// Parameter keys must start with p_ and follow the rest of the StoreKey rules.
+/// Parameter keys must start with p_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParameterKey {
     pub(crate) key: ShareableString,
@@ -799,6 +850,9 @@ pub struct ParameterKey {
 
 impl ParameterKey {
     /// Creates a new `ParameterKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_parameter_key(&key)?;
@@ -812,16 +866,19 @@ impl ParameterKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `ParameterKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -832,6 +889,7 @@ impl ParameterKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
@@ -989,11 +1047,15 @@ impl std::borrow::Borrow<ShareableString> for ParameterKey {
 }
 
 /// A macro to create a `ConstParameterKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! parameter_key {
     ($key:expr) => {
-        $crate::key::ConstParameterKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstParameterKey::__new($key)
+        }
     };
 }
 
@@ -1002,6 +1064,7 @@ macro_rules! parameter_key {
 // =====================================================================
 
 /// Returns true if the key starts with v_ and the rest is a valid key.
+#[must_use]
 pub const fn is_valid_variable_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "v_")
 }
@@ -1026,14 +1089,19 @@ pub struct ConstVariableKey(pub(crate) &'static str);
 impl ConstVariableKey {
     /// Creates a new `ConstVariableKey` from a validated literal.
     /// Panics at compile-time if the key is invalid.
-    pub const fn new(key: &'static str) -> Self {
-        if !is_valid_variable_key(key) {
-            panic!("Invalid VariableKey literal");
-        }
+    ///
+    /// Not part of the public API: use the `variable_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_variable_key(key), "Invalid VariableKey literal");
         Self(key)
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         self.0
     }
@@ -1074,7 +1142,7 @@ impl From<&ConstVariableKey> for ShareableString {
 }
 
 /// A validated variable key.
-/// Variable keys must start with v_ and follow the rest of the StoreKey rules.
+/// Variable keys must start with v_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VariableKey {
     pub(crate) key: ShareableString,
@@ -1082,6 +1150,9 @@ pub struct VariableKey {
 
 impl VariableKey {
     /// Creates a new `VariableKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_variable_key(&key)?;
@@ -1095,16 +1166,19 @@ impl VariableKey {
     }
 
     /// Returns the string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
 
     /// Returns the underlying `ShareableString`.
+    #[must_use]
     pub fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
     /// Returns a new `VariableKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -1115,6 +1189,7 @@ impl VariableKey {
     }
 
     /// Returns the BLAKE3 hash of the key.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
@@ -1272,11 +1347,15 @@ impl std::borrow::Borrow<ShareableString> for VariableKey {
 }
 
 /// A macro to create a `ConstVariableKey` from a string literal.
-/// Validates the key at compile-time.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
 #[macro_export]
 macro_rules! variable_key {
     ($key:expr) => {
-        $crate::key::ConstVariableKey::new($key)
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstVariableKey::__new($key)
+        }
     };
 }
 
@@ -1379,6 +1458,10 @@ mod tests {
 
     #[test]
     fn test_cross_key_equality() {
+        const CP: ConstParameterKey = parameter_key!("p_test");
+        const CG: ConstGlobalKey = global_key!("g_test");
+        const CV: ConstVariableKey = variable_key!("v_test");
+
         let p_key = ParameterKey::new(ShareableString::from("p_test")).unwrap();
         let g_key = GlobalKey::new(ShareableString::from("g_test")).unwrap();
         let v_key = VariableKey::new(ShareableString::from("v_test")).unwrap();
@@ -1407,10 +1490,6 @@ mod tests {
         assert_ne!(g_key, s_key_v);
 
         // Const equality
-        const CP: ConstParameterKey = ConstParameterKey::new("p_test");
-        const CG: ConstGlobalKey = ConstGlobalKey::new("g_test");
-        const CV: ConstVariableKey = ConstVariableKey::new("v_test");
-
         assert_eq!(CP, p_key);
         assert_eq!(p_key, CP);
         assert_eq!(CV, v_key);
@@ -1456,7 +1535,7 @@ mod tests {
 
     #[test]
     fn test_const_store_key_comparisons() {
-        let csk = ConstStoreKey::new("key");
+        let csk = store_key!("key");
         let sk = StoreKey::new(ShareableString::new("key")).unwrap();
         let ss = ShareableString::new("key");
         let s = "key";
@@ -1542,9 +1621,9 @@ mod tests {
 
     #[test]
     fn test_const_store_key() {
-        const KEY: ConstStoreKey = ConstStoreKey::new("valid_key");
+        const KEY: ConstStoreKey = store_key!("valid_key");
         assert_eq!(KEY.as_str(), "valid_key");
-        assert_eq!(format!("{}", KEY), "valid_key");
+        assert_eq!(format!("{KEY}"), "valid_key");
 
         // From<ConstStoreKey>
         let store_key: StoreKey = KEY.into();
@@ -1564,7 +1643,45 @@ mod tests {
     #[test]
     #[should_panic(expected = "Invalid StoreKey literal")]
     fn test_const_store_key_invalid() {
-        let _ = ConstStoreKey::new("Invalid");
+        // Bypasses the `store_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstStoreKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid GlobalKey literal")]
+    fn test_const_global_key_invalid() {
+        // Bypasses the `global_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstGlobalKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid ParameterKey literal")]
+    fn test_const_parameter_key_invalid() {
+        // Bypasses the `parameter_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstParameterKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid VariableKey literal")]
+    fn test_const_variable_key_invalid() {
+        // Bypasses the `variable_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstVariableKey::__new("Invalid");
     }
 
     #[test]

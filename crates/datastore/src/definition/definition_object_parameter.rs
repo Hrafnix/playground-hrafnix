@@ -29,7 +29,8 @@ impl ParameterObjectDefinitionBuilder {
     ///
     /// This method will overwrite existing items with the same keys.
     /// Will keep the order of the existing keys and append new keys at the end.
-    pub fn inherit(mut self, definition: ParameterObjectDefinition) -> Self {
+    #[must_use]
+    pub fn inherit(mut self, definition: &ParameterObjectDefinition) -> Self {
         for key in definition.items.keys() {
             if !self.items.contains_key(key) {
                 self.ordered_keys.push(key.clone());
@@ -53,7 +54,7 @@ impl ParameterObjectDefinitionBuilder {
     /// Returns `StoreError::KeyConflict` if any key already exists in the builder.
     pub fn inherit_with_check(
         mut self,
-        definition: ParameterObjectDefinition,
+        definition: &ParameterObjectDefinition,
     ) -> Result<Self, StoreError> {
         for key in definition.items.keys() {
             if self.items.contains_key(key) {
@@ -77,6 +78,7 @@ impl ParameterObjectDefinitionBuilder {
     ///
     /// This method will overwrite existing items with the same keys.
     /// Will keep the order of the existing keys and append new keys at the end.
+    #[must_use]
     pub fn inherit_from_builder(mut self, builder: ParameterObjectDefinitionBuilder) -> Self {
         for key in builder.items.keys() {
             if !self.items.contains_key(key) {
@@ -122,6 +124,7 @@ impl ParameterObjectDefinitionBuilder {
     ///
     /// This method will overwrite existing items with the same keys.
     /// If the key does not exist, it will be appended to the end of the ordered keys.
+    #[must_use]
     pub fn with<K: Into<ParameterKey>, T: Into<ItemDefinitionType>>(
         mut self,
         key: K,
@@ -150,6 +153,7 @@ impl ParameterObjectDefinitionBuilder {
     }
 
     /// Returns a new builder with the item removed.
+    #[must_use]
     pub fn without<S: Into<ShareableString>>(mut self, key: S) -> Self {
         self.remove(key);
         self
@@ -163,6 +167,7 @@ impl ParameterObjectDefinitionBuilder {
     }
 
     /// Builds the `ParameterObjectDefinition`.
+    #[must_use]
     pub fn finish(self) -> ParameterObjectDefinition {
         ParameterObjectDefinition {
             description: self.description,
@@ -201,16 +206,19 @@ impl ParameterObjectDefinition {
     }
 
     /// Returns the description of the object.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the number of items in the object.
+    #[must_use]
     pub fn count(&self) -> usize {
         self.items.len()
     }
@@ -221,6 +229,7 @@ impl ParameterObjectDefinition {
     }
 
     /// Returns true if the object contains an item with the specified key string.
+    #[must_use]
     pub fn contains_str(&self, key: &str) -> bool {
         self.items.contains_key(key)
     }
@@ -231,6 +240,7 @@ impl ParameterObjectDefinition {
     }
 
     /// Returns a reference to the item definition for the specified key string.
+    #[must_use]
     pub fn get_str(&self, key: &str) -> Option<&ItemDefinitionType> {
         self.items.get(key)
     }
@@ -248,6 +258,7 @@ impl ParameterObjectDefinition {
     }
 
     /// Returns a new `ParameterObjectDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -286,10 +297,10 @@ impl TreePrint for ParameterObjectDefinition {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.ordered_keys.len();
+        let mut item_iter = self.ordered_keys.iter().peekable();
 
-        for (i, key) in self.ordered_keys.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some(key) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             if let Some(item) = self.items.get(key) {
                 item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
             }

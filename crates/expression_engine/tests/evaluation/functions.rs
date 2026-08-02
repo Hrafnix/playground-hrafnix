@@ -38,7 +38,7 @@ fn multiply_floats(
 }
 
 fn build_parameter(definition: ParameterObjectDefinition) -> ParameterObjectInputData {
-    ParameterObjectInputData::new(ParameterObjectFrozen::new(definition))
+    ParameterObjectInputData::new(&ParameterObjectFrozen::new(definition))
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn registered_function_is_invoked_during_evaluation() {
         .expect("function should register");
 
     let output = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     let number = output.get("p_result").expect("p_result should be computed");
@@ -93,7 +93,7 @@ fn registered_function_can_reference_variables() {
         )
         .finish();
 
-    let global_data = GlobalObjectInputData::new(global_frozen);
+    let global_data = GlobalObjectInputData::new(&global_frozen);
     let data = build_parameter(frozen);
 
     let mut engine = ExpressionEngine::new();
@@ -106,11 +106,11 @@ fn registered_function_can_reference_variables() {
         ))
         .expect("function should register");
     engine
-        .evaluate_globals(global_data)
+        .evaluate_globals(&global_data)
         .expect("globals should evaluate");
 
     let output = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     match output.get("p_sum").expect("p_sum should be computed") {
@@ -141,7 +141,7 @@ fn registered_function_combines_with_other_operators() {
         .expect("function should register");
 
     let output = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     match output.get("p_result").expect("p_result should be computed") {
@@ -172,7 +172,7 @@ fn nested_registered_function_calls_evaluate_correctly() {
         .expect("function should register");
 
     let output = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     match output.get("p_result").expect("p_result should be computed") {
@@ -203,7 +203,7 @@ fn float_returning_function_works_with_number_definition() {
         .expect("function should register");
 
     let output = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect("evaluation should succeed");
 
     match output.get("p_result").expect("p_result should be computed") {
@@ -231,7 +231,7 @@ fn calling_an_unregistered_function_returns_an_error() {
 
     let engine = ExpressionEngine::new();
     let error = engine
-        .evaluate_parameters(data)
+        .evaluate_parameters(&data)
         .expect_err("evaluation should fail for an undefined function");
 
     let message = error

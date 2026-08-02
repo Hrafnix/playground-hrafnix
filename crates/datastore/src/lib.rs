@@ -19,6 +19,28 @@
 //! - **Updates**: Updates via proxies are pushed to the store. Other proxies must `pull()` to see these changes.
 //!
 
+// Test code favors clarity and brevity over the strictness we require of library code:
+// panicking helpers (`unwrap`/`expect`/indexing/`panic!`) and approximate float comparisons
+// are idiomatic and expected in tests.
+#![cfg_attr(
+    test,
+    allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::panic,
+        clippy::float_cmp,
+        clippy::as_conversions,
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation,
+        clippy::unreadable_literal,
+        clippy::unnecessary_wraps,
+        clippy::similar_names,
+        clippy::arithmetic_side_effects
+    )
+)]
+
 /// Data structure definitions.
 pub mod definition;
 /// Editable data implementation.
@@ -85,15 +107,12 @@ impl Display for StoreError {
             StoreError::KeyEmpty => write!(f, "Invalid key: Key cannot be empty"),
             StoreError::KeyInvalidCharacter(s) => write!(
                 f,
-                "Invalid key: '{}'. Keys must only contain a-z, 0-9 and _",
-                s
+                "Invalid key: '{s}'. Keys must only contain a-z, 0-9 and _"
             ),
-            StoreError::KeyInvalidPrefix(s) => write!(
-                f,
-                "Invalid key: '{}'. Key is missing the required prefix",
-                s
-            ),
-            StoreError::KeyConflict(s) => write!(f, "Key conflict: {}", s),
+            StoreError::KeyInvalidPrefix(s) => {
+                write!(f, "Invalid key: '{s}'. Key is missing the required prefix")
+            }
+            StoreError::KeyConflict(s) => write!(f, "Key conflict: {s}"),
             StoreError::ObjectNotFound => write!(f, "Object not found"),
             StoreError::ObjectKeyAlreadyExists => write!(f, "Object key already exists"),
             StoreError::ParameterNotFound => write!(f, "Parameter not found"),
@@ -101,16 +120,16 @@ impl Display for StoreError {
             StoreError::ExpiredProxy => write!(f, "Proxy is invalid"),
             StoreError::KeyNotFound => write!(f, "Key not found"),
             StoreError::InvalidPath => write!(f, "Invalid path"),
-            StoreError::InvalidPathSegment(s) => write!(f, "Invalid path segment: {}", s),
+            StoreError::InvalidPathSegment(s) => write!(f, "Invalid path segment: {s}"),
             StoreError::IndexNotFound => write!(f, "Index not found"),
             StoreError::UndoNotAvailable => write!(f, "Undo not available"),
             StoreError::RedoNotAvailable => write!(f, "Redo not available"),
-            StoreError::SerializationError(s) => write!(f, "Serialization error: {}", s),
-            StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {}", s),
+            StoreError::SerializationError(s) => write!(f, "Serialization error: {s}"),
+            StoreError::SchemaMismatch(s) => write!(f, "Schema mismatch: {s}"),
             StoreError::NestedContainerNotSupported => {
                 write!(f, "Nested containers are not supported in this context")
             }
-            StoreError::MissingSchema(s) => write!(f, "Missing schema: {}", s),
+            StoreError::MissingSchema(s) => write!(f, "Missing schema: {s}"),
         }
     }
 }

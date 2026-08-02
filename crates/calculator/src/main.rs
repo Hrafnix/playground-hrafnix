@@ -17,25 +17,25 @@ fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
         )
         .finish();
     let frozen = ParameterObjectFrozen::new(definition);
-    let input_data = ParameterObjectInputData::new(frozen);
+    let input_data = ParameterObjectInputData::new(&frozen);
 
-    engine
-        .evaluate_parameters(input_data)
-        .map(|output| {
+    engine.evaluate_parameters(&input_data).map_or_else(
+        |err| {
+            let err_str = err.first().map_or_else(
+                || "Unknown error".to_string(),
+                std::string::ToString::to_string,
+            );
+
+            format!("Error: {err_str}")
+        },
+        |output| {
             if let Some(result) = output.get("p_expression") {
                 result.to_string()
             } else {
                 "No result".to_string()
             }
-        })
-        .unwrap_or_else(|err| {
-            let err_str = err
-                .first()
-                .map(|e| e.to_string())
-                .unwrap_or_else(|| "Unknown error".to_string());
-
-            format!("Error: {err_str}")
-        })
+        },
+    )
 }
 
 fn main() -> eframe::Result {
@@ -49,8 +49,8 @@ fn main() -> eframe::Result {
     let engine = ExpressionEngine::new();
 
     // Our application state:
-    let mut expression = "".to_owned();
-    let mut result = "".to_owned();
+    let mut expression = String::new();
+    let mut result = String::new();
 
     eframe::run_ui_native("Calculator", options, move |ui, _frame| {
         egui::CentralPanel::default().show(ui, |ui| {

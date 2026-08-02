@@ -1,5 +1,5 @@
 use crate::expression::parser::{Parser, ParserToken};
-use crate::expression::span::Span;
+use crate::expression::span::{Span, SpanSet};
 use crate::{ExpressionCategory, ExpressionError};
 use shareable_string::ShareableString;
 use std::fmt;
@@ -15,10 +15,10 @@ pub(crate) enum Literal {
 impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Literal::Integer(value) => write!(f, "{}", value),
-            Literal::Float(value) => write!(f, "{}", value),
-            Literal::String(value) => write!(f, "{}", value),
-            Literal::Boolean(value) => write!(f, "{}", value),
+            Literal::Integer(value) => write!(f, "{value}"),
+            Literal::Float(value) => write!(f, "{value}"),
+            Literal::String(value) => write!(f, "{value}"),
+            Literal::Boolean(value) => write!(f, "{value}"),
         }
     }
 }
@@ -47,12 +47,11 @@ impl fmt::Display for Operators {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let symbol = match self {
             Operators::Add => "+",
-            Operators::Subtract => "-",
+            Operators::Subtract | Operators::Negate => "-",
             Operators::Multiply => "*",
             Operators::Divide => "/",
             Operators::Modulus => "%",
             Operators::Power => "^",
-            Operators::Negate => "-",
             Operators::Equal => "==",
             Operators::NotEqual => "!=",
             Operators::LessThan => "<",
@@ -63,7 +62,7 @@ impl fmt::Display for Operators {
             Operators::Or => "||",
             Operators::Not => "!",
         };
-        write!(f, "{}", symbol)
+        write!(f, "{symbol}")
     }
 }
 
@@ -97,20 +96,20 @@ pub(crate) enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Literal(_, literal) => write!(f, "{}", literal),
+            Expression::Literal(_, literal) => write!(f, "{literal}"),
             Expression::BinaryOperation {
                 span: _,
                 operator_span: _,
                 left,
                 operator,
                 right,
-            } => write!(f, "({} {} {})", left, operator, right),
+            } => write!(f, "({left} {operator} {right})"),
             Expression::UnaryOperation {
                 span: _,
                 operator,
                 operand,
             } => {
-                write!(f, "({}{})", operator, operand)
+                write!(f, "({operator}{operand})")
             }
             Expression::FunctionCall {
                 span: _,
@@ -119,19 +118,19 @@ impl fmt::Display for Expression {
             } => {
                 let args = arguments
                     .iter()
-                    .map(|arg| arg.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
-                write!(f, "{}({})", name, args)
+                write!(f, "{name}({args})")
             }
             Expression::Index {
                 span: _,
                 name,
                 index,
             } => {
-                write!(f, "{}", name)?;
+                write!(f, "{name}")?;
                 for idx in index {
-                    write!(f, "[{}]", idx)?;
+                    write!(f, "[{idx}]")?;
                 }
                 Ok(())
             }
@@ -162,11 +161,11 @@ impl Translator {
 /// Returns the span associated with the given expression.
 pub(crate) fn expression_span(expression: &Expression) -> Span {
     match expression {
-        Expression::Literal(span, _) => *span,
-        Expression::BinaryOperation { span, .. } => *span,
-        Expression::UnaryOperation { span, .. } => *span,
-        Expression::FunctionCall { span, .. } => *span,
-        Expression::Index { span, .. } => *span,
+        Expression::Literal(span, _)
+        | Expression::BinaryOperation { span, .. }
+        | Expression::UnaryOperation { span, .. }
+        | Expression::FunctionCall { span, .. }
+        | Expression::Index { span, .. } => *span,
     }
 }
 
@@ -175,9 +174,30 @@ fn translate_binary(
     span: Span,
     operands: &[ParserToken],
     operator: Operators,
+    source: &ShareableString,
 ) -> Result<Expression, ExpressionError> {
-    let left = translate_token(operands[0].clone())?;
-    let right = translate_token(operands[1].clone())?;
+    let left = translate_token(
+        operands.first().cloned().ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Parse,
+                "Binary operator is missing its left operand.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?,
+        source,
+    )?;
+    let right = translate_token(
+        operands.get(1).cloned().ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Parse,
+                "Binary operator is missing its right operand.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?,
+        source,
+    )?;
     let operator_span = span;
     let combined_span = span
         .join(&expression_span(&left))
@@ -197,8 +217,19 @@ fn translate_unary(
     span: Span,
     operands: &[ParserToken],
     operator: Operators,
+    source: &ShareableString,
 ) -> Result<Expression, ExpressionError> {
-    let operand = translate_token(operands[0].clone())?;
+    let operand = translate_token(
+        operands.first().cloned().ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Parse,
+                "Unary operator is missing its operand.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?,
+        source,
+    )?;
     let combined_span = span.join(&expression_span(&operand));
 
     Ok(Expression::UnaryOperation {
@@ -213,9 +244,33 @@ fn translate_unary(
 /// When the collection being indexed is itself an `Index` expression (i.e., this is a chained
 /// index such as `arr[0][1]`), the new index is appended to the existing `Index`'s vector of
 /// indices rather than wrapping it in another `Index` expression.
-fn translate_index(span: Span, operands: &[ParserToken]) -> Result<Expression, ExpressionError> {
-    let target = translate_token(operands[0].clone())?;
-    let new_index = translate_token(operands[1].clone())?;
+fn translate_index(
+    span: Span,
+    operands: &[ParserToken],
+    source: &ShareableString,
+) -> Result<Expression, ExpressionError> {
+    let target = translate_token(
+        operands.first().cloned().ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Parse,
+                "Index operator is missing its target.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?,
+        source,
+    )?;
+    let new_index = translate_token(
+        operands.get(1).cloned().ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Parse,
+                "Index operator is missing its index.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?,
+        source,
+    )?;
     let combined_span = span
         .join(&expression_span(&target))
         .join(&expression_span(&new_index));
@@ -247,10 +302,11 @@ fn translate_call(
     span: Span,
     name: String,
     arguments: Vec<ParserToken>,
+    source: &ShareableString,
 ) -> Result<Expression, ExpressionError> {
     let arguments = arguments
         .into_iter()
-        .map(translate_token)
+        .map(|argument| translate_token(argument, source))
         .collect::<Result<Vec<_>, _>>()?;
     let combined_span = arguments
         .iter()
@@ -305,46 +361,59 @@ fn translate_atom(span: Span, value: String) -> Result<Expression, ExpressionErr
 
     Err(ExpressionError::new(
         ExpressionCategory::Parse,
-        format!("Invalid numeric literal: {}", value),
+        format!("Invalid numeric literal: {value}"),
     ))
 }
 
-fn translate_token(parser_token: ParserToken) -> Result<Expression, ExpressionError> {
+fn translate_token(
+    parser_token: ParserToken,
+    source: &ShareableString,
+) -> Result<Expression, ExpressionError> {
     match parser_token {
         ParserToken::Atom(span, value) => translate_atom(span, value),
         ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
-            ("+", 1) => translate_token(operands[0].clone()),
-            ("-", 1) => translate_unary(span, &operands, Operators::Negate),
-            ("!", 1) => translate_unary(span, &operands, Operators::Not),
-            ("+", 2) => translate_binary(span, &operands, Operators::Add),
-            ("-", 2) => translate_binary(span, &operands, Operators::Subtract),
-            ("*", 2) => translate_binary(span, &operands, Operators::Multiply),
-            ("/", 2) => translate_binary(span, &operands, Operators::Divide),
-            ("%", 2) => translate_binary(span, &operands, Operators::Modulus),
-            ("^", 2) => translate_binary(span, &operands, Operators::Power),
-            ("==", 2) => translate_binary(span, &operands, Operators::Equal),
-            ("!=", 2) => translate_binary(span, &operands, Operators::NotEqual),
-            ("<", 2) => translate_binary(span, &operands, Operators::LessThan),
-            ("<=", 2) => translate_binary(span, &operands, Operators::LessThanOrEqual),
-            (">", 2) => translate_binary(span, &operands, Operators::GreaterThan),
-            (">=", 2) => translate_binary(span, &operands, Operators::GreaterThanOrEqual),
-            ("&&", 2) => translate_binary(span, &operands, Operators::And),
-            ("||", 2) => translate_binary(span, &operands, Operators::Or),
-            ("[", 2) => translate_index(span, &operands),
-            _ if is_function_name(op.as_str()) => translate_call(span, op, operands),
+            ("+", 1) => translate_token(
+                operands.first().cloned().ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Parse,
+                        "Unary '+' operator is missing its operand.".to_string(),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?,
+                source,
+            ),
+            ("-", 1) => translate_unary(span, &operands, Operators::Negate, source),
+            ("!", 1) => translate_unary(span, &operands, Operators::Not, source),
+            ("+", 2) => translate_binary(span, &operands, Operators::Add, source),
+            ("-", 2) => translate_binary(span, &operands, Operators::Subtract, source),
+            ("*", 2) => translate_binary(span, &operands, Operators::Multiply, source),
+            ("/", 2) => translate_binary(span, &operands, Operators::Divide, source),
+            ("%", 2) => translate_binary(span, &operands, Operators::Modulus, source),
+            ("^", 2) => translate_binary(span, &operands, Operators::Power, source),
+            ("==", 2) => translate_binary(span, &operands, Operators::Equal, source),
+            ("!=", 2) => translate_binary(span, &operands, Operators::NotEqual, source),
+            ("<", 2) => translate_binary(span, &operands, Operators::LessThan, source),
+            ("<=", 2) => translate_binary(span, &operands, Operators::LessThanOrEqual, source),
+            (">", 2) => translate_binary(span, &operands, Operators::GreaterThan, source),
+            (">=", 2) => translate_binary(span, &operands, Operators::GreaterThanOrEqual, source),
+            ("&&", 2) => translate_binary(span, &operands, Operators::And, source),
+            ("||", 2) => translate_binary(span, &operands, Operators::Or, source),
+            ("[", 2) => translate_index(span, &operands, source),
+            _ if is_function_name(op.as_str()) => translate_call(span, op, operands, source),
             _ => Err(ExpressionError::new(
                 ExpressionCategory::Parse,
-                format!("Unsupported operator: {}", op),
+                format!("Unsupported operator: {op}"),
             )),
         },
     }
 }
 
-pub(crate) fn translate(parser: Parser) -> Result<Translator, ExpressionError> {
+pub(crate) fn translate(parser: &Parser) -> Result<Translator, ExpressionError> {
     let parser_token = parser.get_token().clone();
     let source = parser.get_source().clone();
 
-    translate_token(parser_token).map(|expression| Translator::new(expression, source))
+    translate_token(parser_token, &source).map(|expression| Translator::new(expression, source))
 }
 
 #[cfg(test)]
@@ -356,7 +425,7 @@ mod tests {
     fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
         let lexer = crate::expression::lexer::Lexer::new(s)?;
         let parser = parse(&lexer)?;
-        translate(parser).map(|translator| translator.expression().clone())
+        translate(&parser).map(|translator| translator.expression().clone())
     }
 
     #[test]
@@ -414,9 +483,11 @@ mod tests {
                     ParserToken::Atom(Span::new(0, 0), "b".to_string()),
                 ],
             );
-            let err = translate_token(token).unwrap_err().to_string();
+            let err = translate_token(token, &ShareableString::from(""))
+                .unwrap_err()
+                .to_string();
             assert!(err.starts_with("[Parse]"));
-            assert!(err.contains(&format!("Unsupported operator: {}", op)));
+            assert!(err.contains(&format!("Unsupported operator: {op}")));
         }
     }
 
@@ -550,7 +621,7 @@ mod tests {
                 assert_eq!(operator_span.start(), 15);
                 assert_eq!(operator_span.end(), 16);
             }
-            other => panic!("expected BinaryOperation, got {:?}", other),
+            other => panic!("expected BinaryOperation, got {other:?}"),
         }
     }
 }

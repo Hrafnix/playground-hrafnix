@@ -13,6 +13,7 @@ pub struct IntegerEditable {
 
 impl IntegerEditable {
     /// Creates a new `IntegerEditable` instance from a given `IntegerFrozen` value.
+    #[must_use]
     pub fn new(frozen_number: &IntegerFrozen) -> Self {
         Self {
             definition: frozen_number.definition().clone(),
@@ -21,16 +22,19 @@ impl IntegerEditable {
     }
 
     /// Converts the current `IntegerEditable` instance into an `IntegerFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> IntegerFrozen {
         IntegerFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the number definition.
+    #[must_use]
     pub fn definition(&self) -> &IntegerDefinition {
         &self.definition
     }

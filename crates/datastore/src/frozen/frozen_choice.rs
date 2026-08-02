@@ -14,6 +14,7 @@ pub struct ChoiceFrozen {
 
 impl ChoiceFrozen {
     /// Creates a new `ChoiceFrozen` instance.
+    #[must_use]
     pub fn new(definition: ChoiceDefinition) -> Self {
         let value = definition.default_value();
 
@@ -27,6 +28,7 @@ impl ChoiceFrozen {
     }
 
     /// Creates a new `ChoiceFrozen` instance with a specified value.
+    #[must_use]
     pub fn new_with_value(definition: ChoiceDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -38,6 +40,7 @@ impl ChoiceFrozen {
     }
 
     /// Creates a new `ChoiceFrozen` instance from a given `ChoiceEditable` value.
+    #[must_use]
     pub fn new_from_editable(basic: &ChoiceEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value().clone();
@@ -51,6 +54,7 @@ impl ChoiceFrozen {
     }
 
     /// Converts the current `ChoiceFrozen` instance into a `ChoiceEditable` instance.
+    #[must_use]
     pub fn thaw(&self) -> ChoiceEditable {
         ChoiceEditable::new(self)
     }
@@ -69,16 +73,19 @@ impl ChoiceFrozen {
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the choice definition.
+    #[must_use]
     pub fn definition(&self) -> &ChoiceDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
+    #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         self.hash
     }

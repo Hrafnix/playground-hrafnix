@@ -15,6 +15,7 @@ impl GlobalObjectComputedData {
     }
 
     /// Returns a reference to the data of the global object computed data.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
         &self.data
     }
@@ -53,6 +54,7 @@ impl ParameterObjectComputedData {
     }
 
     /// Returns a reference to the data of the parameter object computed data.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
         &self.data
     }
@@ -81,6 +83,7 @@ impl VariableObjectComputedData {
     }
 
     /// Returns a reference to the data of the variable object computed data.
+    #[must_use]
     pub fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
         &self.data
     }

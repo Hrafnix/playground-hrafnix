@@ -63,7 +63,7 @@ impl Lexer {
             if !c.is_ascii() {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Lexer,
-                    format!("Invalid character in expression: '{}'", c),
+                    format!("Invalid character in expression: '{c}'"),
                     input,
                     SpanSet::from_span(Span::new(index, 1)),
                 ));
@@ -73,106 +73,161 @@ impl Lexer {
             if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,".contains(c) {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Lexer,
-                    format!("Invalid character in expression: '{}'", c),
+                    format!("Invalid character in expression: '{c}'"),
                     input,
                     SpanSet::from_span(Span::new(index, 1)),
                 ));
             }
 
             if c == '.' {
-                let mut s = String::new();
-                s.push(c);
-                let start = index;
-                while let Some(&(_, c)) = chars.peek() {
-                    if c.is_numeric() || c == '.' {
-                        s.push(chars.next().expect("peeked value must be present").1);
-                    } else {
-                        break;
-                    }
-                }
-
-                if s == "." {
-                    self.tokens
-                        .push(LexerToken::Operator(Span::new(start, 1), s));
-                } else {
-                    Self::consume_exponent(&mut chars, &mut s);
-                    let number_len = s.len();
-                    self.tokens
-                        .push(LexerToken::Atom(Span::new(start, number_len), s));
-
-                    if let Some(&(_, '(')) = chars.peek() {
-                        self.tokens.push(LexerToken::Operator(
-                            Span::new((start + number_len - 1).max(start), 2),
-                            "*".to_string(),
-                        ));
-                    }
-                }
+                self.tokenize_dot_number(&mut chars, index);
             } else if c.is_numeric() {
-                let mut s = String::new();
-                s.push(c);
-                let start = index;
-                while let Some(&(_, c)) = chars.peek() {
-                    if c.is_numeric() || c == '.' {
-                        s.push(chars.next().expect("peeked value must be present").1);
-                    } else {
-                        break;
-                    }
-                }
-                Self::consume_exponent(&mut chars, &mut s);
-                let number_len = s.len();
-                self.tokens
-                    .push(LexerToken::Atom(Span::new(start, number_len), s));
-
-                if let Some(&(_, '(')) = chars.peek() {
-                    self.tokens.push(LexerToken::Operator(
-                        Span::new((start + number_len - 1).max(start), 2),
-                        "*".to_string(),
-                    ));
-                }
+                self.tokenize_number(&mut chars, index, c);
             } else if c.is_alphanumeric() || c == '_' {
-                let mut s = String::new();
-                s.push(c);
-                let start = index;
-                while let Some(&(_, c)) = chars.peek() {
-                    if c.is_alphanumeric() || c == '_' || c == '.' {
-                        s.push(chars.next().expect("peeked value must be present").1);
-                    } else {
-                        break;
-                    }
-                }
-                let len = s.len();
-                self.tokens.push(LexerToken::Atom(Span::new(start, len), s));
+                self.tokenize_identifier(&mut chars, index, c);
             } else {
-                let mut s = String::new();
-                s.push(c);
-                let start = index;
-                if let Some(&(_, next_c)) = chars.peek() {
-                    match (c, next_c) {
-                        ('!', '=')
-                        | ('&', '&')
-                        | ('<', '=')
-                        | ('=', '=')
-                        | ('>', '=')
-                        | ('|', '|') => {
-                            s.push(chars.next().expect("peeked value must be present").1);
-                        }
-                        _ => {}
-                    }
-                }
-
-                let len = s.len();
-                self.tokens
-                    .push(LexerToken::Operator(Span::new(start, len), s));
+                self.tokenize_operator(&mut chars, index, c);
             }
         }
 
-        for token in self.tokens.iter() {
+        self.validate_tokens(input)?;
+        self.tokens.reverse();
+
+        Ok(())
+    }
+
+    /// Tokenizes a number that starts with a leading `.` (e.g. `.5`), or a
+    /// bare `.` operator if no digits follow.
+    fn tokenize_dot_number(&mut self, chars: &mut Peekable<Enumerate<Chars<'_>>>, start: usize) {
+        let mut s = String::from(".");
+        while let Some(&(_, c)) = chars.peek() {
+            if c.is_numeric() || c == '.' {
+                if let Some((_, next_char)) = chars.next() {
+                    s.push(next_char);
+                }
+            } else {
+                break;
+            }
+        }
+
+        if s == "." {
+            self.tokens
+                .push(LexerToken::Operator(Span::new(start, 1), s));
+            return;
+        }
+
+        Self::consume_exponent(chars, &mut s);
+        let number_len = s.len();
+        self.tokens
+            .push(LexerToken::Atom(Span::new(start, number_len), s));
+
+        if let Some(&(_, '(')) = chars.peek() {
+            self.tokens.push(LexerToken::Operator(
+                Span::new(
+                    (start.saturating_add(number_len).saturating_sub(1)).max(start),
+                    2,
+                ),
+                "*".to_string(),
+            ));
+        }
+    }
+
+    /// Tokenizes a number that starts with a digit (e.g. `123`, `45.67`).
+    fn tokenize_number(
+        &mut self,
+        chars: &mut Peekable<Enumerate<Chars<'_>>>,
+        start: usize,
+        c: char,
+    ) {
+        let mut s = String::new();
+        s.push(c);
+        while let Some(&(_, c)) = chars.peek() {
+            if c.is_numeric() || c == '.' {
+                if let Some((_, next_char)) = chars.next() {
+                    s.push(next_char);
+                }
+            } else {
+                break;
+            }
+        }
+        Self::consume_exponent(chars, &mut s);
+        let number_len = s.len();
+        self.tokens
+            .push(LexerToken::Atom(Span::new(start, number_len), s));
+
+        if let Some(&(_, '(')) = chars.peek() {
+            self.tokens.push(LexerToken::Operator(
+                Span::new(
+                    start
+                        .saturating_add(number_len)
+                        .saturating_sub(1)
+                        .max(start),
+                    2,
+                ),
+                "*".to_string(),
+            ));
+        }
+    }
+
+    /// Tokenizes an identifier (e.g. `variable_name`, `function1`).
+    fn tokenize_identifier(
+        &mut self,
+        chars: &mut Peekable<Enumerate<Chars<'_>>>,
+        start: usize,
+        c: char,
+    ) {
+        let mut s = String::new();
+        s.push(c);
+        while let Some(&(_, c)) = chars.peek() {
+            if c.is_alphanumeric() || c == '_' || c == '.' {
+                if let Some((_, next_char)) = chars.next() {
+                    s.push(next_char);
+                }
+            } else {
+                break;
+            }
+        }
+        let len = s.len();
+        self.tokens.push(LexerToken::Atom(Span::new(start, len), s));
+    }
+
+    /// Tokenizes an operator, including two-character operators such as
+    /// `==`, `<=`, `>=`, `!=`, `&&`, and `||`.
+    fn tokenize_operator(
+        &mut self,
+        chars: &mut Peekable<Enumerate<Chars<'_>>>,
+        start: usize,
+        c: char,
+    ) {
+        let mut s = String::new();
+        s.push(c);
+        if let Some(&(_, next_c)) = chars.peek() {
+            match (c, next_c) {
+                ('!' | '<' | '=' | '>', '=') | ('&', '&') | ('|', '|') => {
+                    if let Some((_, next_char)) = chars.next() {
+                        s.push(next_char);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        let len = s.len();
+        self.tokens
+            .push(LexerToken::Operator(Span::new(start, len), s));
+    }
+
+    /// Validates the tokens collected so far, returning an error if any atom
+    /// or operator is malformed (e.g. an identifier starting with `_`, a
+    /// number with multiple decimal points, or a standalone `&`/`|`/`=`/`.`).
+    fn validate_tokens(&self, input: &str) -> Result<(), ExpressionError> {
+        for token in &self.tokens {
             match token {
                 LexerToken::Atom(index, s) => {
-                    if s.starts_with("_") {
+                    if s.starts_with('_') {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
-                            format!("Invalid string in expression: '{}'", s),
+                            format!("Invalid string in expression: '{s}'"),
                             input,
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));
@@ -183,7 +238,7 @@ impl Lexer {
                     {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
-                            format!("Invalid number in expression: '{}'", s),
+                            format!("Invalid number in expression: '{s}'"),
                             input,
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));
@@ -193,17 +248,17 @@ impl Lexer {
                     if s == "&" || s == "|" || s == "=" || s == "." {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
-                            format!("Invalid operator in expression: '{}'", s),
+                            format!("Invalid operator in expression: '{s}'"),
                             input,
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));
                     }
                 }
-                LexerToken::EndOfInput => unreachable!(),
+                // `EndOfInput` is only ever synthesized on-demand by `next()`/`peek()`
+                // when `self.tokens` is empty; it is never pushed into `self.tokens`.
+                LexerToken::EndOfInput => {}
             }
         }
-
-        self.tokens.reverse();
 
         Ok(())
     }
@@ -218,21 +273,27 @@ impl Lexer {
 
         match lookahead.peek() {
             Some(&(_, 'e')) => {
-                exponent.push(lookahead.next().expect("peeked value must be present").1);
+                if let Some((_, next_char)) = lookahead.next() {
+                    exponent.push(next_char);
+                }
             }
             _ => return,
         }
 
         if let Some(&(_, sign)) = lookahead.peek() {
             if sign == '+' || sign == '-' {
-                exponent.push(lookahead.next().expect("peeked value must be present").1);
+                if let Some((_, next_char)) = lookahead.next() {
+                    exponent.push(next_char);
+                }
             }
         }
 
         let mut has_digit = false;
         while let Some(&(_, d)) = lookahead.peek() {
             if d.is_numeric() {
-                exponent.push(lookahead.next().expect("peeked value must be present").1);
+                if let Some((_, next_char)) = lookahead.next() {
+                    exponent.push(next_char);
+                }
                 has_digit = true;
             } else {
                 break;
@@ -612,14 +673,14 @@ mod tests {
                 && !"+_-*/()[]<>=!&|%^.,".contains(ch)
                 && !ch.is_whitespace()
             {
-                let input = format!("a + b * (c - d) {} e", ch);
+                let input = format!("a + b * (c - d) {ch} e");
                 let result = Lexer::new(&input);
                 assert!(result.is_err());
                 let error = result.err().unwrap();
                 assert_eq!(error.category, ExpressionCategory::Lexer);
                 assert_eq!(
                     error.message,
-                    format!("Invalid character in expression: '{}'", ch)
+                    format!("Invalid character in expression: '{ch}'")
                 );
             }
         }
@@ -652,14 +713,14 @@ mod tests {
     fn test_invalid_characters_4() {
         for c in "=&|.".chars() {
             let ch = c as u8 as char;
-            let input = format!("a + b * (c - d) {} e", ch);
+            let input = format!("a + b * (c - d) {ch} e");
             let result = Lexer::new(&input);
             assert!(result.is_err());
             let error = result.err().unwrap();
             assert_eq!(error.category, ExpressionCategory::Lexer);
             assert_eq!(
                 error.message,
-                format!("Invalid operator in expression: '{}'", ch)
+                format!("Invalid operator in expression: '{ch}'")
             );
         }
     }
@@ -668,14 +729,14 @@ mod tests {
     fn test_invalid_characters_5() {
         for c in "_".chars() {
             let ch = c as u8 as char;
-            let input = format!("a + b * (c - d) {} e", ch);
+            let input = format!("a + b * (c - d) {ch} e");
             let result = Lexer::new(&input);
             assert!(result.is_err());
             let error = result.err().unwrap();
             assert_eq!(error.category, ExpressionCategory::Lexer);
             assert_eq!(
                 error.message,
-                format!("Invalid string in expression: '{}'", ch)
+                format!("Invalid string in expression: '{ch}'")
             );
         }
     }

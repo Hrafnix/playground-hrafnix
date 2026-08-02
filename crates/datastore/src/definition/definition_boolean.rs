@@ -33,11 +33,13 @@ impl BooleanDefinition {
     }
 
     /// Returns a vector of IDs for the choices.
+    #[must_use]
     pub fn ids(&self) -> Vec<ShareableString> {
         vec![ShareableString::new("true"), ShareableString::new("false")]
     }
 
     /// Returns a vector of descriptions for the choices.
+    #[must_use]
     pub fn descriptions(&self) -> Vec<ShareableString> {
         vec![
             self.true_description.clone(),
@@ -46,6 +48,7 @@ impl BooleanDefinition {
     }
 
     /// Returns a new `BooleanDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -56,21 +59,25 @@ impl BooleanDefinition {
     }
 
     /// Returns the description of the parameter.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the default value of the parameter.
+    #[must_use]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
 
     /// Returns a reference to the default value.
+    #[must_use]
     pub fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }

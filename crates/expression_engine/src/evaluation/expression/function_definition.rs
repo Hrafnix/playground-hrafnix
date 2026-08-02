@@ -67,16 +67,19 @@ impl FunctionDefinition {
     }
 
     /// Returns the name of the function, as used in expressions.
+    #[must_use]
     pub fn name(&self) -> &ShareableString {
         &self.name
     }
 
     /// Returns a human-readable description of the function.
+    #[must_use]
     pub fn description(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the parameter constraints for the function.
+    #[must_use]
     pub fn parameter_constraints(&self) -> &ArgumentCount {
         &self.argument_count
     }
@@ -92,6 +95,8 @@ impl std::fmt::Debug for FunctionDefinition {
         f.debug_struct("FunctionDefinition")
             .field("name", &self.name)
             .field("description", &self.description)
+            .field("argument_count", &self.argument_count)
+            .field("function", &"<function>")
             .finish()
     }
 }
@@ -139,6 +144,7 @@ impl FunctionDefinitions {
     ///
     /// `ShareableString` implements `Borrow<str>`, so a `&str` lookup avoids
     /// constructing a temporary `ShareableString` for the key.
+    #[must_use]
     pub fn get(&self, name: &str) -> Option<&FunctionDefinition> {
         self.definitions.get(name)
     }

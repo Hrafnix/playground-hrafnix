@@ -12,7 +12,7 @@ fn table_data_for(table: TableFrozen) -> TableInputData {
         ItemFrozen::Table(table),
     );
     let frozen = GlobalObjectFrozen::new_from_items("Test object", items);
-    let input = GlobalObjectInputData::new(frozen);
+    let input = GlobalObjectInputData::new(&frozen);
 
     match input.data().get("g_field").unwrap() {
         ObjectItemInputData::Table(table) => table.clone(),

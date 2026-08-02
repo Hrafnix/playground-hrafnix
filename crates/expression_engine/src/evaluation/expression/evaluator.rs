@@ -25,11 +25,507 @@ fn lookup_variable(
         Some(computed_item) => Ok(computed_item.clone()),
         None => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
-            format!("Variable '{}' not found in computed data.", variable_name),
+            format!("Variable '{variable_name}' not found in computed data."),
             source.clone(),
             SpanSet::from_span(span),
         )),
     }
+}
+
+fn evaluate_unary_operation(
+    operator: Operators,
+    operand_value: ComputedItem,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    match (operator, operand_value) {
+        (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
+        (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
+            value.checked_mul(-1).ok_or_else(|| {
+                ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Integer overflow.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )
+            })?,
+        )),
+        (Operators::Not, ComputedItem::Boolean(value)) => Ok(ComputedItem::Boolean(!value)),
+        _ => Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            "Invalid unary operation.".to_string(),
+            source.clone(),
+            SpanSet::from_span(span),
+        )),
+    }
+}
+
+fn evaluate_boolean_binary_operation(
+    operator: &Operators,
+    left_value: bool,
+    right_value: bool,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    match operator {
+        Operators::And => Ok(ComputedItem::Boolean(left_value && right_value)),
+        Operators::Or => Ok(ComputedItem::Boolean(left_value || right_value)),
+        Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
+        Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
+        _ => Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Unsupported operator for booleans: {operator:?}"),
+            source.clone(),
+            SpanSet::from_span(span),
+        )),
+    }
+}
+
+fn evaluate_float_binary_operation(
+    operator: &Operators,
+    left_value: f64,
+    right_value: f64,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    match operator {
+        Operators::Add => Ok(ComputedItem::Float(left_value + right_value)),
+        Operators::Subtract => Ok(ComputedItem::Float(left_value - right_value)),
+        Operators::Multiply => Ok(ComputedItem::Float(left_value * right_value)),
+        Operators::Divide => {
+            if right_value == 0.0 {
+                Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Division by zero.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ))
+            } else {
+                Ok(ComputedItem::Float(left_value / right_value))
+            }
+        }
+        Operators::Modulus => {
+            if right_value == 0.0 {
+                Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Modulus by zero.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ))
+            } else {
+                Ok(ComputedItem::Float(left_value % right_value))
+            }
+        }
+        Operators::Power => Ok(ComputedItem::Float(left_value.powf(right_value))),
+        Operators::LessThan => Ok(ComputedItem::Boolean(left_value < right_value)),
+        Operators::LessThanOrEqual => Ok(ComputedItem::Boolean(left_value <= right_value)),
+        Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
+        Operators::GreaterThanOrEqual => Ok(ComputedItem::Boolean(left_value >= right_value)),
+        _ => Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Unsupported operator for floats: {operator:?}"),
+            source.clone(),
+            SpanSet::from_span(span),
+        )),
+    }
+}
+
+fn evaluate_integer_binary_operation(
+    operator: &Operators,
+    left_value: i64,
+    right_value: i64,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    match operator {
+        Operators::Add => {
+            let checked_add = left_value.checked_add(right_value);
+            match checked_add {
+                Some(result) => Ok(ComputedItem::Integer(result)),
+                None => Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Integer overflow.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )),
+            }
+        }
+        Operators::Subtract => {
+            let checked_sub = left_value.checked_sub(right_value);
+            match checked_sub {
+                Some(result) => Ok(ComputedItem::Integer(result)),
+                None => Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Integer overflow.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )),
+            }
+        }
+        Operators::Multiply => {
+            let checked_mul = left_value.checked_mul(right_value);
+            match checked_mul {
+                Some(result) => Ok(ComputedItem::Integer(result)),
+                None => Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Integer overflow.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )),
+            }
+        }
+        Operators::Divide => {
+            let checked_div = left_value.checked_div(right_value);
+
+            match checked_div {
+                Some(result) => Ok(ComputedItem::Integer(result)),
+                None => {
+                    if right_value == 0 {
+                        Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            "Division by zero.".to_string(),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ))
+                    } else {
+                        Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            "Integer overflow.".to_string(),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ))
+                    }
+                }
+            }
+        }
+        Operators::Modulus => {
+            let checked_mod = left_value.checked_rem(right_value);
+            match checked_mod {
+                Some(result) => Ok(ComputedItem::Integer(result)),
+                None => {
+                    if right_value == 0 {
+                        Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            "Modulus by zero.".to_string(),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ))
+                    } else {
+                        Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            "Integer overflow.".to_string(),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ))
+                    }
+                }
+            }
+        }
+        Operators::Power => {
+            let exponent = u32::try_from(right_value).map_err(|_| {
+                ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Integer exponent must be non-negative and fit within `u32`.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )
+            })?;
+            Ok(ComputedItem::Integer(left_value.pow(exponent)))
+        }
+        Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
+        Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
+        Operators::LessThan => Ok(ComputedItem::Boolean(left_value < right_value)),
+        Operators::LessThanOrEqual => Ok(ComputedItem::Boolean(left_value <= right_value)),
+        Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
+        Operators::GreaterThanOrEqual => Ok(ComputedItem::Boolean(left_value >= right_value)),
+        _ => Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Unsupported operator for integers: {operator:?}"),
+            source.clone(),
+            SpanSet::from_span(span),
+        )),
+    }
+}
+
+fn evaluate_string_binary_operation(
+    operator: &Operators,
+    left_value: &ShareableString,
+    right_value: &ShareableString,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    match operator {
+        Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
+        Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
+        _ => Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Unsupported operator for strings: {operator:?}"),
+            source.clone(),
+            SpanSet::from_span(span),
+        )),
+    }
+}
+
+fn evaluate_function_call_operation(
+    computed_data: &BTreeMap<ShareableString, ComputedItem>,
+    function_name: &str,
+    arguments: Vec<Expression>,
+    functions: &FunctionDefinitions,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    let definition = functions.get(function_name).ok_or_else(|| {
+        ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Function '{function_name}' is not defined."),
+            source.clone(),
+            SpanSet::from_span(span),
+        )
+    })?;
+
+    let mut evaluated_arguments = Vec::with_capacity(arguments.len());
+    for argument in arguments {
+        evaluated_arguments.push(evaluate_expression(
+            computed_data,
+            functions,
+            source,
+            argument,
+        )?);
+    }
+
+    match definition.parameter_constraints() {
+        ArgumentCount::Exact { count } => {
+            if evaluated_arguments.len() != *count {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Function '{}' requires exactly {} arguments, got {}.",
+                        function_name,
+                        count,
+                        evaluated_arguments.len()
+                    ),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ));
+            }
+        }
+        ArgumentCount::Min { min } => {
+            if evaluated_arguments.len() < *min {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Function '{}' requires at least {} arguments, got {}.",
+                        function_name,
+                        min,
+                        evaluated_arguments.len()
+                    ),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ));
+            }
+        }
+        ArgumentCount::Max { max } => {
+            if evaluated_arguments.len() > *max {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Function '{}' allows at most {} arguments, got {}.",
+                        function_name,
+                        max,
+                        evaluated_arguments.len()
+                    ),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ));
+            }
+        }
+        ArgumentCount::Range { min, max } => {
+            if evaluated_arguments.len() < *min || evaluated_arguments.len() > *max {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Function '{}' requires between {} and {} arguments, got {}.",
+                        function_name,
+                        min,
+                        max,
+                        evaluated_arguments.len()
+                    ),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ));
+            }
+        }
+        ArgumentCount::Unbounded => {}
+    }
+
+    definition.call(&evaluated_arguments)
+}
+
+fn evaluate_index_operation(
+    computed_data: &BTreeMap<ShareableString, ComputedItem>,
+    name: &str,
+    index: Vec<Expression>,
+    functions: &FunctionDefinitions,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    if index.len() != 2 && index.len() != 4 {
+        return Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!(
+                "Indexing requires exactly 2 or 4 indices, got {}",
+                index.len()
+            ),
+            source.clone(),
+            SpanSet::from_span(span),
+        ));
+    }
+
+    let mut indexes = Vec::new();
+    for index_expression in index {
+        // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
+        // literal field name, not a reference to a variable, so it is not looked up.
+        let index_value =
+            if let Expression::Literal(lit_span, Literal::String(name)) = &index_expression {
+                if let Ok(value) = lookup_variable(computed_data, name, source, *lit_span) {
+                    value
+                } else {
+                    ComputedItem::String(ShareableString::from(name.clone()))
+                }
+            } else {
+                evaluate_expression(computed_data, functions, source, index_expression)?
+            };
+        indexes.push(index_value);
+    }
+
+    let index_1 = indexes.first().ok_or_else(|| {
+        ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            "Missing first index.".to_string(),
+            source.clone(),
+            SpanSet::from_span(span),
+        )
+    })?;
+    let index_2 = indexes.get(1).ok_or_else(|| {
+        ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            "Missing second index.".to_string(),
+            source.clone(),
+            SpanSet::from_span(span),
+        )
+    })?;
+
+    let map_lookup = format!("{name}[{index_1}][{index_2}]");
+    let item = if let Ok(value) = lookup_variable(computed_data, &map_lookup, source, span) {
+        indexes.drain(0..2);
+        value
+    } else {
+        lookup_variable(computed_data, name, source, span)?
+    };
+
+    if let ComputedItem::Table(table) = item {
+        if indexes.is_empty() {
+            return Ok(ComputedItem::Table(table));
+        }
+
+        let index_1 = indexes.first().ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                "Missing first index.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?;
+        let index_2 = indexes.get(1).ok_or_else(|| {
+            ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                "Missing second index.".to_string(),
+                source.clone(),
+                SpanSet::from_span(span),
+            )
+        })?;
+
+        let row_index = match index_1 {
+            ComputedItem::Integer(i) => {
+                let size = usize::try_from(*i)
+                    .ok()
+                    .filter(|size| *size < table.row_count());
+
+                size.ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!(
+                            "Row index {} is out of bounds for a table with {} rows.",
+                            i,
+                            table.row_count()
+                        ),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?
+            }
+            _ => {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("Expected an integer index for the table, got {index_1:?}"),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ));
+            }
+        };
+
+        return match index_2 {
+            ComputedItem::String(s) => {
+                if let Some(value) = table.get_cell_by_name(row_index, s) {
+                    Ok(ComputedItem::Float(value))
+                } else {
+                    Err(ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!("Field '{s}' not found in the table row."),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    ))
+                }
+            }
+            ComputedItem::Integer(i) => {
+                let size = usize::try_from(*i)
+                    .ok()
+                    .filter(|size| *size < table.column_count());
+
+                let size = size.ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!(
+                            "Column index {} is out of bounds for a table with {} columns.",
+                            i,
+                            table.column_count()
+                        ),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?;
+
+                if let Some(value) = table.get_cell(row_index, size) {
+                    Ok(ComputedItem::Float(value))
+                } else {
+                    Err(ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!("Field '{i}' not found in the table row."),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    ))
+                }
+            }
+            other => Err(ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                format!("Expected a string or integer index for the table field, got {other:?}"),
+                source.clone(),
+                SpanSet::from_span(span),
+            )),
+        };
+    }
+
+    Ok(item)
 }
 
 fn evaluate_expression(
@@ -51,19 +547,7 @@ fn evaluate_expression(
             operand,
         } => {
             let operand_value = evaluate_expression(computed_data, functions, source, *operand)?;
-            match (operator, operand_value) {
-                (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
-                (Operators::Negate, ComputedItem::Integer(value)) => {
-                    Ok(ComputedItem::Integer(-value))
-                }
-                (Operators::Not, ComputedItem::Boolean(value)) => Ok(ComputedItem::Boolean(!value)),
-                _ => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Invalid unary operation.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
-                )),
-            }
+            evaluate_unary_operation(operator, operand_value, source, span)
         }
         Expression::BinaryOperation {
             span: _span,
@@ -76,594 +560,129 @@ fn evaluate_expression(
             let right_value = evaluate_expression(computed_data, functions, source, *right)?;
             match (left_value, right_value) {
                 (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
-                    match operator {
-                        Operators::And => Ok(ComputedItem::Boolean(left_bool && right_bool)),
-                        Operators::Or => Ok(ComputedItem::Boolean(left_bool || right_bool)),
-                        Operators::Equal => Ok(ComputedItem::Boolean(left_bool == right_bool)),
-                        Operators::NotEqual => Ok(ComputedItem::Boolean(left_bool != right_bool)),
-                        _ => Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!("Unsupported operator for booleans: {:?}", operator),
-                            source.clone(),
-                            SpanSet::from_span(operator_span),
-                        )),
-                    }
-                }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::String(_right_string)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Boolean(_left_bool), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
+                    evaluate_boolean_binary_operation(
+                        &operator,
+                        left_bool,
+                        right_bool,
+                        source,
+                        operator_span,
+                    )
                 }
                 (ComputedItem::File(left_file), ComputedItem::File(right_file)) => match operator {
                     Operators::Equal => Ok(ComputedItem::Boolean(left_file == right_file)),
                     Operators::NotEqual => Ok(ComputedItem::Boolean(left_file != right_file)),
                     _ => Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for files: {:?}", operator),
+                        format!("Unsupported operator for files: {operator:?}"),
                         source.clone(),
                         SpanSet::from_span(operator_span),
                     )),
                 },
-                (ComputedItem::File(_left_file), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::String(_right_string)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::File(_left_file), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Float(_left_float), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Float(_left_float), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
                 (ComputedItem::Float(left_float), ComputedItem::Float(right_float)) => {
-                    match operator {
-                        Operators::Add => Ok(ComputedItem::Float(left_float + right_float)),
-                        Operators::Subtract => Ok(ComputedItem::Float(left_float - right_float)),
-                        Operators::Multiply => Ok(ComputedItem::Float(left_float * right_float)),
-                        Operators::Divide => {
-                            if right_float == 0.0 {
-                                Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    "Division by zero.".to_string(),
-                                    source.clone(),
-                                    SpanSet::from_span(operator_span),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Float(left_float / right_float))
-                            }
-                        }
-                        Operators::Modulus => {
-                            if right_float == 0.0 {
-                                Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    "Modulus by zero.".to_string(),
-                                    source.clone(),
-                                    SpanSet::from_span(operator_span),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Float(left_float % right_float))
-                            }
-                        }
-                        Operators::Power => Ok(ComputedItem::Float(left_float.powf(right_float))),
-                        Operators::LessThan => Ok(ComputedItem::Boolean(left_float < right_float)),
-                        Operators::LessThanOrEqual => {
-                            Ok(ComputedItem::Boolean(left_float <= right_float))
-                        }
-                        Operators::GreaterThan => {
-                            Ok(ComputedItem::Boolean(left_float > right_float))
-                        }
-                        Operators::GreaterThanOrEqual => {
-                            Ok(ComputedItem::Boolean(left_float >= right_float))
-                        }
-                        _ => Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!("Unsupported operator for floats: {:?}", operator),
-                            source.clone(),
-                            SpanSet::from_span(operator_span),
-                        )),
-                    }
-                }
-                (ComputedItem::Float(_left_float), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Float(_left_float), ComputedItem::String(_right_string)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Float(_left_float), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Integer(_left_int), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Integer(_left_int), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Integer(_left_int), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
+                    evaluate_float_binary_operation(
+                        &operator,
+                        left_float,
+                        right_float,
+                        source,
+                        operator_span,
+                    )
                 }
                 (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
-                    match operator {
-                        Operators::Add => Ok(ComputedItem::Integer(left_int + right_int)),
-                        Operators::Subtract => Ok(ComputedItem::Integer(left_int - right_int)),
-                        Operators::Multiply => Ok(ComputedItem::Integer(left_int * right_int)),
-                        Operators::Divide => {
-                            if right_int == 0 {
-                                Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    "Division by zero.".to_string(),
-                                    source.clone(),
-                                    SpanSet::from_span(operator_span),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Integer(left_int / right_int))
-                            }
-                        }
-                        Operators::Modulus => {
-                            if right_int == 0 {
-                                Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    "Modulus by zero.".to_string(),
-                                    source.clone(),
-                                    SpanSet::from_span(operator_span),
-                                ))
-                            } else {
-                                Ok(ComputedItem::Integer(left_int % right_int))
-                            }
-                        }
-                        Operators::Power => {
-                            Ok(ComputedItem::Integer(left_int.pow(right_int as u32)))
-                        }
-                        Operators::Equal => Ok(ComputedItem::Boolean(left_int == right_int)),
-                        Operators::NotEqual => Ok(ComputedItem::Boolean(left_int != right_int)),
-                        Operators::LessThan => Ok(ComputedItem::Boolean(left_int < right_int)),
-                        Operators::LessThanOrEqual => {
-                            Ok(ComputedItem::Boolean(left_int <= right_int))
-                        }
-                        Operators::GreaterThan => Ok(ComputedItem::Boolean(left_int > right_int)),
-                        Operators::GreaterThanOrEqual => {
-                            Ok(ComputedItem::Boolean(left_int >= right_int))
-                        }
-                        _ => Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!("Unsupported operator for integers: {:?}", operator),
-                            source.clone(),
-                            SpanSet::from_span(operator_span),
-                        )),
-                    }
-                }
-                (ComputedItem::Integer(_left_int), ComputedItem::String(_right_string)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Integer(_left_int), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::String(_left_string), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
+                    evaluate_integer_binary_operation(
+                        &operator,
+                        left_int,
+                        right_int,
+                        source,
+                        operator_span,
+                    )
                 }
                 (ComputedItem::String(left_string), ComputedItem::String(right_string)) => {
-                    match operator {
-                        Operators::Equal => Ok(ComputedItem::Boolean(left_string == right_string)),
-                        Operators::NotEqual => {
-                            Ok(ComputedItem::Boolean(left_string != right_string))
-                        }
-                        _ => Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!("Unsupported operator for strings: {:?}", operator),
-                            source.clone(),
-                            SpanSet::from_span(operator_span),
-                        )),
-                    }
+                    evaluate_string_binary_operation(
+                        &operator,
+                        &left_string,
+                        &right_string,
+                        source,
+                        operator_span,
+                    )
                 }
-                (ComputedItem::String(_left_string), ComputedItem::Table(_right_table)) => {
+                (ComputedItem::Table(_), ComputedItem::Table(_)) => {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
+                        format!("Unsupported operator for tables: {operator:?}"),
                         source.clone(),
                         SpanSet::from_span(operator_span),
                     ))
                 }
-                (ComputedItem::Table(_left_table), ComputedItem::Boolean(_right_bool)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Table(_left_table), ComputedItem::File(_right_file)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Table(_left_table), ComputedItem::Float(_right_float)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Table(_left_table), ComputedItem::Integer(_right_int)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Table(_left_table), ComputedItem::String(_right_string)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for mixed types: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
-                (ComputedItem::Table(_left_table), ComputedItem::Table(_right_table)) => {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for tables: {:?}", operator),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
-                    ))
-                }
+
+                (
+                    ComputedItem::Boolean(_),
+                    ComputedItem::File(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::File(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::Float(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::Integer(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::String(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::Table(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_),
+                ) => Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("Unsupported operator for mixed types: {operator:?}"),
+                    source.clone(),
+                    SpanSet::from_span(operator_span),
+                )),
             }
         }
         Expression::FunctionCall {
             span,
             name,
             arguments,
-        } => {
-            let definition = functions.get(&name).ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Function '{}' is not defined.", name),
-                    source.clone(),
-                    SpanSet::from_span(span),
-                )
-            })?;
-
-            let mut evaluated_arguments = Vec::with_capacity(arguments.len());
-            for argument in arguments {
-                evaluated_arguments.push(evaluate_expression(
-                    computed_data,
-                    functions,
-                    source,
-                    argument,
-                )?);
-            }
-
-            match definition.parameter_constraints() {
-                ArgumentCount::Exact { count } => {
-                    if evaluated_arguments.len() != *count {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!(
-                                "Function '{}' requires exactly {} arguments, got {}.",
-                                name,
-                                count,
-                                evaluated_arguments.len()
-                            ),
-                            source.clone(),
-                            SpanSet::from_span(span),
-                        ));
-                    }
-                }
-                ArgumentCount::Min { min } => {
-                    if evaluated_arguments.len() < *min {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!(
-                                "Function '{}' requires at least {} arguments, got {}.",
-                                name,
-                                min,
-                                evaluated_arguments.len()
-                            ),
-                            source.clone(),
-                            SpanSet::from_span(span),
-                        ));
-                    }
-                }
-                ArgumentCount::Max { max } => {
-                    if evaluated_arguments.len() > *max {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!(
-                                "Function '{}' allows at most {} arguments, got {}.",
-                                name,
-                                max,
-                                evaluated_arguments.len()
-                            ),
-                            source.clone(),
-                            SpanSet::from_span(span),
-                        ));
-                    }
-                }
-                ArgumentCount::Range { min, max } => {
-                    if evaluated_arguments.len() < *min || evaluated_arguments.len() > *max {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!(
-                                "Function '{}' requires between {} and {} arguments, got {}.",
-                                name,
-                                min,
-                                max,
-                                evaluated_arguments.len()
-                            ),
-                            source.clone(),
-                            SpanSet::from_span(span),
-                        ));
-                    }
-                }
-                ArgumentCount::Unbounded => {}
-            }
-
-            definition.call(&evaluated_arguments)
-        }
+        } => evaluate_function_call_operation(
+            computed_data,
+            name.as_str(),
+            arguments,
+            functions,
+            source,
+            span,
+        ),
         Expression::Index { span, name, index } => {
-            if index.len() != 2 && index.len() != 4 {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Indexing requires exactly 2 or 4 indices, got {}",
-                        index.len()
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
-                ));
-            }
-
-            let mut indexes = Vec::new();
-            for index_expression in index {
-                // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
-                // literal field name, not a reference to a variable, so it is not looked up.
-                let index_value = if let Expression::Literal(lit_span, Literal::String(name)) =
-                    &index_expression
-                {
-                    if let Ok(value) = lookup_variable(computed_data, name, source, *lit_span) {
-                        value
-                    } else {
-                        ComputedItem::String(ShareableString::from(name.clone()))
-                    }
-                } else {
-                    evaluate_expression(computed_data, functions, source, index_expression)?
-                };
-                indexes.push(index_value);
-            }
-
-            let map_lookup = format!("{}[{}][{}]", name.clone(), indexes[0], indexes[1]);
-            let item = if let Ok(value) = lookup_variable(computed_data, &map_lookup, source, span)
-            {
-                indexes.drain(0..2);
-                value
-            } else {
-                lookup_variable(computed_data, &name, source, span)?
-            };
-
-            if let ComputedItem::Table(table) = item {
-                if indexes.is_empty() {
-                    return Ok(ComputedItem::Table(table));
-                }
-
-                let index_1 = &indexes[0];
-                let index_2 = &indexes[1];
-
-                let row_index = match index_1 {
-                    ComputedItem::Integer(i) => {
-                        if *i < 0 || (*i as usize) >= table.row_count() {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Row index {} is out of bounds for a table with {} rows.",
-                                    i,
-                                    table.row_count()
-                                ),
-                                source.clone(),
-                                SpanSet::from_span(span),
-                            ));
-                        }
-                        *i as usize
-                    }
-                    _ => {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!("Expected an integer index for the table, got {:?}", index_1),
-                            source.clone(),
-                            SpanSet::from_span(span),
-                        ));
-                    }
-                };
-
-                return match index_2 {
-                    ComputedItem::String(s) => {
-                        if let Some(value) = table.get_cell_by_name(row_index, s) {
-                            Ok(ComputedItem::Float(value))
-                        } else {
-                            Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!("Field '{}' not found in the table row.", s),
-                                source.clone(),
-                                SpanSet::from_span(span),
-                            ))
-                        }
-                    }
-                    ComputedItem::Integer(i) => {
-                        if let Some(value) = table.get_cell(row_index, *i as usize) {
-                            Ok(ComputedItem::Float(value))
-                        } else {
-                            Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!("Field '{}' not found in the table row.", i),
-                                source.clone(),
-                                SpanSet::from_span(span),
-                            ))
-                        }
-                    }
-                    other => Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!(
-                            "Expected a string or integer index for the table field, got {:?}",
-                            other
-                        ),
-                        source.clone(),
-                        SpanSet::from_span(span),
-                    )),
-                };
-            }
-
-            Ok(item)
+            evaluate_index_operation(computed_data, name.as_str(), index, functions, source, span)
         }
     }
 }
@@ -671,13 +690,13 @@ fn evaluate_expression(
 fn parse_str(s: &str) -> Result<Translator, ExpressionError> {
     let lexer = crate::expression::lexer::Lexer::new(s)?;
     let parser = parse(&lexer)?;
-    translate(parser)
+    translate(&parser)
 }
 
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
-    basic: BasicInputData,
+    basic: &BasicInputData,
 ) -> Result<ComputedItem, ExpressionError> {
     let data = basic.data();
     let translation = parse_str(data.as_ref())?;
@@ -698,8 +717,7 @@ fn evaluate_basic_expression(
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
-                        "Expected a boolean value for boolean definition, but got {:?}.",
-                        computed
+                        "Expected a boolean value for boolean definition, but got {computed:?}."
                     ),
                     source.clone(),
                     SpanSet::from_span(span),
@@ -714,7 +732,7 @@ fn evaluate_basic_expression(
                 } else {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
-                        format!("Value '{}' is not a valid choice.", value),
+                        format!("Value '{value}' is not a valid choice."),
                         source.clone(),
                         SpanSet::from_span(span),
                     ))
@@ -722,10 +740,7 @@ fn evaluate_basic_expression(
             } else {
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected a string value for choice, but got {:?}.",
-                        computed
-                    ),
+                    format!("Expected a string value for choice, but got {computed:?}."),
                     source.clone(),
                     SpanSet::from_span(span),
                 ))
@@ -739,10 +754,7 @@ fn evaluate_basic_expression(
             } else {
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected a file path for file definition, but got {:?}.",
-                        computed
-                    ),
+                    format!("Expected a file path for file definition, but got {computed:?}."),
                     source.clone(),
                     SpanSet::from_span(span),
                 ))
@@ -758,8 +770,7 @@ fn evaluate_basic_expression(
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
                                 format!(
-                                    "Value {} is less than the minimum allowed value of {}.",
-                                    value, min
+                                    "Value {value} is less than the minimum allowed value of {min}."
                                 ),
                                 source.clone(),
                                 SpanSet::from_span(span),
@@ -772,8 +783,7 @@ fn evaluate_basic_expression(
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
                                 format!(
-                                    "Value {} is greater than the maximum allowed value of {}.",
-                                    value, max
+                                    "Value {value} is greater than the maximum allowed value of {max}."
                                 ),
                                 source.clone(),
                                 SpanSet::from_span(span),
@@ -791,8 +801,7 @@ fn evaluate_basic_expression(
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
                                 format!(
-                                    "Value {} is less than the minimum allowed value of {}.",
-                                    value, min
+                                    "Value {value} is less than the minimum allowed value of {min}."
                                 ),
                                 source.clone(),
                                 SpanSet::from_span(span),
@@ -802,8 +811,7 @@ fn evaluate_basic_expression(
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Evaluation,
                                 format!(
-                                    "Value {} is greater than the maximum allowed value of {}.",
-                                    value, max
+                                    "Value {value} is greater than the maximum allowed value of {max}."
                                 ),
                                 source.clone(),
                                 SpanSet::from_span(span),
@@ -817,8 +825,7 @@ fn evaluate_basic_expression(
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
-                        "Expected an integer value for integer definition, but got {:?}.",
-                        computed
+                        "Expected an integer value for integer definition, but got {computed:?}."
                     ),
                     source.clone(),
                     SpanSet::from_span(span),
@@ -832,12 +839,11 @@ fn evaluate_basic_expression(
                     let constraint = number_definition.constraint();
                     match constraint {
                         NumberConstraint::Min { min, inclusive } => {
-                            if (*value) < min || (!inclusive && (*value) == min) {
+                            if (*value) < min || (!inclusive && (*value) <= min) {
                                 return Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
                                     format!(
-                                        "Value {} is less than the minimum allowed value of {}.",
-                                        value, min
+                                        "Value {value} is less than the minimum allowed value of {min}."
                                     ),
                                     source.clone(),
                                     SpanSet::from_span(span),
@@ -846,12 +852,11 @@ fn evaluate_basic_expression(
                             Ok(computed)
                         }
                         NumberConstraint::Max { max, inclusive } => {
-                            if (*value) > max || (!inclusive && (*value) == max) {
+                            if (*value) > max || (!inclusive && (*value) >= max) {
                                 return Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
                                     format!(
-                                        "Value {} is greater than the maximum allowed value of {}.",
-                                        value, max
+                                        "Value {value} is greater than the maximum allowed value of {max}."
                                     ),
                                     source.clone(),
                                     SpanSet::from_span(span),
@@ -865,23 +870,21 @@ fn evaluate_basic_expression(
                             min_inclusive,
                             max_inclusive,
                         } => {
-                            if (*value) < min || (!min_inclusive && (*value) == min) {
+                            if (*value) < min || (!min_inclusive && (*value) <= min) {
                                 return Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
                                     format!(
-                                        "Value {} is less than the minimum allowed value of {}.",
-                                        value, min
+                                        "Value {value} is less than the minimum allowed value of {min}."
                                     ),
                                     source.clone(),
                                     SpanSet::from_span(span),
                                 ));
                             }
-                            if (*value) > max || (!max_inclusive && (*value) == max) {
+                            if (*value) > max || (!max_inclusive && (*value) >= max) {
                                 return Err(ExpressionError::new_complex(
                                     ExpressionCategory::Evaluation,
                                     format!(
-                                        "Value {} is greater than the maximum allowed value of {}.",
-                                        value, max
+                                        "Value {value} is greater than the maximum allowed value of {max}."
                                     ),
                                     source.clone(),
                                     SpanSet::from_span(span),
@@ -896,8 +899,7 @@ fn evaluate_basic_expression(
                 _ => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
-                        "Expected a numeric value for number definition, but got {:?}.",
-                        computed
+                        "Expected a numeric value for number definition, but got {computed:?}."
                     ),
                     source.clone(),
                     SpanSet::from_span(span),
@@ -915,10 +917,7 @@ fn evaluate_basic_expression(
             } else {
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected a string value for string definition, but got {:?}.",
-                        computed
-                    ),
+                    format!("Expected a string value for string definition, but got {computed:?}."),
                     source.clone(),
                     SpanSet::from_span(span),
                 ))
@@ -930,7 +929,7 @@ fn evaluate_basic_expression(
 fn evaluate_table_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
-    table: TableInputData,
+    table: &TableInputData,
 ) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
     let parameter = table.parameter();
     if !parameter.as_str().is_empty() {
@@ -964,12 +963,20 @@ fn evaluate_table_expression(
 
                 for row in referenced_table.rows() {
                     for (j, data) in row.iter().enumerate() {
-                        let column_definition = table_definition
-                            .get_by_index(j)
-                            .expect("Column definition should exist for each key in the row.");
+                        let Some(column_definition) = table_definition.get_by_index(j) else {
+                            errors.push(ExpressionError::new_complex(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Parameter '{parameter}' references a table with no column definition at index {j}."
+                                ),
+                                parameter_source.clone(),
+                                SpanSet::from_span(parameter_span),
+                            ));
+                            continue;
+                        };
                         match column_definition.constraint() {
                             NumberConstraint::Min { min, inclusive } => {
-                                if *data < min || (!inclusive && *data == min) {
+                                if *data < min || (!inclusive && *data <= min) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -982,7 +989,7 @@ fn evaluate_table_expression(
                                 }
                             }
                             NumberConstraint::Max { max, inclusive } => {
-                                if *data > max || (!inclusive && *data == max) {
+                                if *data > max || (!inclusive && *data >= max) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1000,7 +1007,7 @@ fn evaluate_table_expression(
                                 min_inclusive,
                                 max_inclusive,
                             } => {
-                                if *data < min || (!min_inclusive && *data == min) {
+                                if *data < min || (!min_inclusive && *data <= min) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1011,7 +1018,7 @@ fn evaluate_table_expression(
                                         SpanSet::from_span(parameter_span),
                                     ));
                                 }
-                                if *data > max || (!max_inclusive && *data == max) {
+                                if *data > max || (!max_inclusive && *data >= max) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1037,8 +1044,7 @@ fn evaluate_table_expression(
             other => Err(vec![ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 format!(
-                    "Parameter '{}' is expected to reference a table, but got {:?}.",
-                    parameter, other
+                    "Parameter '{parameter}' is expected to reference a table, but got {other:?}."
                 ),
                 parameter_source.clone(),
                 SpanSet::from_span(parameter_span),
@@ -1053,17 +1059,21 @@ fn evaluate_table_expression(
     for row in table.data() {
         let mut evaluated_row = Vec::new();
         for (i, basic_data) in row.iter().enumerate() {
-            let number_definition = definition
-                .get_by_index(i)
-                .expect("Column definition should exist for each key in the row.");
+            let Some(number_definition) = definition.get_by_index(i) else {
+                let cell_source = ShareableString::from(basic_data.as_str().to_string());
+                let cell_span = Span::new(0, basic_data.as_str().chars().count());
+                return Err(vec![ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("No column definition exists for table cell at index {i}."),
+                    cell_source,
+                    SpanSet::from_span(cell_span),
+                )]);
+            };
 
             let basic_input_data =
                 BasicInputData::new(Number(number_definition.clone()), basic_data.clone());
 
-            match evaluate_basic_expression(computed_data, functions, basic_input_data) {
-                Ok(ComputedItem::Integer(value)) => {
-                    evaluated_row.push(value as f64);
-                }
+            match evaluate_basic_expression(computed_data, functions, &basic_input_data) {
                 Ok(ComputedItem::Float(value)) => {
                     evaluated_row.push(value);
                 }
@@ -1072,10 +1082,7 @@ fn evaluate_table_expression(
                     let cell_span = Span::new(0, basic_data.as_str().chars().count());
                     return Err(vec![ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
-                        format!(
-                            "Expected a numeric value for table cell, but got {:?}.",
-                            other
-                        ),
+                        format!("Expected a numeric value for table cell, but got {other:?}."),
                         cell_source,
                         SpanSet::from_span(cell_span),
                     )]);
@@ -1093,9 +1100,9 @@ fn evaluate_table_expression(
 /// Evaluates the given input data against the provided computed data, returning a new set of computed data
 /// along with any errors encountered during evaluation.
 pub(crate) fn evaluator(
-    computed_data: BTreeMap<ShareableString, ComputedItem>,
+    computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
-    input_data: BTreeMap<ShareableString, ObjectItemInputData>,
+    input_data: &BTreeMap<ShareableString, ObjectItemInputData>,
 ) -> (
     BTreeMap<ShareableString, ComputedItem>,
     Vec<ExpressionError>,
@@ -1106,7 +1113,7 @@ pub(crate) fn evaluator(
     for (key, data) in input_data {
         match data {
             ObjectItemInputData::Basic(basic_data) => {
-                match evaluate_basic_expression(&computed_data, functions, basic_data) {
+                match evaluate_basic_expression(computed_data, functions, basic_data) {
                     Ok(computed_item) => {
                         result.insert(key.clone(), computed_item);
                     }
@@ -1122,7 +1129,7 @@ pub(crate) fn evaluator(
                     .keys()
                     .map(ShareableString::from)
                     .collect();
-                match evaluate_table_expression(&computed_data, functions, table_data) {
+                match evaluate_table_expression(computed_data, functions, table_data) {
                     Ok(evaluated_table) => {
                         result.insert(
                             key.clone(),
@@ -1190,7 +1197,7 @@ mod tests {
     fn empty_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::new();
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(result.is_empty());
         assert!(errors.is_empty());
     }
@@ -1200,7 +1207,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_boolean_basic_input_data("true"))]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1215,7 +1222,7 @@ mod tests {
             create_boolean_basic_input_data("true && false || true"),
         )]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1234,7 +1241,7 @@ mod tests {
             ("f".into(), create_boolean_basic_input_data("true != false")),
         ]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1251,7 +1258,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_integer_basic_input_data("42"))]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1264,7 +1271,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_integer_basic_input_data("1 + 2 * 3"))]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1290,7 +1297,7 @@ mod tests {
             ("j".into(), create_integer_basic_input_data("--1")),
         ]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1311,7 +1318,7 @@ mod tests {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42.0"))]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1326,7 +1333,7 @@ mod tests {
             create_number_basic_input_data("1.0 + 2.0 * 3.0"),
         )]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1352,7 +1359,7 @@ mod tests {
             ("j".into(), create_number_basic_input_data("--1.0")),
         ]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
         assert!(errors.is_empty());
 
@@ -1469,7 +1476,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(errors.is_empty());
 
         check_number_float(&result["x"], 9.0);
@@ -1484,7 +1491,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(errors.is_empty());
 
         check_number_float(&result["x"], 9.0);
@@ -1546,7 +1553,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("constant()"))]);
 
-        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
         assert!(errors.is_empty());
         match result.get("x") {
             Some(ComputedItem::Float(v)) => assert_eq!(*v, 42.0),
@@ -1567,7 +1574,7 @@ mod tests {
             create_number_basic_input_data("sum(1.0, 2.0, 3.5)"),
         )]);
 
-        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
         assert!(errors.is_empty());
         check_number_float(&result["x"], 6.5);
     }
@@ -1584,7 +1591,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("sum(a, 2.0)"))]);
 
-        let (result, errors) = evaluator(computed_data, &functions, input_data);
+        let (result, errors) = evaluator(&computed_data, &functions, &input_data);
         assert!(errors.is_empty());
         check_number_float(&result["x"], 3.5);
     }
@@ -1602,7 +1609,7 @@ mod tests {
             create_number_basic_input_data("sum(sum(1.0, 2.0), sum(3.0, 4.0))"),
         )]);
 
-        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
         assert!(errors.is_empty());
         check_number_float(&result["x"], 10.0);
     }
@@ -1620,7 +1627,7 @@ mod tests {
             create_number_basic_input_data("sum(1.0, 2.0) * 3.0 + 1.0"),
         )]);
 
-        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
         assert!(errors.is_empty());
         check_number_float(&result["x"], 10.0);
     }
@@ -1631,7 +1638,7 @@ mod tests {
         let input_data =
             BTreeMap::from([("x".into(), create_number_basic_input_data("undefined()"))]);
 
-        let (result, errors) = evaluator(BTreeMap::new(), &functions, input_data);
+        let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
         assert!(result.is_empty());
         assert_eq!(errors.len(), 1);
         let message = errors[0].to_string();
@@ -1670,7 +1677,7 @@ mod tests {
 
         let input_data = BTreeMap::from([("table".into(), table_input_data)]);
 
-        let (result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(errors.is_empty());
 
         if let ComputedItem::Table(computed_table) = &result["table"] {
@@ -1696,7 +1703,8 @@ mod tests {
         ));
 
         let input_data = BTreeMap::from([("t".into(), table_input_data)]);
-        let (_result, errors) = evaluator(BTreeMap::new(), &FunctionDefinitions::new(), input_data);
+        let (_result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 1);
         assert!(errors[0].to_string().contains("missing"));
     }
@@ -1716,7 +1724,7 @@ mod tests {
         ));
 
         let input_data = BTreeMap::from([("t".into(), table_input_data)]);
-        let (_result, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (_result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 1);
         assert!(errors[0].to_string().contains("not_a_table"));
     }
@@ -1750,7 +1758,7 @@ mod tests {
 
         let input_data = BTreeMap::from([("table".into(), table_input_data)]);
 
-        let (_, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (_, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 1);
         assert!(errors[0].to_string().contains("Parameter 'table' references a table with 3 columns, but the current table expects 2 columns."));
     }
@@ -1802,9 +1810,9 @@ mod tests {
 
         let input_data = BTreeMap::from([("table".into(), table_input_data)]);
 
-        let (_, errors) = evaluator(computed_data, &FunctionDefinitions::new(), input_data);
+        let (_, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 3);
-        println!("{:?}", errors);
+        println!("{errors:?}");
         assert!(errors[0].to_string().contains(
             "Value 6.1 in column 'column 2' is less than the minimum allowed value of 10."
         ));

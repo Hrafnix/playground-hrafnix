@@ -13,6 +13,7 @@ pub struct BooleanEditable {
 
 impl BooleanEditable {
     /// Creates a new `BooleanEditable` instance from a given `BooleanFrozen` value.
+    #[must_use]
     pub fn new(frozen_choice: &BooleanFrozen) -> Self {
         Self {
             definition: frozen_choice.definition().clone(),
@@ -21,16 +22,19 @@ impl BooleanEditable {
     }
 
     /// Converts the current `BooleanEditable` instance into a `BooleanFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> BooleanFrozen {
         BooleanFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the choice definition.
+    #[must_use]
     pub fn definition(&self) -> &BooleanDefinition {
         &self.definition
     }

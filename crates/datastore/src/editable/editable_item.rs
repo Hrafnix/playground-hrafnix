@@ -30,6 +30,7 @@ pub enum ItemEditable {
 
 impl ItemEditable {
     /// Creates a new `ItemEditable` instance from a given `ItemFrozen` value.
+    #[must_use]
     pub fn new_from_frozen(static_item: &ItemFrozen) -> Self {
         match static_item {
             ItemFrozen::Boolean(boolean) => ItemEditable::Boolean(BooleanEditable::new(boolean)),
@@ -44,6 +45,7 @@ impl ItemEditable {
     }
 
     /// Converts the current `ItemEditable` instance into an `ItemFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> ItemFrozen {
         match self {
             ItemEditable::Boolean(boolean) => ItemFrozen::Boolean(boolean.freeze()),
@@ -58,6 +60,7 @@ impl ItemEditable {
     }
 
     /// Returns the parameter definition.
+    #[must_use]
     pub fn definition(&self) -> ItemDefinitionType {
         match self {
             ItemEditable::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
@@ -72,6 +75,7 @@ impl ItemEditable {
     }
 
     /// Returns the choice value if this parameter is a choice parameter.
+    #[must_use]
     pub fn get_choice(&self) -> Option<ChoiceEditable> {
         match self {
             Self::Choice(c) => Some(c.clone()),
@@ -80,6 +84,7 @@ impl ItemEditable {
     }
 
     /// Returns the file value if this parameter is a file parameter.
+    #[must_use]
     pub fn get_file(&self) -> Option<&FileEditable> {
         match self {
             Self::File(f) => Some(f),
@@ -88,6 +93,7 @@ impl ItemEditable {
     }
 
     /// Returns the map value if this parameter is a map parameter.
+    #[must_use]
     pub fn get_map(&self) -> Option<&MapEditable> {
         match self {
             Self::Map(m) => Some(m),
@@ -96,6 +102,7 @@ impl ItemEditable {
     }
 
     /// Returns the number value if this parameter is a number parameter.
+    #[must_use]
     pub fn get_number(&self) -> Option<&NumberEditable> {
         match self {
             Self::Number(n) => Some(n),
@@ -104,6 +111,7 @@ impl ItemEditable {
     }
 
     /// Returns the string value if this parameter is a string parameter.
+    #[must_use]
     pub fn get_string(&self) -> Option<&StringEditable> {
         match self {
             Self::String(s) => Some(s),
@@ -112,6 +120,7 @@ impl ItemEditable {
     }
 
     /// Returns the table value if this parameter is a table parameter.
+    #[must_use]
     pub fn get_table(&self) -> Option<&TableEditable> {
         match self {
             Self::Table(t) => Some(t),

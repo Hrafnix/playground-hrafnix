@@ -13,6 +13,7 @@ pub struct ChoiceEditable {
 
 impl ChoiceEditable {
     /// Creates a new `ChoiceEditable` instance from a given `ChoiceFrozen` value.
+    #[must_use]
     pub fn new(frozen_choice: &ChoiceFrozen) -> Self {
         Self {
             definition: frozen_choice.definition().clone(),
@@ -21,16 +22,19 @@ impl ChoiceEditable {
     }
 
     /// Converts the current `ChoiceEditable` instance into a `ChoiceFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> ChoiceFrozen {
         ChoiceFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
+    #[must_use]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns a reference to the choice definition.
+    #[must_use]
     pub fn definition(&self) -> &ChoiceDefinition {
         &self.definition
     }

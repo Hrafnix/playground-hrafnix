@@ -32,26 +32,31 @@ impl ShareableString {
     }
 
     /// Returns the precomputed BLAKE3 hash of the string.
+    #[must_use]
     pub fn current_blake3_hash(&self) -> [u8; 32] {
         self.blake3_hash
     }
 
     /// Returns the string as a string slice.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.data
     }
 
     /// Returns a reference to the underlying `Arc<str>`.
+    #[must_use]
     pub fn as_arc(&self) -> &Arc<str> {
         &self.data
     }
 
     /// Returns true if both `ShareableString`s point to the same memory location.
+    #[must_use]
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.data, &other.data)
     }
 
     /// Checks if the string starts with the given prefix.
+    #[must_use]
     pub fn starts_with(&self, prefix: &str) -> bool {
         self.as_str().starts_with(prefix)
     }
@@ -329,12 +334,12 @@ mod tests {
         assert!(*"m" >= s);
 
         // ShareableString with String
-        assert!(s > String::from("a"));
-        assert!(s < String::from("z"));
+        assert!(s > "a");
+        assert!(s < "z");
 
         // String with ShareableString
-        assert!(String::from("a") < s);
-        assert!(String::from("z") > s);
+        assert!("a" < s);
+        assert!("z" > s);
     }
 
     #[test]

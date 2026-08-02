@@ -55,6 +55,7 @@ impl From<TableDefinition> for MapItemDefinition {
 
 impl MapItemDefinition {
     /// Returns a new `MapItemDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             Self::Choice(def) => Self::Choice(def.launder(store)),
@@ -126,6 +127,7 @@ impl MapDefinition {
     }
 
     /// Returns the description of the map.
+    #[must_use]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -136,6 +138,7 @@ impl MapDefinition {
     }
 
     /// Returns a reference to the map item definition for the specified key string.
+    #[must_use]
     pub fn get_str(&self, key: &str) -> Option<&MapItemDefinition> {
         self.item_type
             .iter()
@@ -154,6 +157,7 @@ impl MapDefinition {
     }
 
     /// Returns true if the map's entry schema contains an item with the specified key string.
+    #[must_use]
     pub fn contains_key_str(&self, key: &str) -> bool {
         self.item_type.iter().any(|(k, _)| k.as_str() == key)
     }
@@ -166,21 +170,25 @@ impl MapDefinition {
     }
 
     /// Returns the number of items in the map's entry schema.
+    #[must_use]
     pub fn count(&self) -> usize {
         self.item_type.len()
     }
 
     /// Returns a reference to the map's entry item type.
+    #[must_use]
     pub fn item_type(&self) -> &BTreeMap<StoreKey, MapItemDefinition> {
         &self.item_type
     }
 
     /// Returns a reference to the description.
+    #[must_use]
     pub fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns a new `MapDefinition` with strings laundered through the provided store.
+    #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -226,10 +234,10 @@ impl TreePrint for MapDefinition {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.item_type.len();
+        let mut item_iter = self.item_type.iter().peekable();
 
-        for (i, (key, item)) in self.item_type.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 

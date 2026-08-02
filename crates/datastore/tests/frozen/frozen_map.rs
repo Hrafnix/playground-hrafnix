@@ -13,7 +13,7 @@ fn test_map_frozen() {
     assert_eq!(map_frozen.definition().description().as_ref(), "A map");
     assert_eq!(map_frozen.definition().count(), 0);
 
-    assert_eq!(map_frozen.get(&store_key!("field1")).is_none(), true);
+    assert!(map_frozen.get(store_key!("field1")).is_none());
     assert_eq!(map_frozen.count(), 0);
     assert_ne!(map_frozen.hash(), [0u8; 32]);
 }
@@ -39,17 +39,17 @@ fn test_complex_map_frozen() {
     assert_eq!(map_frozen.definition().description().as_ref(), "A map");
     assert_eq!(map_frozen.definition().count(), 2);
     assert_eq!(
-        map_frozen.definition().get(&store_key!("field1")).unwrap(),
+        map_frozen.definition().get(store_key!("field1")).unwrap(),
         &map_item_def_1
     );
     assert_eq!(
-        map_frozen.definition().get(&store_key!("field2")).unwrap(),
+        map_frozen.definition().get(store_key!("field2")).unwrap(),
         &map_item_def_2
     );
 
-    assert_eq!(map_frozen.get("f").is_none(), true);
-    assert_eq!(map_frozen.get("field1").is_none(), true);
-    assert_eq!(map_frozen.get("field2").is_none(), true);
+    assert!(map_frozen.get("f").is_none());
+    assert!(map_frozen.get("field1").is_none());
+    assert!(map_frozen.get("field2").is_none());
     assert_eq!(map_frozen.count(), 0);
     assert_ne!(map_frozen.hash(), [0u8; 32]);
 }
@@ -226,8 +226,8 @@ fn test_map_entry_frozen_equality() {
     assert_eq!(&entry_1, entry_2.clone());
     assert_ne!(entry_1.clone(), &entry_3);
 
-    let item_1 = entry_1.get(&store_key!("field1")).unwrap();
-    let item_2 = entry_2.get(&store_key!("field1")).unwrap();
+    let item_1 = entry_1.get(store_key!("field1")).unwrap();
+    let item_2 = entry_2.get(store_key!("field1")).unwrap();
     assert_eq!(item_1, item_2);
 }
 

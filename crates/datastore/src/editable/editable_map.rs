@@ -26,6 +26,7 @@ pub enum MapItemEditable {
 
 impl MapItemEditable {
     /// Creates a new `MapItemEditable` instance from a given `MapItemFrozen` value.
+    #[must_use]
     pub fn new(frozen_item: &MapItemFrozen) -> Self {
         match frozen_item {
             MapItemFrozen::Choice(choice) => MapItemEditable::Choice(ChoiceEditable::new(choice)),
@@ -37,6 +38,7 @@ impl MapItemEditable {
     }
 
     /// Converts the current `MapItemEditable` instance into a `MapItemFrozen` instance.
+    #[must_use]
     pub fn freeze(&self) -> MapItemFrozen {
         match self {
             MapItemEditable::Choice(choice) => MapItemFrozen::Choice(choice.freeze()),
@@ -48,6 +50,7 @@ impl MapItemEditable {
     }
 
     /// Returns the string value if this item is a string value.
+    #[must_use]
     pub fn get_string(&self) -> Option<&StringEditable> {
         match self {
             MapItemEditable::String(string) => Some(string),
@@ -56,6 +59,7 @@ impl MapItemEditable {
     }
 
     /// Returns the table value if this item is a table value.
+    #[must_use]
     pub fn get_table(&self) -> Option<&TableEditable> {
         match self {
             MapItemEditable::Table(table) => Some(table),
@@ -64,6 +68,7 @@ impl MapItemEditable {
     }
 
     /// Returns the map item definition.
+    #[must_use]
     pub fn definition(&self) -> MapItemDefinition {
         match self {
             MapItemEditable::Choice(choice) => {
@@ -118,6 +123,7 @@ pub struct MapEntryEditable {
 
 impl MapEntryEditable {
     /// Creates a new `MapEntryEditable` from a `MapEntryFrozen`.
+    #[must_use]
     pub fn new(frozen_entry: &MapEntryFrozen) -> Self {
         Self {
             items: frozen_entry
@@ -128,6 +134,7 @@ impl MapEntryEditable {
     }
 
     /// Converts this `MapEntryEditable` into a `MapEntryFrozen`.
+    #[must_use]
     pub fn freeze(&self) -> MapEntryFrozen {
         MapEntryFrozen::new_from_editable(self)
     }
@@ -166,6 +173,7 @@ impl MapEntryEditable {
     }
 
     /// Returns the schema of this entry, derived from its current items.
+    #[must_use]
     pub fn definition(&self) -> BTreeMap<StoreKey, MapItemDefinition> {
         self.items
             .iter()
@@ -198,10 +206,10 @@ impl TreePrint for MapEntryEditable {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 
@@ -220,6 +228,7 @@ pub struct MapEditable {
 
 impl MapEditable {
     /// Creates a new `MapEditable` from a `MapFrozen`.
+    #[must_use]
     pub fn new(frozen_map: &MapFrozen) -> Self {
         Self {
             definition: frozen_map.definition().clone(),
@@ -231,6 +240,7 @@ impl MapEditable {
     }
 
     /// Converts this `MapEditable` into a `MapFrozen`.
+    #[must_use]
     pub fn freeze(&self) -> MapFrozen {
         MapFrozen::new_from_editable(self)
     }
@@ -251,11 +261,13 @@ impl MapEditable {
     }
 
     /// Returns a reference to the map definition.
+    #[must_use]
     pub fn definition(&self) -> &MapDefinition {
         &self.definition
     }
 
     /// Returns the number of items in the map.
+    #[must_use]
     pub fn count(&self) -> usize {
         self.items.len()
     }
@@ -292,10 +304,10 @@ impl TreePrint for MapEditable {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let item_count = self.items.len();
+        let mut item_iter = self.items.iter().peekable();
 
-        for (i, (key, item)) in self.items.iter().enumerate() {
-            let is_last = i == item_count - 1;
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
             item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
         }
 
