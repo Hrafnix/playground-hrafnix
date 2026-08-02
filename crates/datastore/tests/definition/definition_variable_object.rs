@@ -110,90 +110,46 @@ fn test_variable_object_definition_print() {
         )
         .with(
             VariableKey::new("v_p5_v2".into()).unwrap(),
-            NumberDefinition::new_with_constraint(
-                "D5",
-                NumberConstraint::Min {
-                    min: 1.0,
-                    inclusive: true,
-                },
-            ),
+            NumberDefinition::new_with_constraint("D5", NumberConstraint::min(1.0, true)),
         )
         .with(
             VariableKey::new("v_p5_v3".into()).unwrap(),
-            NumberDefinition::new_with_constraint(
-                "D5",
-                NumberConstraint::Max {
-                    max: 21.0,
-                    inclusive: false,
-                },
-            ),
+            NumberDefinition::new_with_constraint("D5", NumberConstraint::max(21.0, false)),
         )
         .with(
             VariableKey::new("v_p5_v4".into()).unwrap(),
-            NumberDefinition::new_with_constraint(
-                "D5",
-                NumberConstraint::Max {
-                    max: 11.0,
-                    inclusive: true,
-                },
-            ),
+            NumberDefinition::new_with_constraint("D5", NumberConstraint::max(11.0, true)),
         )
         .with(
             VariableKey::new("v_p5_v5".into()).unwrap(),
-            NumberDefinition::new_with_constraint(
-                "D5",
-                NumberConstraint::Max {
-                    max: 100.0,
-                    inclusive: false,
-                },
-            ),
+            NumberDefinition::new_with_constraint("D5", NumberConstraint::max(100.0, false)),
         )
         .with(
             VariableKey::new("v_p5_v6".into()).unwrap(),
             NumberDefinition::new_with_constraint(
                 "D5",
-                NumberConstraint::Range {
-                    min: 2.0,
-                    max: 12.0,
-                    min_inclusive: true,
-                    max_inclusive: false,
-                },
+                NumberConstraint::range(2.0, 12.0, true, false),
             ),
         )
         .with(
             VariableKey::new("v_p5_v7".into()).unwrap(),
             NumberDefinition::new_with_constraint(
                 "D5",
-                NumberConstraint::Range {
-                    min: 3.0,
-                    max: 99.0,
-                    min_inclusive: false,
-                    max_inclusive: false,
-                },
+                NumberConstraint::range(3.0, 99.0, false, false),
             ),
         )
         .with(
             VariableKey::new("v_p5_v8".into()).unwrap(),
             NumberDefinition::new_with_constraint(
                 "D5",
-                NumberConstraint::Range {
-                    min: 5.0,
-                    max: 70.0,
-                    min_inclusive: false,
-                    max_inclusive: true,
-                },
+                NumberConstraint::range(5.0, 70.0, false, true),
             ),
         )
         .with(
             VariableKey::new("v_p5_v9".into()).unwrap(),
             NumberDefinition::new_with_constraint(
                 "D5",
-                NumberConstraint::Range {
-                    min: 6.0,
-                    max: 1200.0,
-                    min_inclusive: true,
-                    max_inclusive: true,
-                },
+                NumberConstraint::range(6.0, 1200.0, true, true),
             ),
         )
         .with(
@@ -216,10 +172,7 @@ fn test_variable_object_definition_print() {
                         store_key!("col2"),
                         NumberDefinition::new_with_constraint(
                             "C2",
-                            NumberConstraint::Min {
-                                min: 1.52,
-                                inclusive: true,
-                            },
+                            NumberConstraint::min(1.52, true),
                         ),
                     ),
                 ],
@@ -238,10 +191,7 @@ fn test_variable_object_definition_print() {
                         store_key!("col2"),
                         MapItemDefinition::Number(NumberDefinition::new_with_constraint(
                             "C2",
-                            NumberConstraint::Max {
-                                max: 1.0,
-                                inclusive: true,
-                            },
+                            NumberConstraint::max(1.0, true),
                         )),
                     ),
                     (
@@ -254,12 +204,7 @@ fn test_variable_object_definition_print() {
                                     store_key!("col3_2"),
                                     NumberDefinition::new_with_constraint(
                                         "C3_2",
-                                        NumberConstraint::Range {
-                                            min: 0.0,
-                                            max: 10.0,
-                                            min_inclusive: true,
-                                            max_inclusive: false,
-                                        },
+                                        NumberConstraint::range(0.0, 10.0, true, false),
                                     ),
                                 ),
                             ],

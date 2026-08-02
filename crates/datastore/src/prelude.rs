@@ -22,7 +22,7 @@ pub use crate::definition::{
     BooleanDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition,
     GlobalObjectDefinition, GlobalObjectDefinitionBuilder, IntegerConstraint,
     IntegerConstraintEnum, IntegerDefinition, ItemDefinitionType, MapDefinition, MapItemDefinition,
-    NumberConstraint, NumberDefinition, ParameterObjectDefinition,
+    NumberConstraint, NumberConstraintEnum, NumberDefinition, ParameterObjectDefinition,
     ParameterObjectDefinitionBuilder, StringDefinition, TableDefinition, VariableObjectDefinition,
     VariableObjectDefinitionBuilder,
 };

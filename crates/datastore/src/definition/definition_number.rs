@@ -4,7 +4,7 @@ use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a number-based parameter constraint.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum NumberConstraint {
+pub enum NumberConstraintEnum {
     /// Minimum value constraint.
     Min {
         /// Minimum value of the constraint.
@@ -34,6 +34,101 @@ pub enum NumberConstraint {
     None,
 }
 
+/// Definition for an integer-based parameter constraint.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct NumberConstraint {
+    pub(crate) constraint_enum: NumberConstraintEnum,
+}
+
+impl NumberConstraint {
+    /// Creates a new `NumberConstraint` with no constraint.
+    #[must_use]
+    pub fn none() -> Self {
+        Self {
+            constraint_enum: NumberConstraintEnum::None,
+        }
+    }
+
+    /// Creates a new `NumberConstraint` with a minimum value constraint.
+    #[must_use]
+    pub fn min(min: f64, inclusive: bool) -> Self {
+        Self {
+            constraint_enum: NumberConstraintEnum::Min { min, inclusive },
+        }
+    }
+
+    /// Creates a new `NumberConstraint` with a maximum value constraint.
+    #[must_use]
+    pub fn max(max: f64, inclusive: bool) -> Self {
+        Self {
+            constraint_enum: NumberConstraintEnum::Max { max, inclusive },
+        }
+    }
+
+    /// Creates a new `NumberConstraint` with a range value constraint.
+    ///
+    /// If `value_1` is greater than `value_2`, the two values are swapped along with
+    /// their corresponding inclusivity flags so the resulting range is always valid.
+    #[must_use]
+    pub fn range(
+        value_1: f64,
+        value_2: f64,
+        value_1_inclusive: bool,
+        value_2_inclusive: bool,
+    ) -> Self {
+        let (min, max, min_inclusive, max_inclusive) = if value_1 >= value_2 {
+            (value_2, value_1, value_2_inclusive, value_1_inclusive)
+        } else {
+            (value_1, value_2, value_1_inclusive, value_2_inclusive)
+        };
+
+        Self {
+            constraint_enum: NumberConstraintEnum::Range {
+                min,
+                max,
+                min_inclusive,
+                max_inclusive,
+            },
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for NumberConstraint {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // Mirrors the shape produced by the derived `Serialize` impl above, so the
+        // on-the-wire format is unchanged; only construction is routed through the
+        // same normalization logic as `NumberConstraint::range` so a deserialized
+        // `Range` can never end up with `min > max`.
+        #[derive(Deserialize)]
+        struct Raw {
+            constraint_enum: NumberConstraintEnum,
+        }
+
+        let raw = Raw::deserialize(deserializer)?;
+        let constraint_enum = match raw.constraint_enum {
+            NumberConstraintEnum::Range {
+                min,
+                max,
+                min_inclusive,
+                max_inclusive,
+            } => {
+                return Ok(NumberConstraint::range(
+                    min,
+                    max,
+                    min_inclusive,
+                    max_inclusive,
+                ));
+            }
+            other => other,
+        };
+
+        Ok(Self { constraint_enum })
+    }
+}
+
 /// Definition for a number-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NumberDefinition {
@@ -47,7 +142,7 @@ impl NumberDefinition {
     pub fn new<S1: Into<ShareableString>>(description: S1) -> Self {
         Self {
             description: description.into(),
-            constraint: NumberConstraint::None,
+            constraint: NumberConstraint::none(),
             default_value: ShareableString::default(),
         }
     }
@@ -59,7 +154,7 @@ impl NumberDefinition {
     ) -> Self {
         Self {
             description: description.into(),
-            constraint: NumberConstraint::None,
+            constraint: NumberConstraint::none(),
             default_value: default_value.into(),
         }
     }
@@ -91,14 +186,14 @@ impl NumberDefinition {
 
     /// Returns the constraint.
     #[must_use]
-    pub fn constraint(&self) -> NumberConstraint {
-        self.constraint.clone()
+    pub fn constraint(&self) -> NumberConstraintEnum {
+        self.constraint.constraint_enum.clone()
     }
 
     /// Returns a reference to the constraint.
     #[must_use]
-    pub fn constraint_ref(&self) -> &NumberConstraint {
-        &self.constraint
+    pub fn constraint_ref(&self) -> &NumberConstraintEnum {
+        &self.constraint.constraint_enum
     }
 
     /// Returns a new `NumberDefinition` with strings laundered through the provided store.
@@ -169,22 +264,22 @@ impl TreePrint for NumberDefinition {
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
-        let constraint_str = match &self.constraint {
-            NumberConstraint::Min { min, inclusive } => {
+        let constraint_str = match &self.constraint.constraint_enum {
+            NumberConstraintEnum::Min { min, inclusive } => {
                 format!(
                     " [Min({}, {})]",
                     format_number_value(*min),
                     if *inclusive { "inclusive" } else { "exclusive" }
                 )
             }
-            NumberConstraint::Max { max, inclusive } => {
+            NumberConstraintEnum::Max { max, inclusive } => {
                 format!(
                     " [Max({}, {})]",
                     format_number_value(*max),
                     if *inclusive { "inclusive" } else { "exclusive" }
                 )
             }
-            NumberConstraint::Range {
+            NumberConstraintEnum::Range {
                 min,
                 max,
                 min_inclusive,
@@ -208,7 +303,7 @@ impl TreePrint for NumberDefinition {
                     max_type
                 )
             }
-            NumberConstraint::None => String::new(),
+            NumberConstraintEnum::None => String::new(),
         };
 
         writeln!(
