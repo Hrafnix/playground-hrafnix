@@ -1,5 +1,6 @@
 use crate::definition::{
-    ChoiceDefinition, FileDefinition, NumberDefinition, StringDefinition, TableDefinition,
+    BooleanDefinition, ChoiceDefinition, FileDefinition, IntegerDefinition, NumberDefinition,
+    StringDefinition, TableDefinition,
 };
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
@@ -11,10 +12,14 @@ use std::sync::Arc;
 /// The definition of an item within a map entry.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MapItemDefinition {
+    /// A boolean parameter.
+    Boolean(BooleanDefinition),
     /// A choice parameter.
     Choice(ChoiceDefinition),
     /// A file parameter.
     File(FileDefinition),
+    /// An integer parameter.
+    Integer(IntegerDefinition),
     /// A number parameter.
     Number(NumberDefinition),
     /// A string parameter.
@@ -23,9 +28,9 @@ pub enum MapItemDefinition {
     Table(TableDefinition),
 }
 
-impl From<StringDefinition> for MapItemDefinition {
-    fn from(definition: StringDefinition) -> Self {
-        Self::String(definition)
+impl From<BooleanDefinition> for MapItemDefinition {
+    fn from(definition: BooleanDefinition) -> Self {
+        Self::Boolean(definition)
     }
 }
 
@@ -41,9 +46,21 @@ impl From<FileDefinition> for MapItemDefinition {
     }
 }
 
+impl From<IntegerDefinition> for MapItemDefinition {
+    fn from(definition: IntegerDefinition) -> Self {
+        Self::Integer(definition)
+    }
+}
+
 impl From<NumberDefinition> for MapItemDefinition {
     fn from(definition: NumberDefinition) -> Self {
         Self::Number(definition)
+    }
+}
+
+impl From<StringDefinition> for MapItemDefinition {
+    fn from(definition: StringDefinition) -> Self {
+        Self::String(definition)
     }
 }
 
@@ -58,8 +75,10 @@ impl MapItemDefinition {
     #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
+            Self::Boolean(def) => Self::Boolean(def.launder(store)),
             Self::Choice(def) => Self::Choice(def.launder(store)),
             Self::File(def) => Self::File(def.launder(store)),
+            Self::Integer(def) => Self::Integer(def.launder(store)),
             Self::Number(def) => Self::Number(def.launder(store)),
             Self::String(def) => Self::String(def.launder(store)),
             Self::Table(def) => Self::Table(def.launder(store)),
@@ -88,8 +107,10 @@ impl TreePrint for MapItemDefinition {
         last: bool,
     ) -> std::fmt::Result {
         match self {
+            MapItemDefinition::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             MapItemDefinition::Choice(choice) => choice.tree_print(f, label, prefix, last),
             MapItemDefinition::File(file) => file.tree_print(f, label, prefix, last),
+            MapItemDefinition::Integer(integer) => integer.tree_print(f, label, prefix, last),
             MapItemDefinition::Number(number) => number.tree_print(f, label, prefix, last),
             MapItemDefinition::String(string) => string.tree_print(f, label, prefix, last),
             MapItemDefinition::Table(table) => table.tree_print(f, label, prefix, last),
