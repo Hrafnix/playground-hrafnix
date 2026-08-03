@@ -185,7 +185,7 @@ impl TreePrint for VariableObjectFrozen {
     ) -> std::fmt::Result {
         writeln!(
             f,
-            "Frozen Variable Object ({})",
+            "Variable Object Frozen ({})",
             self.definition.description()
         )?;
 

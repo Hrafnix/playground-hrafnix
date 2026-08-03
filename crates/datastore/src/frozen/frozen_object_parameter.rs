@@ -185,7 +185,7 @@ impl TreePrint for ParameterObjectFrozen {
     ) -> std::fmt::Result {
         writeln!(
             f,
-            "Frozen Parameter Object ({})",
+            "Parameter Object Frozen ({})",
             self.definition.description()
         )?;
 
