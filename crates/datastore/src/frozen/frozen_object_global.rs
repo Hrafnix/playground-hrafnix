@@ -183,7 +183,11 @@ impl TreePrint for GlobalObjectFrozen {
         prefix: &str,
         last: bool,
     ) -> std::fmt::Result {
-        writeln!(f, "Frozen Object ({})", self.definition.description())?;
+        writeln!(
+            f,
+            "Global Object Frozen ({})",
+            self.definition.description()
+        )?;
 
         let child_prefix = Self::child_prefix(prefix, last);
 

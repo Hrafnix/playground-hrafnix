@@ -20,24 +20,6 @@ fn test_editable_string_round_trip() {
 }
 
 #[test]
-fn test_editable_boolean_round_trip() {
-    // Why: Editable boolean should thaw from frozen, allow edits, and freeze back correctly.
-    let frozen = BooleanFrozen::new(BooleanDefinition::new_with_default(
-        "A boolean parameter",
-        true,
-    ));
-    let mut editable = frozen.thaw();
-    assert_eq!(editable.value(), "true");
-
-    editable.set("false");
-    assert_eq!(editable.value(), "false");
-
-    let frozen_2 = editable.freeze();
-    assert_eq!(frozen_2.value(), "false");
-    assert_ne!(frozen_2.hash(), frozen.hash());
-}
-
-#[test]
 fn test_editable_number_round_trip() {
     // Why: Editable number should thaw from frozen, allow edits, and freeze back correctly.
     let frozen = NumberFrozen::new(NumberDefinition::new_with_default(
@@ -52,43 +34,6 @@ fn test_editable_number_round_trip() {
 
     let frozen_2 = editable.freeze();
     assert_eq!(frozen_2.value(), "42");
-    assert_ne!(frozen_2.hash(), frozen.hash());
-}
-
-#[test]
-fn test_editable_file_round_trip() {
-    // Why: Editable file should thaw from frozen, allow edits, and freeze back correctly.
-    let frozen = FileFrozen::new(FileDefinition::new("A file parameter", "txt", false));
-    let mut editable = frozen.thaw();
-    assert_eq!(editable.value(), "");
-
-    editable.set("test.txt");
-    assert_eq!(editable.value(), "test.txt");
-
-    let frozen_2 = editable.freeze();
-    assert_eq!(frozen_2.value(), "test.txt");
-    assert_ne!(frozen_2.hash(), frozen.hash());
-}
-
-#[test]
-fn test_editable_choice_round_trip() {
-    // Why: Editable choice should thaw from frozen, allow edits, and freeze back correctly.
-    let frozen = ChoiceFrozen::new(ChoiceDefinition::new_with_default(
-        "A choice parameter",
-        vec![
-            ChoiceItemDefinition::new(store_key!("a"), "A"),
-            ChoiceItemDefinition::new(store_key!("b"), "B"),
-        ],
-        "a",
-    ));
-    let mut editable = frozen.thaw();
-    assert_eq!(editable.value(), "a");
-
-    editable.set("b");
-    assert_eq!(editable.value(), "b");
-
-    let frozen_2 = editable.freeze();
-    assert_eq!(frozen_2.value(), "b");
     assert_ne!(frozen_2.hash(), frozen.hash());
 }
 

@@ -79,7 +79,7 @@ impl TreePrint for ParameterObjectEditable {
     ) -> std::fmt::Result {
         writeln!(
             f,
-            "Editable Parameter Object ({})",
+            "Parameter Object Editable ({})",
             self.definition.description()
         )?;
 
