@@ -259,16 +259,9 @@ fn test_editable_parameter_object_print() {
     map.create(store_key!("key1"));
 
     let item = map.get_mut("key1").unwrap();
-    item.get_mut("col1")
-        .unwrap()
-        .get_mut_string()
-        .unwrap()
-        .set("test 1");
-    item.get_mut("col2")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("55.0");
+    editable_set_map_value(item, "col1", "test 1").unwrap();
+    editable_set_map_value(item, "col2", "55.0").unwrap();
+
     let map_table = item.get_mut("col3").unwrap().get_mut_table().unwrap();
     map_table.add_row(1);
     map_table.set_cell(0, "col3_1", "150.0").unwrap();

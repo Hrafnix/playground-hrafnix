@@ -1,5 +1,5 @@
 use crate::StoreError;
-use crate::editable::ItemEditable;
+use crate::editable::{ItemEditable, MapEntryEditable, MapItemEditable};
 use crate::traits::ObjectEditable;
 use shareable_string::ShareableString;
 
@@ -45,6 +45,47 @@ pub fn editable_set_value<
             string.set(value);
         }
         ItemEditable::Table(table) => {
+            table.set_parameter(value);
+        }
+    }
+
+    Ok(())
+}
+
+/// Helper function to set the value of a map item in an editable map by key and item key.
+///
+/// # Errors
+///
+/// Returns a `StoreError` if the key or item key does not exist.
+pub fn editable_set_map_value<S1: Into<ShareableString>, S2: Into<ShareableString>>(
+    entry: &mut MapEntryEditable,
+    key: S1,
+    value: S2,
+) -> Result<(), StoreError> {
+    let key = key.into();
+
+    let item = entry.get_mut(&key).ok_or(StoreError::KeyNotFound)?;
+
+    match item {
+        MapItemEditable::Boolean(boolean) => {
+            boolean.set(value);
+        }
+        MapItemEditable::Choice(choice) => {
+            choice.set(value);
+        }
+        MapItemEditable::File(file) => {
+            file.set(value);
+        }
+        MapItemEditable::Integer(integer) => {
+            integer.set(value);
+        }
+        MapItemEditable::Number(number) => {
+            number.set(value);
+        }
+        MapItemEditable::String(string) => {
+            string.set(value);
+        }
+        MapItemEditable::Table(table) => {
             table.set_parameter(value);
         }
     }
