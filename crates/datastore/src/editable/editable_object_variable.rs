@@ -79,7 +79,7 @@ impl TreePrint for VariableObjectEditable {
     ) -> std::fmt::Result {
         writeln!(
             f,
-            "Editable Variable Object ({})",
+            "Variable Object Editable ({})",
             self.definition.description()
         )?;
 

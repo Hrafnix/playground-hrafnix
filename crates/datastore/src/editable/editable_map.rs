@@ -49,6 +49,96 @@ impl MapItemEditable {
         }
     }
 
+    /// Returns the boolean value if this item is a boolean value.
+    #[must_use]
+    pub fn get_boolean(&self) -> Option<&ChoiceEditable> {
+        match self {
+            MapItemEditable::Choice(choice) => Some(choice),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the boolean value if this item is a boolean value.
+    #[must_use]
+    pub fn get_mut_boolean(&mut self) -> Option<&mut ChoiceEditable> {
+        match self {
+            MapItemEditable::Choice(choice) => Some(choice),
+            _ => None,
+        }
+    }
+
+    /// Returns the choice value if this item is a choice value.
+    #[must_use]
+    pub fn get_choice(&self) -> Option<&ChoiceEditable> {
+        match self {
+            MapItemEditable::Choice(choice) => Some(choice),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the choice value if this item is a choice value.
+    #[must_use]
+    pub fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
+        match self {
+            MapItemEditable::Choice(choice) => Some(choice),
+            _ => None,
+        }
+    }
+
+    /// Returns the file value if this item is a file value.
+    #[must_use]
+    pub fn get_file(&self) -> Option<&FileEditable> {
+        match self {
+            MapItemEditable::File(file) => Some(file),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the file value if this item is a file value.
+    #[must_use]
+    pub fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
+        match self {
+            MapItemEditable::File(file) => Some(file),
+            _ => None,
+        }
+    }
+
+    /// Returns the number value if this item is a number value.
+    #[must_use]
+    pub fn get_integer(&self) -> Option<&NumberEditable> {
+        match self {
+            MapItemEditable::Number(number) => Some(number),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the number value if this item is a number value.
+    #[must_use]
+    pub fn get_mut_integer(&mut self) -> Option<&mut NumberEditable> {
+        match self {
+            MapItemEditable::Number(number) => Some(number),
+            _ => None,
+        }
+    }
+
+    /// Returns the number value if this item is a number value.
+    #[must_use]
+    pub fn get_number(&self) -> Option<&NumberEditable> {
+        match self {
+            MapItemEditable::Number(number) => Some(number),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the number value if this item is a number value.
+    #[must_use]
+    pub fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
+        match self {
+            MapItemEditable::Number(number) => Some(number),
+            _ => None,
+        }
+    }
+
     /// Returns the string value if this item is a string value.
     #[must_use]
     pub fn get_string(&self) -> Option<&StringEditable> {
@@ -58,9 +148,27 @@ impl MapItemEditable {
         }
     }
 
+    /// Returns a mutable reference to the string value if this item is a string value.
+    #[must_use]
+    pub fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
+        match self {
+            MapItemEditable::String(string) => Some(string),
+            _ => None,
+        }
+    }
+
     /// Returns the table value if this item is a table value.
     #[must_use]
     pub fn get_table(&self) -> Option<&TableEditable> {
+        match self {
+            MapItemEditable::Table(table) => Some(table),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the table value if this item is a table value.
+    #[must_use]
+    pub fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
         match self {
             MapItemEditable::Table(table) => Some(table),
             _ => None,
@@ -253,6 +361,14 @@ impl MapEditable {
     /// Returns a mutable reference to the item with the specified key, if it exists.
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapEntryEditable> {
         self.items.get_mut(key.as_ref())
+    }
+
+    /// Creates a new entry in the map with the specified key.
+    pub fn create<S: Into<StoreKey>>(&mut self, key: S) {
+        let key = key.into();
+        let frozen = MapEntryFrozen::new(self.definition.item_type());
+        let entry = frozen.thaw();
+        self.items.insert(key, entry);
     }
 
     /// Returns an iterator over the key-item pairs in the map.

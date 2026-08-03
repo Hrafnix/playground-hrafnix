@@ -74,11 +74,38 @@ impl ItemEditable {
         }
     }
 
+    /// Returns the boolean value if this parameter is a boolean parameter.
+    #[must_use]
+    pub fn get_boolean(&self) -> Option<&BooleanEditable> {
+        match self {
+            Self::Boolean(b) => Some(b),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the boolean value if this parameter is a boolean parameter.
+    #[must_use]
+    pub fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
+        match self {
+            Self::Boolean(b) => Some(b),
+            _ => None,
+        }
+    }
+
     /// Returns the choice value if this parameter is a choice parameter.
     #[must_use]
     pub fn get_choice(&self) -> Option<ChoiceEditable> {
         match self {
             Self::Choice(c) => Some(c.clone()),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the choice value if this parameter is a choice parameter.
+    #[must_use]
+    pub fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
+        match self {
+            Self::Choice(c) => Some(c),
             _ => None,
         }
     }
@@ -92,9 +119,45 @@ impl ItemEditable {
         }
     }
 
+    /// Returns a mutable reference to the file value if this parameter is a file parameter.
+    #[must_use]
+    pub fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
+        match self {
+            Self::File(f) => Some(f),
+            _ => None,
+        }
+    }
+
+    /// Returns the integer value if this parameter is an integer parameter.
+    #[must_use]
+    pub fn get_integer(&self) -> Option<&IntegerEditable> {
+        match self {
+            Self::Integer(i) => Some(i),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the integer value if this parameter is an integer parameter.
+    #[must_use]
+    pub fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
+        match self {
+            Self::Integer(i) => Some(i),
+            _ => None,
+        }
+    }
+
     /// Returns the map value if this parameter is a map parameter.
     #[must_use]
     pub fn get_map(&self) -> Option<&MapEditable> {
+        match self {
+            Self::Map(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the map value if this parameter is a map parameter.
+    #[must_use]
+    pub fn get_mut_map(&mut self) -> Option<&mut MapEditable> {
         match self {
             Self::Map(m) => Some(m),
             _ => None,
@@ -110,6 +173,15 @@ impl ItemEditable {
         }
     }
 
+    /// Returns a mutable reference to the number value if this parameter is a number parameter.
+    #[must_use]
+    pub fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
+        match self {
+            Self::Number(n) => Some(n),
+            _ => None,
+        }
+    }
+
     /// Returns the string value if this parameter is a string parameter.
     #[must_use]
     pub fn get_string(&self) -> Option<&StringEditable> {
@@ -119,9 +191,27 @@ impl ItemEditable {
         }
     }
 
+    /// Returns a mutable reference to the string value if this parameter is a string parameter.
+    #[must_use]
+    pub fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
+        match self {
+            Self::String(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Returns the table value if this parameter is a table parameter.
     #[must_use]
     pub fn get_table(&self) -> Option<&TableEditable> {
+        match self {
+            Self::Table(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the table value if this parameter is a table parameter.
+    #[must_use]
+    pub fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
         match self {
             Self::Table(t) => Some(t),
             _ => None,
@@ -144,7 +234,7 @@ impl TreePrint for ItemEditable {
             Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
             Self::Number(number) => number.tree_print(f, label, prefix, last),
-            Self::String(basic) => basic.tree_print(f, label, prefix, last),
+            Self::String(string) => string.tree_print(f, label, prefix, last),
             Self::Table(table) => table.tree_print(f, label, prefix, last),
         }
     }
