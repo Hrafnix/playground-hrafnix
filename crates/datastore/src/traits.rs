@@ -1,3 +1,5 @@
+use crate::editable::ItemEditable;
+use shareable_string::ShareableString;
 use std::fmt;
 
 /// Trait for types that can be printed as a tree for debugging.
@@ -26,4 +28,13 @@ pub trait TreePrint {
     fn branch_char(last: bool) -> &'static str {
         if last { "└── " } else { "├── " }
     }
+}
+
+/// Trait for editable objects that can be accessed by key.
+pub trait ObjectEditable {
+    /// Returns a reference to the parameter with the specified key if it exists.
+    fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemEditable>;
+
+    /// Returns a mutable reference to the parameter with the specified key if it exists.
+    fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut ItemEditable>;
 }

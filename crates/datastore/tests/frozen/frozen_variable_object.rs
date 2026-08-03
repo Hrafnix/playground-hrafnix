@@ -232,132 +232,27 @@ fn test_editable_variable_object_print() {
     );
 
     let mut editable_1 = frozen_1.thaw();
-    editable_1
-        .get_mut("v_p1")
-        .unwrap()
-        .get_mut_string()
-        .unwrap()
-        .set("edited");
-    editable_1
-        .get_mut("v_p2")
-        .unwrap()
-        .get_mut_boolean()
-        .unwrap()
-        .set("true");
-    editable_1
-        .get_mut("v_p3")
-        .unwrap()
-        .get_mut_file()
-        .unwrap()
-        .set("test.ext");
-    editable_1
-        .get_mut("v_p4_v1")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("1");
-    editable_1
-        .get_mut("v_p4_v2")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("2");
-    editable_1
-        .get_mut("v_p4_v3")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("3");
-    editable_1
-        .get_mut("v_p4_v4")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("4");
-    editable_1
-        .get_mut("v_p4_v5")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("5");
-    editable_1
-        .get_mut("v_p4_v6")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("6");
-    editable_1
-        .get_mut("v_p4_v7")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("7");
-    editable_1
-        .get_mut("v_p4_v8")
-        .unwrap()
-        .get_mut_integer()
-        .unwrap()
-        .set("8");
-    editable_1
-        .get_mut("v_p5_v1")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("1.0");
-    editable_1
-        .get_mut("v_p5_v2")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("2.0");
-    editable_1
-        .get_mut("v_p5_v3")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("3.0");
-    editable_1
-        .get_mut("v_p5_v4")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("4.0");
-    editable_1
-        .get_mut("v_p5_v5")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("5.0");
-    editable_1
-        .get_mut("v_p5_v6")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("6.0");
-    editable_1
-        .get_mut("v_p5_v7")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("7.0");
-    editable_1
-        .get_mut("v_p5_v8")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("8.0");
-    editable_1
-        .get_mut("v_p5_v9")
-        .unwrap()
-        .get_mut_number()
-        .unwrap()
-        .set("9.0");
-    editable_1
-        .get_mut("v_p6")
-        .unwrap()
-        .get_mut_choice()
-        .unwrap()
-        .set("test");
+    editable_set_value(&mut editable_1, "v_p1", "edited").unwrap();
+    editable_set_value(&mut editable_1, "v_p2", "true").unwrap();
+    editable_set_value(&mut editable_1, "v_p3", "test.ext").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v1", "1").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v2", "2").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v3", "3").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v4", "4").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v5", "5").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v6", "6").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v7", "7").unwrap();
+    editable_set_value(&mut editable_1, "v_p4_v8", "8").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v1", "1.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v2", "2.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v3", "3.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v4", "4.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v5", "5.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v6", "6.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v7", "7.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v8", "8.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p5_v9", "9.0").unwrap();
+    editable_set_value(&mut editable_1, "v_p6", "test").unwrap();
 
     let table = editable_1.get_mut("v_p7").unwrap().get_mut_table().unwrap();
     table.add_row(1);

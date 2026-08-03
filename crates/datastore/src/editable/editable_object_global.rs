@@ -2,7 +2,7 @@ use crate::definition::GlobalObjectDefinition;
 use crate::editable::ItemEditable;
 use crate::frozen::GlobalObjectFrozen;
 use crate::key::GlobalKey;
-use crate::traits::TreePrint;
+use crate::traits::{ObjectEditable, TreePrint};
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -54,6 +54,18 @@ impl GlobalObjectEditable {
     #[must_use]
     pub fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
+    }
+}
+
+impl ObjectEditable for GlobalObjectEditable {
+    /// Returns a reference to the parameter with the specified key if it exists.
+    fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemEditable> {
+        self.get(key)
+    }
+
+    /// Returns a mutable reference to the parameter with the specified key if it exists.
+    fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut ItemEditable> {
+        self.get_mut(key)
     }
 }
 
