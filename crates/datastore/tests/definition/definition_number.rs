@@ -153,6 +153,26 @@ fn test_definition_number_with_swap_range_constraint() {
 }
 
 #[test]
+fn test_definition_number_with_degenerate_range_constraint() {
+    // Why: `NumberConstraint::range` must widen a degenerate (zero-width) range
+    // by `f64::EPSILON` on each side, rather than allowing `min == max`.
+    let def = NumberDefinition::new_with_constraint(
+        "A number parameter",
+        NumberConstraint::range(5.0, 5.0, true, true),
+    );
+
+    assert_eq!(
+        def.constraint(),
+        NumberConstraintEnum::Range {
+            min: 5.0 - f64::EPSILON,
+            max: 5.0 + f64::EPSILON,
+            min_inclusive: true,
+            max_inclusive: true
+        }
+    );
+}
+
+#[test]
 fn test_number_constraint_deserialize_normalizes_swapped_range() {
     // Why: `NumberConstraint::range` swaps `min`/`max` when `min > max`, but that
     // guard must also hold when a constraint is deserialized directly (e.g. from a

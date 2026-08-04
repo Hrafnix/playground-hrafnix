@@ -69,6 +69,10 @@ impl NumberConstraint {
     ///
     /// If `value_1` is greater than `value_2`, the two values are swapped along with
     /// their corresponding inclusivity flags so the resulting range is always valid.
+    ///
+    /// If `value_1` and `value_2` are equal (or within a hair's breadth of it due to
+    /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`
+    /// so `min` and `max` never end up equal.
     #[must_use]
     pub fn range(
         value_1: f64,
@@ -76,11 +80,19 @@ impl NumberConstraint {
         value_1_inclusive: bool,
         value_2_inclusive: bool,
     ) -> Self {
-        let (min, max, min_inclusive, max_inclusive) = if value_1 >= value_2 {
+        let (mut min, mut max, min_inclusive, max_inclusive) = if value_1 >= value_2 {
             (value_2, value_1, value_2_inclusive, value_1_inclusive)
         } else {
             (value_1, value_2, value_1_inclusive, value_2_inclusive)
         };
+
+        // If the range is degenerate (or within a hair's breadth of it due to
+        // floating-point imprecision), widen it symmetrically by `f64::EPSILON`
+        // so `min` and `max` never end up equal.
+        if (max - min).abs() < f64::EPSILON {
+            min -= f64::EPSILON;
+            max += f64::EPSILON;
+        }
 
         Self {
             constraint_enum: NumberConstraintEnum::Range {

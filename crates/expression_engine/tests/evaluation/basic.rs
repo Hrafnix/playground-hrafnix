@@ -1,10 +1,5 @@
-use datastore::definition::{
-    GlobalObjectDefinition, IntegerDefinition, NumberDefinition, ParameterObjectDefinition,
-};
-use datastore::frozen::{GlobalObjectFrozen, ParameterObjectFrozen};
-use datastore::{global_key, parameter_key};
-use expression_engine::engine::ExpressionEngine;
-use expression_engine::{ComputedItem, GlobalObjectInputData, ParameterObjectInputData};
+use datastore::prelude::*;
+use expression_engine::prelude::*;
 
 #[test]
 fn test_basic_data_integer() {

@@ -159,7 +159,7 @@ impl FunctionDefinitions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use datastore::store_key;
+    use datastore::prelude::*;
 
     fn add(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         let mut sum = 0.0;

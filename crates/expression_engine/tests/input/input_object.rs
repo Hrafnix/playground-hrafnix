@@ -1,7 +1,5 @@
 use datastore::prelude::*;
-use expression_engine::input_data::{
-    GlobalObjectInputData, ObjectItemInputData, ParameterObjectInputData, VariableObjectInputData,
-};
+use expression_engine::prelude::*;
 use std::collections::BTreeMap;
 
 /// Builds a set of frozen items covering every `ItemFrozen` variant, keyed by field name.

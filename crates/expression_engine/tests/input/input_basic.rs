@@ -1,6 +1,5 @@
 use datastore::prelude::*;
-use expression_engine::BasicDefinition;
-use expression_engine::input_data::{BasicInputData, GlobalObjectInputData, ObjectItemInputData};
+use expression_engine::prelude::*;
 use std::collections::BTreeMap;
 
 /// Builds a `GlobalObjectInputData` with a single basic item and returns its

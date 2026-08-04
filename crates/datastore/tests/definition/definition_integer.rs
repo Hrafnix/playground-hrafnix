@@ -153,6 +153,34 @@ fn test_definition_integer_with_swap_range_constraint() {
 }
 
 #[test]
+fn test_definition_integer_with_equal_value_range_constraint() {
+    // Why: When both range values are equal, the constraint should always be
+    // inclusive on both ends (regardless of the passed inclusivity flags), so it
+    // represents exactly that single value rather than a contradictory,
+    // unsatisfiable range.
+    let def = IntegerDefinition::new_with_constraint(
+        "A integer parameter",
+        IntegerConstraint::range(5, 5, false, false),
+    );
+
+    assert_eq!(
+        def.constraint(),
+        IntegerConstraintEnum::Range {
+            min: 5,
+            max: 5,
+            min_inclusive: true,
+            max_inclusive: true
+        }
+    );
+
+    // Same result regardless of which flag combination is passed in.
+    assert_eq!(
+        IntegerConstraint::range(5, 5, true, false),
+        IntegerConstraint::range(5, 5, false, true)
+    );
+}
+
+#[test]
 fn test_integer_constraint_deserialize_normalizes_swapped_range() {
     // Why: `IntegerConstraint::range` swaps `min`/`max` when `min > max`, but that
     // guard must also hold when a constraint is deserialized directly (e.g. from a

@@ -1,5 +1,5 @@
 use datastore::prelude::*;
-use expression_engine::input_data::{GlobalObjectInputData, ObjectItemInputData, TableInputData};
+use expression_engine::prelude::*;
 use std::collections::BTreeMap;
 
 /// Builds a `GlobalObjectInputData` with a single table item and returns its

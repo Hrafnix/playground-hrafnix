@@ -601,7 +601,7 @@ pub(crate) fn get_default_function_definitions() -> FunctionDefinitions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shareable_string::ShareableString;
+    use shareable_string::prelude::*;
 
     fn call(name: &str, args: &[ComputedItem]) -> ComputedItem {
         let definitions = get_default_function_definitions();
