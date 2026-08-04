@@ -69,6 +69,10 @@ impl IntegerConstraint {
     ///
     /// If `value_1` is greater than `value_2`, the two values are swapped along with
     /// their corresponding inclusivity flags so the resulting range is always valid.
+    ///
+    /// If `value_1` and `value_2` are equal, the resulting range is always inclusive on
+    /// both ends (regardless of the passed inclusivity flags), so it always represents
+    /// exactly that single value rather than a contradictory, unsatisfiable range.
     #[must_use]
     pub fn range(
         value_1: i64,
@@ -76,10 +80,10 @@ impl IntegerConstraint {
         value_1_inclusive: bool,
         value_2_inclusive: bool,
     ) -> Self {
-        let (min, max, min_inclusive, max_inclusive) = if value_1 > value_2 {
-            (value_2, value_1, value_2_inclusive, value_1_inclusive)
-        } else {
-            (value_1, value_2, value_1_inclusive, value_2_inclusive)
+        let (min, max, min_inclusive, max_inclusive) = match value_1.cmp(&value_2) {
+            std::cmp::Ordering::Equal => (value_1, value_2, true, true),
+            std::cmp::Ordering::Greater => (value_2, value_1, value_2_inclusive, value_1_inclusive),
+            std::cmp::Ordering::Less => (value_1, value_2, value_1_inclusive, value_2_inclusive),
         };
 
         Self {
