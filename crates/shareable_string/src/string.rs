@@ -381,7 +381,7 @@ mod tests {
         // to return an error that is propagated via `?`.
         let non_strings: &[serde_json::Value] = &[
             serde_json::json!(42),
-            serde_json::json!(3.14),
+            serde_json::json!(4.25),
             serde_json::json!(true),
             serde_json::json!(null),
             serde_json::json!(["a", "b"]),
