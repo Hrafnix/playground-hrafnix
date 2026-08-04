@@ -1,6 +1,7 @@
 use crate::definition::{MapDefinition, MapItemDefinition};
 use crate::editable::{
-    ChoiceEditable, FileEditable, NumberEditable, StringEditable, TableEditable,
+    BooleanEditable, ChoiceEditable, FileEditable, IntegerEditable, NumberEditable, StringEditable,
+    TableEditable,
 };
 use crate::frozen::{MapEntryFrozen, MapFrozen, MapItemFrozen};
 use crate::key::StoreKey;
@@ -12,10 +13,14 @@ use std::collections::BTreeMap;
 /// Represents an item within an editable map entry.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MapItemEditable {
+    /// A boolean value.
+    Boolean(BooleanEditable),
     /// A choice value.
     Choice(ChoiceEditable),
     /// A file value.
     File(FileEditable),
+    /// An integer value.
+    Integer(IntegerEditable),
     /// A number value.
     Number(NumberEditable),
     /// A string value.
@@ -29,8 +34,14 @@ impl MapItemEditable {
     #[must_use]
     pub fn new(frozen_item: &MapItemFrozen) -> Self {
         match frozen_item {
+            MapItemFrozen::Boolean(boolean) => {
+                MapItemEditable::Boolean(BooleanEditable::new(boolean))
+            }
             MapItemFrozen::Choice(choice) => MapItemEditable::Choice(ChoiceEditable::new(choice)),
             MapItemFrozen::File(file) => MapItemEditable::File(FileEditable::new(file)),
+            MapItemFrozen::Integer(integer) => {
+                MapItemEditable::Integer(IntegerEditable::new(integer))
+            }
             MapItemFrozen::Number(number) => MapItemEditable::Number(NumberEditable::new(number)),
             MapItemFrozen::String(basic) => MapItemEditable::String(StringEditable::new(basic)),
             MapItemFrozen::Table(table) => MapItemEditable::Table(TableEditable::new(table)),
@@ -41,8 +52,10 @@ impl MapItemEditable {
     #[must_use]
     pub fn freeze(&self) -> MapItemFrozen {
         match self {
+            MapItemEditable::Boolean(boolean) => MapItemFrozen::Boolean(boolean.freeze()),
             MapItemEditable::Choice(choice) => MapItemFrozen::Choice(choice.freeze()),
             MapItemEditable::File(file) => MapItemFrozen::File(file.freeze()),
+            MapItemEditable::Integer(integer) => MapItemFrozen::Integer(integer.freeze()),
             MapItemEditable::Number(number) => MapItemFrozen::Number(number.freeze()),
             MapItemEditable::String(basic) => MapItemFrozen::String(basic.freeze()),
             MapItemEditable::Table(table) => MapItemFrozen::Table(table.freeze()),
@@ -51,18 +64,18 @@ impl MapItemEditable {
 
     /// Returns the boolean value if this item is a boolean value.
     #[must_use]
-    pub fn get_boolean(&self) -> Option<&ChoiceEditable> {
+    pub fn get_boolean(&self) -> Option<&BooleanEditable> {
         match self {
-            MapItemEditable::Choice(choice) => Some(choice),
+            MapItemEditable::Boolean(boolean) => Some(boolean),
             _ => None,
         }
     }
 
     /// Returns a mutable reference to the boolean value if this item is a boolean value.
     #[must_use]
-    pub fn get_mut_boolean(&mut self) -> Option<&mut ChoiceEditable> {
+    pub fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
         match self {
-            MapItemEditable::Choice(choice) => Some(choice),
+            MapItemEditable::Boolean(boolean) => Some(boolean),
             _ => None,
         }
     }
@@ -103,20 +116,20 @@ impl MapItemEditable {
         }
     }
 
-    /// Returns the number value if this item is a number value.
+    /// Returns the integer value if this item is an integer value.
     #[must_use]
-    pub fn get_integer(&self) -> Option<&NumberEditable> {
+    pub fn get_integer(&self) -> Option<&IntegerEditable> {
         match self {
-            MapItemEditable::Number(number) => Some(number),
+            MapItemEditable::Integer(integer) => Some(integer),
             _ => None,
         }
     }
 
-    /// Returns a mutable reference to the number value if this item is a number value.
+    /// Returns a mutable reference to the integer value if this item is an integer value.
     #[must_use]
-    pub fn get_mut_integer(&mut self) -> Option<&mut NumberEditable> {
+    pub fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
         match self {
-            MapItemEditable::Number(number) => Some(number),
+            MapItemEditable::Integer(integer) => Some(integer),
             _ => None,
         }
     }
@@ -179,10 +192,16 @@ impl MapItemEditable {
     #[must_use]
     pub fn definition(&self) -> MapItemDefinition {
         match self {
+            MapItemEditable::Boolean(boolean) => {
+                MapItemDefinition::Boolean(boolean.definition().clone())
+            }
             MapItemEditable::Choice(choice) => {
                 MapItemDefinition::Choice(choice.definition().clone())
             }
             MapItemEditable::File(file) => MapItemDefinition::File(file.definition().clone()),
+            MapItemEditable::Integer(integer) => {
+                MapItemDefinition::Integer(integer.definition().clone())
+            }
             MapItemEditable::Number(number) => {
                 MapItemDefinition::Number(number.definition().clone())
             }
@@ -213,8 +232,10 @@ impl TreePrint for MapItemEditable {
         last: bool,
     ) -> std::fmt::Result {
         match self {
+            MapItemEditable::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             MapItemEditable::Choice(choice) => choice.tree_print(f, label, prefix, last),
             MapItemEditable::File(file) => file.tree_print(f, label, prefix, last),
+            MapItemEditable::Integer(integer) => integer.tree_print(f, label, prefix, last),
             MapItemEditable::Number(number) => number.tree_print(f, label, prefix, last),
             MapItemEditable::String(basic) => basic.tree_print(f, label, prefix, last),
             MapItemEditable::Table(table) => table.tree_print(f, label, prefix, last),

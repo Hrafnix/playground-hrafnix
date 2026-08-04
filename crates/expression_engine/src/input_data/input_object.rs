@@ -21,6 +21,10 @@ pub enum ObjectItemInputData {
 /// corresponding `ObjectItemInputData`.
 fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
     match map_item {
+        MapItemFrozen::Boolean(boolean) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Boolean(boolean.definition().clone()),
+            boolean.value(),
+        )),
         MapItemFrozen::Choice(choice) => ObjectItemInputData::Basic(BasicInputData::new(
             BasicDefinition::Choice(choice.definition().clone()),
             choice.value(),
@@ -28,6 +32,10 @@ fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
         MapItemFrozen::File(file) => ObjectItemInputData::Basic(BasicInputData::new(
             BasicDefinition::File(file.definition().clone()),
             file.value(),
+        )),
+        MapItemFrozen::Integer(integer) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Integer(integer.definition().clone()),
+            integer.value(),
         )),
         MapItemFrozen::Number(number) => ObjectItemInputData::Basic(BasicInputData::new(
             BasicDefinition::Number(number.definition().clone()),

@@ -1,7 +1,9 @@
 use crate::StoreError;
 use crate::definition::{MapDefinition, MapItemDefinition};
 use crate::editable::{MapEditable, MapEntryEditable, MapItemEditable};
-use crate::frozen::{ChoiceFrozen, FileFrozen, NumberFrozen, StringFrozen, TableFrozen};
+use crate::frozen::{
+    BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, NumberFrozen, StringFrozen, TableFrozen,
+};
 use crate::key::StoreKey;
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -11,10 +13,14 @@ use std::collections::BTreeMap;
 /// Represents an item within a frozen map entry.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum MapItemFrozen {
+    /// A boolean value.
+    Boolean(BooleanFrozen),
     /// A choice value.
     Choice(ChoiceFrozen),
     /// A file value.
     File(FileFrozen),
+    /// An integer value.
+    Integer(IntegerFrozen),
     /// A number value.
     Number(NumberFrozen),
     /// A string value.
@@ -46,8 +52,14 @@ impl MapItemFrozen {
     #[must_use]
     pub fn definition(&self) -> MapItemDefinition {
         match self {
+            MapItemFrozen::Boolean(boolean) => {
+                MapItemDefinition::Boolean(boolean.definition().clone())
+            }
             MapItemFrozen::Choice(choice) => MapItemDefinition::Choice(choice.definition().clone()),
             MapItemFrozen::File(file) => MapItemDefinition::File(file.definition().clone()),
+            MapItemFrozen::Integer(integer) => {
+                MapItemDefinition::Integer(integer.definition().clone())
+            }
             MapItemFrozen::Number(number) => MapItemDefinition::Number(number.definition().clone()),
             MapItemFrozen::String(basic) => MapItemDefinition::String(basic.definition().clone()),
             MapItemFrozen::Table(table) => MapItemDefinition::Table(table.definition().clone()),
@@ -58,8 +70,10 @@ impl MapItemFrozen {
     #[must_use]
     pub fn hash(&self) -> [u8; 32] {
         match self {
+            MapItemFrozen::Boolean(boolean) => boolean.hash(),
             MapItemFrozen::Choice(choice) => choice.hash(),
             MapItemFrozen::File(file) => file.hash(),
+            MapItemFrozen::Integer(integer) => integer.hash(),
             MapItemFrozen::Number(number) => number.hash(),
             MapItemFrozen::String(basic) => basic.hash(),
             MapItemFrozen::Table(table) => table.hash(),
@@ -70,10 +84,16 @@ impl MapItemFrozen {
     #[must_use]
     pub fn new_from_editable(item: &MapItemEditable) -> Self {
         match item {
+            MapItemEditable::Boolean(boolean) => {
+                MapItemFrozen::Boolean(BooleanFrozen::new_from_editable(boolean))
+            }
             MapItemEditable::Choice(choice) => {
                 MapItemFrozen::Choice(ChoiceFrozen::new_from_editable(choice))
             }
             MapItemEditable::File(file) => MapItemFrozen::File(FileFrozen::new_from_editable(file)),
+            MapItemEditable::Integer(integer) => {
+                MapItemFrozen::Integer(IntegerFrozen::new_from_editable(integer))
+            }
             MapItemEditable::Number(number) => {
                 MapItemFrozen::Number(NumberFrozen::new_from_editable(number))
             }
@@ -114,8 +134,10 @@ impl TreePrint for MapItemFrozen {
         last: bool,
     ) -> std::fmt::Result {
         match self {
+            MapItemFrozen::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             MapItemFrozen::Choice(choice) => choice.tree_print(f, label, prefix, last),
             MapItemFrozen::File(file) => file.tree_print(f, label, prefix, last),
+            MapItemFrozen::Integer(integer) => integer.tree_print(f, label, prefix, last),
             MapItemFrozen::Number(number) => number.tree_print(f, label, prefix, last),
             MapItemFrozen::String(basic) => basic.tree_print(f, label, prefix, last),
             MapItemFrozen::Table(table) => table.tree_print(f, label, prefix, last),
@@ -139,6 +161,12 @@ impl MapEntryFrozen {
         let mut items = BTreeMap::new();
         for (key, item_definition) in item_type {
             match item_definition {
+                MapItemDefinition::Boolean(boolean_definition) => {
+                    items.insert(
+                        key.clone(),
+                        MapItemFrozen::Boolean(BooleanFrozen::new(boolean_definition.clone())),
+                    );
+                }
                 MapItemDefinition::Choice(choice_definition) => {
                     items.insert(
                         key.clone(),
@@ -149,6 +177,12 @@ impl MapEntryFrozen {
                     items.insert(
                         key.clone(),
                         MapItemFrozen::File(FileFrozen::new(file_definition.clone())),
+                    );
+                }
+                MapItemDefinition::Integer(integer_definition) => {
+                    items.insert(
+                        key.clone(),
+                        MapItemFrozen::Integer(IntegerFrozen::new(integer_definition.clone())),
                     );
                 }
                 MapItemDefinition::Number(number_definition) => {

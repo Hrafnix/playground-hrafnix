@@ -42,4 +42,5 @@ pub use crate::editable::{
     BooleanEditable, ChoiceEditable, FileEditable, GlobalObjectEditable, IntegerEditable,
     ItemEditable, MapEditable, MapEntryEditable, MapItemEditable, NumberEditable,
     ParameterObjectEditable, StringEditable, TableEditable, VariableObjectEditable,
+    editable_set_map_value, editable_set_value,
 };

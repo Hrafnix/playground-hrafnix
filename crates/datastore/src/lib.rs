@@ -99,6 +99,8 @@ pub enum StoreError {
     NestedContainerNotSupported,
     /// The schema is missing.
     MissingSchema(String),
+    /// Invalid Type: The type of the value does not match the expected type.
+    InvalidType(String),
 }
 
 impl Display for StoreError {
@@ -130,6 +132,7 @@ impl Display for StoreError {
                 write!(f, "Nested containers are not supported in this context")
             }
             StoreError::MissingSchema(s) => write!(f, "Missing schema: {s}"),
+            StoreError::InvalidType(s) => write!(f, "Invalid type: {s}"),
         }
     }
 }
