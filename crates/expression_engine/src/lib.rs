@@ -35,6 +35,8 @@ pub mod computed_data;
 pub mod evaluation;
 /// Input data.
 pub mod input_data;
+/// Convenience re-exports for common types.
+pub mod prelude;
 
 use crate::expression::span::SpanSet;
 pub use computed_data::*;

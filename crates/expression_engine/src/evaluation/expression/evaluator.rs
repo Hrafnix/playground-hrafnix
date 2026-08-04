@@ -1150,11 +1150,8 @@ pub(crate) fn evaluator(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::evaluation::expression::function_definition::FunctionDefinition;
-    use datastore::definition::{
-        BooleanDefinition, IntegerDefinition, NumberConstraint, NumberDefinition,
-    };
-    use datastore::store_key;
+    use crate::prelude::*;
+    use datastore::prelude::*;
 
     fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Number(NumberDefinition::new("Test Number"));

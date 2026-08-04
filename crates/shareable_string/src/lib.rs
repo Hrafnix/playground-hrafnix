@@ -24,6 +24,8 @@
     )
 )]
 
+/// Convenience re-exports for common types.
+pub mod prelude;
 /// Internal string interning store.
 pub mod store;
 /// The `ShareableString` type.
