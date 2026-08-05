@@ -1,5 +1,6 @@
-use crate::evaluation::expression::function_definition::{FunctionDefinition, FunctionDefinitions};
-use crate::expression::function_definition::ArgumentCount;
+use crate::evaluation::expression::function_definition::{
+    ArgumentCount, FunctionDefinition, FunctionDefinitions,
+};
 use crate::{ComputedItem, ExpressionError};
 use datastore::store_key;
 

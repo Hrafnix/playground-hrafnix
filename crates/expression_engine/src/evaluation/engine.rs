@@ -1,6 +1,6 @@
+use crate::evaluation::expression::evaluator::evaluator;
 use crate::evaluation::expression::function_definition::{FunctionDefinition, FunctionDefinitions};
-use crate::expression::evaluator::evaluator;
-use crate::expression::function_definitions_default::get_default_function_definitions;
+use crate::evaluation::expression::function_definitions_default::get_default_function_definitions;
 use crate::{
     ExpressionError, GlobalObjectComputedData, GlobalObjectInputData, ParameterObjectComputedData,
     ParameterObjectInputData, VariableObjectComputedData, VariableObjectInputData,

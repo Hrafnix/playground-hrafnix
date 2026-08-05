@@ -5,8 +5,7 @@ use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::evaluation::expression::ast::translator::{
     Expression, Literal, Operators, Translator, expression_span, translate,
 };
-use crate::evaluation::expression::function_definition::FunctionDefinitions;
-use crate::expression::function_definition::ArgumentCount;
+use crate::evaluation::expression::function_definition::{ArgumentCount, FunctionDefinitions};
 use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
