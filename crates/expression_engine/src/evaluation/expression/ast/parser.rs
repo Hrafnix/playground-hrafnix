@@ -8,8 +8,10 @@ use std::fmt;
 /// compound expression consisting of an operator applied to one or more operands.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ParserToken {
-    /// An atomic value (e.g., a number or identifier).
+    /// An atomic value (e.g., an identifier).
     Atom(Span, String),
+    /// A numeric value (e.g., `123`, `45.67`, `.89`, `0.001`, `1e10`, `1.5e-3`, `.5e+2`).
+    Numeric(Span, String),
     /// An operator applied to one or more operand expressions.
     Operator(Span, String, Vec<ParserToken>),
 }
@@ -17,7 +19,9 @@ pub(crate) enum ParserToken {
 impl fmt::Display for ParserToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParserToken::Atom(i, value) => write!(f, "{{{i}}}{value}"),
+            ParserToken::Atom(i, value) | ParserToken::Numeric(i, value) => {
+                write!(f, "{{{i}}}{value}")
+            }
             ParserToken::Operator(i, op, rest) => {
                 write!(f, "({{{i}}}{op}")?;
                 for s in rest {
@@ -74,6 +78,7 @@ impl Parser {
     fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
         let mut lhs = match lexer.next() {
             LexerToken::Atom(index, value) => ParserToken::Atom(index, value),
+            LexerToken::Numeric(index, value) => ParserToken::Numeric(index, value),
             LexerToken::Operator(_index, op) if op == "(" => {
                 let lhs = Self::expr_bp(lexer, 0)?;
                 Self::expect_operator(lexer, ")")?;
@@ -89,7 +94,7 @@ impl Parser {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Parse,
                     format!(
-                        "Invalid expression: expected an atom or a prefix operator, found {}",
+                        "Invalid expression: expected an atom, a number, or a prefix operator, found {}",
                         Self::describe_token(&LexerToken::EndOfInput)
                     ),
                     lexer.source(),
@@ -113,6 +118,17 @@ impl Parser {
                         SpanSet::from_span(index),
                     ));
                 }
+                LexerToken::Numeric(index, value) => {
+                    return Err(ExpressionError::new_complex(
+                        ExpressionCategory::Parse,
+                        format!(
+                            "Invalid expression: expected an operator, found {}",
+                            Self::describe_token(&LexerToken::Numeric(index, value))
+                        ),
+                        lexer.source(),
+                        SpanSet::from_span(index),
+                    ));
+                }
             };
 
             if let Some((l_bp, ())) = Self::postfix_binding_power(&op) {
@@ -128,11 +144,21 @@ impl Parser {
                 } else if op == "(" {
                     let (name_index, name) = match lhs {
                         ParserToken::Atom(index, name) => (index, name),
+                        ParserToken::Numeric(_, name) => {
+                            return Err(ExpressionError::new_complex(
+                                ExpressionCategory::Parse,
+                                format!(
+                                    "Invalid expression: function calls require a function name, found number {name}"
+                                ),
+                                lexer.source(),
+                                SpanSet::from_span(op_index),
+                            ));
+                        }
                         ParserToken::Operator(_, name, ..) => {
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Parse,
                                 format!(
-                                    "Invalid expression: function calls require a function name, found {name}"
+                                    "Invalid expression: function calls require a function name, found expression starting with operator {name}"
                                 ),
                                 lexer.source(),
                                 SpanSet::from_span(op_index),
@@ -212,9 +238,9 @@ impl Parser {
     /// `LexerToken::EndOfInput`, which doesn't correspond to any position in the source.
     fn token_index_set(lexer_token: &LexerToken) -> SpanSet {
         match lexer_token {
-            LexerToken::Atom(index, _) | LexerToken::Operator(index, _) => {
-                SpanSet::from_span(*index)
-            }
+            LexerToken::Atom(index, _)
+            | LexerToken::Numeric(index, _)
+            | LexerToken::Operator(index, _) => SpanSet::from_span(*index),
             LexerToken::EndOfInput => SpanSet::new(),
         }
     }
@@ -223,6 +249,7 @@ impl Parser {
     fn describe_token(token: &LexerToken) -> String {
         match token {
             LexerToken::Atom(_index, value) => format!("atom '{value}'"),
+            LexerToken::Numeric(_index, value) => format!("number '{value}'"),
             LexerToken::Operator(_index, value) => format!("operator '{value}'"),
             LexerToken::EndOfInput => "end of input".to_string(),
         }
@@ -492,7 +519,7 @@ mod tests {
         // Empty input: an operand is expected but only EndOfInput is available.
         assert_parse_error(
             "",
-            "expected an atom or a prefix operator, found end of input",
+            "expected an atom, a number, or a prefix operator, found end of input",
         );
     }
 
@@ -501,14 +528,14 @@ mod tests {
         // After consuming `1` and `+`, the right-hand side is missing.
         assert_parse_error(
             "1+",
-            "expected an atom or a prefix operator, found end of input",
+            "expected an atom, a number, or a prefix operator, found end of input",
         );
     }
 
     #[test]
     fn missing_operator_between_atoms() {
         // Two atoms in a row with no operator between them.
-        assert_parse_error("1 2", "expected an operator, found atom '2'");
+        assert_parse_error("1 2", "expected an operator, found number '2'");
     }
 
     #[test]

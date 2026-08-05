@@ -328,27 +328,18 @@ impl Translator {
             .is_some_and(|c| c.is_alphanumeric() || c == '_')
     }
 
-    /// Returns whether `value` looks like a numeric literal (i.e., what the lexer would have
-    /// produced as an `Atom` starting with a digit or a `.`), as opposed to a variable/function
-    /// name.
-    fn is_numeric_literal(value: &str) -> bool {
-        value
-            .chars()
-            .next()
-            .is_some_and(|c| c.is_numeric() || c == '.')
-    }
-
-    /// Translates a `ParserToken::Atom` into either a numeric `Literal` expression (when the
-    /// atom looks like a number) or a `Variable` expression (otherwise).
-    fn translate_atom(span: Span, value: String) -> Result<Expression, ExpressionError> {
-        if !Self::is_numeric_literal(&value) {
-            if let Ok(boolean) = value.parse::<bool>() {
-                return Ok(Expression::Literal(span, Literal::Boolean(boolean)));
-            }
-
-            return Ok(Expression::Literal(span, Literal::String(value)));
+    /// Translates a `ParserToken::Atom` into a `Literal` expression.
+    fn translate_atom(span: Span, value: String) -> Expression {
+        if let Ok(boolean) = value.parse::<bool>() {
+            return Expression::Literal(span, Literal::Boolean(boolean));
         }
 
+        Expression::Literal(span, Literal::String(value))
+    }
+
+    /// Translates a `ParserToken::Numeric` into either an integer or floating-point `Literal`
+    /// expression, depending on whether the numeric value can be parsed as an integer or a float.
+    fn translate_numeric(span: Span, value: &str) -> Result<Expression, ExpressionError> {
         if let Ok(integer) = value.parse::<i64>() {
             return Ok(Expression::Literal(span, Literal::Integer(integer)));
         }
@@ -368,7 +359,8 @@ impl Translator {
         source: &ShareableString,
     ) -> Result<Expression, ExpressionError> {
         match parser_token {
-            ParserToken::Atom(span, value) => Self::translate_atom(span, value),
+            ParserToken::Atom(span, value) => Ok(Self::translate_atom(span, value)),
+            ParserToken::Numeric(span, value) => Self::translate_numeric(span, value.as_str()),
             ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
                 ("+", 1) => Self::translate_token(
                     operands.first().cloned().ok_or_else(|| {
