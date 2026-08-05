@@ -1,5 +1,5 @@
-use crate::expression::parser::{Parser, ParserToken};
-use crate::expression::span::{Span, SpanSet};
+use crate::evaluation::expression::ast::parser::{Parser, ParserToken};
+use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::{ExpressionCategory, ExpressionError};
 use shareable_string::ShareableString;
 use std::fmt;
@@ -419,11 +419,11 @@ pub(crate) fn translate(parser: &Parser) -> Result<Translator, ExpressionError> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::expression::parser::parse;
-    use crate::expression::span::Span;
+    use crate::evaluation::expression::ast::parser::parse;
+    use crate::evaluation::expression::ast::span::Span;
 
     fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
-        let lexer = crate::expression::lexer::Lexer::new(s)?;
+        let lexer = crate::evaluation::expression::ast::lexer::Lexer::new(s)?;
         let parser = parse(&lexer)?;
         translate(&parser).map(|translator| translator.expression().clone())
     }

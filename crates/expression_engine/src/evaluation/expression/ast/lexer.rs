@@ -1,4 +1,4 @@
-use crate::expression::span::{Span, SpanSet};
+use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::{ExpressionCategory, ExpressionError};
 use shareable_string::ShareableString;
 use std::iter::{Enumerate, Peekable};

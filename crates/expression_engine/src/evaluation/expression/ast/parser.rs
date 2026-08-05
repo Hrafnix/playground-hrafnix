@@ -1,5 +1,5 @@
-use crate::expression::lexer::{Lexer, LexerToken};
-use crate::expression::span::{Span, SpanSet};
+use crate::evaluation::expression::ast::lexer::{Lexer, LexerToken};
+use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::{ExpressionCategory, ExpressionError};
 use shareable_string::ShareableString;
 use std::fmt;
