@@ -3,7 +3,7 @@ use crate::evaluation::expression::ast::lexer::Lexer;
 use crate::evaluation::expression::ast::parser::Parser;
 use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::evaluation::expression::ast::translator::{
-    Expression, Literal, Operators, Translator, expression_span, translate,
+    Expression, Literal, Operators, Translator, expression_span,
 };
 use crate::evaluation::expression::function_definition::{ArgumentCount, FunctionDefinitions};
 use crate::{
@@ -690,7 +690,7 @@ fn evaluate_expression(
 fn parse_str(s: &str) -> Result<Translator, ExpressionError> {
     let lexer = Lexer::new(s)?;
     let parser = Parser::new(&lexer)?;
-    translate(&parser)
+    Translator::new(&parser)
 }
 
 fn evaluate_basic_expression(
