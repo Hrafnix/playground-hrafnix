@@ -37,6 +37,7 @@ fn build_parameter(definition: ParameterObjectDefinition) -> ParameterObjectInpu
 
 #[test]
 fn registered_function_is_invoked_during_evaluation() {
+    // Why: Test that a registered custom function is invoked and its result used during evaluation.
     let frozen = ParameterObjectDefinition::builder("Test Object")
         .with(
             parameter_key!("p_result"),
@@ -69,6 +70,8 @@ fn registered_function_is_invoked_during_evaluation() {
 
 #[test]
 fn registered_function_can_reference_variables() {
+    // Why: Test that a registered function can accept a global variable as one of its arguments.
+
     // Parameters are evaluated against the engine's globals, so set up a global
     // variable that the function can reference alongside a literal argument.
     let global_frozen = GlobalObjectFrozen::new(
@@ -115,6 +118,7 @@ fn registered_function_can_reference_variables() {
 
 #[test]
 fn registered_function_combines_with_other_operators() {
+    // Why: Test that a function call result can be combined with arithmetic operators in the same expression.
     let frozen = ParameterObjectDefinition::builder("Test Object")
         .with(
             parameter_key!("p_result"),
@@ -146,6 +150,7 @@ fn registered_function_combines_with_other_operators() {
 
 #[test]
 fn nested_registered_function_calls_evaluate_correctly() {
+    // Why: Test that nested calls to a registered function are evaluated correctly.
     let frozen = ParameterObjectDefinition::builder("Test Object")
         .with(
             parameter_key!("p_result"),
@@ -177,6 +182,7 @@ fn nested_registered_function_calls_evaluate_correctly() {
 
 #[test]
 fn float_returning_function_works_with_number_definition() {
+    // Why: Test that a registered function returning a float value is compatible with a NumberDefinition parameter.
     let frozen = ParameterObjectDefinition::builder("Test Object")
         .with(
             parameter_key!("p_result"),
@@ -214,6 +220,7 @@ fn float_returning_function_works_with_number_definition() {
 
 #[test]
 fn calling_an_unregistered_function_returns_an_error() {
+    // Why: Test that calling a function that has not been registered produces a clear evaluation error.
     let frozen = ParameterObjectDefinition::builder("Test Object")
         .with(
             parameter_key!("p_result"),

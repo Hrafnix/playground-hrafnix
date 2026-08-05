@@ -4,6 +4,7 @@ use shareable_string::ShareableString;
 
 #[test]
 fn no_missing_requirements_when_everything_is_present() {
+    // Why: Test that no missing requirements are reported when all referenced globals, parameters, and functions are provided.
     let global_frozen = GlobalObjectFrozen::new(
         GlobalObjectDefinition::builder("Test Globals")
             .with(
@@ -39,6 +40,7 @@ fn no_missing_requirements_when_everything_is_present() {
 
 #[test]
 fn reports_missing_global() {
+    // Why: Test that a global referenced by an expression but not supplied is reported as missing.
     let engine = ExpressionEngine::new();
     let expression = ShareableString::from("g_missing + 1");
 
@@ -58,6 +60,7 @@ fn reports_missing_global() {
 
 #[test]
 fn reports_missing_parameter_when_none_supplied() {
+    // Why: Test that a parameter referenced by an expression is reported as missing when no parameters are supplied.
     let engine = ExpressionEngine::new();
     let expression = ShareableString::from("p_missing * 2");
 
@@ -77,6 +80,7 @@ fn reports_missing_parameter_when_none_supplied() {
 
 #[test]
 fn reports_missing_variable_when_none_supplied() {
+    // Why: Test that a variable referenced by an expression is reported as missing when no variables are supplied.
     let engine = ExpressionEngine::new();
     let expression = ShareableString::from("v_missing - 1");
 
@@ -96,6 +100,7 @@ fn reports_missing_variable_when_none_supplied() {
 
 #[test]
 fn reports_missing_function() {
+    // Why: Test that a function call to an unregistered function is reported as a missing requirement.
     let engine = ExpressionEngine::new();
     let expression = ShareableString::from("not_a_real_function(1, 2)");
 
@@ -115,6 +120,7 @@ fn reports_missing_function() {
 
 #[test]
 fn reports_all_missing_requirement_kinds_at_once() {
+    // Why: Test that all four kinds of missing requirements (global, parameter, variable, function) are reported together in a single expression.
     let engine = ExpressionEngine::new();
     let expression =
         ShareableString::from("g_missing + p_missing + v_missing + not_a_real_function(1)");
@@ -148,6 +154,7 @@ fn reports_all_missing_requirement_kinds_at_once() {
 
 #[test]
 fn provided_parameters_variables_and_globals_satisfy_requirements() {
+    // Why: Test that supplying globals, parameters, and variables together satisfies all requirements of an expression referencing them.
     let engine = ExpressionEngine::new();
 
     let global_frozen = GlobalObjectFrozen::new(
@@ -188,6 +195,7 @@ fn provided_parameters_variables_and_globals_satisfy_requirements() {
 
 #[test]
 fn invalid_expression_syntax_returns_an_error() {
+    // Why: Test that a syntactically invalid expression returns an error rather than reporting missing requirements.
     let engine = ExpressionEngine::new();
     let expression = ShareableString::from("1 +");
 
