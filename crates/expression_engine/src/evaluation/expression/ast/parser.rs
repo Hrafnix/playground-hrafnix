@@ -36,8 +36,31 @@ pub(crate) struct Parser {
 }
 
 impl Parser {
-    fn new(token: ParserToken, source: ShareableString) -> Self {
-        Parser { token, source }
+    /// Creates a new `Parser` by parsing the expression from the given `Lexer`.
+    pub(crate) fn new(lexer: &Lexer) -> Result<Parser, ExpressionError> {
+        let mut lexer = lexer.clone();
+        let source = lexer.source().clone();
+        let result = Self::expr_bp(&mut lexer, 0)?;
+
+        match lexer.peek() {
+            LexerToken::EndOfInput => Ok(Parser {
+                token: result,
+                source,
+            }),
+            t => {
+                let index_set = Self::token_index_set(&t);
+
+                Err(ExpressionError::new_complex(
+                    ExpressionCategory::Parse,
+                    format!(
+                        "Invalid expression: expected end of input, found {}",
+                        Self::describe_token(&t),
+                    ),
+                    source,
+                    index_set,
+                ))
+            }
+        }
     }
 
     pub(crate) fn get_token(&self) -> &ParserToken {
@@ -47,79 +70,27 @@ impl Parser {
     pub(crate) fn get_source(&self) -> &ShareableString {
         &self.source
     }
-}
 
-/// Returns the set of source indices covered by `lexer_token`, or an empty set for
-/// `LexerToken::EndOfInput`, which doesn't correspond to any position in the source.
-fn token_index_set(lexer_token: &LexerToken) -> SpanSet {
-    match lexer_token {
-        LexerToken::Atom(index, _) | LexerToken::Operator(index, _) => SpanSet::from_span(*index),
-        LexerToken::EndOfInput => SpanSet::new(),
-    }
-}
-
-/// Parses the tokens produced by `lexer` into a fully parenthesized expression tree,
-/// respecting operator precedence and associativity.
-pub(crate) fn parse(lexer: &Lexer) -> Result<Parser, ExpressionError> {
-    let mut lexer = lexer.clone();
-    let source = lexer.source().to_string();
-    let result = expr_bp(&mut lexer, 0)?;
-
-    match lexer.peek() {
-        LexerToken::EndOfInput => Ok(Parser::new(result, source.into())),
-        t => {
-            let index_set = token_index_set(&t);
-
-            Err(ExpressionError::new_complex(
-                ExpressionCategory::Parse,
-                format!(
-                    "Invalid expression: expected end of input, found {}",
-                    describe_token(&t),
-                ),
-                source,
-                index_set,
-            ))
-        }
-    }
-}
-
-fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
-    let mut lhs = match lexer.next() {
-        LexerToken::Atom(index, value) => ParserToken::Atom(index, value),
-        LexerToken::Operator(_index, op) if op == "(" => {
-            let lhs = expr_bp(lexer, 0)?;
-            expect_operator(lexer, ")")?;
-            lhs
-        }
-        LexerToken::Operator(index, op) => {
-            let ((), r_bp) = prefix_binding_power(&op, index, lexer.source())?;
-            let rhs = expr_bp(lexer, r_bp)?;
-            ParserToken::Operator(index, op, vec![rhs])
-        }
-        LexerToken::EndOfInput => {
-            let index = Span::new(lexer.source().as_str().len(), 0);
-            return Err(ExpressionError::new_complex(
-                ExpressionCategory::Parse,
-                format!(
-                    "Invalid expression: expected an atom or a prefix operator, found {}",
-                    describe_token(&LexerToken::EndOfInput)
-                ),
-                lexer.source(),
-                SpanSet::from_span(index),
-            ));
-        }
-    };
-
-    loop {
-        let (op_index, op) = match lexer.peek() {
-            LexerToken::EndOfInput => break,
-            LexerToken::Operator(index, value) => (index, value),
-            LexerToken::Atom(index, value) => {
+    fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
+        let mut lhs = match lexer.next() {
+            LexerToken::Atom(index, value) => ParserToken::Atom(index, value),
+            LexerToken::Operator(_index, op) if op == "(" => {
+                let lhs = Self::expr_bp(lexer, 0)?;
+                Self::expect_operator(lexer, ")")?;
+                lhs
+            }
+            LexerToken::Operator(index, op) => {
+                let ((), r_bp) = Self::prefix_binding_power(&op, index, lexer.source())?;
+                let rhs = Self::expr_bp(lexer, r_bp)?;
+                ParserToken::Operator(index, op, vec![rhs])
+            }
+            LexerToken::EndOfInput => {
+                let index = Span::new(lexer.source().as_str().len(), 0);
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Parse,
                     format!(
-                        "Invalid expression: expected an operator, found {}",
-                        describe_token(&LexerToken::Atom(index, value))
+                        "Invalid expression: expected an atom or a prefix operator, found {}",
+                        Self::describe_token(&LexerToken::EndOfInput)
                     ),
                     lexer.source(),
                     SpanSet::from_span(index),
@@ -127,145 +98,174 @@ fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError
             }
         };
 
-        if let Some((l_bp, ())) = postfix_binding_power(&op) {
-            if l_bp < min_bp {
-                break;
-            }
-            lexer.next();
-
-            lhs = if op == "[" {
-                let rhs = expr_bp(lexer, 0)?;
-                expect_operator(lexer, "]")?;
-                ParserToken::Operator(op_index, op, vec![lhs, rhs])
-            } else if op == "(" {
-                let (name_index, name) = match lhs {
-                    ParserToken::Atom(index, name) => (index, name),
-                    ParserToken::Operator(_, name, ..) => {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Parse,
-                            format!(
-                                "Invalid expression: function calls require a function name, found {name}"
-                            ),
-                            lexer.source(),
-                            SpanSet::from_span(op_index),
-                        ));
-                    }
-                };
-                let arguments = parse_call_arguments(lexer)?;
-                ParserToken::Operator(name_index, name, arguments)
-            } else {
-                ParserToken::Operator(op_index, op, vec![lhs])
+        loop {
+            let (op_index, op) = match lexer.peek() {
+                LexerToken::EndOfInput => break,
+                LexerToken::Operator(index, value) => (index, value),
+                LexerToken::Atom(index, value) => {
+                    return Err(ExpressionError::new_complex(
+                        ExpressionCategory::Parse,
+                        format!(
+                            "Invalid expression: expected an operator, found {}",
+                            Self::describe_token(&LexerToken::Atom(index, value))
+                        ),
+                        lexer.source(),
+                        SpanSet::from_span(index),
+                    ));
+                }
             };
-            continue;
-        }
 
-        if let Some((l_bp, r_bp)) = infix_binding_power(&op) {
-            if l_bp < min_bp {
-                break;
-            }
-            lexer.next();
-
-            let rhs = expr_bp(lexer, r_bp)?;
-            lhs = ParserToken::Operator(op_index, op, vec![lhs, rhs]);
-            continue;
-        }
-
-        break;
-    }
-
-    Ok(lhs)
-}
-
-/// Parses a comma-separated list of call arguments, up to (but not including) the closing `)`.
-fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, ExpressionError> {
-    let mut arguments = Vec::new();
-    if let LexerToken::Operator(_index, value) = lexer.peek() {
-        if value == ")" {
-            lexer.next();
-            return Ok(arguments);
-        }
-    }
-
-    loop {
-        arguments.push(expr_bp(lexer, 0)?);
-        match lexer.peek() {
-            LexerToken::Operator(_index, value) if value == "," => {
+            if let Some((l_bp, ())) = Self::postfix_binding_power(&op) {
+                if l_bp < min_bp {
+                    break;
+                }
                 lexer.next();
+
+                lhs = if op == "[" {
+                    let rhs = Self::expr_bp(lexer, 0)?;
+                    Self::expect_operator(lexer, "]")?;
+                    ParserToken::Operator(op_index, op, vec![lhs, rhs])
+                } else if op == "(" {
+                    let (name_index, name) = match lhs {
+                        ParserToken::Atom(index, name) => (index, name),
+                        ParserToken::Operator(_, name, ..) => {
+                            return Err(ExpressionError::new_complex(
+                                ExpressionCategory::Parse,
+                                format!(
+                                    "Invalid expression: function calls require a function name, found {name}"
+                                ),
+                                lexer.source(),
+                                SpanSet::from_span(op_index),
+                            ));
+                        }
+                    };
+                    let arguments = Self::parse_call_arguments(lexer)?;
+                    ParserToken::Operator(name_index, name, arguments)
+                } else {
+                    ParserToken::Operator(op_index, op, vec![lhs])
+                };
+                continue;
             }
-            _ => break,
+
+            if let Some((l_bp, r_bp)) = Self::infix_binding_power(&op) {
+                if l_bp < min_bp {
+                    break;
+                }
+                lexer.next();
+
+                let rhs = Self::expr_bp(lexer, r_bp)?;
+                lhs = ParserToken::Operator(op_index, op, vec![lhs, rhs]);
+                continue;
+            }
+
+            break;
+        }
+
+        Ok(lhs)
+    }
+
+    /// Parses a comma-separated list of call arguments, up to (but not including) the closing `)`.
+    fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, ExpressionError> {
+        let mut arguments = Vec::new();
+        if let LexerToken::Operator(_index, value) = lexer.peek() {
+            if value == ")" {
+                lexer.next();
+                return Ok(arguments);
+            }
+        }
+
+        loop {
+            arguments.push(Self::expr_bp(lexer, 0)?);
+            match lexer.peek() {
+                LexerToken::Operator(_index, value) if value == "," => {
+                    lexer.next();
+                }
+                _ => break,
+            }
+        }
+
+        Self::expect_operator(lexer, ")")?;
+        Ok(arguments)
+    }
+
+    /// Consumes the next token from `lexer`, returning an error if it isn't the expected operator.
+    fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionError> {
+        match lexer.next() {
+            LexerToken::Operator(_index, value) if value == expected => Ok(()),
+            t => {
+                let index_set = Self::token_index_set(&t);
+                Err(ExpressionError::new_complex(
+                    ExpressionCategory::Parse,
+                    format!(
+                        "Invalid expression: expected operator '{}', found {}",
+                        expected,
+                        Self::describe_token(&t)
+                    ),
+                    lexer.source(),
+                    index_set,
+                ))
+            }
         }
     }
 
-    expect_operator(lexer, ")")?;
-    Ok(arguments)
-}
+    /// Returns the set of source indices covered by `lexer_token`, or an empty set for
+    /// `LexerToken::EndOfInput`, which doesn't correspond to any position in the source.
+    fn token_index_set(lexer_token: &LexerToken) -> SpanSet {
+        match lexer_token {
+            LexerToken::Atom(index, _) | LexerToken::Operator(index, _) => {
+                SpanSet::from_span(*index)
+            }
+            LexerToken::EndOfInput => SpanSet::new(),
+        }
+    }
 
-/// Consumes the next token from `lexer`, returning an error if it isn't the expected operator.
-fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionError> {
-    match lexer.next() {
-        LexerToken::Operator(_index, value) if value == expected => Ok(()),
-        t => {
-            let index_set = token_index_set(&t);
-            Err(ExpressionError::new_complex(
+    /// Returns a human-readable description of `token`, suitable for use in error messages.
+    fn describe_token(token: &LexerToken) -> String {
+        match token {
+            LexerToken::Atom(_index, value) => format!("atom '{value}'"),
+            LexerToken::Operator(_index, value) => format!("operator '{value}'"),
+            LexerToken::EndOfInput => "end of input".to_string(),
+        }
+    }
+
+    fn prefix_binding_power(
+        op: &str,
+        index: Span,
+        source: &ShareableString,
+    ) -> Result<((), u8), ExpressionError> {
+        match op {
+            "+" | "-" | "!" => Ok(((), 19)),
+            _ => Err(ExpressionError::new_complex(
                 ExpressionCategory::Parse,
-                format!(
-                    "Invalid expression: expected operator '{}', found {}",
-                    expected,
-                    describe_token(&t)
-                ),
-                lexer.source(),
-                index_set,
-            ))
+                format!("Invalid prefix operator in expression: '{op}'"),
+                source,
+                SpanSet::from_span(index),
+            )),
         }
     }
-}
 
-/// Returns a human-readable description of `token`, suitable for use in error messages.
-fn describe_token(token: &LexerToken) -> String {
-    match token {
-        LexerToken::Atom(_index, value) => format!("atom '{value}'"),
-        LexerToken::Operator(_index, value) => format!("operator '{value}'"),
-        LexerToken::EndOfInput => "end of input".to_string(),
+    fn postfix_binding_power(op: &str) -> Option<(u8, ())> {
+        let res = match op {
+            "[" | "(" => (21, ()),
+            _ => return None,
+        };
+        Some(res)
     }
-}
 
-fn prefix_binding_power(
-    op: &str,
-    index: Span,
-    source: &ShareableString,
-) -> Result<((), u8), ExpressionError> {
-    match op {
-        "+" | "-" | "!" => Ok(((), 19)),
-        _ => Err(ExpressionError::new_complex(
-            ExpressionCategory::Parse,
-            format!("Invalid prefix operator in expression: '{op}'"),
-            source,
-            SpanSet::from_span(index),
-        )),
+    fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
+        let res = match op {
+            "=" => (2, 1),
+            "||" => (5, 6),
+            "&&" => (7, 8),
+            "==" | "!=" => (11, 12),
+            "<" | "<=" | ">" | ">=" => (13, 14),
+            "+" | "-" => (15, 16),
+            "*" | "/" | "%" => (17, 18),
+            "^" => (20, 19),
+            _ => return None,
+        };
+        Some(res)
     }
-}
-
-fn postfix_binding_power(op: &str) -> Option<(u8, ())> {
-    let res = match op {
-        "[" | "(" => (21, ()),
-        _ => return None,
-    };
-    Some(res)
-}
-
-fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
-    let res = match op {
-        "=" => (2, 1),
-        "||" => (5, 6),
-        "&&" => (7, 8),
-        "==" | "!=" => (11, 12),
-        "<" | "<=" | ">" | ">=" => (13, 14),
-        "+" | "-" => (15, 16),
-        "*" | "/" | "%" => (17, 18),
-        "^" => (20, 19),
-        _ => return None,
-    };
-    Some(res)
 }
 
 #[cfg(test)]
@@ -274,7 +274,7 @@ mod tests {
 
     fn expr(s: &str) -> Result<Parser, ExpressionError> {
         let lexer = Lexer::new(s)?;
-        parse(&lexer)
+        Parser::new(&lexer)
     }
 
     #[test]
@@ -422,7 +422,7 @@ mod tests {
         let s = expr(
             "p_value1 >= p_value2 && p_value3 != p_value4 || p_value1 <= p_value2 || p_value3 == p_value4",
         )
-        .unwrap();
+            .unwrap();
         assert_eq!(
             s.get_token().to_string(),
             "({69:71}|| ({45:47}|| ({21:23}&& ({9:11}>= {0:8}p_value1 {12:20}p_value2) ({33:35}!= {24:32}p_value3 {36:44}p_value4)) ({57:59}<= {48:56}p_value1 {60:68}p_value2)) ({81:83}== {72:80}p_value3 {84:92}p_value4))"

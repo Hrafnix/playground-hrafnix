@@ -419,12 +419,12 @@ pub(crate) fn translate(parser: &Parser) -> Result<Translator, ExpressionError> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::evaluation::expression::ast::parser::parse;
+    use crate::evaluation::expression::ast::parser::Parser;
     use crate::evaluation::expression::ast::span::Span;
 
     fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
         let lexer = crate::evaluation::expression::ast::lexer::Lexer::new(s)?;
-        let parser = parse(&lexer)?;
+        let parser = Parser::new(&lexer)?;
         translate(&parser).map(|translator| translator.expression().clone())
     }
 

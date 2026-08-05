@@ -1,5 +1,6 @@
 use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
-use crate::evaluation::expression::ast::parser::parse;
+use crate::evaluation::expression::ast::lexer::Lexer;
+use crate::evaluation::expression::ast::parser::Parser;
 use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::evaluation::expression::ast::translator::{
     Expression, Literal, Operators, Translator, expression_span, translate,
@@ -688,8 +689,8 @@ fn evaluate_expression(
 }
 
 fn parse_str(s: &str) -> Result<Translator, ExpressionError> {
-    let lexer = crate::evaluation::expression::ast::lexer::Lexer::new(s)?;
-    let parser = parse(&lexer)?;
+    let lexer = Lexer::new(s)?;
+    let parser = Parser::new(&lexer)?;
     translate(&parser)
 }
 
