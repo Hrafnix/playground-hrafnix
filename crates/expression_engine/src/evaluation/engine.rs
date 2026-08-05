@@ -1,11 +1,14 @@
 use crate::evaluation::expression::evaluator::evaluator;
 use crate::evaluation::expression::function_definition::{FunctionDefinition, FunctionDefinitions};
 use crate::evaluation::expression::function_definitions_default::get_default_function_definitions;
+use crate::expression::ast::ast_helper::string_to_expression;
+use crate::expression::requirements::MissingRequirements;
 use crate::{
     ExpressionError, GlobalObjectComputedData, GlobalObjectInputData, ParameterObjectComputedData,
     ParameterObjectInputData, VariableObjectComputedData, VariableObjectInputData,
 };
-use std::collections::BTreeMap;
+use shareable_string::ShareableString;
+use std::collections::{BTreeMap, HashSet};
 
 /// The `Engine` struct represents the core evaluation engine for processing expressions. It is designed to handle various types of expressions and provide a framework for evaluating them efficiently.
 /// The engine can be extended with additional features and optimizations as needed.
@@ -163,6 +166,83 @@ impl ExpressionEngine {
         }
 
         Ok(ParameterObjectComputedData::new(computed_data))
+    }
+
+    /// Checks for missing requirements in the provided expression based on the current state of the engine.
+    /// It verifies if all required globals, parameters, variables, and functions are present.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any required global, parameter, variable, or function is missing.
+    pub fn check_missing_requirements(
+        &self,
+        parameters: &Option<ParameterObjectInputData>,
+        variables: &Option<VariableObjectInputData>,
+        new_globals: &Option<GlobalObjectInputData>,
+        expression: &ShareableString,
+    ) -> Result<(), Vec<ExpressionError>> {
+        let mut item_keys: HashSet<ShareableString> = self.globals.data().keys().cloned().collect();
+
+        if let Some(parameters) = parameters {
+            item_keys.extend(parameters.data().keys().cloned());
+        }
+        if let Some(variables) = variables {
+            item_keys.extend(variables.data().keys().cloned());
+        }
+        if let Some(globals) = new_globals {
+            item_keys.extend(globals.data().keys().cloned());
+        }
+
+        let function_keys: HashSet<ShareableString> = self.functions.keys().cloned().collect();
+
+        let expression = string_to_expression(expression).map_err(|err| vec![err])?;
+
+        let missing_requirements =
+            MissingRequirements::new(&expression, &item_keys, &function_keys);
+
+        if !missing_requirements.missing_requirements_exist() {
+            return Ok(());
+        }
+
+        let mut errors = Vec::new();
+
+        if missing_requirements.missing_globals() {
+            for global in missing_requirements.globals() {
+                errors.push(ExpressionError::new(
+                    crate::ExpressionCategory::Evaluation,
+                    format!("Missing required global: {global}"),
+                ));
+            }
+        }
+
+        if missing_requirements.missing_parameters() {
+            for parameter in missing_requirements.parameters() {
+                errors.push(ExpressionError::new(
+                    crate::ExpressionCategory::Evaluation,
+                    format!("Missing required parameter: {parameter}"),
+                ));
+            }
+        }
+
+        if missing_requirements.missing_variables() {
+            for variable in missing_requirements.variables() {
+                errors.push(ExpressionError::new(
+                    crate::ExpressionCategory::Evaluation,
+                    format!("Missing required variable: {variable}"),
+                ));
+            }
+        }
+
+        if missing_requirements.missing_functions() {
+            for function in missing_requirements.functions() {
+                errors.push(ExpressionError::new(
+                    crate::ExpressionCategory::Evaluation,
+                    format!("Missing required function: {function}"),
+                ));
+            }
+        }
+
+        Err(errors)
     }
 
     /// Returns a reference to the global computed data of the engine.

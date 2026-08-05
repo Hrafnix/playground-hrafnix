@@ -1,0 +1,197 @@
+use datastore::prelude::*;
+use expression_engine::prelude::*;
+use shareable_string::ShareableString;
+
+#[test]
+fn no_missing_requirements_when_everything_is_present() {
+    let global_frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Globals")
+            .with(
+                global_key!("g_a"),
+                IntegerDefinition::new_with_default("a global operand", "10"),
+            )
+            .finish(),
+    );
+    let global_data = GlobalObjectInputData::new(&global_frozen);
+
+    let parameter_frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Parameters")
+            .with(
+                parameter_key!("p_b"),
+                IntegerDefinition::new_with_default("a parameter operand", "5"),
+            )
+            .finish(),
+    );
+    let parameter_data = ParameterObjectInputData::new(&parameter_frozen);
+
+    let mut engine = ExpressionEngine::new();
+    engine
+        .evaluate_globals(&global_data)
+        .expect("globals should evaluate");
+
+    let expression = ShareableString::from("sqrt(g_a) + p_b");
+
+    let result =
+        engine.check_missing_requirements(&Some(parameter_data), &None, &None, &expression);
+
+    assert!(result.is_ok());
+}
+
+#[test]
+fn reports_missing_global() {
+    let engine = ExpressionEngine::new();
+    let expression = ShareableString::from("g_missing + 1");
+
+    let errors = engine
+        .check_missing_requirements(&None, &None, &None, &expression)
+        .expect_err("missing global should be reported");
+
+    assert_eq!(errors.len(), 1);
+    assert!(
+        errors[0]
+            .to_string()
+            .contains("Missing required global: g_missing"),
+        "unexpected error message: {}",
+        errors[0]
+    );
+}
+
+#[test]
+fn reports_missing_parameter_when_none_supplied() {
+    let engine = ExpressionEngine::new();
+    let expression = ShareableString::from("p_missing * 2");
+
+    let errors = engine
+        .check_missing_requirements(&None, &None, &None, &expression)
+        .expect_err("missing parameter should be reported");
+
+    assert_eq!(errors.len(), 1);
+    assert!(
+        errors[0]
+            .to_string()
+            .contains("Missing required parameter: p_missing"),
+        "unexpected error message: {}",
+        errors[0]
+    );
+}
+
+#[test]
+fn reports_missing_variable_when_none_supplied() {
+    let engine = ExpressionEngine::new();
+    let expression = ShareableString::from("v_missing - 1");
+
+    let errors = engine
+        .check_missing_requirements(&None, &None, &None, &expression)
+        .expect_err("missing variable should be reported");
+
+    assert_eq!(errors.len(), 1);
+    assert!(
+        errors[0]
+            .to_string()
+            .contains("Missing required variable: v_missing"),
+        "unexpected error message: {}",
+        errors[0]
+    );
+}
+
+#[test]
+fn reports_missing_function() {
+    let engine = ExpressionEngine::new();
+    let expression = ShareableString::from("not_a_real_function(1, 2)");
+
+    let errors = engine
+        .check_missing_requirements(&None, &None, &None, &expression)
+        .expect_err("missing function should be reported");
+
+    assert_eq!(errors.len(), 1);
+    assert!(
+        errors[0]
+            .to_string()
+            .contains("Missing required function: not_a_real_function"),
+        "unexpected error message: {}",
+        errors[0]
+    );
+}
+
+#[test]
+fn reports_all_missing_requirement_kinds_at_once() {
+    let engine = ExpressionEngine::new();
+    let expression =
+        ShareableString::from("g_missing + p_missing + v_missing + not_a_real_function(1)");
+
+    let errors = engine
+        .check_missing_requirements(&None, &None, &None, &expression)
+        .expect_err("all missing requirement kinds should be reported");
+
+    let messages: Vec<String> = errors.iter().map(ToString::to_string).collect();
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("Missing required global: g_missing"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("Missing required parameter: p_missing"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("Missing required variable: v_missing"))
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("Missing required function: not_a_real_function"))
+    );
+}
+
+#[test]
+fn provided_parameters_variables_and_globals_satisfy_requirements() {
+    let engine = ExpressionEngine::new();
+
+    let global_frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Globals")
+            .with(
+                global_key!("g_a"),
+                IntegerDefinition::new_with_default("a global operand", "1"),
+            )
+            .finish(),
+    );
+    let parameter_frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Parameters")
+            .with(
+                parameter_key!("p_b"),
+                IntegerDefinition::new_with_default("a parameter operand", "2"),
+            )
+            .finish(),
+    );
+    let variable_frozen = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Test Variables")
+            .with(
+                variable_key!("v_c"),
+                IntegerDefinition::new_with_default("a variable operand", "3"),
+            )
+            .finish(),
+    );
+
+    let globals = Some(GlobalObjectInputData::new(&global_frozen));
+    let parameters = Some(ParameterObjectInputData::new(&parameter_frozen));
+    let variables = Some(VariableObjectInputData::new(&variable_frozen));
+
+    let expression = ShareableString::from("g_a + p_b + v_c");
+
+    let result = engine.check_missing_requirements(&parameters, &variables, &globals, &expression);
+
+    assert!(result.is_ok());
+}
+
+#[test]
+fn invalid_expression_syntax_returns_an_error() {
+    let engine = ExpressionEngine::new();
+    let expression = ShareableString::from("1 +");
+
+    let result = engine.check_missing_requirements(&None, &None, &None, &expression);
+
+    assert!(result.is_err());
+}

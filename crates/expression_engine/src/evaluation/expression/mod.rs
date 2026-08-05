@@ -13,3 +13,8 @@ pub mod function_definition;
 /// The `function_definitions_default` module provides a set of default function definitions that
 /// can be used within the expression engine.
 pub(crate) mod function_definitions_default;
+/// The `requirements` module analyzes an expression to determine its dependencies on global variables,
+/// parameters, and other resources. It provides the necessary structures and methods to identify
+/// and manage these requirements, ensuring that the expression can be evaluated correctly
+/// within the context of the expression engine.
+pub(crate) mod requirements;
