@@ -1,8 +1,10 @@
+/// The `ast_helper` module provides utility functions for working with the AST, including converting strings to expressions.
+pub(crate) mod ast_helper;
 /// The `lexer` is responsible for tokenizing the input expression.
-pub mod lexer;
+pub(crate) mod lexer;
 /// The `precedence_parser` implements a parser that respects operator precedence and associativity.
-pub mod parser;
+pub(crate) mod parser;
 /// The `span` module provides structures and methods for managing ranges of indices, which can be used to represent spans of text or other sequential data.
 pub(crate) mod span;
 /// The 'translator' implements a conversion from the AST to a more efficient representation for evaluation, optimizing the evaluation process.
-pub mod translator;
+pub(crate) mod translator;

@@ -152,7 +152,6 @@ pub(crate) fn expression_span(expression: &Expression) -> Span {
 #[derive(Debug)]
 pub(crate) struct Translator {
     expression: Expression,
-    source: ShareableString,
 }
 
 impl Translator {
@@ -161,15 +160,11 @@ impl Translator {
         let parser_token = parser.get_token().clone();
         let source = parser.get_source().clone();
 
-        Self::translate_token(parser_token, &source).map(|expression| Self { expression, source })
+        Self::translate_token(parser_token, &source).map(|expression| Self { expression })
     }
 
     pub(crate) fn expression(&self) -> &Expression {
         &self.expression
-    }
-
-    pub(crate) fn source(&self) -> &ShareableString {
-        &self.source
     }
 
     /// Translates a binary `ParserToken::Operator` into a `BinaryOperation` expression.
