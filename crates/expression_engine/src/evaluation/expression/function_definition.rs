@@ -154,6 +154,10 @@ impl FunctionDefinitions {
         self.insert(definition);
         self
     }
+
+    pub(crate) fn keys(&self) -> impl Iterator<Item = &ShareableString> {
+        self.definitions.keys()
+    }
 }
 
 #[cfg(test)]

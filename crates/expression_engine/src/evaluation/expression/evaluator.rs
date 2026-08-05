@@ -1,11 +1,10 @@
 use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, String};
-use crate::evaluation::expression::function_definition::FunctionDefinitions;
-use crate::expression::function_definition::ArgumentCount;
-use crate::expression::parser::parse;
-use crate::expression::span::{Span, SpanSet};
-use crate::expression::translator::{
-    Expression, Literal, Operators, Translator, expression_span, translate,
+use crate::evaluation::expression::ast::span::{Span, SpanSet};
+use crate::evaluation::expression::ast::translator::{
+    Expression, Literal, Operators, expression_span,
 };
+use crate::evaluation::expression::function_definition::{ArgumentCount, FunctionDefinitions};
+use crate::expression::ast::ast_helper::string_to_expression;
 use crate::{
     BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
     ObjectItemInputData, TableInputData,
@@ -687,27 +686,16 @@ fn evaluate_expression(
     }
 }
 
-fn parse_str(s: &str) -> Result<Translator, ExpressionError> {
-    let lexer = crate::expression::lexer::Lexer::new(s)?;
-    let parser = parse(&lexer)?;
-    translate(&parser)
-}
-
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
     basic: &BasicInputData,
 ) -> Result<ComputedItem, ExpressionError> {
-    let data = basic.data();
-    let translation = parse_str(data.as_ref())?;
-    let source = translation.source().clone();
-    let span = expression_span(translation.expression());
-    let computed = evaluate_expression(
-        computed_data,
-        functions,
-        &source,
-        translation.expression().clone(),
-    )?;
+    let source = basic.data();
+    let expression = string_to_expression(source)?;
+
+    let span = expression_span(&expression);
+    let computed = evaluate_expression(computed_data, functions, source, expression)?;
     match basic.definition() {
         Boolean(_boolean_definition) => {
             // Validate that the computed value is a boolean
@@ -1397,13 +1385,14 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 1.0)]]),
         )]);
 
-        let translation = parse_str("t[5]").unwrap();
+        let source = ShareableString::from("t[5]");
+        let expression = string_to_expression(&source).unwrap();
         assert!(
             evaluate_expression(
                 &computed_data,
                 &FunctionDefinitions::new(),
-                translation.source(),
-                translation.expression().clone()
+                &source,
+                expression
             )
             .is_err()
         );
@@ -1415,13 +1404,14 @@ mod tests {
             "t".into(),
             create_table_computed_item(vec![vec![("col", 3.5)]]),
         )]);
+        let source = ShareableString::from("t[0][col]");
+        let expression = string_to_expression(&source).unwrap();
 
-        let translator = parse_str("t[0][col]").unwrap();
         let result = evaluate_expression(
             &computed_data,
             &FunctionDefinitions::new(),
-            translator.source(),
-            translator.expression().clone(),
+            &source,
+            expression,
         )
         .unwrap();
 
@@ -1435,13 +1425,14 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 3.5)]]),
         )]);
 
-        let expression = parse_str("t[0][missing]").unwrap();
+        let source = ShareableString::from("t[0][missing]");
+        let expression = string_to_expression(&source).unwrap();
         assert!(
             evaluate_expression(
                 &computed_data,
                 &FunctionDefinitions::new(),
-                expression.source(),
-                expression.expression().clone()
+                &source,
+                expression
             )
             .is_err()
         );
@@ -1454,13 +1445,14 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 1.0)], vec![("col", 2.0)]]),
         )]);
 
-        let translation = parse_str("t[col]").unwrap();
+        let source = ShareableString::from("t[col]");
+        let expression = string_to_expression(&source).unwrap();
         assert!(
             evaluate_expression(
                 &computed_data,
                 &FunctionDefinitions::new(),
-                translation.source(),
-                translation.expression().clone()
+                &source,
+                expression
             )
             .is_err()
         );
@@ -1506,12 +1498,13 @@ mod tests {
             create_table_computed_item(vec![vec![("col", 1.0)], vec![("col", 9.0)]]),
         )]);
 
-        let translation = parse_str("map[key][entry][1][col]").unwrap();
+        let source = ShareableString::from("map[key][entry][1][col]");
+        let expression = string_to_expression(&source).unwrap();
         let result = evaluate_expression(
             &computed_data,
             &FunctionDefinitions::new(),
-            translation.source(),
-            translation.expression().clone(),
+            &source,
+            expression,
         )
         .unwrap();
 

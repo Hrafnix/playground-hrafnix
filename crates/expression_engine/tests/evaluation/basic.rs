@@ -3,6 +3,7 @@ use expression_engine::prelude::*;
 
 #[test]
 fn test_basic_data_integer() {
+    // Why: Test that a plain integer literal is evaluated to its own value.
     let frozen = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
@@ -28,6 +29,7 @@ fn test_basic_data_integer() {
 
 #[test]
 fn test_basic_data_integer_expression() {
+    // Why: Test that a simple integer addition expression is evaluated correctly.
     let frozen = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
@@ -53,6 +55,7 @@ fn test_basic_data_integer_expression() {
 
 #[test]
 fn test_basic_data_implicit_multiplication_before_parenthesis() {
+    // Why: Test that a number directly followed by parentheses is treated as implicit multiplication.
     let frozen = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
@@ -78,6 +81,7 @@ fn test_basic_data_implicit_multiplication_before_parenthesis() {
 
 #[test]
 fn test_basic_data_scientific_notation_expression() {
+    // Why: Test that numbers written in scientific notation are parsed and summed correctly.
     let frozen = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
@@ -103,6 +107,7 @@ fn test_basic_data_scientific_notation_expression() {
 
 #[test]
 fn test_basic_global_data_integer_expression() {
+    // Why: Test that a parameter expression can reference a global value evaluated beforehand.
     let global_frozen = GlobalObjectFrozen::new(
         GlobalObjectDefinition::builder("Test Object")
             .with(
