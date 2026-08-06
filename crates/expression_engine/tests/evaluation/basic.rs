@@ -2,6 +2,98 @@ use datastore::prelude::*;
 use expression_engine::prelude::*;
 
 #[test]
+fn test_basic_data_choice_bare_identifier() {
+    // Why: A choice value written as a bare identifier (e.g. `option_1`) should be
+    // treated as the literal choice value rather than looked up as a variable.
+    let frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_choice"),
+                ChoiceDefinition::new_with_default(
+                    "A choice parameter",
+                    vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ],
+                    "option_1",
+                ),
+            )
+            .finish(),
+    );
+
+    let data = ParameterObjectInputData::new(&frozen);
+
+    let output = ExpressionEngine::new()
+        .evaluate_parameters(&data)
+        .expect("evaluation should succeed");
+
+    let choice = output.get("p_choice").unwrap();
+    if let ComputedItem::Identifier(value) = choice {
+        assert_eq!(value.as_ref(), "option_1");
+    } else {
+        panic!("expected identifier data");
+    }
+}
+
+#[test]
+fn test_basic_data_choice_quoted_string() {
+    // Why: A choice value can also be written as a quoted string literal.
+    let frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_choice"),
+                ChoiceDefinition::new_with_default(
+                    "A choice parameter",
+                    vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ],
+                    "\"option_2\"",
+                ),
+            )
+            .finish(),
+    );
+
+    let data = ParameterObjectInputData::new(&frozen);
+
+    let output = ExpressionEngine::new()
+        .evaluate_parameters(&data)
+        .expect("evaluation should succeed");
+
+    let choice = output.get("p_choice").unwrap();
+    if let ComputedItem::String(value) = choice {
+        assert_eq!(value.as_ref(), "option_2");
+    } else {
+        panic!("expected string data");
+    }
+}
+
+#[test]
+fn test_basic_data_choice_invalid_identifier_errors() {
+    // Why: A bare identifier that doesn't match any defined choice should error.
+    let frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_choice"),
+                ChoiceDefinition::new_with_default(
+                    "A choice parameter",
+                    vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ],
+                    "not_a_choice",
+                ),
+            )
+            .finish(),
+    );
+
+    let data = ParameterObjectInputData::new(&frozen);
+
+    let result = ExpressionEngine::new().evaluate_parameters(&data);
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_basic_data_integer() {
     // Why: Test that a plain integer literal is evaluated to its own value.
     let frozen = ParameterObjectFrozen::new(

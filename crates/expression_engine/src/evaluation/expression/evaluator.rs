@@ -706,6 +706,27 @@ fn evaluate_expression(
     }
 }
 
+/// Validates a bare-identifier choice value (e.g. `option_1`) directly against the choice
+/// definition's list of valid choices, without treating it as a variable reference.
+fn evaluate_bare_identifier_choice(
+    choice_definition: &datastore::definition::ChoiceDefinition,
+    name: &str,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    let value = ShareableString::from(name);
+    if choice_definition.contains(value.clone()) {
+        Ok(ComputedItem::Identifier(value))
+    } else {
+        Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Value '{value}' is not a valid choice."),
+            source.clone(),
+            SpanSet::from_span(span),
+        ))
+    }
+}
+
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -715,6 +736,16 @@ fn evaluate_basic_expression(
     let expression = string_to_expression(source)?;
 
     let span = expression_span(&expression);
+
+    // A choice value may be written as a bare identifier (e.g. `option_1`) naming the
+    // choice directly, rather than a variable to look up. This only applies to choice
+    // definitions; every other definition kind evaluates the expression normally below.
+    if let (Choice(choice_definition), Expression::Literal(_, Literal::Identifier(name))) =
+        (basic.definition(), &expression)
+    {
+        return evaluate_bare_identifier_choice(choice_definition, name, source, span);
+    }
+
     let computed = evaluate_expression(computed_data, functions, source, expression)?;
     match basic.definition() {
         Boolean(_boolean_definition) => {
