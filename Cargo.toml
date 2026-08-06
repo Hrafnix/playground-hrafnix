@@ -53,6 +53,7 @@ correctness = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 perf = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
 
 arithmetic_side_effects = "warn"
 as_conversions = "warn"
