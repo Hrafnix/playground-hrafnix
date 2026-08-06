@@ -7,7 +7,6 @@
 //! - **Store**: The root container for all data objects. It manages thread safety and persistence.
 //! - **Definitions**: Define the structure of your data (Objects, Structs, Maps, Tables, and Basic values).
 //! - **Proxies**: Lightweight handles to data within the store. They provide a way to read and update data while maintaining sync with the store.
-//! - **Paths**: Unique identifiers for every piece of data in the store. Use the `path!` macro for easy creation.
 //! - **Shareable Strings**: Interned, thread-safe strings used throughout the store to reduce memory overhead and enable fast comparisons.
 //!
 //! ## Thread Safety and Invariants
@@ -49,8 +48,6 @@ pub mod editable;
 pub mod frozen;
 /// Keys and associated traits.
 pub mod key;
-/// Path types for addressing data within the store.
-pub mod path;
 /// Convenience re-exports of the most common types and macros.
 pub mod prelude;
 /// Traits used throughout the store.
