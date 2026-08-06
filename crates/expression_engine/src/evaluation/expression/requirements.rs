@@ -16,7 +16,7 @@ pub(crate) struct MissingRequirements {
 }
 
 impl MissingRequirements {
-    /// Analyses `expression` against the provided key sets and returns any missing requirements.
+    /// Analyzes `expression` against the provided key sets and returns any missing requirements.
     pub(crate) fn new(
         expression: &Expression,
         item_keys: &HashSet<ShareableString>,
@@ -247,7 +247,7 @@ impl ExpressionRequirements {
             Expression::Index { name, index, .. } => {
                 Self::record_name(name, global, parameters, variables, seen_names);
                 for index_expression in index {
-                    // A bare string literal used as an index (e.g. the `col` in
+                    // A bare string literal used as an index (e.g., the `col` in
                     // `t[0][col]`) is a literal field name, not a reference to a
                     // variable, so it is not treated as a requirement here.
                     if matches!(

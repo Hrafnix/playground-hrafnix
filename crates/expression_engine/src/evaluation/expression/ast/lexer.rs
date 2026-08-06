@@ -116,7 +116,7 @@ impl Lexer {
     }
 
     /// Returns whether `c` is allowed inside a quoted string literal: ASCII letters, digits,
-    /// underscore, dash, dot, `/`, and space (i.e. typical filesystem path characters).
+    /// underscore, dash, dot, `/`, and space (i.e., typical filesystem path characters).
     const fn is_valid_string_char(c: char) -> bool {
         c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/' | ' ')
     }
@@ -203,7 +203,10 @@ impl Lexer {
         if let Some(&(_, '(')) = chars.peek() {
             self.tokens.push(LexerToken::Operator(
                 Span::new(
-                    (start.saturating_add(number_len).saturating_sub(1)).max(start),
+                    start
+                        .saturating_add(number_len)
+                        .saturating_sub(1)
+                        .max(start),
                     2,
                 ),
                 "*".to_string(),

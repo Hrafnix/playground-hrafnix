@@ -268,12 +268,12 @@ impl MapEntryEditable {
         MapEntryFrozen::new_from_editable(self)
     }
 
-    /// Returns a reference to the item with the specified key, if it exists.
+    /// Returns a reference to the item with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemEditable> {
         self.items.get(&key.into())
     }
 
-    /// Returns a mutable reference to the item with the specified key, if it exists.
+    /// Returns a mutable reference to the item with the specified key if it exists.
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapItemEditable> {
         self.items.get_mut(key.as_ref())
     }
@@ -374,12 +374,12 @@ impl MapEditable {
         MapFrozen::new_from_editable(self)
     }
 
-    /// Returns a reference to the item with the specified key, if it exists.
+    /// Returns a reference to the item with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapEntryEditable> {
         self.items.get(&key.into())
     }
 
-    /// Returns a mutable reference to the item with the specified key, if it exists.
+    /// Returns a mutable reference to the item with the specified key if it exists.
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapEntryEditable> {
         self.items.get_mut(key.as_ref())
     }

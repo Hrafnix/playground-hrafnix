@@ -269,7 +269,7 @@ impl MapEntryFrozen {
         self.hash
     }
 
-    /// Returns a reference to the item with the specified key, if it exists.
+    /// Returns a reference to the item with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemFrozen> {
         self.items.get(&key.into())
     }
@@ -454,7 +454,7 @@ impl MapFrozen {
         self.hash
     }
 
-    /// Returns a reference to the item with the specified key, if it exists.
+    /// Returns a reference to the item with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapEntryFrozen> {
         self.items.get(&key.into())
     }

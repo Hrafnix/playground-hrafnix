@@ -17,7 +17,7 @@ macro_rules! const_assert {
 
 /// Returns `true` if `s` is a non-empty key that starts with `prefix` and whose
 /// remaining characters satisfy the standard key rules (first char `a-z`, rest
-/// `a-z | 0-9 | _`). When `prefix` is empty the key must also not match any
+/// `a-z | 0-9 | _`). When `prefix` is empty, the key must also not match any
 /// reserved keyword in [`KEY_WORDS`].
 #[allow(
     clippy::indexing_slicing,
@@ -89,7 +89,7 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
 
 /// Returns true if the key is not empty and only contains valid characters.
 /// The first character must be lowercase a-z.
-/// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
+/// The remaining characters may be lowercase a-z, digits 0-9, and underscores.
 #[must_use]
 pub const fn is_valid_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "")
@@ -97,7 +97,7 @@ pub const fn is_valid_key(s: &str) -> bool {
 
 /// Validates that a key is not empty and only contains valid characters.
 /// The first character must be lowercase a-z.
-/// Remaining characters may be lowercase a-z, digits 0-9, and underscores.
+/// The remaining characters may be lowercase a-z, digits 0-9, and underscores.
 fn validate_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
     if is_valid_key(s) {

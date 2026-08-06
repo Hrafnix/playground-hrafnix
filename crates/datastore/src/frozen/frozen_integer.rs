@@ -56,7 +56,7 @@ impl IntegerFrozen {
         s
     }
 
-    /// Converts the current `IntegerFrozen` instance into a `IntegerEditable` instance.
+    /// Converts the current `IntegerFrozen` instance into an `IntegerEditable` instance.
     #[must_use]
     pub fn thaw(&self) -> IntegerEditable {
         IntegerEditable::new(self)

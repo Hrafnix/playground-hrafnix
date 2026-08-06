@@ -426,7 +426,7 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 /// Converts a numeric argument to a float, returning an error for integers outside the
-/// exactly-representable range.
+/// exactly representable range.
 fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "to_float")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(*value)),

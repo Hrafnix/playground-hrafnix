@@ -146,7 +146,7 @@ fn item_to_input_data(
 /// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GlobalObjectInputData {
-    /// The map from field name to its input data item.
+    /// The map from a field name to its input data item.
     data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
@@ -172,7 +172,7 @@ impl GlobalObjectInputData {
 /// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParameterObjectInputData {
-    /// The map from field name to its input data item.
+    /// The map from a field name to its input data item.
     data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
@@ -198,7 +198,7 @@ impl ParameterObjectInputData {
 /// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariableObjectInputData {
-    /// The map from field name to its input data item.
+    /// The map from a field name to its input data item.
     data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 

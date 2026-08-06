@@ -159,10 +159,7 @@ fn test_variable_object_definition_inherit() {
     assert!(child_def.contains("v_p1"));
     assert!(child_def.contains("v_c1"));
 
-    let keys: Vec<_> = child_def
-        .keys()
-        .map(datastore::key::VariableKey::as_str)
-        .collect();
+    let keys: Vec<_> = child_def.keys().map(VariableKey::as_str).collect();
     assert_eq!(keys[0], "v_p1");
     assert_eq!(keys[1], "v_c1");
 }
@@ -210,10 +207,7 @@ fn test_variable_object_definition_inherit_with_check() {
     let child_def_builder = result.unwrap();
     let child_def = child_def_builder.finish();
 
-    let keys: Vec<_> = child_def
-        .keys()
-        .map(datastore::key::VariableKey::as_str)
-        .collect();
+    let keys: Vec<_> = child_def.keys().map(VariableKey::as_str).collect();
     assert_eq!(keys[0], "v_p2");
     assert_eq!(keys[1], "v_p1");
 }

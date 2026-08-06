@@ -69,7 +69,7 @@ impl IntegerConstraint {
     /// Creates a new `IntegerConstraint` with a range value constraint.
     ///
     /// If `value_1` is greater than `value_2`, the two values are swapped along with
-    /// their corresponding inclusivity flags so the resulting range is always valid.
+    /// their corresponding inclusivity flags, so the resulting range is always valid.
     ///
     /// If `value_1` and `value_2` are equal, the resulting range is always inclusive on
     /// both ends (regardless of the passed inclusivity flags), so it always represents

@@ -54,7 +54,7 @@ impl ChoiceItemDefinition {
 pub struct ChoiceDefinition {
     /// Human-readable description of this choice parameter.
     description: ShareableString,
-    /// Ordered list of valid choices.
+    /// An ordered list of valid choices.
     choices: Vec<ChoiceItemDefinition>,
     /// Default value for this choice parameter.
     default_value: ShareableString,

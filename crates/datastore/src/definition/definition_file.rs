@@ -61,7 +61,7 @@ impl FileDefinition {
         &self.extension_filter
     }
 
-    /// Returns whether the file should be bundled on archive.
+    /// Returns whether the file should be bundled when archived.
     #[must_use]
     pub const fn bundle_on_archive(&self) -> bool {
         self.bundle_on_archive

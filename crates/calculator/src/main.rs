@@ -22,10 +22,9 @@ fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
 
     engine.evaluate_parameters(&input_data).map_or_else(
         |err| {
-            let err_str = err.first().map_or_else(
-                || "Unknown error".to_string(),
-                std::string::ToString::to_string,
-            );
+            let err_str = err
+                .first()
+                .map_or_else(|| "Unknown error".to_string(), ToString::to_string);
 
             format!("Error: {err_str}")
         },

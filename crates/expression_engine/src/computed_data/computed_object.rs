@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 /// to their corresponding computed data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GlobalObjectComputedData {
-    /// The map from field name to its evaluated [`ComputedItem`].
+    /// The map from a field name to its evaluated [`ComputedItem`].
     data: BTreeMap<ShareableString, ComputedItem>,
 }
 
@@ -48,7 +48,7 @@ impl GlobalObjectComputedData {
 /// to their corresponding computed data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParameterObjectComputedData {
-    /// The map from field name to its evaluated [`ComputedItem`].
+    /// The map from a field name to its evaluated [`ComputedItem`].
     data: BTreeMap<ShareableString, ComputedItem>,
 }
 
@@ -79,7 +79,7 @@ impl ParameterObjectComputedData {
 /// to their corresponding computed data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariableObjectComputedData {
-    /// The map from field name to its evaluated [`ComputedItem`].
+    /// The map from a field name to its evaluated [`ComputedItem`].
     data: BTreeMap<ShareableString, ComputedItem>,
 }
 

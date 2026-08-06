@@ -113,7 +113,7 @@ impl GlobalObjectFrozen {
         s
     }
 
-    /// Converts the current `GlobalObjectFrozen` instance into an `GlobalObjectEditable` instance.
+    /// Converts the current `GlobalObjectFrozen` instance into a `GlobalObjectEditable` instance.
     #[must_use]
     pub fn thaw(&self) -> GlobalObjectEditable {
         GlobalObjectEditable::new_from_frozen(self)

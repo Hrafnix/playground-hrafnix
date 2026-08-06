@@ -180,7 +180,7 @@ impl ParameterObjectDefinitionBuilder {
     }
 }
 
-/// Definition for an object, which is a collection of named parameter.
+/// Definition for an object, which is a collection of named parameters.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ParameterObjectDefinition {
     /// Human-readable description of this parameter object.

@@ -296,7 +296,7 @@ impl Parser {
     }
 
     /// Returns the prefix binding power for the given operator, or an error if the operator
-    /// is not valid in prefix position.
+    /// is not a valid prefix operator.
     ///
     /// # Errors
     ///
@@ -318,7 +318,7 @@ impl Parser {
     }
 
     /// Returns the postfix binding power for the given operator, or `None` if the operator
-    /// is not valid in postfix position.
+    /// is not a valid postfix operator.
     fn postfix_binding_power(op: &str) -> Option<(u8, ())> {
         let res = match op {
             "[" | "(" => (21, ()),
@@ -328,7 +328,7 @@ impl Parser {
     }
 
     /// Returns the left and right binding powers for the given infix operator, or `None` if
-    /// the operator is not valid in infix position.
+    /// the operator is not a valid infix operator.
     fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
         let res = match op {
             "=" => (2, 1),

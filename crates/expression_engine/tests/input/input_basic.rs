@@ -95,7 +95,7 @@ fn test_basic_input_data_choice() {
 #[test]
 fn test_basic_input_data_equality() {
     // Why: Test that two basic input data items with the same content are considered
-    // equal, and differ when their values diverge.
+    // equal and differ when their values diverge.
     let data_1 = basic_data_for(ItemFrozen::String(StringFrozen::new_from_editable(
         &StringEditable::new_with_value(StringDefinition::new("A string"), "hello".into()),
     )));

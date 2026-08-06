@@ -13,7 +13,7 @@ pub struct TableDefinition {
     description: ShareableString,
     /// Column keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<StoreKey>,
-    /// Column definitions keyed by column name.
+    /// Column definitions keyed by a column name.
     columns: Arc<BTreeMap<StoreKey, NumberDefinition>>,
 }
 

@@ -69,7 +69,7 @@ impl NumberConstraint {
     /// Creates a new `NumberConstraint` with a range value constraint.
     ///
     /// If `value_1` is greater than `value_2`, the two values are swapped along with
-    /// their corresponding inclusivity flags so the resulting range is always valid.
+    /// their corresponding inclusivity flags, so the resulting range is always valid.
     ///
     /// If `value_1` and `value_2` are equal (or within a hair's breadth of it due to
     /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`

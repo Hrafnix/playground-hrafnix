@@ -166,7 +166,7 @@ impl fmt::Display for Expression {
             } => {
                 let args = arguments
                     .iter()
-                    .map(std::string::ToString::to_string)
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{name}({args})")
@@ -410,7 +410,7 @@ impl Translator {
     /// # Errors
     ///
     /// Returns an error if the token tree cannot be mapped to a valid expression
-    /// (e.g. an unsupported operator arity or an invalid numeric literal).
+    /// (e.g., an unsupported operator arity or an invalid numeric literal).
     fn translate_token(
         parser_token: ParserToken,
         source: &ShareableString,
@@ -585,7 +585,7 @@ mod tests {
 
     #[test]
     fn translates_field_access_via_bracket_indexing() {
-        // field access is now expressed as a second level of bracket indexing, and can be
+        // field access is now expressed as a second level of bracket indexing and can be
         // chained just like array/table indexing.
         assert_eq!(
             translate_str("p_map[key1][item1]").unwrap().to_string(),

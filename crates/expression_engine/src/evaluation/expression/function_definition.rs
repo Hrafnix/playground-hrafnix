@@ -47,7 +47,7 @@ pub struct FunctionDefinition {
     description: ShareableString,
     /// The number of arguments this function accepts.
     argument_count: ArgumentCount,
-    /// The callable body, stored behind an `Arc` for cheap cloning.
+    /// The callable body, stored behind an `Arc` for cloning.
     function: FunctionBody,
 }
 
@@ -127,7 +127,7 @@ impl PartialEq for FunctionDefinition {
 /// A registry of named functions available during expression evaluation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDefinitions {
-    /// The map from function name to its definition.
+    /// The map from a function name to its definition.
     definitions: BTreeMap<ShareableString, FunctionDefinition>,
 }
 

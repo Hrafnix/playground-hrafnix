@@ -173,10 +173,7 @@ fn test_object_definition_inherit() {
     assert!(child_def.contains("g_p1"));
     assert!(child_def.contains("g_c1"));
 
-    let keys: Vec<_> = child_def
-        .keys()
-        .map(datastore::key::GlobalKey::as_str)
-        .collect();
+    let keys: Vec<_> = child_def.keys().map(GlobalKey::as_str).collect();
     assert_eq!(keys[0], "g_p1");
     assert_eq!(keys[1], "g_c1");
 }
@@ -224,10 +221,7 @@ fn test_object_definition_inherit_with_check() {
     let child_def_builder = result.unwrap();
     let child_def = child_def_builder.finish();
 
-    let keys: Vec<_> = child_def
-        .keys()
-        .map(datastore::key::GlobalKey::as_str)
-        .collect();
+    let keys: Vec<_> = child_def.keys().map(GlobalKey::as_str).collect();
     assert_eq!(keys[0], "g_p2");
     assert_eq!(keys[1], "g_p1");
 }

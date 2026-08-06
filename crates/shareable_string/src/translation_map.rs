@@ -30,7 +30,7 @@ impl SharedStringTranslationMap {
         }
     }
 
-    /// Returns the translation for the given key and language, if it exists.
+    /// Returns the translation for the given key and language if it exists.
     /// Will use the fallback language if the specified language is not found.
     /// If parameters are provided, they will be used to replace placeholders in the translation.
     pub fn get_translation<K, L>(
