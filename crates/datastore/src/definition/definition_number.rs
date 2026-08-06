@@ -37,6 +37,7 @@ pub enum NumberConstraintEnum {
 /// Definition for an integer-based parameter constraint.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct NumberConstraint {
+    /// The actual constraint variant (none, min, max, or range).
     pub(crate) constraint_enum: NumberConstraintEnum,
 }
 
@@ -144,8 +145,11 @@ impl<'de> Deserialize<'de> for NumberConstraint {
 /// Definition for a number-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NumberDefinition {
+    /// Human-readable description of this number parameter.
     description: ShareableString,
+    /// Optional constraint (min, max, range, or none) applied to the value.
     constraint: NumberConstraint,
+    /// Default value for this number parameter.
     default_value: ShareableString,
 }
 
@@ -255,6 +259,8 @@ impl PartialEq<NumberDefinition> for &NumberDefinition {
     }
 }
 
+/// Formats an `f64` for display, appending `.0` when the value has no
+/// fractional part and is not in scientific notation.
 fn format_number_value(value: f64) -> String {
     if !value.is_finite() {
         return value.to_string();

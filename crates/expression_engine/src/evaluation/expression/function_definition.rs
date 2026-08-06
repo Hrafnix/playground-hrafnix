@@ -41,9 +41,13 @@ pub enum ArgumentCount {
 /// A function that can be invoked from within an expression via a call such as
 /// `add(2, 3)`.
 pub struct FunctionDefinition {
+    /// The name used to invoke this function in expression syntax.
     name: ShareableString,
+    /// A human-readable description of what the function does.
     description: ShareableString,
+    /// The number of arguments this function accepts.
     argument_count: ArgumentCount,
+    /// The callable body, stored behind an `Arc` for cheap cloning.
     function: FunctionBody,
 }
 
@@ -123,6 +127,7 @@ impl PartialEq for FunctionDefinition {
 /// A registry of named functions available during expression evaluation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDefinitions {
+    /// The map from function name to its definition.
     definitions: BTreeMap<ShareableString, FunctionDefinition>,
 }
 
@@ -155,6 +160,7 @@ impl FunctionDefinitions {
         self
     }
 
+    /// Returns an iterator over the names of all registered functions.
     pub(crate) fn keys(&self) -> impl Iterator<Item = &ShareableString> {
         self.definitions.keys()
     }

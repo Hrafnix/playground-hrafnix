@@ -10,8 +10,11 @@ use std::sync::Arc;
 /// Builder for creating a `GlobalObjectDefinition`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GlobalObjectDefinitionBuilder {
+    /// Human-readable description for the object being built.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<GlobalKey>,
+    /// Map of item definitions keyed by their global key.
     items: BTreeMap<GlobalKey, ItemDefinitionType>,
 }
 
@@ -180,8 +183,11 @@ impl GlobalObjectDefinitionBuilder {
 /// Definition for a global object, which is a collection of named items.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct GlobalObjectDefinition {
+    /// Human-readable description of this global object.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<GlobalKey>,
+    /// Map of item definitions keyed by their global key.
     items: Arc<BTreeMap<GlobalKey, ItemDefinitionType>>,
 }
 

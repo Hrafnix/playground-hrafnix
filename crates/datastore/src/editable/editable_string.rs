@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents a string data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StringEditable {
+    /// Definition metadata for this string value.
     definition: StringDefinition,
+    /// Current value for this string data, stored as a `ShareableString`.
     value: ShareableString,
 }
 

@@ -37,6 +37,7 @@ pub enum IntegerConstraintEnum {
 /// Definition for an integer-based parameter constraint.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct IntegerConstraint {
+    /// The actual constraint variant (none, min, max, or range).
     pub(crate) constraint_enum: IntegerConstraintEnum,
 }
 
@@ -136,8 +137,11 @@ impl<'de> Deserialize<'de> for IntegerConstraint {
 /// Definition for an integer-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IntegerDefinition {
+    /// Human-readable description of this integer parameter.
     description: ShareableString,
+    /// Optional constraint (min, max, range, or none) applied to the value.
     constraint: IntegerConstraint,
+    /// Default value for this integer parameter.
     default_value: ShareableString,
 }
 

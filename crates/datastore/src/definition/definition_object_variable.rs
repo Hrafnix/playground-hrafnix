@@ -10,8 +10,11 @@ use std::sync::Arc;
 /// Builder for creating a `VariableObjectDefinition`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VariableObjectDefinitionBuilder {
+    /// Human-readable description for the object being built.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<VariableKey>,
+    /// Map of item definitions keyed by their variable key.
     items: BTreeMap<VariableKey, ItemDefinitionType>,
 }
 
@@ -180,8 +183,11 @@ impl VariableObjectDefinitionBuilder {
 /// Definition for an object, which is a collection of named variables.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct VariableObjectDefinition {
+    /// Human-readable description of this variable object.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<VariableKey>,
+    /// Map of item definitions keyed by their variable key.
     items: Arc<BTreeMap<VariableKey, ItemDefinitionType>>,
 }
 

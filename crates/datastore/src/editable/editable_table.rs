@@ -8,8 +8,11 @@ use shareable_string::ShareableString;
 /// Represents a table of data in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableEditable {
+    /// Definition metadata for this table value.
     definition: TableDefinition,
+    /// Parameter key associated with this table instance.
     parameter: ShareableString,
+    /// Row data; each inner `Vec` holds one value per column.
     rows: Vec<Vec<ShareableString>>,
 }
 

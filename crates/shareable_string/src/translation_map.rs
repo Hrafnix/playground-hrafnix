@@ -7,8 +7,11 @@ use std::sync::Arc;
 /// A thread-safe map for storing translations of `ShareableString`s.
 #[derive(Debug, Clone)]
 pub struct SharedStringTranslationMap {
+    /// The interning store used to deduplicate all keys, languages, and translations.
     store: SharedStringStore,
+    /// Language code used when the requested language has no translation entry.
     fallback_language: ShareableString,
+    /// Map from translation key to a per-language translation table, shared across clones.
     data: Arc<RwLock<HashMap<ShareableString, HashMap<ShareableString, ShareableString>>>>,
 }
 
@@ -124,7 +127,9 @@ impl SharedStringTranslationMap {
 /// A message that can be translated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TranslateMessage {
+    /// The translation key identifying which message to look up.
     message_key: ShareableString,
+    /// Named parameters substituted into the translated string at runtime.
     message_params: HashMap<ShareableString, ShareableString>,
 }
 

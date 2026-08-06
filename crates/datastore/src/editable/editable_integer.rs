@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents integer data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IntegerEditable {
+    /// Definition metadata for this integer value.
     definition: IntegerDefinition,
+    /// Current value for this integer data, stored as a `ShareableString`.
     value: ShareableString,
 }
 

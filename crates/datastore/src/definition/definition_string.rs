@@ -5,7 +5,9 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a string-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StringDefinition {
+    /// Human-readable description of this string parameter.
     description: ShareableString,
+    /// Default value for this string parameter.
     default_value: ShareableString,
 }
 

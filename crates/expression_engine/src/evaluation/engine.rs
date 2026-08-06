@@ -14,7 +14,9 @@ use std::collections::{BTreeMap, HashSet};
 /// The engine can be extended with additional features and optimizations as needed.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExpressionEngine {
+    /// The pre-evaluated global computed data shared across all evaluations.
     globals: GlobalObjectComputedData,
+    /// The registered callable functions available during expression evaluation.
     functions: FunctionDefinitions,
 }
 

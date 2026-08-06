@@ -1,12 +1,19 @@
 use core::fmt;
 
+/// A half-open byte range `[start, start + size)` within an expression string,
+/// used to point at tokens and sub-expressions for error reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Span {
+    /// The byte offset of the first character covered by this span.
     start: usize,
+    /// The number of bytes covered by this span (minimum 1).
     size: usize,
 }
 
 impl Span {
+    /// Creates a new `Span` starting at `start` with the given `size`.
+    ///
+    /// The size is clamped to a minimum of 1 so that every span covers at least one character.
     pub(crate) fn new(start: usize, size: usize) -> Self {
         Self {
             start,
@@ -14,14 +21,17 @@ impl Span {
         }
     }
 
+    /// Returns the byte offset of the first character covered by this span.
     pub(crate) const fn start(&self) -> usize {
         self.start
     }
 
+    /// Returns the byte offset one past the last character covered by this span.
     pub(crate) const fn end(&self) -> usize {
         self.start.saturating_add(self.size)
     }
 
+    /// Returns the smallest span that covers both `self` and `other`.
     pub(crate) fn join(&self, other: &Span) -> Span {
         let new_start = self.start.min(other.start);
         let new_end = self.end().max(other.end());
@@ -30,6 +40,7 @@ impl Span {
     }
 
     #[allow(dead_code)]
+    /// Returns `true` if this span overlaps with `other` (i.e., they share at least one byte position).
     pub(crate) const fn overlaps(&self, other: &Span) -> bool {
         self.start < other.end() && other.start < self.end()
     }
@@ -41,18 +52,23 @@ impl fmt::Display for Span {
     }
 }
 
+/// An ordered, non-overlapping collection of [`Span`]s, used to highlight multiple
+/// disjoint regions of source text in a single error message.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct SpanSet {
+    /// The sorted, merged list of spans that make up this set.
     indices: Vec<Span>,
 }
 
 impl SpanSet {
+    /// Creates an empty `SpanSet`.
     pub(crate) const fn new() -> Self {
         Self {
             indices: Vec::new(),
         }
     }
 
+    /// Creates a `SpanSet` containing a single span.
     pub(crate) fn from_span(index: Span) -> Self {
         Self {
             indices: vec![index],
@@ -60,12 +76,14 @@ impl SpanSet {
     }
 
     #[allow(dead_code)]
+    /// Creates a `SpanSet` from an unsorted slice of spans, merging any overlapping spans.
     pub(crate) fn new_with_indices(indices: Vec<Span>) -> Self {
         let mut index_set = Self { indices };
         index_set.sort_and_merge();
         index_set
     }
 
+    /// Sorts the spans by start position and merges any that overlap.
     fn sort_and_merge(&mut self) {
         self.indices.sort_by_key(Span::start);
         let mut merged_indices: Vec<Span> = Vec::new();
@@ -83,15 +101,18 @@ impl SpanSet {
         self.indices = merged_indices;
     }
 
+    /// Returns an iterator over the spans in this set, in sorted order.
     pub(crate) fn iter(&self) -> impl Iterator<Item = &Span> {
         self.indices.iter()
     }
 
+    /// Returns `true` if this set contains no spans.
     pub(crate) fn is_empty(&self) -> bool {
         self.indices.is_empty()
     }
 
     #[allow(dead_code)]
+    /// Adds a span to the set, re-sorting and merging as needed.
     pub(crate) fn add(&mut self, index: Span) {
         self.indices.push(index);
         self.sort_and_merge();

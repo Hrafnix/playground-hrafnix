@@ -241,6 +241,7 @@ impl MapEntryFrozen {
         MapEntryEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all items in this map entry.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -425,6 +426,7 @@ impl MapFrozen {
         MapEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all entries in this map.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 

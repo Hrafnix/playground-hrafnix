@@ -5,7 +5,9 @@ use std::fmt::{Display, Formatter};
 /// A path to a piece of data within the store.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorePath {
+    /// The top-level object key (first path segment).
     object_key: StoreKey,
+    /// Additional path segments after the object key.
     segments: Vec<StoreKey>,
 }
 

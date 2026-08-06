@@ -5,14 +5,20 @@ use shareable_string::string::ShareableString;
 use std::fmt::Display;
 use std::hash::Hash;
 
+/// Reserved keyword strings that are not valid as bare `StoreKey` values.
 const KEY_WORDS: [&str; 2] = ["true", "false"];
 
+/// Compile-time assertion helper that panics with a message if the condition is false.
 macro_rules! const_assert {
     ($x:expr, $msg:expr $(,)?) => {
         let _: () = ::core::assert!($x, $msg);
     };
 }
 
+/// Returns `true` if `s` is a non-empty key that starts with `prefix` and whose
+/// remaining characters satisfy the standard key rules (first char `a-z`, rest
+/// `a-z | 0-9 | _`). When `prefix` is empty the key must also not match any
+/// reserved keyword in [`KEY_WORDS`].
 #[allow(
     clippy::indexing_slicing,
     reason = "All indexed access is guarded by explicit length and loop-bound checks."
@@ -263,6 +269,7 @@ impl From<&ConstStoreKey> for ShareableString {
 /// The first character must be a-z.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StoreKey {
+    /// The underlying validated key string.
     pub(crate) key: ShareableString,
 }
 
@@ -469,6 +476,7 @@ pub const fn is_valid_global_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "g_")
 }
 
+/// Validates that a global key starts with `g_` and has valid remaining characters.
 fn validate_global_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
     if is_valid_global_key(s) {
@@ -545,6 +553,7 @@ impl From<&ConstGlobalKey> for ShareableString {
 /// Global keys must start with g_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GlobalKey {
+    /// The underlying validated global key string (must start with `g_`).
     pub(crate) key: ShareableString,
 }
 
@@ -769,6 +778,7 @@ pub const fn is_valid_parameter_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "p_")
 }
 
+/// Validates that a parameter key starts with `p_` and has valid remaining characters.
 fn validate_parameter_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
     if is_valid_parameter_key(s) {
@@ -845,6 +855,7 @@ impl From<&ConstParameterKey> for ShareableString {
 /// Parameter keys must start with p_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ParameterKey {
+    /// The underlying validated parameter key string (must start with `p_`).
     pub(crate) key: ShareableString,
 }
 
@@ -1069,6 +1080,7 @@ pub const fn is_valid_variable_key(s: &str) -> bool {
     is_valid_key_with_prefix(s, "v_")
 }
 
+/// Validates that a variable key starts with `v_` and has valid remaining characters.
 fn validate_variable_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
     if is_valid_variable_key(s) {
@@ -1145,6 +1157,7 @@ impl From<&ConstVariableKey> for ShareableString {
 /// Variable keys must start with v_ and follow the rest of the `StoreKey` rules.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VariableKey {
+    /// The underlying validated variable key string (must start with `v_`).
     pub(crate) key: ShareableString,
 }
 

@@ -6,7 +6,9 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a single choice item in a choice-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceItemDefinition {
+    /// Unique key identifying this choice item.
     id: StoreKey,
+    /// Human-readable label for this choice item.
     description: ShareableString,
 }
 
@@ -50,8 +52,11 @@ impl ChoiceItemDefinition {
 /// Definition for a choice-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceDefinition {
+    /// Human-readable description of this choice parameter.
     description: ShareableString,
+    /// Ordered list of valid choices.
     choices: Vec<ChoiceItemDefinition>,
+    /// Default value for this choice parameter.
     default_value: ShareableString,
 }
 

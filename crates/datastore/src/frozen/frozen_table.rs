@@ -7,9 +7,13 @@ use shareable_string::ShareableString;
 /// Represents a table of data in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableFrozen {
+    /// Definition metadata for this table value.
     definition: TableDefinition,
+    /// Row data; each inner `Vec` holds one value per column.
     rows: Vec<Vec<ShareableString>>,
+    /// Parameter key associated with this table instance.
     parameter: ShareableString,
+    /// Pre-computed BLAKE3 hash of all rows for fast diffing.
     hash: [u8; 32],
 }
 
@@ -59,6 +63,7 @@ impl TableFrozen {
         TableEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all rows.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 

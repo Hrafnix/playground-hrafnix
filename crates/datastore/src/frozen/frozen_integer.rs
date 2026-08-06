@@ -7,8 +7,11 @@ use shareable_string::ShareableString;
 /// Represents integer data value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IntegerFrozen {
+    /// Definition metadata for this integer value.
     definition: IntegerDefinition,
+    /// Current value for this integer data, stored as a `ShareableString`.
     value: ShareableString,
+    /// Pre-computed BLAKE3 hash of the value for fast diffing.
     hash: [u8; 32],
 }
 
@@ -59,6 +62,7 @@ impl IntegerFrozen {
         IntegerEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of the current value.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 

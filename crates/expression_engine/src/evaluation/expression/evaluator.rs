@@ -13,6 +13,7 @@ use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
+/// Looks up `variable_name` in `computed_data`, returning its value or an evaluation error.
 fn lookup_variable(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     variable_name: &str,
@@ -34,6 +35,7 @@ fn lookup_variable(
     }
 }
 
+/// Applies a unary `operator` to `operand_value`, returning the result or an error.
 fn evaluate_unary_operation(
     operator: Operators,
     operand_value: ComputedItem,
@@ -62,6 +64,7 @@ fn evaluate_unary_operation(
     }
 }
 
+/// Applies a binary `operator` to two boolean operands.
 fn evaluate_boolean_binary_operation(
     operator: &Operators,
     left_value: bool,
@@ -83,6 +86,7 @@ fn evaluate_boolean_binary_operation(
     }
 }
 
+/// Applies a binary `operator` to two `f64` operands.
 fn evaluate_float_binary_operation(
     operator: &Operators,
     left_value: f64,
@@ -132,6 +136,7 @@ fn evaluate_float_binary_operation(
     }
 }
 
+/// Applies a binary `operator` to two `i64` operands, using checked arithmetic to detect overflow.
 fn evaluate_integer_binary_operation(
     operator: &Operators,
     left_value: i64,
@@ -249,6 +254,7 @@ fn evaluate_integer_binary_operation(
     }
 }
 
+/// Applies a binary `operator` to two string operands (equality and inequality only).
 fn evaluate_string_binary_operation(
     operator: &Operators,
     left_value: &ShareableString,
@@ -268,6 +274,8 @@ fn evaluate_string_binary_operation(
     }
 }
 
+/// Looks up `function_name` in `functions`, evaluates each argument, validates the argument count,
+/// and calls the function, returning its result.
 fn evaluate_function_call_operation(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     function_name: &str,
@@ -363,6 +371,7 @@ fn evaluate_function_call_operation(
     definition.call(&evaluated_arguments)
 }
 
+/// Evaluates a subscript-index expression (e.g. `table[0][col]`), returning the referenced cell value.
 fn evaluate_index_operation(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     name: &str,
@@ -530,6 +539,7 @@ fn evaluate_index_operation(
     Ok(item)
 }
 
+/// Recursively evaluates an [`Expression`] node against `computed_data` and returns the result.
 fn evaluate_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -736,6 +746,7 @@ fn evaluate_bare_identifier_choice(
     }
 }
 
+/// Evaluates the expression stored in a single [`BasicInputData`] item.
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -976,6 +987,7 @@ fn evaluate_basic_expression(
     }
 }
 
+/// Evaluates all cells in a [`TableInputData`] and returns the resulting rows of `f64` values.
 fn evaluate_table_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,

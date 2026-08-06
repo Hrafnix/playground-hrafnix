@@ -9,8 +9,11 @@ use std::sync::Arc;
 /// Definition for a table, which is a collection of named columns each having a `BasicDefinition`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableDefinition {
+    /// Human-readable description of this table parameter.
     description: ShareableString,
+    /// Column keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<StoreKey>,
+    /// Column definitions keyed by column name.
     columns: Arc<BTreeMap<StoreKey, NumberDefinition>>,
 }
 

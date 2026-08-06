@@ -2,14 +2,21 @@ use crate::expression::ast::translator::{Expression, Literal};
 use shareable_string::ShareableString;
 use std::collections::HashSet;
 
+/// Holds the names of required globals, parameters, variables, and functions that
+/// are referenced by an expression but absent from the available context.
 pub(crate) struct MissingRequirements {
+    /// Missing global variable names (prefixed `g_`).
     pub globals: Vec<ShareableString>,
+    /// Missing parameter names (prefixed `p_`).
     pub parameters: Vec<ShareableString>,
+    /// Missing variable names (prefixed `v_`).
     pub variables: Vec<ShareableString>,
+    /// Missing function names.
     pub functions: Vec<ShareableString>,
 }
 
 impl MissingRequirements {
+    /// Analyses `expression` against the provided key sets and returns any missing requirements.
     pub(crate) fn new(
         expression: &Expression,
         item_keys: &HashSet<ShareableString>,
@@ -54,6 +61,7 @@ impl MissingRequirements {
         }
     }
 
+    /// Returns `true` if any required globals, parameters, variables, or functions are missing.
     pub(crate) fn missing_requirements_exist(&self) -> bool {
         !self.globals.is_empty()
             || !self.parameters.is_empty()
@@ -61,34 +69,42 @@ impl MissingRequirements {
             || !self.functions.is_empty()
     }
 
+    /// Returns the names of missing globals.
     pub(crate) fn globals(&self) -> &[ShareableString] {
         &self.globals
     }
 
+    /// Returns `true` if any globals are missing.
     pub(crate) fn missing_globals(&self) -> bool {
         !self.globals.is_empty()
     }
 
+    /// Returns the names of missing parameters.
     pub(crate) fn parameters(&self) -> &[ShareableString] {
         &self.parameters
     }
 
+    /// Returns `true` if any parameters are missing.
     pub(crate) fn missing_parameters(&self) -> bool {
         !self.parameters.is_empty()
     }
 
+    /// Returns the names of missing variables.
     pub(crate) fn variables(&self) -> &[ShareableString] {
         &self.variables
     }
 
+    /// Returns `true` if any variables are missing.
     pub(crate) fn missing_variables(&self) -> bool {
         !self.variables.is_empty()
     }
 
+    /// Returns the names of missing functions.
     pub(crate) fn functions(&self) -> &[ShareableString] {
         &self.functions
     }
 
+    /// Returns `true` if any functions are missing.
     pub(crate) fn missing_functions(&self) -> bool {
         !self.functions.is_empty()
     }
@@ -111,6 +127,7 @@ pub(crate) struct ExpressionRequirements {
 }
 
 impl ExpressionRequirements {
+    /// Walks `expression` and collects all referenced globals, parameters, variables, and functions.
     pub(crate) fn new(expression: &Expression) -> Self {
         let mut global = Vec::new();
         let mut parameters = Vec::new();

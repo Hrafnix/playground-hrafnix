@@ -8,7 +8,9 @@ use std::sync::Arc;
 /// It uses an `Arc<str>` for efficient sharing and memory management.
 #[derive(Debug, Clone)]
 pub struct ShareableString {
+    /// The reference-counted string data, shared across clones.
     data: Arc<str>,
+    /// Precomputed BLAKE3 hash of the string contents, used for fast equality checks.
     blake3_hash: [u8; 32],
 }
 

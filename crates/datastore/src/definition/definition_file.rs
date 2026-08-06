@@ -5,9 +5,13 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a file-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileDefinition {
+    /// Human-readable description of this file parameter.
     description: ShareableString,
+    /// File-extension filter (e.g., `"*.csv"`) used in open-file dialogs.
     extension_filter: ShareableString,
+    /// Whether this file should be included when archiving the project.
     bundle_on_archive: bool,
+    /// Default value for this file parameter.
     default_value: ShareableString,
 }
 

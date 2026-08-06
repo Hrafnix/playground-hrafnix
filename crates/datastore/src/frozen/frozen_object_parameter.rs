@@ -119,6 +119,7 @@ impl ParameterObjectFrozen {
         ParameterObjectEditable::new_from_frozen(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all items in this parameter object.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 

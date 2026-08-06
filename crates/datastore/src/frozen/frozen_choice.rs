@@ -7,8 +7,11 @@ use shareable_string::ShareableString;
 /// Represents a choice data value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceFrozen {
+    /// Definition metadata for this choice value.
     definition: ChoiceDefinition,
+    /// Currently valued choice data, stored as a `ShareableString`.
     value: ShareableString,
+    /// Pre-computed BLAKE3 hash of the value for fast diffing.
     hash: [u8; 32],
 }
 
@@ -59,6 +62,7 @@ impl ChoiceFrozen {
         ChoiceEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of the current value.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 

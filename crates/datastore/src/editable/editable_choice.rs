@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents a choice data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceEditable {
+    /// Definition metadata for this choice value.
     definition: ChoiceDefinition,
+    /// Current value for this choice data, stored as a `ShareableString`.
     value: ShareableString,
 }
 

@@ -9,6 +9,7 @@ use datastore::prelude::*;
 use expression_engine::ParameterObjectInputData;
 use expression_engine::evaluation::engine::ExpressionEngine;
 
+/// Evaluates the given `expression` string using `engine` and returns the result as a displayable string.
 fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
     let definition = ParameterObjectDefinition::builder("Calculator Input")
         .with(

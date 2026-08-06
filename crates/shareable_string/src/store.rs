@@ -7,6 +7,7 @@ use std::sync::Arc;
 /// This store ensures that duplicate strings are only stored once in memory.
 #[derive(Debug, Clone)]
 pub struct SharedStringStore {
+    /// The shared, lock-protected set of interned strings.
     string_store: Arc<RwLock<FxHashSet<ShareableString>>>,
 }
 

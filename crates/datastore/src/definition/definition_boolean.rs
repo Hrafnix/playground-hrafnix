@@ -5,9 +5,13 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a boolean parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BooleanDefinition {
+    /// Human-readable description of this boolean parameter.
     description: ShareableString,
+    /// Label displayed when the value is `true`.
     true_description: ShareableString,
+    /// Label displayed when the value is `false`.
     false_description: ShareableString,
+    /// Default value for this boolean parameter.
     default_value: ShareableString,
 }
 
