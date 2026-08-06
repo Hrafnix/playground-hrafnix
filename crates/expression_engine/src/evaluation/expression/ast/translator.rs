@@ -9,6 +9,7 @@ pub(crate) enum Literal {
     Integer(i64),
     Float(f64),
     Identifier(String),
+    Text(String),
     Boolean(bool),
 }
 
@@ -18,6 +19,7 @@ impl fmt::Display for Literal {
             Literal::Integer(value) => write!(f, "{value}"),
             Literal::Float(value) => write!(f, "{value}"),
             Literal::Identifier(value) => write!(f, "{value}"),
+            Literal::Text(value) => write!(f, "\"{value}\""),
             Literal::Boolean(value) => write!(f, "{value}"),
         }
     }
@@ -361,6 +363,7 @@ impl Translator {
         match parser_token {
             ParserToken::Identifier(span, value) => Ok(Self::translate_atom(span, value)),
             ParserToken::Numeric(span, value) => Self::translate_numeric(span, value.as_str()),
+            ParserToken::Text(span, value) => Ok(Expression::Literal(span, Literal::Text(value))),
             ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
                 ("+", 1) => Self::translate_token(
                     operands.first().cloned().ok_or_else(|| {
@@ -555,6 +558,40 @@ mod tests {
         assert_eq!(
             translate_str(".87").unwrap(),
             Expression::Literal(Span::new(0, 3), Literal::Float(0.87))
+        );
+    }
+
+    #[test]
+    fn translates_quoted_string_literals() {
+        assert_eq!(
+            translate_str("\"hello/world.txt\"").unwrap(),
+            Expression::Literal(
+                Span::new(0, 17),
+                Literal::Text("hello/world.txt".to_string())
+            )
+        );
+        assert_eq!(translate_str("\"hello\"").unwrap().to_string(), "\"hello\"");
+    }
+
+    #[test]
+    fn quoted_string_literals_are_not_treated_as_variable_names() {
+        // Unlike a bare identifier (which is treated as a variable name), a quoted string is always a
+        // literal `Text` value, never a `String` used for variable lookup.
+        assert_eq!(
+            translate_str("\"v_foo\"").unwrap(),
+            Expression::Literal(Span::new(0, 7), Literal::Text("v_foo".to_string()))
+        );
+        assert_eq!(
+            translate_str("v_foo").unwrap(),
+            Expression::Literal(Span::new(0, 5), Literal::Identifier("v_foo".to_string()))
+        );
+    }
+
+    #[test]
+    fn translates_expressions_mixing_quoted_strings_and_operators() {
+        assert_eq!(
+            translate_str("\"a\" + \"b\"").unwrap().to_string(),
+            "(\"a\" + \"b\")"
         );
     }
 

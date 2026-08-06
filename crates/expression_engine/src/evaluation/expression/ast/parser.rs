@@ -14,6 +14,8 @@ pub(crate) enum ParserToken {
     Numeric(Span, String),
     /// An operator applied to one or more operand expressions.
     Operator(Span, String, Vec<ParserToken>),
+    /// A quoted string literal (e.g., `"some/path.txt"`), holding the unquoted contents.
+    Text(Span, String),
 }
 
 impl fmt::Display for ParserToken {
@@ -22,6 +24,7 @@ impl fmt::Display for ParserToken {
             ParserToken::Identifier(i, value) | ParserToken::Numeric(i, value) => {
                 write!(f, "{{{i}}}{value}")
             }
+            ParserToken::Text(i, value) => write!(f, "{{{i}}}\"{value}\""),
             ParserToken::Operator(i, op, rest) => {
                 write!(f, "({{{i}}}{op}")?;
                 for s in rest {
@@ -78,6 +81,7 @@ impl Parser {
     fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
         let mut lhs = match lexer.next() {
             LexerToken::Identifier(index, value) => ParserToken::Identifier(index, value),
+            LexerToken::Text(index, value) => ParserToken::Text(index, value),
             LexerToken::Numeric(index, value) => ParserToken::Numeric(index, value),
             LexerToken::Operator(_index, op) if op == "(" => {
                 let lhs = Self::expr_bp(lexer, 0)?;
@@ -129,6 +133,17 @@ impl Parser {
                         SpanSet::from_span(index),
                     ));
                 }
+                LexerToken::Text(index, value) => {
+                    return Err(ExpressionError::new_complex(
+                        ExpressionCategory::Parse,
+                        format!(
+                            "Invalid expression: expected an operator, found {}",
+                            Self::describe_token(&LexerToken::Text(index, value))
+                        ),
+                        lexer.source(),
+                        SpanSet::from_span(index),
+                    ));
+                }
             };
 
             if let Some((l_bp, ())) = Self::postfix_binding_power(&op) {
@@ -152,6 +167,16 @@ impl Parser {
                                 ),
                                 lexer.source(),
                                 SpanSet::from_span(op_index),
+                            ));
+                        }
+                        ParserToken::Text(index, name) => {
+                            return Err(ExpressionError::new_complex(
+                                ExpressionCategory::Parse,
+                                format!(
+                                    "Invalid expression: function calls require a function name, found \"{name}\""
+                                ),
+                                lexer.source(),
+                                SpanSet::from_span(index),
                             ));
                         }
                         ParserToken::Operator(_, name, ..) => {
@@ -240,6 +265,7 @@ impl Parser {
         match lexer_token {
             LexerToken::Identifier(index, _)
             | LexerToken::Numeric(index, _)
+            | LexerToken::Text(index, _)
             | LexerToken::Operator(index, _) => SpanSet::from_span(*index),
             LexerToken::EndOfInput => SpanSet::new(),
         }
@@ -250,6 +276,7 @@ impl Parser {
         match token {
             LexerToken::Identifier(_index, value) => format!("identifier '{value}'"),
             LexerToken::Numeric(_index, value) => format!("number '{value}'"),
+            LexerToken::Text(_index, value) => format!("text \"{value}\""),
             LexerToken::Operator(_index, value) => format!("operator '{value}'"),
             LexerToken::EndOfInput => "end of input".to_string(),
         }

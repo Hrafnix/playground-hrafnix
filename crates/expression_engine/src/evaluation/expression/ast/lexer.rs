@@ -13,6 +13,9 @@ pub(crate) enum LexerToken {
     Numeric(Span, String),
     /// Represents an operator (e.g., `+`, `-`, `*`, `/`).
     Operator(Span, String),
+    /// Represents a quoted string literal (e.g., `"some/path.txt"`), holding the
+    /// unquoted contents.
+    Text(Span, String),
     /// Represents the end of the input.
     EndOfInput,
 }
@@ -70,7 +73,7 @@ impl Lexer {
             }
 
             // Check for invalid tokens
-            if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,".contains(c) {
+            if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,\"".contains(c) {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Lexer,
                     format!("Invalid character in expression: '{c}'"),
@@ -79,7 +82,9 @@ impl Lexer {
                 ));
             }
 
-            if c == '.' {
+            if c == '"' {
+                self.tokenize_text(&mut chars, index, input)?;
+            } else if c == '.' {
                 self.tokenize_dot_number(&mut chars, index);
             } else if c.is_numeric() {
                 self.tokenize_number(&mut chars, index, c);
@@ -93,6 +98,58 @@ impl Lexer {
         self.validate_tokens(input)?;
         self.tokens.reverse();
 
+        Ok(())
+    }
+
+    /// Returns whether `c` is allowed inside a quoted string literal: ASCII letters, digits,
+    /// underscore, dash, dot, `/`, and space (i.e. typical filesystem path characters).
+    fn is_valid_string_char(c: char) -> bool {
+        c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/' | ' ')
+    }
+
+    fn tokenize_text(
+        &mut self,
+        chars: &mut Peekable<Enumerate<Chars<'_>>>,
+        start: usize,
+        input: &str,
+    ) -> Result<(), ExpressionError> {
+        let mut s = String::new();
+        let mut closed = false;
+
+        while let Some(&(idx, c)) = chars.peek() {
+            if c == '"' {
+                chars.next();
+                closed = true;
+                break;
+            }
+
+            if !Self::is_valid_string_char(c) {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Lexer,
+                    format!("Invalid character in string literal: '{c}'"),
+                    input,
+                    SpanSet::from_span(Span::new(idx, 1)),
+                ));
+            }
+
+            chars.next();
+            s.push(c);
+        }
+
+        if !closed {
+            return Err(ExpressionError::new_complex(
+                ExpressionCategory::Lexer,
+                "Unterminated string literal".to_string(),
+                input,
+                SpanSet::from_span(Span::new(start, s.len().saturating_add(1))),
+            ));
+        }
+
+        // +2 accounts for the opening and closing quotes, which aren't part of `s`.
+        let len = s.len().saturating_add(2);
+        s = s.trim().to_string();
+
+        self.tokens.push(LexerToken::Text(Span::new(start, len), s));
         Ok(())
     }
 
@@ -256,9 +313,11 @@ impl Lexer {
                         ));
                     }
                 }
-                // `EndOfInput` is only ever synthesized on-demand by `next()`/`peek()`
-                // when `self.tokens` is empty; it is never pushed into `self.tokens`.
-                LexerToken::EndOfInput => {}
+                // String literal contents are already validated character-by-character while
+                // they're being tokenized in `tokenize_text`. `EndOfInput` is only ever
+                // synthesized on-demand by `next()`/`peek()` when `self.tokens` is empty; it is
+                // never pushed into `self.tokens`.
+                LexerToken::Text(_, _) | LexerToken::EndOfInput => {}
             }
         }
 
@@ -678,7 +737,7 @@ mod tests {
             let ch = c as u8 as char;
             if !ch.is_numeric()
                 && !ch.is_lowercase()
-                && !"+_-*/()[]<>=!&|%^.,".contains(ch)
+                && !"+_-*/()[]<>=!&|%^.,\"".contains(ch)
                 && !ch.is_whitespace()
             {
                 let input = format!("a + b * (c - d) {ch} e");
@@ -747,6 +806,80 @@ mod tests {
                 format!("Invalid string in expression: '{ch}'")
             );
         }
+    }
+
+    #[test]
+    fn tokenizes_a_simple_string_literal() {
+        let input = "\"hello\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(0, 7), "hello".to_string())
+        );
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn tokenizes_a_path_like_string_literal() {
+        let input = "\"Some/Path-1.txt\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(0, 17), "Some/Path-1.txt".to_string())
+        );
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn tokenizes_an_empty_string_literal() {
+        let input = "\"\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(0, 2), String::new())
+        );
+    }
+
+    #[test]
+    fn string_literal_used_within_a_larger_expression() {
+        let input = "a + \"b\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Identifier(Span::new(0, 1), "a".to_string())
+        );
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Operator(Span::new(2, 1), "+".to_string())
+        );
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(4, 3), "b".to_string())
+        );
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn unterminated_string_literal_returns_an_error() {
+        let input = "\"unterminated";
+        let result = Lexer::new(input);
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_eq!(error.category, ExpressionCategory::Lexer);
+        assert_eq!(error.message, "Unterminated string literal");
+    }
+
+    #[test]
+    fn string_literal_rejects_non_ascii_character() {
+        let input = "\"caf\u{e9}\"";
+        let result = Lexer::new(input);
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_eq!(error.category, ExpressionCategory::Lexer);
+        assert_eq!(
+            error.message,
+            format!("Invalid character in string literal: '{}'", '\u{e9}')
+        );
     }
 
     #[test]

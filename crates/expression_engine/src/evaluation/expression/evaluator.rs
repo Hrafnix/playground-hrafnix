@@ -24,7 +24,10 @@ fn lookup_variable(
         Some(computed_item) => Ok(computed_item.clone()),
         None => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
-            format!("Variable '{variable_name}' not found in computed data."),
+            format!(
+                "Variable '{variable_name}' not found in computed data. \
+            If you want to use a literal string, wrap it in quotes \"{variable_name}\"."
+            ),
             source.clone(),
             SpanSet::from_span(span),
         )),
@@ -538,6 +541,7 @@ fn evaluate_expression(
             Literal::Integer(value) => Ok(ComputedItem::Integer(value)),
             Literal::Float(value) => Ok(ComputedItem::Float(value)),
             Literal::Identifier(value) => Ok(lookup_variable(computed_data, &value, source, span)?),
+            Literal::Text(value) => Ok(ComputedItem::String(ShareableString::from(value))),
             Literal::Boolean(value) => Ok(ComputedItem::Boolean(value)),
         },
         Expression::UnaryOperation {
@@ -739,6 +743,8 @@ fn evaluate_basic_expression(
             if let ComputedItem::File(_path) = &computed {
                 // Could add additional validation here (e.g., path exists, is readable)
                 Ok(computed)
+            } else if let ComputedItem::String(value) = &computed {
+                Ok(ComputedItem::File(value.clone()))
             } else {
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
@@ -1436,6 +1442,45 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn quoted_string_literal_evaluates_to_its_contents_without_variable_lookup() {
+        // Unlike a bare atom, a quoted string is never looked up in `computed_data`, even if a
+        // variable with a matching name exists.
+        let computed_data = BTreeMap::from([("hello".into(), ComputedItem::Integer(1))]);
+        let source = ShareableString::from("\"hello\"");
+        let expression = string_to_expression(&source).unwrap();
+
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &source,
+            expression,
+        )
+        .unwrap();
+
+        assert_eq!(result, ComputedItem::String(ShareableString::from("hello")));
+    }
+
+    #[test]
+    fn quoted_string_used_as_field_index_is_a_literal_field_name() {
+        let computed_data = BTreeMap::from([(
+            "t".into(),
+            create_table_computed_item(vec![vec![("col", 3.5)]]),
+        )]);
+        let source = ShareableString::from("t[0][\"col\"]");
+        let expression = string_to_expression(&source).unwrap();
+
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &source,
+            expression,
+        )
+        .unwrap();
+
+        check_number_float(&result, 3.5);
     }
 
     #[test]
