@@ -608,6 +608,16 @@ fn evaluate_expression(
                         operator_span,
                     )
                 }
+                (
+                    ComputedItem::Identifier(left_identifier),
+                    ComputedItem::Identifier(right_identifier),
+                ) => evaluate_string_binary_operation(
+                    &operator,
+                    &left_identifier,
+                    &right_identifier,
+                    source,
+                    operator_span,
+                ),
                 (ComputedItem::Table(_), ComputedItem::Table(_)) => {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
@@ -649,7 +659,6 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
-                    | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),

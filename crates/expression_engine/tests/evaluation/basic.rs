@@ -1,5 +1,6 @@
 use datastore::prelude::*;
 use expression_engine::prelude::*;
+use std::collections::BTreeMap;
 
 #[test]
 fn test_basic_data_choice_bare_identifier() {
@@ -91,6 +92,61 @@ fn test_basic_data_choice_invalid_identifier_errors() {
 
     let result = ExpressionEngine::new().evaluate_parameters(&data);
     assert!(result.is_err());
+}
+
+#[test]
+fn test_basic_data_choice_identifier_comparison() {
+    // Why: Choice values evaluated from bare identifiers must remain comparable in later expressions.
+    let global_frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
+            .with(
+                global_key!("g_choice"),
+                ChoiceDefinition::new_with_default(
+                    "A choice parameter",
+                    vec![
+                        ChoiceItemDefinition::new(store_key!("option_1"), "Option 1"),
+                        ChoiceItemDefinition::new(store_key!("option_2"), "Option 2"),
+                    ],
+                    "option_1",
+                ),
+            )
+            .finish(),
+    );
+    let frozen = ParameterObjectFrozen::new_from_items(
+        "Test Object",
+        BTreeMap::from([
+            (
+                ParameterKey::new("p_equal".into()).expect("valid parameter key"),
+                ItemFrozen::Boolean(BooleanFrozen::new_with_value(
+                    BooleanDefinition::new("Choice equals itself"),
+                    "g_choice == g_choice".into(),
+                )),
+            ),
+            (
+                ParameterKey::new("p_not_equal".into()).expect("valid parameter key"),
+                ItemFrozen::Boolean(BooleanFrozen::new_with_value(
+                    BooleanDefinition::new("Choice does not differ from itself"),
+                    "g_choice != g_choice".into(),
+                )),
+            ),
+        ]),
+    );
+
+    let global_data = GlobalObjectInputData::new(&global_frozen);
+    let data = ParameterObjectInputData::new(&frozen);
+    let mut engine = ExpressionEngine::new();
+    engine
+        .evaluate_globals(&global_data)
+        .expect("global evaluation should succeed");
+    let output = engine
+        .evaluate_parameters(&data)
+        .expect("evaluation should succeed");
+
+    assert_eq!(output.get("p_equal"), Some(&ComputedItem::Boolean(true)));
+    assert_eq!(
+        output.get("p_not_equal"),
+        Some(&ComputedItem::Boolean(false))
+    );
 }
 
 #[test]
