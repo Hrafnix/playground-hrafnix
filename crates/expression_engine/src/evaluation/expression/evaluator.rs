@@ -385,7 +385,7 @@ fn evaluate_index_operation(
         // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
         // literal field name, not a reference to a variable, so it is not looked up.
         let index_value =
-            if let Expression::Literal(lit_span, Literal::String(name)) = &index_expression {
+            if let Expression::Literal(lit_span, Literal::Identifier(name)) = &index_expression {
                 if let Ok(value) = lookup_variable(computed_data, name, source, *lit_span) {
                     value
                 } else {
@@ -537,7 +537,7 @@ fn evaluate_expression(
         Expression::Literal(span, literal) => match literal {
             Literal::Integer(value) => Ok(ComputedItem::Integer(value)),
             Literal::Float(value) => Ok(ComputedItem::Float(value)),
-            Literal::String(value) => Ok(lookup_variable(computed_data, &value, source, span)?),
+            Literal::Identifier(value) => Ok(lookup_variable(computed_data, &value, source, span)?),
             Literal::Boolean(value) => Ok(ComputedItem::Boolean(value)),
         },
         Expression::UnaryOperation {

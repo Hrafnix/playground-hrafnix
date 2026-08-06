@@ -8,7 +8,7 @@ use std::fmt;
 pub(crate) enum Literal {
     Integer(i64),
     Float(f64),
-    String(String),
+    Identifier(String),
     Boolean(bool),
 }
 
@@ -17,7 +17,7 @@ impl fmt::Display for Literal {
         match self {
             Literal::Integer(value) => write!(f, "{value}"),
             Literal::Float(value) => write!(f, "{value}"),
-            Literal::String(value) => write!(f, "{value}"),
+            Literal::Identifier(value) => write!(f, "{value}"),
             Literal::Boolean(value) => write!(f, "{value}"),
         }
     }
@@ -334,7 +334,7 @@ impl Translator {
             return Expression::Literal(span, Literal::Boolean(boolean));
         }
 
-        Expression::Literal(span, Literal::String(value))
+        Expression::Literal(span, Literal::Identifier(value))
     }
 
     /// Translates a `ParserToken::Numeric` into either an integer or floating-point `Literal`
@@ -359,7 +359,7 @@ impl Translator {
         source: &ShareableString,
     ) -> Result<Expression, ExpressionError> {
         match parser_token {
-            ParserToken::Atom(span, value) => Ok(Self::translate_atom(span, value)),
+            ParserToken::Identifier(span, value) => Ok(Self::translate_atom(span, value)),
             ParserToken::Numeric(span, value) => Self::translate_numeric(span, value.as_str()),
             ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
                 ("+", 1) => Self::translate_token(
@@ -470,8 +470,8 @@ mod tests {
                 Span::new(0, 0),
                 op.to_string(),
                 vec![
-                    ParserToken::Atom(Span::new(0, 0), "a".to_string()),
-                    ParserToken::Atom(Span::new(0, 0), "b".to_string()),
+                    ParserToken::Identifier(Span::new(0, 0), "a".to_string()),
+                    ParserToken::Identifier(Span::new(0, 0), "b".to_string()),
                 ],
             );
             let err = Translator::translate_token(token, &ShareableString::from(""))
