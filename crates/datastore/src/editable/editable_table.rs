@@ -91,7 +91,7 @@ impl TableEditable {
         value: V,
     ) -> Result<(), StoreError> {
         let col_name = column_name.into();
-        let Some(column_index) = self.definition.get_column_index_by_name(col_name.clone()) else {
+        let Some(column_index) = self.definition.get_column_index_by_name(col_name) else {
             return Err(StoreError::KeyNotFound);
         };
 

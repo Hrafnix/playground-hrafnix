@@ -17,7 +17,7 @@ impl StringEditable {
     pub fn new(frozen_string: &StringFrozen) -> Self {
         Self {
             definition: frozen_string.definition().clone(),
-            value: frozen_string.value().clone(),
+            value: frozen_string.value(),
         }
     }
 

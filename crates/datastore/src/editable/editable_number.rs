@@ -17,7 +17,7 @@ impl NumberEditable {
     pub fn new(frozen_number: &NumberFrozen) -> Self {
         Self {
             definition: frozen_number.definition().clone(),
-            value: frozen_number.value().clone(),
+            value: frozen_number.value(),
         }
     }
 

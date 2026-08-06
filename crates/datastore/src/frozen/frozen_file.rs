@@ -43,7 +43,7 @@ impl FileFrozen {
     #[must_use]
     pub fn new_from_editable(basic: &FileEditable) -> Self {
         let definition = basic.definition().clone();
-        let value = basic.value().clone();
+        let value = basic.value();
         let mut s = Self {
             definition,
             value,

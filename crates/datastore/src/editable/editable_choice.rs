@@ -17,7 +17,7 @@ impl ChoiceEditable {
     pub fn new(frozen_choice: &ChoiceFrozen) -> Self {
         Self {
             definition: frozen_choice.definition().clone(),
-            value: frozen_choice.value().clone(),
+            value: frozen_choice.value(),
         }
     }
 

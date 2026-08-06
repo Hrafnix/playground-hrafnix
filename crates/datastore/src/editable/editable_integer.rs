@@ -17,7 +17,7 @@ impl IntegerEditable {
     pub fn new(frozen_number: &IntegerFrozen) -> Self {
         Self {
             definition: frozen_number.definition().clone(),
-            value: frozen_number.value().clone(),
+            value: frozen_number.value(),
         }
     }
 

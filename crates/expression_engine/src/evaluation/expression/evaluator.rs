@@ -1004,7 +1004,7 @@ fn evaluate_table_expression(
                             referenced_table.keys().len(),
                             table.definition().count()
                         ),
-                        parameter_source.clone(),
+                        parameter_source,
                         SpanSet::from_span(parameter_span),
                     )]);
                 }
@@ -1096,7 +1096,7 @@ fn evaluate_table_expression(
                 format!(
                     "Parameter '{parameter}' is expected to reference a table, but got {other:?}."
                 ),
-                parameter_source.clone(),
+                parameter_source,
                 SpanSet::from_span(parameter_span),
             )]),
         };

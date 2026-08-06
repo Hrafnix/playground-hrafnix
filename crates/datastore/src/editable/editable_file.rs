@@ -17,7 +17,7 @@ impl FileEditable {
     pub fn new(frozen_file: &FileFrozen) -> Self {
         Self {
             definition: frozen_file.definition().clone(),
-            value: frozen_file.value().clone(),
+            value: frozen_file.value(),
         }
     }
 
