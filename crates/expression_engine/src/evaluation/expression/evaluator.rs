@@ -24,7 +24,10 @@ fn lookup_variable(
         Some(computed_item) => Ok(computed_item.clone()),
         None => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
-            format!("Variable '{variable_name}' not found in computed data."),
+            format!(
+                "Variable '{variable_name}' not found in computed data. \
+            If you want to use a literal string, wrap it in quotes \"{variable_name}\"."
+            ),
             source.clone(),
             SpanSet::from_span(span),
         )),
@@ -385,7 +388,7 @@ fn evaluate_index_operation(
         // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
         // literal field name, not a reference to a variable, so it is not looked up.
         let index_value =
-            if let Expression::Literal(lit_span, Literal::String(name)) = &index_expression {
+            if let Expression::Literal(lit_span, Literal::Identifier(name)) = &index_expression {
                 if let Ok(value) = lookup_variable(computed_data, name, source, *lit_span) {
                     value
                 } else {
@@ -474,7 +477,7 @@ fn evaluate_index_operation(
         };
 
         return match index_2 {
-            ComputedItem::String(s) => {
+            ComputedItem::Identifier(s) | ComputedItem::String(s) => {
                 if let Some(value) = table.get_cell_by_name(row_index, s) {
                     Ok(ComputedItem::Float(value))
                 } else {
@@ -537,7 +540,8 @@ fn evaluate_expression(
         Expression::Literal(span, literal) => match literal {
             Literal::Integer(value) => Ok(ComputedItem::Integer(value)),
             Literal::Float(value) => Ok(ComputedItem::Float(value)),
-            Literal::String(value) => Ok(lookup_variable(computed_data, &value, source, span)?),
+            Literal::Identifier(value) => Ok(lookup_variable(computed_data, &value, source, span)?),
+            Literal::Text(value) => Ok(ComputedItem::String(ShareableString::from(value))),
             Literal::Boolean(value) => Ok(ComputedItem::Boolean(value)),
         },
         Expression::UnaryOperation {
@@ -604,6 +608,16 @@ fn evaluate_expression(
                         operator_span,
                     )
                 }
+                (
+                    ComputedItem::Identifier(left_identifier),
+                    ComputedItem::Identifier(right_identifier),
+                ) => evaluate_string_binary_operation(
+                    &operator,
+                    &left_identifier,
+                    &right_identifier,
+                    source,
+                    operator_span,
+                ),
                 (ComputedItem::Table(_), ComputedItem::Table(_)) => {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
@@ -617,6 +631,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_),
                     ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
@@ -625,6 +640,7 @@ fn evaluate_expression(
                     ComputedItem::File(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
@@ -633,6 +649,16 @@ fn evaluate_expression(
                     ComputedItem::Float(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::Identifier(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
@@ -642,6 +668,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
                 )
@@ -651,6 +678,7 @@ fn evaluate_expression(
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Table(_),
                 )
                 | (
@@ -659,6 +687,7 @@ fn evaluate_expression(
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::String(_),
                 ) => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
@@ -686,6 +715,27 @@ fn evaluate_expression(
     }
 }
 
+/// Validates a bare-identifier choice value (e.g. `option_1`) directly against the choice
+/// definition's list of valid choices, without treating it as a variable reference.
+fn evaluate_bare_identifier_choice(
+    choice_definition: &datastore::definition::ChoiceDefinition,
+    name: &str,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    let value = ShareableString::from(name);
+    if choice_definition.contains(value.clone()) {
+        Ok(ComputedItem::Identifier(value))
+    } else {
+        Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Value '{value}' is not a valid choice."),
+            source.clone(),
+            SpanSet::from_span(span),
+        ))
+    }
+}
+
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -695,6 +745,16 @@ fn evaluate_basic_expression(
     let expression = string_to_expression(source)?;
 
     let span = expression_span(&expression);
+
+    // A choice value may be written as a bare identifier (e.g. `option_1`) naming the
+    // choice directly, rather than a variable to look up. This only applies to choice
+    // definitions; every other definition kind evaluates the expression normally below.
+    if let (Choice(choice_definition), Expression::Literal(_, Literal::Identifier(name))) =
+        (basic.definition(), &expression)
+    {
+        return evaluate_bare_identifier_choice(choice_definition, name, source, span);
+    }
+
     let computed = evaluate_expression(computed_data, functions, source, expression)?;
     match basic.definition() {
         Boolean(_boolean_definition) => {
@@ -739,6 +799,8 @@ fn evaluate_basic_expression(
             if let ComputedItem::File(_path) = &computed {
                 // Could add additional validation here (e.g., path exists, is readable)
                 Ok(computed)
+            } else if let ComputedItem::String(value) = &computed {
+                Ok(ComputedItem::File(value.clone()))
             } else {
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
@@ -1436,6 +1498,45 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn quoted_string_literal_evaluates_to_its_contents_without_variable_lookup() {
+        // Unlike a bare atom, a quoted string is never looked up in `computed_data`, even if a
+        // variable with a matching name exists.
+        let computed_data = BTreeMap::from([("hello".into(), ComputedItem::Integer(1))]);
+        let source = ShareableString::from("\"hello\"");
+        let expression = string_to_expression(&source).unwrap();
+
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &source,
+            expression,
+        )
+        .unwrap();
+
+        assert_eq!(result, ComputedItem::String(ShareableString::from("hello")));
+    }
+
+    #[test]
+    fn quoted_string_used_as_field_index_is_a_literal_field_name() {
+        let computed_data = BTreeMap::from([(
+            "t".into(),
+            create_table_computed_item(vec![vec![("col", 3.5)]]),
+        )]);
+        let source = ShareableString::from("t[0][\"col\"]");
+        let expression = string_to_expression(&source).unwrap();
+
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &source,
+            expression,
+        )
+        .unwrap();
+
+        check_number_float(&result, 3.5);
     }
 
     #[test]

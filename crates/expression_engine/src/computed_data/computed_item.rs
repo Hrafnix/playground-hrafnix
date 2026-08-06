@@ -75,6 +75,8 @@ pub enum ComputedItem {
     Float(f64),
     /// A String value.
     String(ShareableString),
+    /// An Identifier value.
+    Identifier(ShareableString),
     /// Path to a file.
     File(ShareableString),
     /// A table represented as a `ComputedTable`.
@@ -87,7 +89,9 @@ impl fmt::Display for ComputedItem {
             ComputedItem::Boolean(value) => write!(f, "{value}"),
             ComputedItem::Integer(value) => write!(f, "{value}"),
             ComputedItem::Float(value) => write!(f, "{value}"),
-            ComputedItem::String(value) | ComputedItem::File(value) => write!(f, "{value}"),
+            ComputedItem::String(value)
+            | ComputedItem::File(value)
+            | ComputedItem::Identifier(value) => write!(f, "{value}"),
             ComputedItem::Table(_) => write!(f, "{self:?}"),
         }
     }

@@ -173,7 +173,7 @@ impl ExpressionRequirements {
         seen_functions: &mut HashSet<ShareableString>,
     ) {
         match expression {
-            Expression::Literal(_, Literal::String(name)) => {
+            Expression::Literal(_, Literal::Identifier(name)) => {
                 Self::record_name(name, global, parameters, variables, seen_names);
             }
             Expression::Literal(_, _) => {}
@@ -233,7 +233,10 @@ impl ExpressionRequirements {
                     // A bare string literal used as an index (e.g. the `col` in
                     // `t[0][col]`) is a literal field name, not a reference to a
                     // variable, so it is not treated as a requirement here.
-                    if matches!(index_expression, Expression::Literal(_, Literal::String(_))) {
+                    if matches!(
+                        index_expression,
+                        Expression::Literal(_, Literal::Identifier(_))
+                    ) {
                         continue;
                     }
                     Self::collect_requirements(

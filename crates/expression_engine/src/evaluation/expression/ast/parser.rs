@@ -4,20 +4,27 @@ use crate::{ExpressionCategory, ExpressionError};
 use shareable_string::ShareableString;
 use std::fmt;
 
-/// The result of parsing an expression: either a single atom (an identifier or literal) or a
-/// compound expression consisting of an operator applied to one or more operands.
+/// The result of parsing an expression: either a single identifier, a single numeric value,
+/// or an operator applied to one or more operand expressions.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ParserToken {
-    /// An atomic value (e.g., a number or identifier).
-    Atom(Span, String),
+    /// An identifier (e.g., a variable or function name).
+    Identifier(Span, String),
+    /// A numeric value (e.g., `123`, `45.67`, `.89`, `0.001`, `1e10`, `1.5e-3`, `.5e+2`).
+    Numeric(Span, String),
     /// An operator applied to one or more operand expressions.
     Operator(Span, String, Vec<ParserToken>),
+    /// A quoted string literal (e.g., `"some/path.txt"`), holding the unquoted contents.
+    Text(Span, String),
 }
 
 impl fmt::Display for ParserToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParserToken::Atom(i, value) => write!(f, "{{{i}}}{value}"),
+            ParserToken::Identifier(i, value) | ParserToken::Numeric(i, value) => {
+                write!(f, "{{{i}}}{value}")
+            }
+            ParserToken::Text(i, value) => write!(f, "{{{i}}}\"{value}\""),
             ParserToken::Operator(i, op, rest) => {
                 write!(f, "({{{i}}}{op}")?;
                 for s in rest {
@@ -73,7 +80,9 @@ impl Parser {
 
     fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
         let mut lhs = match lexer.next() {
-            LexerToken::Atom(index, value) => ParserToken::Atom(index, value),
+            LexerToken::Identifier(index, value) => ParserToken::Identifier(index, value),
+            LexerToken::Text(index, value) => ParserToken::Text(index, value),
+            LexerToken::Numeric(index, value) => ParserToken::Numeric(index, value),
             LexerToken::Operator(_index, op) if op == "(" => {
                 let lhs = Self::expr_bp(lexer, 0)?;
                 Self::expect_operator(lexer, ")")?;
@@ -89,7 +98,7 @@ impl Parser {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Parse,
                     format!(
-                        "Invalid expression: expected an atom or a prefix operator, found {}",
+                        "Invalid expression: expected an identifier, a number, or a prefix operator, found {}",
                         Self::describe_token(&LexerToken::EndOfInput)
                     ),
                     lexer.source(),
@@ -102,12 +111,34 @@ impl Parser {
             let (op_index, op) = match lexer.peek() {
                 LexerToken::EndOfInput => break,
                 LexerToken::Operator(index, value) => (index, value),
-                LexerToken::Atom(index, value) => {
+                LexerToken::Identifier(index, value) => {
                     return Err(ExpressionError::new_complex(
                         ExpressionCategory::Parse,
                         format!(
                             "Invalid expression: expected an operator, found {}",
-                            Self::describe_token(&LexerToken::Atom(index, value))
+                            Self::describe_token(&LexerToken::Identifier(index, value))
+                        ),
+                        lexer.source(),
+                        SpanSet::from_span(index),
+                    ));
+                }
+                LexerToken::Numeric(index, value) => {
+                    return Err(ExpressionError::new_complex(
+                        ExpressionCategory::Parse,
+                        format!(
+                            "Invalid expression: expected an operator, found {}",
+                            Self::describe_token(&LexerToken::Numeric(index, value))
+                        ),
+                        lexer.source(),
+                        SpanSet::from_span(index),
+                    ));
+                }
+                LexerToken::Text(index, value) => {
+                    return Err(ExpressionError::new_complex(
+                        ExpressionCategory::Parse,
+                        format!(
+                            "Invalid expression: expected an operator, found {}",
+                            Self::describe_token(&LexerToken::Text(index, value))
                         ),
                         lexer.source(),
                         SpanSet::from_span(index),
@@ -127,12 +158,32 @@ impl Parser {
                     ParserToken::Operator(op_index, op, vec![lhs, rhs])
                 } else if op == "(" {
                     let (name_index, name) = match lhs {
-                        ParserToken::Atom(index, name) => (index, name),
+                        ParserToken::Identifier(index, name) => (index, name),
+                        ParserToken::Numeric(_, name) => {
+                            return Err(ExpressionError::new_complex(
+                                ExpressionCategory::Parse,
+                                format!(
+                                    "Invalid expression: function calls require a function name, found number {name}"
+                                ),
+                                lexer.source(),
+                                SpanSet::from_span(op_index),
+                            ));
+                        }
+                        ParserToken::Text(index, name) => {
+                            return Err(ExpressionError::new_complex(
+                                ExpressionCategory::Parse,
+                                format!(
+                                    "Invalid expression: function calls require a function name, found \"{name}\""
+                                ),
+                                lexer.source(),
+                                SpanSet::from_span(index),
+                            ));
+                        }
                         ParserToken::Operator(_, name, ..) => {
                             return Err(ExpressionError::new_complex(
                                 ExpressionCategory::Parse,
                                 format!(
-                                    "Invalid expression: function calls require a function name, found {name}"
+                                    "Invalid expression: function calls require a function name, found expression starting with operator {name}"
                                 ),
                                 lexer.source(),
                                 SpanSet::from_span(op_index),
@@ -212,9 +263,10 @@ impl Parser {
     /// `LexerToken::EndOfInput`, which doesn't correspond to any position in the source.
     fn token_index_set(lexer_token: &LexerToken) -> SpanSet {
         match lexer_token {
-            LexerToken::Atom(index, _) | LexerToken::Operator(index, _) => {
-                SpanSet::from_span(*index)
-            }
+            LexerToken::Identifier(index, _)
+            | LexerToken::Numeric(index, _)
+            | LexerToken::Text(index, _)
+            | LexerToken::Operator(index, _) => SpanSet::from_span(*index),
             LexerToken::EndOfInput => SpanSet::new(),
         }
     }
@@ -222,7 +274,9 @@ impl Parser {
     /// Returns a human-readable description of `token`, suitable for use in error messages.
     fn describe_token(token: &LexerToken) -> String {
         match token {
-            LexerToken::Atom(_index, value) => format!("atom '{value}'"),
+            LexerToken::Identifier(_index, value) => format!("identifier '{value}'"),
+            LexerToken::Numeric(_index, value) => format!("number '{value}'"),
+            LexerToken::Text(_index, value) => format!("text \"{value}\""),
             LexerToken::Operator(_index, value) => format!("operator '{value}'"),
             LexerToken::EndOfInput => "end of input".to_string(),
         }
@@ -492,7 +546,7 @@ mod tests {
         // Empty input: an operand is expected but only EndOfInput is available.
         assert_parse_error(
             "",
-            "expected an atom or a prefix operator, found end of input",
+            "expected an identifier, a number, or a prefix operator, found end of input",
         );
     }
 
@@ -501,14 +555,14 @@ mod tests {
         // After consuming `1` and `+`, the right-hand side is missing.
         assert_parse_error(
             "1+",
-            "expected an atom or a prefix operator, found end of input",
+            "expected an identifier, a number, or a prefix operator, found end of input",
         );
     }
 
     #[test]
     fn missing_operator_between_atoms() {
         // Two atoms in a row with no operator between them.
-        assert_parse_error("1 2", "expected an operator, found atom '2'");
+        assert_parse_error("1 2", "expected an operator, found number '2'");
     }
 
     #[test]

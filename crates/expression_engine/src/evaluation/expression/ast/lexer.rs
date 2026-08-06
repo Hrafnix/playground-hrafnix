@@ -7,22 +7,25 @@ use std::str::Chars;
 /// A simple lexer for tokenizing expressions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LexerToken {
-    /// Represents an atomic value (e.g., a number or identifier).
-    Atom(Span, String),
+    /// Represents an identifier (e.g., `variable_name`, `function1`, `my_var_2`).
+    Identifier(Span, String),
+    /// Represents a numeric value (e.g., `123`, `45.67`, `.89`, `0.001`, `1e10`, `1.5e-3`, `.5e+2`).
+    Numeric(Span, String),
     /// Represents an operator (e.g., `+`, `-`, `*`, `/`).
     Operator(Span, String),
+    /// Represents a quoted string literal (e.g., `"some/path.txt"`), holding the
+    /// unquoted contents.
+    Text(Span, String),
     /// Represents the end of the input.
     EndOfInput,
 }
 
 /// A simple lexer for tokenizing expressions.
 ///
-/// Valid Tokens for Atoms:
-/// - Alphanumeric characters (a-z, 0-9)
-/// - Underscore (_)
-///
-/// Examples of valid atoms:
+/// Examples of valid identifiers:
 /// - Identifiers: `variable_name`, `function1`, `my_var_2`
+///
+/// Examples of valid Numbers:
 /// - Numbers: `123`, `45.67`, `.89`, `0.001`
 /// - Numbers in scientific notation (e.g. `1e10`, `1.5e-3`, `.5e+2`)
 ///
@@ -70,7 +73,7 @@ impl Lexer {
             }
 
             // Check for invalid tokens
-            if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,".contains(c) {
+            if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,\"".contains(c) {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Lexer,
                     format!("Invalid character in expression: '{c}'"),
@@ -79,7 +82,9 @@ impl Lexer {
                 ));
             }
 
-            if c == '.' {
+            if c == '"' {
+                self.tokenize_text(&mut chars, index, input)?;
+            } else if c == '.' {
                 self.tokenize_dot_number(&mut chars, index);
             } else if c.is_numeric() {
                 self.tokenize_number(&mut chars, index, c);
@@ -93,6 +98,58 @@ impl Lexer {
         self.validate_tokens(input)?;
         self.tokens.reverse();
 
+        Ok(())
+    }
+
+    /// Returns whether `c` is allowed inside a quoted string literal: ASCII letters, digits,
+    /// underscore, dash, dot, `/`, and space (i.e. typical filesystem path characters).
+    fn is_valid_string_char(c: char) -> bool {
+        c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/' | ' ')
+    }
+
+    fn tokenize_text(
+        &mut self,
+        chars: &mut Peekable<Enumerate<Chars<'_>>>,
+        start: usize,
+        input: &str,
+    ) -> Result<(), ExpressionError> {
+        let mut s = String::new();
+        let mut closed = false;
+
+        while let Some(&(idx, c)) = chars.peek() {
+            if c == '"' {
+                chars.next();
+                closed = true;
+                break;
+            }
+
+            if !Self::is_valid_string_char(c) {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Lexer,
+                    format!("Invalid character in string literal: '{c}'"),
+                    input,
+                    SpanSet::from_span(Span::new(idx, 1)),
+                ));
+            }
+
+            chars.next();
+            s.push(c);
+        }
+
+        if !closed {
+            return Err(ExpressionError::new_complex(
+                ExpressionCategory::Lexer,
+                "Unterminated string literal".to_string(),
+                input,
+                SpanSet::from_span(Span::new(start, s.len().saturating_add(1))),
+            ));
+        }
+
+        // +2 accounts for the opening and closing quotes, which aren't part of `s`.
+        let len = s.len().saturating_add(2);
+        s = s.trim().to_string();
+
+        self.tokens.push(LexerToken::Text(Span::new(start, len), s));
         Ok(())
     }
 
@@ -119,7 +176,7 @@ impl Lexer {
         Self::consume_exponent(chars, &mut s);
         let number_len = s.len();
         self.tokens
-            .push(LexerToken::Atom(Span::new(start, number_len), s));
+            .push(LexerToken::Numeric(Span::new(start, number_len), s));
 
         if let Some(&(_, '(')) = chars.peek() {
             self.tokens.push(LexerToken::Operator(
@@ -153,7 +210,7 @@ impl Lexer {
         Self::consume_exponent(chars, &mut s);
         let number_len = s.len();
         self.tokens
-            .push(LexerToken::Atom(Span::new(start, number_len), s));
+            .push(LexerToken::Numeric(Span::new(start, number_len), s));
 
         if let Some(&(_, '(')) = chars.peek() {
             self.tokens.push(LexerToken::Operator(
@@ -188,7 +245,8 @@ impl Lexer {
             }
         }
         let len = s.len();
-        self.tokens.push(LexerToken::Atom(Span::new(start, len), s));
+        self.tokens
+            .push(LexerToken::Identifier(Span::new(start, len), s));
     }
 
     /// Tokenizes an operator, including two-character operators such as
@@ -217,13 +275,13 @@ impl Lexer {
             .push(LexerToken::Operator(Span::new(start, len), s));
     }
 
-    /// Validates the tokens collected so far, returning an error if any atom
-    /// or operator is malformed (e.g. an identifier starting with `_`, a
-    /// number with multiple decimal points, or a standalone `&`/`|`/`=`/`.`).
+    /// Validates the tokens collected so far, returning an error if any `LexerToken` is invalid.
+    /// This includes cases where an identifier starts with `_`, a number has multiple decimal points,
+    /// or a standalone operator is malformed (e.g., `&`, `|`, `=`, or `.`).
     fn validate_tokens(&self, input: &str) -> Result<(), ExpressionError> {
         for token in &self.tokens {
             match token {
-                LexerToken::Atom(index, s) => {
+                LexerToken::Identifier(index, s) => {
                     if s.starts_with('_') {
                         return Err(ExpressionError::new_complex(
                             ExpressionCategory::Lexer,
@@ -232,7 +290,8 @@ impl Lexer {
                             SpanSet::from_span(Span::new(index.start(), s.len())),
                         ));
                     }
-
+                }
+                LexerToken::Numeric(index, s) => {
                     if s.starts_with(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
                         && s.matches('.').count() > 1
                     {
@@ -254,9 +313,11 @@ impl Lexer {
                         ));
                     }
                 }
-                // `EndOfInput` is only ever synthesized on-demand by `next()`/`peek()`
-                // when `self.tokens` is empty; it is never pushed into `self.tokens`.
-                LexerToken::EndOfInput => {}
+                // String literal contents are already validated character-by-character while
+                // they're being tokenized in `tokenize_text`. `EndOfInput` is only ever
+                // synthesized on-demand by `next()`/`peek()` when `self.tokens` is empty; it is
+                // never pushed into `self.tokens`.
+                LexerToken::Text(_, _) | LexerToken::EndOfInput => {}
             }
         }
 
@@ -328,14 +389,14 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 1), "a".to_string()),
+            LexerToken::Identifier(Span::new(0, 1), "a".to_string()),
             LexerToken::Operator(Span::new(2, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(4, 1), "b".to_string()),
+            LexerToken::Identifier(Span::new(4, 1), "b".to_string()),
             LexerToken::Operator(Span::new(6, 1), "*".to_string()),
             LexerToken::Operator(Span::new(8, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(9, 1), "c".to_string()),
+            LexerToken::Identifier(Span::new(9, 1), "c".to_string()),
             LexerToken::Operator(Span::new(11, 1), "-".to_string()),
-            LexerToken::Atom(Span::new(13, 1), "d".to_string()),
+            LexerToken::Identifier(Span::new(13, 1), "d".to_string()),
             LexerToken::Operator(Span::new(14, 1), ")".to_string()),
         ];
 
@@ -354,14 +415,14 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 1), "a".to_string()),
+            LexerToken::Identifier(Span::new(0, 1), "a".to_string()),
             LexerToken::Operator(Span::new(1, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(2, 1), "b".to_string()),
+            LexerToken::Identifier(Span::new(2, 1), "b".to_string()),
             LexerToken::Operator(Span::new(3, 1), "*".to_string()),
             LexerToken::Operator(Span::new(4, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(5, 1), "c".to_string()),
+            LexerToken::Identifier(Span::new(5, 1), "c".to_string()),
             LexerToken::Operator(Span::new(6, 1), "-".to_string()),
-            LexerToken::Atom(Span::new(7, 1), "d".to_string()),
+            LexerToken::Identifier(Span::new(7, 1), "d".to_string()),
             LexerToken::Operator(Span::new(8, 1), ")".to_string()),
         ];
 
@@ -380,14 +441,14 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 6), "g_test".to_string()),
+            LexerToken::Identifier(Span::new(0, 6), "g_test".to_string()),
             LexerToken::Operator(Span::new(7, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(9, 7), "p_apple".to_string()),
+            LexerToken::Identifier(Span::new(9, 7), "p_apple".to_string()),
             LexerToken::Operator(Span::new(17, 1), "*".to_string()),
             LexerToken::Operator(Span::new(19, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(20, 5), "v_one".to_string()),
+            LexerToken::Identifier(Span::new(20, 5), "v_one".to_string()),
             LexerToken::Operator(Span::new(26, 1), "-".to_string()),
-            LexerToken::Atom(Span::new(28, 5), "v_two".to_string()),
+            LexerToken::Identifier(Span::new(28, 5), "v_two".to_string()),
             LexerToken::Operator(Span::new(33, 1), ")".to_string()),
         ];
 
@@ -406,24 +467,24 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 3), "sin".to_string()),
+            LexerToken::Identifier(Span::new(0, 3), "sin".to_string()),
             LexerToken::Operator(Span::new(3, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(4, 7), "p_angle".to_string()),
+            LexerToken::Identifier(Span::new(4, 7), "p_angle".to_string()),
             LexerToken::Operator(Span::new(11, 1), ")".to_string()),
             LexerToken::Operator(Span::new(12, 1), "/".to_string()),
             LexerToken::Operator(Span::new(13, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(14, 7), "v_table".to_string()),
+            LexerToken::Identifier(Span::new(14, 7), "v_table".to_string()),
             LexerToken::Operator(Span::new(21, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(22, 1), "1".to_string()),
+            LexerToken::Numeric(Span::new(22, 1), "1".to_string()),
             LexerToken::Operator(Span::new(23, 1), "]".to_string()),
             LexerToken::Operator(Span::new(24, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(25, 1), "1".to_string()),
+            LexerToken::Numeric(Span::new(25, 1), "1".to_string()),
             LexerToken::Operator(Span::new(26, 1), "]".to_string()),
             LexerToken::Operator(Span::new(27, 1), "^".to_string()),
-            LexerToken::Atom(Span::new(28, 1), "2".to_string()),
+            LexerToken::Numeric(Span::new(28, 1), "2".to_string()),
             LexerToken::Operator(Span::new(29, 1), ")".to_string()),
             LexerToken::Operator(Span::new(31, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(33, 4), "43.5".to_string()),
+            LexerToken::Numeric(Span::new(33, 4), "43.5".to_string()),
             LexerToken::Operator(Span::new(37, 1), "!".to_string()),
         ];
 
@@ -442,21 +503,21 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 8), "p_value1".to_string()),
+            LexerToken::Identifier(Span::new(0, 8), "p_value1".to_string()),
             LexerToken::Operator(Span::new(9, 2), ">=".to_string()),
-            LexerToken::Atom(Span::new(12, 8), "p_value2".to_string()),
+            LexerToken::Identifier(Span::new(12, 8), "p_value2".to_string()),
             LexerToken::Operator(Span::new(21, 2), "&&".to_string()),
-            LexerToken::Atom(Span::new(24, 8), "p_value3".to_string()),
+            LexerToken::Identifier(Span::new(24, 8), "p_value3".to_string()),
             LexerToken::Operator(Span::new(33, 2), "!=".to_string()),
-            LexerToken::Atom(Span::new(36, 8), "p_value4".to_string()),
+            LexerToken::Identifier(Span::new(36, 8), "p_value4".to_string()),
             LexerToken::Operator(Span::new(45, 2), "||".to_string()),
-            LexerToken::Atom(Span::new(48, 8), "p_value1".to_string()),
+            LexerToken::Identifier(Span::new(48, 8), "p_value1".to_string()),
             LexerToken::Operator(Span::new(57, 2), "<=".to_string()),
-            LexerToken::Atom(Span::new(60, 8), "p_value2".to_string()),
+            LexerToken::Identifier(Span::new(60, 8), "p_value2".to_string()),
             LexerToken::Operator(Span::new(69, 2), "||".to_string()),
-            LexerToken::Atom(Span::new(72, 8), "p_value3".to_string()),
+            LexerToken::Identifier(Span::new(72, 8), "p_value3".to_string()),
             LexerToken::Operator(Span::new(81, 2), "==".to_string()),
-            LexerToken::Atom(Span::new(84, 8), "p_value4".to_string()),
+            LexerToken::Identifier(Span::new(84, 8), "p_value4".to_string()),
         ];
 
         for expected in expected_tokens {
@@ -474,20 +535,20 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 5), "p_map".to_string()),
+            LexerToken::Identifier(Span::new(0, 5), "p_map".to_string()),
             LexerToken::Operator(Span::new(5, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(6, 4), "key1".to_string()),
+            LexerToken::Identifier(Span::new(6, 4), "key1".to_string()),
             LexerToken::Operator(Span::new(10, 1), "]".to_string()),
             LexerToken::Operator(Span::new(11, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(12, 5), "item1".to_string()),
+            LexerToken::Identifier(Span::new(12, 5), "item1".to_string()),
             LexerToken::Operator(Span::new(17, 1), "]".to_string()),
             LexerToken::Operator(Span::new(19, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(21, 5), "p_map".to_string()),
+            LexerToken::Identifier(Span::new(21, 5), "p_map".to_string()),
             LexerToken::Operator(Span::new(26, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(27, 4), "key2".to_string()),
+            LexerToken::Identifier(Span::new(27, 4), "key2".to_string()),
             LexerToken::Operator(Span::new(31, 1), "]".to_string()),
             LexerToken::Operator(Span::new(32, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(33, 5), "item2".to_string()),
+            LexerToken::Identifier(Span::new(33, 5), "item2".to_string()),
             LexerToken::Operator(Span::new(38, 1), "]".to_string()),
         ];
 
@@ -506,22 +567,22 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 8), "function".to_string()),
+            LexerToken::Identifier(Span::new(0, 8), "function".to_string()),
             LexerToken::Operator(Span::new(8, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(9, 5), "p_map".to_string()),
+            LexerToken::Identifier(Span::new(9, 5), "p_map".to_string()),
             LexerToken::Operator(Span::new(14, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(15, 4), "key1".to_string()),
+            LexerToken::Identifier(Span::new(15, 4), "key1".to_string()),
             LexerToken::Operator(Span::new(19, 1), "]".to_string()),
             LexerToken::Operator(Span::new(20, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(21, 5), "item1".to_string()),
+            LexerToken::Identifier(Span::new(21, 5), "item1".to_string()),
             LexerToken::Operator(Span::new(26, 1), "]".to_string()),
             LexerToken::Operator(Span::new(27, 1), ",".to_string()),
-            LexerToken::Atom(Span::new(29, 5), "p_map".to_string()),
+            LexerToken::Identifier(Span::new(29, 5), "p_map".to_string()),
             LexerToken::Operator(Span::new(34, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(35, 4), "key2".to_string()),
+            LexerToken::Identifier(Span::new(35, 4), "key2".to_string()),
             LexerToken::Operator(Span::new(39, 1), "]".to_string()),
             LexerToken::Operator(Span::new(40, 1), "[".to_string()),
-            LexerToken::Atom(Span::new(41, 5), "item2".to_string()),
+            LexerToken::Identifier(Span::new(41, 5), "item2".to_string()),
             LexerToken::Operator(Span::new(46, 1), "]".to_string()),
             LexerToken::Operator(Span::new(47, 1), ")".to_string()),
         ];
@@ -541,23 +602,23 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 3), "2.0".to_string()),
-            LexerToken::Atom(Span::new(3, 8), "p_value1".to_string()),
+            LexerToken::Numeric(Span::new(0, 3), "2.0".to_string()),
+            LexerToken::Identifier(Span::new(3, 8), "p_value1".to_string()),
             LexerToken::Operator(Span::new(12, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(14, 3), "5.0".to_string()),
-            LexerToken::Atom(Span::new(17, 8), "p_value2".to_string()),
+            LexerToken::Numeric(Span::new(14, 3), "5.0".to_string()),
+            LexerToken::Identifier(Span::new(17, 8), "p_value2".to_string()),
             LexerToken::Operator(Span::new(26, 1), "*".to_string()),
-            LexerToken::Atom(Span::new(28, 3), "6.0".to_string()),
+            LexerToken::Numeric(Span::new(28, 3), "6.0".to_string()),
             LexerToken::Operator(Span::new(30, 2), "*".to_string()),
             LexerToken::Operator(Span::new(31, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(32, 3), ".87".to_string()),
-            LexerToken::Atom(Span::new(35, 8), "p_value3".to_string()),
+            LexerToken::Numeric(Span::new(32, 3), ".87".to_string()),
+            LexerToken::Identifier(Span::new(35, 8), "p_value3".to_string()),
             LexerToken::Operator(Span::new(44, 1), "-".to_string()),
-            LexerToken::Atom(Span::new(46, 2), "77".to_string()),
-            LexerToken::Atom(Span::new(48, 8), "p_value4".to_string()),
+            LexerToken::Numeric(Span::new(46, 2), "77".to_string()),
+            LexerToken::Identifier(Span::new(48, 8), "p_value4".to_string()),
             LexerToken::Operator(Span::new(56, 1), ")".to_string()),
             LexerToken::Operator(Span::new(58, 1), "/".to_string()),
-            LexerToken::Atom(Span::new(60, 8), "p_value5".to_string()),
+            LexerToken::Identifier(Span::new(60, 8), "p_value5".to_string()),
         ];
 
         for expected in expected_tokens {
@@ -575,15 +636,15 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 1), "5".to_string()),
+            LexerToken::Numeric(Span::new(0, 1), "5".to_string()),
             LexerToken::Operator(Span::new(0, 2), "*".to_string()),
             LexerToken::Operator(Span::new(1, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(2, 2), ".2".to_string()),
+            LexerToken::Numeric(Span::new(2, 2), ".2".to_string()),
             LexerToken::Operator(Span::new(3, 2), "*".to_string()),
             LexerToken::Operator(Span::new(4, 1), "(".to_string()),
-            LexerToken::Atom(Span::new(5, 1), "3".to_string()),
+            LexerToken::Numeric(Span::new(5, 1), "3".to_string()),
             LexerToken::Operator(Span::new(7, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(9, 1), "2".to_string()),
+            LexerToken::Numeric(Span::new(9, 1), "2".to_string()),
             LexerToken::Operator(Span::new(10, 1), ")".to_string()),
             LexerToken::Operator(Span::new(11, 1), ")".to_string()),
         ];
@@ -603,13 +664,13 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 4), "1e10".to_string()),
+            LexerToken::Numeric(Span::new(0, 4), "1e10".to_string()),
             LexerToken::Operator(Span::new(5, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(7, 6), "1.5e-3".to_string()),
+            LexerToken::Numeric(Span::new(7, 6), "1.5e-3".to_string()),
             LexerToken::Operator(Span::new(14, 1), "-".to_string()),
-            LexerToken::Atom(Span::new(16, 5), ".5e+2".to_string()),
+            LexerToken::Numeric(Span::new(16, 5), ".5e+2".to_string()),
             LexerToken::Operator(Span::new(22, 1), "*".to_string()),
-            LexerToken::Atom(Span::new(24, 8), "6.022e23".to_string()),
+            LexerToken::Numeric(Span::new(24, 8), "6.022e23".to_string()),
         ];
 
         for expected in expected_tokens {
@@ -627,11 +688,11 @@ mod tests {
         let mut lexer = Lexer::new(input).unwrap();
 
         let expected_tokens = vec![
-            LexerToken::Atom(Span::new(0, 1), "1".to_string()),
-            LexerToken::Atom(Span::new(1, 1), "e".to_string()),
+            LexerToken::Numeric(Span::new(0, 1), "1".to_string()),
+            LexerToken::Identifier(Span::new(1, 1), "e".to_string()),
             LexerToken::Operator(Span::new(3, 1), "+".to_string()),
-            LexerToken::Atom(Span::new(5, 1), "1".to_string()),
-            LexerToken::Atom(Span::new(6, 7), "e_value".to_string()),
+            LexerToken::Numeric(Span::new(5, 1), "1".to_string()),
+            LexerToken::Identifier(Span::new(6, 7), "e_value".to_string()),
         ];
 
         for expected in expected_tokens {
@@ -650,11 +711,17 @@ mod tests {
 
         // Peek at the first token
         let token = lexer.peek();
-        assert_eq!(token, LexerToken::Atom(Span::new(0, 1), "a".to_string()));
+        assert_eq!(
+            token,
+            LexerToken::Identifier(Span::new(0, 1), "a".to_string())
+        );
 
         // Consume the first token
         let token = lexer.next();
-        assert_eq!(token, LexerToken::Atom(Span::new(0, 1), "a".to_string()));
+        assert_eq!(
+            token,
+            LexerToken::Identifier(Span::new(0, 1), "a".to_string())
+        );
 
         // Peek at the next token
         let token = lexer.peek();
@@ -670,7 +737,7 @@ mod tests {
             let ch = c as u8 as char;
             if !ch.is_numeric()
                 && !ch.is_lowercase()
-                && !"+_-*/()[]<>=!&|%^.,".contains(ch)
+                && !"+_-*/()[]<>=!&|%^.,\"".contains(ch)
                 && !ch.is_whitespace()
             {
                 let input = format!("a + b * (c - d) {ch} e");
@@ -739,6 +806,80 @@ mod tests {
                 format!("Invalid string in expression: '{ch}'")
             );
         }
+    }
+
+    #[test]
+    fn tokenizes_a_simple_string_literal() {
+        let input = "\"hello\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(0, 7), "hello".to_string())
+        );
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn tokenizes_a_path_like_string_literal() {
+        let input = "\"Some/Path-1.txt\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(0, 17), "Some/Path-1.txt".to_string())
+        );
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn tokenizes_an_empty_string_literal() {
+        let input = "\"\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(0, 2), String::new())
+        );
+    }
+
+    #[test]
+    fn string_literal_used_within_a_larger_expression() {
+        let input = "a + \"b\"";
+        let mut lexer = Lexer::new(input).unwrap();
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Identifier(Span::new(0, 1), "a".to_string())
+        );
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Operator(Span::new(2, 1), "+".to_string())
+        );
+        assert_eq!(
+            lexer.next(),
+            LexerToken::Text(Span::new(4, 3), "b".to_string())
+        );
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
+    }
+
+    #[test]
+    fn unterminated_string_literal_returns_an_error() {
+        let input = "\"unterminated";
+        let result = Lexer::new(input);
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_eq!(error.category, ExpressionCategory::Lexer);
+        assert_eq!(error.message, "Unterminated string literal");
+    }
+
+    #[test]
+    fn string_literal_rejects_non_ascii_character() {
+        let input = "\"caf\u{e9}\"";
+        let result = Lexer::new(input);
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_eq!(error.category, ExpressionCategory::Lexer);
+        assert_eq!(
+            error.message,
+            format!("Invalid character in string literal: '{}'", '\u{e9}')
+        );
     }
 
     #[test]

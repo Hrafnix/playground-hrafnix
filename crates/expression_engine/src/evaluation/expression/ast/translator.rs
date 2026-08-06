@@ -6,9 +6,18 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Literal {
+    /// An integer literal (e.g. `42`), which is a constant numeric value rather than a
+    /// variable/field name to be looked up.
     Integer(i64),
+    /// A floating-point literal (e.g. `3.14`), which is a constant numeric value rather than a
+    /// variable/field name to be looked up.
     Float(f64),
-    String(String),
+    /// A bare string literal, which is a variable/field name to be looked up.
+    Identifier(String),
+    /// A quoted string literal (e.g. `"some/path.txt"`), which is a constant text value rather
+    /// than a variable/field name to be looked up.
+    Text(String),
+    /// A boolean literal (`true` or `false`).
     Boolean(bool),
 }
 
@@ -17,7 +26,8 @@ impl fmt::Display for Literal {
         match self {
             Literal::Integer(value) => write!(f, "{value}"),
             Literal::Float(value) => write!(f, "{value}"),
-            Literal::String(value) => write!(f, "{value}"),
+            Literal::Identifier(value) => write!(f, "{value}"),
+            Literal::Text(value) => write!(f, "\"{value}\""),
             Literal::Boolean(value) => write!(f, "{value}"),
         }
     }
@@ -328,27 +338,18 @@ impl Translator {
             .is_some_and(|c| c.is_alphanumeric() || c == '_')
     }
 
-    /// Returns whether `value` looks like a numeric literal (i.e., what the lexer would have
-    /// produced as an `Atom` starting with a digit or a `.`), as opposed to a variable/function
-    /// name.
-    fn is_numeric_literal(value: &str) -> bool {
-        value
-            .chars()
-            .next()
-            .is_some_and(|c| c.is_numeric() || c == '.')
-    }
-
-    /// Translates a `ParserToken::Atom` into either a numeric `Literal` expression (when the
-    /// atom looks like a number) or a `Variable` expression (otherwise).
-    fn translate_atom(span: Span, value: String) -> Result<Expression, ExpressionError> {
-        if !Self::is_numeric_literal(&value) {
-            if let Ok(boolean) = value.parse::<bool>() {
-                return Ok(Expression::Literal(span, Literal::Boolean(boolean)));
-            }
-
-            return Ok(Expression::Literal(span, Literal::String(value)));
+    /// Translates a `ParserToken::Atom` into a `Literal` expression.
+    fn translate_atom(span: Span, value: String) -> Expression {
+        if let Ok(boolean) = value.parse::<bool>() {
+            return Expression::Literal(span, Literal::Boolean(boolean));
         }
 
+        Expression::Literal(span, Literal::Identifier(value))
+    }
+
+    /// Translates a `ParserToken::Numeric` into either an integer or floating-point `Literal`
+    /// expression, depending on whether the numeric value can be parsed as an integer or a float.
+    fn translate_numeric(span: Span, value: &str) -> Result<Expression, ExpressionError> {
         if let Ok(integer) = value.parse::<i64>() {
             return Ok(Expression::Literal(span, Literal::Integer(integer)));
         }
@@ -368,7 +369,9 @@ impl Translator {
         source: &ShareableString,
     ) -> Result<Expression, ExpressionError> {
         match parser_token {
-            ParserToken::Atom(span, value) => Self::translate_atom(span, value),
+            ParserToken::Identifier(span, value) => Ok(Self::translate_atom(span, value)),
+            ParserToken::Numeric(span, value) => Self::translate_numeric(span, value.as_str()),
+            ParserToken::Text(span, value) => Ok(Expression::Literal(span, Literal::Text(value))),
             ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
                 ("+", 1) => Self::translate_token(
                     operands.first().cloned().ok_or_else(|| {
@@ -478,8 +481,8 @@ mod tests {
                 Span::new(0, 0),
                 op.to_string(),
                 vec![
-                    ParserToken::Atom(Span::new(0, 0), "a".to_string()),
-                    ParserToken::Atom(Span::new(0, 0), "b".to_string()),
+                    ParserToken::Identifier(Span::new(0, 0), "a".to_string()),
+                    ParserToken::Identifier(Span::new(0, 0), "b".to_string()),
                 ],
             );
             let err = Translator::translate_token(token, &ShareableString::from(""))
@@ -563,6 +566,40 @@ mod tests {
         assert_eq!(
             translate_str(".87").unwrap(),
             Expression::Literal(Span::new(0, 3), Literal::Float(0.87))
+        );
+    }
+
+    #[test]
+    fn translates_quoted_string_literals() {
+        assert_eq!(
+            translate_str("\"hello/world.txt\"").unwrap(),
+            Expression::Literal(
+                Span::new(0, 17),
+                Literal::Text("hello/world.txt".to_string())
+            )
+        );
+        assert_eq!(translate_str("\"hello\"").unwrap().to_string(), "\"hello\"");
+    }
+
+    #[test]
+    fn quoted_string_literals_are_not_treated_as_variable_names() {
+        // Unlike a bare identifier (which is treated as a variable name), a quoted string is always a
+        // literal `Text` value, never a `String` used for variable lookup.
+        assert_eq!(
+            translate_str("\"v_foo\"").unwrap(),
+            Expression::Literal(Span::new(0, 7), Literal::Text("v_foo".to_string()))
+        );
+        assert_eq!(
+            translate_str("v_foo").unwrap(),
+            Expression::Literal(Span::new(0, 5), Literal::Identifier("v_foo".to_string()))
+        );
+    }
+
+    #[test]
+    fn translates_expressions_mixing_quoted_strings_and_operators() {
+        assert_eq!(
+            translate_str("\"a\" + \"b\"").unwrap().to_string(),
+            "(\"a\" + \"b\")"
         );
     }
 
