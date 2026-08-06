@@ -247,13 +247,13 @@ impl ExpressionEngine {
 
     /// Returns a reference to the global computed data of the engine.
     #[must_use]
-    pub fn globals(&self) -> &GlobalObjectComputedData {
+    pub const fn globals(&self) -> &GlobalObjectComputedData {
         &self.globals
     }
 
     /// Returns a reference to the registered function definitions of the engine.
     #[must_use]
-    pub fn functions(&self) -> &FunctionDefinitions {
+    pub const fn functions(&self) -> &FunctionDefinitions {
         &self.functions
     }
 }

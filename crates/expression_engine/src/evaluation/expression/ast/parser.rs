@@ -70,11 +70,11 @@ impl Parser {
         }
     }
 
-    pub(crate) fn get_token(&self) -> &ParserToken {
+    pub(crate) const fn get_token(&self) -> &ParserToken {
         &self.token
     }
 
-    pub(crate) fn get_source(&self) -> &ShareableString {
+    pub(crate) const fn get_source(&self) -> &ShareableString {
         &self.source
     }
 

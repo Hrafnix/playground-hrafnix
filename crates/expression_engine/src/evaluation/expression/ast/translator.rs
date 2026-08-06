@@ -149,7 +149,7 @@ impl fmt::Display for Expression {
 }
 
 /// Returns the span associated with the given expression.
-pub(crate) fn expression_span(expression: &Expression) -> Span {
+pub(crate) const fn expression_span(expression: &Expression) -> Span {
     match expression {
         Expression::Literal(span, _)
         | Expression::BinaryOperation { span, .. }
@@ -173,7 +173,7 @@ impl Translator {
         Self::translate_token(parser_token, &source).map(|expression| Self { expression })
     }
 
-    pub(crate) fn expression(&self) -> &Expression {
+    pub(crate) const fn expression(&self) -> &Expression {
         &self.expression
     }
 

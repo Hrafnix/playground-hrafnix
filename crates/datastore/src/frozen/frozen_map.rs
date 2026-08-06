@@ -32,7 +32,7 @@ pub enum MapItemFrozen {
 impl MapItemFrozen {
     /// Returns the string value if this item is a string value.
     #[must_use]
-    pub fn get_string(&self) -> Option<&StringFrozen> {
+    pub const fn get_string(&self) -> Option<&StringFrozen> {
         match self {
             MapItemFrozen::String(string) => Some(string),
             _ => None,
@@ -41,7 +41,7 @@ impl MapItemFrozen {
 
     /// Returns the table value if this item is a table value.
     #[must_use]
-    pub fn get_table(&self) -> Option<&TableFrozen> {
+    pub const fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             MapItemFrozen::Table(table) => Some(table),
             _ => None,
@@ -68,7 +68,7 @@ impl MapItemFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the item.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         match self {
             MapItemFrozen::Boolean(boolean) => boolean.hash(),
             MapItemFrozen::Choice(choice) => choice.hash(),
@@ -264,7 +264,7 @@ impl MapEntryFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the entry.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -448,7 +448,7 @@ impl MapFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the map.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -464,7 +464,7 @@ impl MapFrozen {
 
     /// Returns a reference to the map definition.
     #[must_use]
-    pub fn definition(&self) -> &MapDefinition {
+    pub const fn definition(&self) -> &MapDefinition {
         &self.definition
     }
 

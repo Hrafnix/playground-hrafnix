@@ -109,7 +109,7 @@ impl TableFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the table.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -121,7 +121,7 @@ impl TableFrozen {
 
     /// Returns a reference to the table definition.
     #[must_use]
-    pub fn definition(&self) -> &TableDefinition {
+    pub const fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
@@ -139,7 +139,7 @@ impl TableFrozen {
 
     /// Returns a reference to the parameter value for the table.
     #[must_use]
-    pub fn parameter(&self) -> &ShareableString {
+    pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
 }

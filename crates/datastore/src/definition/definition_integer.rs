@@ -43,7 +43,7 @@ pub struct IntegerConstraint {
 impl IntegerConstraint {
     /// Creates a new `IntegerConstraint` with no constraint.
     #[must_use]
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self {
             constraint_enum: IntegerConstraintEnum::None,
         }
@@ -51,7 +51,7 @@ impl IntegerConstraint {
 
     /// Creates a new `IntegerConstraint` with a minimum value constraint.
     #[must_use]
-    pub fn min(min: i64, inclusive: bool) -> Self {
+    pub const fn min(min: i64, inclusive: bool) -> Self {
         Self {
             constraint_enum: IntegerConstraintEnum::Min { min, inclusive },
         }
@@ -59,7 +59,7 @@ impl IntegerConstraint {
 
     /// Creates a new `IntegerConstraint` with a maximum value constraint.
     #[must_use]
-    pub fn max(max: i64, inclusive: bool) -> Self {
+    pub const fn max(max: i64, inclusive: bool) -> Self {
         Self {
             constraint_enum: IntegerConstraintEnum::Max { max, inclusive },
         }
@@ -196,7 +196,7 @@ impl IntegerDefinition {
 
     /// Returns a reference to the constraint.
     #[must_use]
-    pub fn constraint_ref(&self) -> &IntegerConstraintEnum {
+    pub const fn constraint_ref(&self) -> &IntegerConstraintEnum {
         &self.constraint.constraint_enum
     }
 
@@ -218,7 +218,7 @@ impl IntegerDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -230,7 +230,7 @@ impl IntegerDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }

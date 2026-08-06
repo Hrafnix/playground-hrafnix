@@ -35,7 +35,7 @@ impl BooleanEditable {
 
     /// Returns a reference to the choice definition.
     #[must_use]
-    pub fn definition(&self) -> &BooleanDefinition {
+    pub const fn definition(&self) -> &BooleanDefinition {
         &self.definition
     }
 

@@ -35,7 +35,7 @@ impl IntegerEditable {
 
     /// Returns a reference to the number definition.
     #[must_use]
-    pub fn definition(&self) -> &IntegerDefinition {
+    pub const fn definition(&self) -> &IntegerDefinition {
         &self.definition
     }
 

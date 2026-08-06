@@ -80,13 +80,13 @@ impl StringFrozen {
 
     /// Returns a reference to the string definition.
     #[must_use]
-    pub fn definition(&self) -> &StringDefinition {
+    pub const fn definition(&self) -> &StringDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 }

@@ -35,7 +35,7 @@ impl FileEditable {
 
     /// Returns a reference to the file definition.
     #[must_use]
-    pub fn definition(&self) -> &FileDefinition {
+    pub const fn definition(&self) -> &FileDefinition {
         &self.definition
     }
 

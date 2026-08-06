@@ -68,19 +68,19 @@ impl FunctionDefinition {
 
     /// Returns the name of the function, as used in expressions.
     #[must_use]
-    pub fn name(&self) -> &ShareableString {
+    pub const fn name(&self) -> &ShareableString {
         &self.name
     }
 
     /// Returns a human-readable description of the function.
     #[must_use]
-    pub fn description(&self) -> &ShareableString {
+    pub const fn description(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the parameter constraints for the function.
     #[must_use]
-    pub fn parameter_constraints(&self) -> &ArgumentCount {
+    pub const fn parameter_constraints(&self) -> &ArgumentCount {
         &self.argument_count
     }
 
@@ -128,7 +128,7 @@ pub struct FunctionDefinitions {
 
 impl FunctionDefinitions {
     /// Creates a new, empty registry.
-    pub(crate) fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             definitions: BTreeMap::new(),
         }

@@ -62,7 +62,7 @@ impl TableEditable {
 
     /// Returns a reference to the table definition.
     #[must_use]
-    pub fn definition(&self) -> &TableDefinition {
+    pub const fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
@@ -140,7 +140,7 @@ impl TableEditable {
 
     /// Returns a reference to the parameter value for the table.
     #[must_use]
-    pub fn parameter(&self) -> &ShareableString {
+    pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
 }

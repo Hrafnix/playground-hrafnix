@@ -83,13 +83,13 @@ impl StorePath {
 
     /// Returns the object key part of the path.
     #[must_use]
-    pub fn object_key(&self) -> &StoreKey {
+    pub const fn object_key(&self) -> &StoreKey {
         &self.object_key
     }
 
     /// Returns the segments of the path after the object key.
     #[must_use]
-    pub fn segments(&self) -> &Vec<StoreKey> {
+    pub const fn segments(&self) -> &Vec<StoreKey> {
         &self.segments
     }
 

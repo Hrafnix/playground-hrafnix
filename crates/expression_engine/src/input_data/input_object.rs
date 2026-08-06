@@ -162,7 +162,7 @@ impl GlobalObjectInputData {
 
     /// Returns a reference to the underlying `ObjectInputData`.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }
@@ -187,7 +187,7 @@ impl ParameterObjectInputData {
 
     /// Returns a reference to the underlying `ObjectInputData`.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }
@@ -212,7 +212,7 @@ impl VariableObjectInputData {
 
     /// Returns a reference to the underlying `ObjectInputData`.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }

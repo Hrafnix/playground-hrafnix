@@ -64,7 +64,7 @@ impl SharedStringTranslationMap {
 
     /// Returns the fallback language.
     #[must_use]
-    pub fn get_fallback_language(&self) -> &ShareableString {
+    pub const fn get_fallback_language(&self) -> &ShareableString {
         &self.fallback_language
     }
 
@@ -131,7 +131,7 @@ pub struct TranslateMessage {
 impl TranslateMessage {
     /// Creates a new `TranslateMessage` with the given message key and parameters.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         message_key: ShareableString,
         message_params: HashMap<ShareableString, ShareableString>,
     ) -> Self {

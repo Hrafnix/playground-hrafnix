@@ -29,7 +29,7 @@ impl StringEditable {
 
     /// Creates a new `StringEditable` instance with a specified value.
     #[must_use]
-    pub fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
+    pub const fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
         Self { definition, value }
     }
 
@@ -41,7 +41,7 @@ impl StringEditable {
 
     /// Returns a reference to the string definition.
     #[must_use]
-    pub fn definition(&self) -> &StringDefinition {
+    pub const fn definition(&self) -> &StringDefinition {
         &self.definition
     }
 

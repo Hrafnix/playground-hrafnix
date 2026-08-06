@@ -12,19 +12,19 @@ pub struct BasicInputData {
 }
 
 impl BasicInputData {
-    pub(crate) fn new(definition: BasicDefinition, data: ShareableString) -> Self {
+    pub(crate) const fn new(definition: BasicDefinition, data: ShareableString) -> Self {
         Self { definition, data }
     }
 
     /// Returns a reference to the definition of the basic input data.
     #[must_use]
-    pub fn definition(&self) -> &BasicDefinition {
+    pub const fn definition(&self) -> &BasicDefinition {
         &self.definition
     }
 
     /// Returns a reference to the data of the basic input data.
     #[must_use]
-    pub fn data(&self) -> &ShareableString {
+    pub const fn data(&self) -> &ShareableString {
         &self.data
     }
 

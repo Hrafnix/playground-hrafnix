@@ -35,7 +35,7 @@ impl ChoiceEditable {
 
     /// Returns a reference to the choice definition.
     #[must_use]
-    pub fn definition(&self) -> &ChoiceDefinition {
+    pub const fn definition(&self) -> &ChoiceDefinition {
         &self.definition
     }
 

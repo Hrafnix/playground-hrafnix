@@ -52,7 +52,7 @@ impl GlobalObjectEditable {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &GlobalObjectDefinition {
+    pub const fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }
 }

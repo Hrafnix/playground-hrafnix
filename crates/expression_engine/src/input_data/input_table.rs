@@ -10,7 +10,7 @@ pub struct TableInputData {
 }
 
 impl TableInputData {
-    pub(crate) fn new(
+    pub(crate) const fn new(
         definition: TableDefinition,
         parameter: ShareableString,
         data: Vec<Vec<ShareableString>>,
@@ -24,7 +24,7 @@ impl TableInputData {
 
     /// Returns a reference to the definition of the table input data.
     #[must_use]
-    pub fn definition(&self) -> &TableDefinition {
+    pub const fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
@@ -39,7 +39,7 @@ impl TableInputData {
     /// When non-empty, this name is bound to the current row index while each
     /// row's cell expressions are evaluated.
     #[must_use]
-    pub fn parameter(&self) -> &ShareableString {
+    pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
 

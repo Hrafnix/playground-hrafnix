@@ -52,7 +52,7 @@ impl VariableObjectEditable {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &VariableObjectDefinition {
+    pub const fn definition(&self) -> &VariableObjectDefinition {
         &self.definition
     }
 }

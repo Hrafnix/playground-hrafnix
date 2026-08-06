@@ -10,13 +10,13 @@ pub struct GlobalObjectComputedData {
 }
 
 impl GlobalObjectComputedData {
-    pub(crate) fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
+    pub(crate) const fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
         Self { data }
     }
 
     /// Returns a reference to the data of the global object computed data.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
         &self.data
     }
 
@@ -49,13 +49,13 @@ pub struct ParameterObjectComputedData {
 }
 
 impl ParameterObjectComputedData {
-    pub(crate) fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
+    pub(crate) const fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
         Self { data }
     }
 
     /// Returns a reference to the data of the parameter object computed data.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
         &self.data
     }
 
@@ -78,13 +78,13 @@ pub struct VariableObjectComputedData {
 }
 
 impl VariableObjectComputedData {
-    pub(crate) fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
+    pub(crate) const fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
         Self { data }
     }
 
     /// Returns a reference to the data of the variable object computed data.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ComputedItem> {
         &self.data
     }
 

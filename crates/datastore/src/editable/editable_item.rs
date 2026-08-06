@@ -76,7 +76,7 @@ impl ItemEditable {
 
     /// Returns the boolean value if this parameter is a boolean parameter.
     #[must_use]
-    pub fn get_boolean(&self) -> Option<&BooleanEditable> {
+    pub const fn get_boolean(&self) -> Option<&BooleanEditable> {
         match self {
             Self::Boolean(b) => Some(b),
             _ => None,
@@ -85,7 +85,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the boolean value if this parameter is a boolean parameter.
     #[must_use]
-    pub fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
+    pub const fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
         match self {
             Self::Boolean(b) => Some(b),
             _ => None,
@@ -103,7 +103,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the choice value if this parameter is a choice parameter.
     #[must_use]
-    pub fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
+    pub const fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
         match self {
             Self::Choice(c) => Some(c),
             _ => None,
@@ -112,7 +112,7 @@ impl ItemEditable {
 
     /// Returns the file value if this parameter is a file parameter.
     #[must_use]
-    pub fn get_file(&self) -> Option<&FileEditable> {
+    pub const fn get_file(&self) -> Option<&FileEditable> {
         match self {
             Self::File(f) => Some(f),
             _ => None,
@@ -121,7 +121,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the file value if this parameter is a file parameter.
     #[must_use]
-    pub fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
+    pub const fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
         match self {
             Self::File(f) => Some(f),
             _ => None,
@@ -130,7 +130,7 @@ impl ItemEditable {
 
     /// Returns the integer value if this parameter is an integer parameter.
     #[must_use]
-    pub fn get_integer(&self) -> Option<&IntegerEditable> {
+    pub const fn get_integer(&self) -> Option<&IntegerEditable> {
         match self {
             Self::Integer(i) => Some(i),
             _ => None,
@@ -139,7 +139,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the integer value if this parameter is an integer parameter.
     #[must_use]
-    pub fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
+    pub const fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
         match self {
             Self::Integer(i) => Some(i),
             _ => None,
@@ -148,7 +148,7 @@ impl ItemEditable {
 
     /// Returns the map value if this parameter is a map parameter.
     #[must_use]
-    pub fn get_map(&self) -> Option<&MapEditable> {
+    pub const fn get_map(&self) -> Option<&MapEditable> {
         match self {
             Self::Map(m) => Some(m),
             _ => None,
@@ -157,7 +157,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the map value if this parameter is a map parameter.
     #[must_use]
-    pub fn get_mut_map(&mut self) -> Option<&mut MapEditable> {
+    pub const fn get_mut_map(&mut self) -> Option<&mut MapEditable> {
         match self {
             Self::Map(m) => Some(m),
             _ => None,
@@ -166,7 +166,7 @@ impl ItemEditable {
 
     /// Returns the number value if this parameter is a number parameter.
     #[must_use]
-    pub fn get_number(&self) -> Option<&NumberEditable> {
+    pub const fn get_number(&self) -> Option<&NumberEditable> {
         match self {
             Self::Number(n) => Some(n),
             _ => None,
@@ -175,7 +175,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the number value if this parameter is a number parameter.
     #[must_use]
-    pub fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
+    pub const fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
         match self {
             Self::Number(n) => Some(n),
             _ => None,
@@ -184,7 +184,7 @@ impl ItemEditable {
 
     /// Returns the string value if this parameter is a string parameter.
     #[must_use]
-    pub fn get_string(&self) -> Option<&StringEditable> {
+    pub const fn get_string(&self) -> Option<&StringEditable> {
         match self {
             Self::String(s) => Some(s),
             _ => None,
@@ -193,7 +193,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the string value if this parameter is a string parameter.
     #[must_use]
-    pub fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
+    pub const fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
         match self {
             Self::String(s) => Some(s),
             _ => None,
@@ -202,7 +202,7 @@ impl ItemEditable {
 
     /// Returns the table value if this parameter is a table parameter.
     #[must_use]
-    pub fn get_table(&self) -> Option<&TableEditable> {
+    pub const fn get_table(&self) -> Option<&TableEditable> {
         match self {
             Self::Table(t) => Some(t),
             _ => None,
@@ -211,7 +211,7 @@ impl ItemEditable {
 
     /// Returns a mutable reference to the table value if this parameter is a table parameter.
     #[must_use]
-    pub fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
+    pub const fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
         match self {
             Self::Table(t) => Some(t),
             _ => None,

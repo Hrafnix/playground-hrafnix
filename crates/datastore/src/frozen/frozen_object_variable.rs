@@ -142,7 +142,7 @@ impl VariableObjectFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -158,7 +158,7 @@ impl VariableObjectFrozen {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &VariableObjectDefinition {
+    pub const fn definition(&self) -> &VariableObjectDefinition {
         &self.definition
     }
 }

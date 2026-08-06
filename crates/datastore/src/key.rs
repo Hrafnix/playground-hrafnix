@@ -279,7 +279,7 @@ impl StoreKey {
 
     /// Creates a new `StoreKey` from a `ShareableString` without validating the key.
     #[expect(unsafe_code)]
-    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+    pub(crate) const unsafe fn new_unsafe(key: ShareableString) -> Self {
         Self { key }
     }
 
@@ -291,7 +291,7 @@ impl StoreKey {
 
     /// Returns the underlying `ShareableString`.
     #[must_use]
-    pub fn as_shareable_string(&self) -> &ShareableString {
+    pub const fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
@@ -308,7 +308,7 @@ impl StoreKey {
 
     /// Returns the BLAKE3 hash of the key.
     #[must_use]
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
+    pub const fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
 
@@ -561,7 +561,7 @@ impl GlobalKey {
 
     /// Creates a new `GlobalKey` from a `ShareableString` without validating the key.
     #[expect(unsafe_code)]
-    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+    pub(crate) const unsafe fn new_unsafe(key: ShareableString) -> Self {
         Self { key }
     }
 
@@ -573,7 +573,7 @@ impl GlobalKey {
 
     /// Returns the underlying `ShareableString`.
     #[must_use]
-    pub fn as_shareable_string(&self) -> &ShareableString {
+    pub const fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
@@ -590,7 +590,7 @@ impl GlobalKey {
 
     /// Returns the BLAKE3 hash of the key.
     #[must_use]
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
+    pub const fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
 }
@@ -861,7 +861,7 @@ impl ParameterKey {
 
     /// Creates a new `ParameterKey` from a `ShareableString` without validating the key.
     #[expect(unsafe_code)]
-    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+    pub(crate) const unsafe fn new_unsafe(key: ShareableString) -> Self {
         ParameterKey { key }
     }
 
@@ -873,7 +873,7 @@ impl ParameterKey {
 
     /// Returns the underlying `ShareableString`.
     #[must_use]
-    pub fn as_shareable_string(&self) -> &ShareableString {
+    pub const fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
@@ -890,7 +890,7 @@ impl ParameterKey {
 
     /// Returns the BLAKE3 hash of the key.
     #[must_use]
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
+    pub const fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
 }
@@ -1161,7 +1161,7 @@ impl VariableKey {
 
     /// Creates a new `VariableKey` from a `ShareableString` without validating the key.
     #[expect(unsafe_code)]
-    pub(crate) unsafe fn new_unsafe(key: ShareableString) -> Self {
+    pub(crate) const unsafe fn new_unsafe(key: ShareableString) -> Self {
         Self { key }
     }
 
@@ -1173,7 +1173,7 @@ impl VariableKey {
 
     /// Returns the underlying `ShareableString`.
     #[must_use]
-    pub fn as_shareable_string(&self) -> &ShareableString {
+    pub const fn as_shareable_string(&self) -> &ShareableString {
         &self.key
     }
 
@@ -1190,7 +1190,7 @@ impl VariableKey {
 
     /// Returns the BLAKE3 hash of the key.
     #[must_use]
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
+    pub const fn current_blake3_hash(&self) -> [u8; 32] {
         self.key.current_blake3_hash()
     }
 }

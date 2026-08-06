@@ -33,7 +33,7 @@ impl ShareableString {
 
     /// Returns the precomputed BLAKE3 hash of the string.
     #[must_use]
-    pub fn current_blake3_hash(&self) -> [u8; 32] {
+    pub const fn current_blake3_hash(&self) -> [u8; 32] {
         self.blake3_hash
     }
 
@@ -45,7 +45,7 @@ impl ShareableString {
 
     /// Returns a reference to the underlying `Arc<str>`.
     #[must_use]
-    pub fn as_arc(&self) -> &Arc<str> {
+    pub const fn as_arc(&self) -> &Arc<str> {
         &self.data
     }
 

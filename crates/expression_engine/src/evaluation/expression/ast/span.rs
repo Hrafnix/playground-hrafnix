@@ -14,11 +14,11 @@ impl Span {
         }
     }
 
-    pub(crate) fn start(&self) -> usize {
+    pub(crate) const fn start(&self) -> usize {
         self.start
     }
 
-    pub(crate) fn end(&self) -> usize {
+    pub(crate) const fn end(&self) -> usize {
         self.start.saturating_add(self.size)
     }
 
@@ -30,7 +30,7 @@ impl Span {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn overlaps(&self, other: &Span) -> bool {
+    pub(crate) const fn overlaps(&self, other: &Span) -> bool {
         self.start < other.end() && other.start < self.end()
     }
 }
@@ -47,7 +47,7 @@ pub(crate) struct SpanSet {
 }
 
 impl SpanSet {
-    pub(crate) fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             indices: Vec::new(),
         }

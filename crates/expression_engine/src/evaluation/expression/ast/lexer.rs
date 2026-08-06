@@ -49,7 +49,7 @@ impl Lexer {
     }
 
     /// Returns the original expression text that this lexer tokenized.
-    pub(crate) fn source(&self) -> &ShareableString {
+    pub(crate) const fn source(&self) -> &ShareableString {
         &self.source
     }
 
@@ -103,7 +103,7 @@ impl Lexer {
 
     /// Returns whether `c` is allowed inside a quoted string literal: ASCII letters, digits,
     /// underscore, dash, dot, `/`, and space (i.e. typical filesystem path characters).
-    fn is_valid_string_char(c: char) -> bool {
+    const fn is_valid_string_char(c: char) -> bool {
         c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/' | ' ')
     }
 

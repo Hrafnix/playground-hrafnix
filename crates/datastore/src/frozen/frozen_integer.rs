@@ -80,13 +80,13 @@ impl IntegerFrozen {
 
     /// Returns a reference to the integer definition.
     #[must_use]
-    pub fn definition(&self) -> &IntegerDefinition {
+    pub const fn definition(&self) -> &IntegerDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 }

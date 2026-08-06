@@ -64,7 +64,7 @@ impl MapItemEditable {
 
     /// Returns the boolean value if this item is a boolean value.
     #[must_use]
-    pub fn get_boolean(&self) -> Option<&BooleanEditable> {
+    pub const fn get_boolean(&self) -> Option<&BooleanEditable> {
         match self {
             MapItemEditable::Boolean(boolean) => Some(boolean),
             _ => None,
@@ -73,7 +73,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the boolean value if this item is a boolean value.
     #[must_use]
-    pub fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
+    pub const fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
         match self {
             MapItemEditable::Boolean(boolean) => Some(boolean),
             _ => None,
@@ -82,7 +82,7 @@ impl MapItemEditable {
 
     /// Returns the choice value if this item is a choice value.
     #[must_use]
-    pub fn get_choice(&self) -> Option<&ChoiceEditable> {
+    pub const fn get_choice(&self) -> Option<&ChoiceEditable> {
         match self {
             MapItemEditable::Choice(choice) => Some(choice),
             _ => None,
@@ -91,7 +91,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the choice value if this item is a choice value.
     #[must_use]
-    pub fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
+    pub const fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
         match self {
             MapItemEditable::Choice(choice) => Some(choice),
             _ => None,
@@ -100,7 +100,7 @@ impl MapItemEditable {
 
     /// Returns the file value if this item is a file value.
     #[must_use]
-    pub fn get_file(&self) -> Option<&FileEditable> {
+    pub const fn get_file(&self) -> Option<&FileEditable> {
         match self {
             MapItemEditable::File(file) => Some(file),
             _ => None,
@@ -109,7 +109,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the file value if this item is a file value.
     #[must_use]
-    pub fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
+    pub const fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
         match self {
             MapItemEditable::File(file) => Some(file),
             _ => None,
@@ -118,7 +118,7 @@ impl MapItemEditable {
 
     /// Returns the integer value if this item is an integer value.
     #[must_use]
-    pub fn get_integer(&self) -> Option<&IntegerEditable> {
+    pub const fn get_integer(&self) -> Option<&IntegerEditable> {
         match self {
             MapItemEditable::Integer(integer) => Some(integer),
             _ => None,
@@ -127,7 +127,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the integer value if this item is an integer value.
     #[must_use]
-    pub fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
+    pub const fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
         match self {
             MapItemEditable::Integer(integer) => Some(integer),
             _ => None,
@@ -136,7 +136,7 @@ impl MapItemEditable {
 
     /// Returns the number value if this item is a number value.
     #[must_use]
-    pub fn get_number(&self) -> Option<&NumberEditable> {
+    pub const fn get_number(&self) -> Option<&NumberEditable> {
         match self {
             MapItemEditable::Number(number) => Some(number),
             _ => None,
@@ -145,7 +145,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the number value if this item is a number value.
     #[must_use]
-    pub fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
+    pub const fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
         match self {
             MapItemEditable::Number(number) => Some(number),
             _ => None,
@@ -154,7 +154,7 @@ impl MapItemEditable {
 
     /// Returns the string value if this item is a string value.
     #[must_use]
-    pub fn get_string(&self) -> Option<&StringEditable> {
+    pub const fn get_string(&self) -> Option<&StringEditable> {
         match self {
             MapItemEditable::String(string) => Some(string),
             _ => None,
@@ -163,7 +163,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the string value if this item is a string value.
     #[must_use]
-    pub fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
+    pub const fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
         match self {
             MapItemEditable::String(string) => Some(string),
             _ => None,
@@ -172,7 +172,7 @@ impl MapItemEditable {
 
     /// Returns the table value if this item is a table value.
     #[must_use]
-    pub fn get_table(&self) -> Option<&TableEditable> {
+    pub const fn get_table(&self) -> Option<&TableEditable> {
         match self {
             MapItemEditable::Table(table) => Some(table),
             _ => None,
@@ -181,7 +181,7 @@ impl MapItemEditable {
 
     /// Returns a mutable reference to the table value if this item is a table value.
     #[must_use]
-    pub fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
+    pub const fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
         match self {
             MapItemEditable::Table(table) => Some(table),
             _ => None,
@@ -399,7 +399,7 @@ impl MapEditable {
 
     /// Returns a reference to the map definition.
     #[must_use]
-    pub fn definition(&self) -> &MapDefinition {
+    pub const fn definition(&self) -> &MapDefinition {
         &self.definition
     }
 

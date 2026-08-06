@@ -43,7 +43,7 @@ pub struct NumberConstraint {
 impl NumberConstraint {
     /// Creates a new `NumberConstraint` with no constraint.
     #[must_use]
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self {
             constraint_enum: NumberConstraintEnum::None,
         }
@@ -51,7 +51,7 @@ impl NumberConstraint {
 
     /// Creates a new `NumberConstraint` with a minimum value constraint.
     #[must_use]
-    pub fn min(min: f64, inclusive: bool) -> Self {
+    pub const fn min(min: f64, inclusive: bool) -> Self {
         Self {
             constraint_enum: NumberConstraintEnum::Min { min, inclusive },
         }
@@ -59,7 +59,7 @@ impl NumberConstraint {
 
     /// Creates a new `NumberConstraint` with a maximum value constraint.
     #[must_use]
-    pub fn max(max: f64, inclusive: bool) -> Self {
+    pub const fn max(max: f64, inclusive: bool) -> Self {
         Self {
             constraint_enum: NumberConstraintEnum::Max { max, inclusive },
         }
@@ -204,7 +204,7 @@ impl NumberDefinition {
 
     /// Returns a reference to the constraint.
     #[must_use]
-    pub fn constraint_ref(&self) -> &NumberConstraintEnum {
+    pub const fn constraint_ref(&self) -> &NumberConstraintEnum {
         &self.constraint.constraint_enum
     }
 
@@ -226,7 +226,7 @@ impl NumberDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -238,7 +238,7 @@ impl NumberDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }

@@ -45,7 +45,7 @@ impl ItemFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the parameter.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         match self {
             Self::Boolean(b) => b.hash(),
             Self::Choice(c) => c.hash(),
@@ -69,7 +69,7 @@ impl ItemFrozen {
 
     /// Returns the file value if this parameter is a file parameter.
     #[must_use]
-    pub fn get_file(&self) -> Option<&FileFrozen> {
+    pub const fn get_file(&self) -> Option<&FileFrozen> {
         match self {
             Self::File(f) => Some(f),
             _ => None,
@@ -78,7 +78,7 @@ impl ItemFrozen {
 
     /// Returns the map value if this parameter is a map parameter.
     #[must_use]
-    pub fn get_map(&self) -> Option<&MapFrozen> {
+    pub const fn get_map(&self) -> Option<&MapFrozen> {
         match self {
             Self::Map(m) => Some(m),
             _ => None,
@@ -87,7 +87,7 @@ impl ItemFrozen {
 
     /// Returns the number value if this parameter is a number parameter.
     #[must_use]
-    pub fn get_number(&self) -> Option<&NumberFrozen> {
+    pub const fn get_number(&self) -> Option<&NumberFrozen> {
         match self {
             Self::Number(n) => Some(n),
             _ => None,
@@ -96,7 +96,7 @@ impl ItemFrozen {
 
     /// Returns the string value if this parameter is a string parameter.
     #[must_use]
-    pub fn get_string(&self) -> Option<&StringFrozen> {
+    pub const fn get_string(&self) -> Option<&StringFrozen> {
         match self {
             Self::String(s) => Some(s),
             _ => None,
@@ -105,7 +105,7 @@ impl ItemFrozen {
 
     /// Returns the table value if this parameter is a table parameter.
     #[must_use]
-    pub fn get_table(&self) -> Option<&TableFrozen> {
+    pub const fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             Self::Table(t) => Some(t),
             _ => None,

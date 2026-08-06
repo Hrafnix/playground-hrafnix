@@ -53,13 +53,13 @@ impl FileDefinition {
 
     /// Returns a reference to the extension filter.
     #[must_use]
-    pub fn extension_filter_ref(&self) -> &ShareableString {
+    pub const fn extension_filter_ref(&self) -> &ShareableString {
         &self.extension_filter
     }
 
     /// Returns whether the file should be bundled on archive.
     #[must_use]
-    pub fn bundle_on_archive(&self) -> bool {
+    pub const fn bundle_on_archive(&self) -> bool {
         self.bundle_on_archive
     }
 
@@ -82,7 +82,7 @@ impl FileDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -94,7 +94,7 @@ impl FileDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }

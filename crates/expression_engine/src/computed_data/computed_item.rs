@@ -9,7 +9,7 @@ pub struct ComputedTable {
 }
 
 impl ComputedTable {
-    pub(crate) fn new(keys: Vec<ShareableString>, rows: Vec<Vec<f64>>) -> Self {
+    pub(crate) const fn new(keys: Vec<ShareableString>, rows: Vec<Vec<f64>>) -> Self {
         Self { keys, rows }
     }
 

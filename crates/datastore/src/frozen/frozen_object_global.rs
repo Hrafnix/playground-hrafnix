@@ -142,7 +142,7 @@ impl GlobalObjectFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -158,7 +158,7 @@ impl GlobalObjectFrozen {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &GlobalObjectDefinition {
+    pub const fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }
 }

@@ -80,13 +80,13 @@ impl ChoiceFrozen {
 
     /// Returns a reference to the choice definition.
     #[must_use]
-    pub fn definition(&self) -> &ChoiceDefinition {
+    pub const fn definition(&self) -> &ChoiceDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 }
