@@ -477,7 +477,7 @@ fn evaluate_index_operation(
         };
 
         return match index_2 {
-            ComputedItem::String(s) => {
+            ComputedItem::Identifier(s) | ComputedItem::String(s) => {
                 if let Some(value) = table.get_cell_by_name(row_index, s) {
                     Ok(ComputedItem::Float(value))
                 } else {
@@ -621,6 +621,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_),
                     ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
@@ -629,6 +630,7 @@ fn evaluate_expression(
                     ComputedItem::File(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
@@ -637,6 +639,17 @@ fn evaluate_expression(
                     ComputedItem::Float(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_),
+                )
+                | (
+                    ComputedItem::Identifier(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
@@ -646,6 +659,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_),
                 )
@@ -655,6 +669,7 @@ fn evaluate_expression(
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::Table(_),
                 )
                 | (
@@ -663,6 +678,7 @@ fn evaluate_expression(
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
+                    | ComputedItem::Identifier(_)
                     | ComputedItem::String(_),
                 ) => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
