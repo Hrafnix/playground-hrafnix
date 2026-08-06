@@ -6,10 +6,18 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Literal {
+    /// An integer literal (e.g. `42`), which is a constant numeric value rather than a
+    /// variable/field name to be looked up.
     Integer(i64),
+    /// A floating-point literal (e.g. `3.14`), which is a constant numeric value rather than a
+    /// variable/field name to be looked up.
     Float(f64),
+    /// A bare string literal, which is a variable/field name to be looked up.
     Identifier(String),
+    /// A quoted string literal (e.g. `"some/path.txt"`), which is a constant text value rather
+    /// than a variable/field name to be looked up.
     Text(String),
+    /// A boolean literal (`true` or `false`).
     Boolean(bool),
 }
 
