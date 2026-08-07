@@ -7,8 +7,11 @@ use shareable_string::ShareableString;
 /// Represents integer data value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IntegerFrozen {
+    /// Definition metadata for this integer value.
     definition: IntegerDefinition,
+    /// Current value for this integer data, stored as a `ShareableString`.
     value: ShareableString,
+    /// Pre-computed BLAKE3 hash of the value for fast diffing.
     hash: [u8; 32],
 }
 
@@ -43,7 +46,7 @@ impl IntegerFrozen {
     #[must_use]
     pub fn new_from_editable(basic: &IntegerEditable) -> Self {
         let definition = basic.definition().clone();
-        let value = basic.value().clone();
+        let value = basic.value();
         let mut s = Self {
             definition,
             value,
@@ -53,12 +56,13 @@ impl IntegerFrozen {
         s
     }
 
-    /// Converts the current `IntegerFrozen` instance into a `IntegerEditable` instance.
+    /// Converts the current `IntegerFrozen` instance into an `IntegerEditable` instance.
     #[must_use]
     pub fn thaw(&self) -> IntegerEditable {
         IntegerEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of the current value.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -80,13 +84,13 @@ impl IntegerFrozen {
 
     /// Returns a reference to the integer definition.
     #[must_use]
-    pub fn definition(&self) -> &IntegerDefinition {
+    pub const fn definition(&self) -> &IntegerDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 }

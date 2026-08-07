@@ -41,9 +41,13 @@ pub enum ArgumentCount {
 /// A function that can be invoked from within an expression via a call such as
 /// `add(2, 3)`.
 pub struct FunctionDefinition {
+    /// The name used to invoke this function in expression syntax.
     name: ShareableString,
+    /// A human-readable description of what the function does.
     description: ShareableString,
+    /// The number of arguments this function accepts.
     argument_count: ArgumentCount,
+    /// The callable body, stored behind an `Arc` for cloning.
     function: FunctionBody,
 }
 
@@ -68,19 +72,19 @@ impl FunctionDefinition {
 
     /// Returns the name of the function, as used in expressions.
     #[must_use]
-    pub fn name(&self) -> &ShareableString {
+    pub const fn name(&self) -> &ShareableString {
         &self.name
     }
 
     /// Returns a human-readable description of the function.
     #[must_use]
-    pub fn description(&self) -> &ShareableString {
+    pub const fn description(&self) -> &ShareableString {
         &self.description
     }
 
     /// Returns the parameter constraints for the function.
     #[must_use]
-    pub fn parameter_constraints(&self) -> &ArgumentCount {
+    pub const fn parameter_constraints(&self) -> &ArgumentCount {
         &self.argument_count
     }
 
@@ -123,12 +127,13 @@ impl PartialEq for FunctionDefinition {
 /// A registry of named functions available during expression evaluation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDefinitions {
+    /// The map from a function name to its definition.
     definitions: BTreeMap<ShareableString, FunctionDefinition>,
 }
 
 impl FunctionDefinitions {
     /// Creates a new, empty registry.
-    pub(crate) fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             definitions: BTreeMap::new(),
         }
@@ -155,6 +160,7 @@ impl FunctionDefinitions {
         self
     }
 
+    /// Returns an iterator over the names of all registered functions.
     pub(crate) fn keys(&self) -> impl Iterator<Item = &ShareableString> {
         self.definitions.keys()
     }

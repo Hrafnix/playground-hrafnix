@@ -7,8 +7,11 @@ use std::sync::Arc;
 /// A thread-safe map for storing translations of `ShareableString`s.
 #[derive(Debug, Clone)]
 pub struct SharedStringTranslationMap {
+    /// The interning store used to deduplicate all keys, languages, and translations.
     store: SharedStringStore,
+    /// Language code used when the requested language has no translation entry.
     fallback_language: ShareableString,
+    /// Map from translation key to a per-language translation table, shared across clones.
     data: Arc<RwLock<HashMap<ShareableString, HashMap<ShareableString, ShareableString>>>>,
 }
 
@@ -27,7 +30,7 @@ impl SharedStringTranslationMap {
         }
     }
 
-    /// Returns the translation for the given key and language, if it exists.
+    /// Returns the translation for the given key and language if it exists.
     /// Will use the fallback language if the specified language is not found.
     /// If parameters are provided, they will be used to replace placeholders in the translation.
     pub fn get_translation<K, L>(
@@ -64,7 +67,7 @@ impl SharedStringTranslationMap {
 
     /// Returns the fallback language.
     #[must_use]
-    pub fn get_fallback_language(&self) -> &ShareableString {
+    pub const fn get_fallback_language(&self) -> &ShareableString {
         &self.fallback_language
     }
 
@@ -124,14 +127,16 @@ impl SharedStringTranslationMap {
 /// A message that can be translated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TranslateMessage {
+    /// The translation key identifying which message to look up.
     message_key: ShareableString,
+    /// Named parameters substituted into the translated string at runtime.
     message_params: HashMap<ShareableString, ShareableString>,
 }
 
 impl TranslateMessage {
     /// Creates a new `TranslateMessage` with the given message key and parameters.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         message_key: ShareableString,
         message_params: HashMap<ShareableString, ShareableString>,
     ) -> Self {

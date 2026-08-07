@@ -146,6 +146,7 @@ fn item_to_input_data(
 /// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GlobalObjectInputData {
+    /// The map from a field name to its input data item.
     data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
@@ -162,7 +163,7 @@ impl GlobalObjectInputData {
 
     /// Returns a reference to the underlying `ObjectInputData`.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }
@@ -171,6 +172,7 @@ impl GlobalObjectInputData {
 /// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParameterObjectInputData {
+    /// The map from a field name to its input data item.
     data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
@@ -187,7 +189,7 @@ impl ParameterObjectInputData {
 
     /// Returns a reference to the underlying `ObjectInputData`.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }
@@ -196,6 +198,7 @@ impl ParameterObjectInputData {
 /// to their corresponding input data items.
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariableObjectInputData {
+    /// The map from a field name to its input data item.
     data: BTreeMap<ShareableString, ObjectItemInputData>,
 }
 
@@ -212,7 +215,7 @@ impl VariableObjectInputData {
 
     /// Returns a reference to the underlying `ObjectInputData`.
     #[must_use]
-    pub fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
+    pub const fn data(&self) -> &BTreeMap<ShareableString, ObjectItemInputData> {
         &self.data
     }
 }

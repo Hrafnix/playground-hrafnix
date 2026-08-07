@@ -9,6 +9,7 @@ use datastore::prelude::*;
 use expression_engine::ParameterObjectInputData;
 use expression_engine::evaluation::engine::ExpressionEngine;
 
+/// Evaluates the given `expression` string using `engine` and returns the result as a displayable string.
 fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
     let definition = ParameterObjectDefinition::builder("Calculator Input")
         .with(
@@ -21,10 +22,9 @@ fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
 
     engine.evaluate_parameters(&input_data).map_or_else(
         |err| {
-            let err_str = err.first().map_or_else(
-                || "Unknown error".to_string(),
-                std::string::ToString::to_string,
-            );
+            let err_str = err
+                .first()
+                .map_or_else(|| "Unknown error".to_string(), ToString::to_string);
 
             format!("Error: {err_str}")
         },

@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents number data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NumberEditable {
+    /// Definition metadata for this number value.
     definition: NumberDefinition,
+    /// Current value for this number data, stored as a `ShareableString`.
     value: ShareableString,
 }
 
@@ -17,7 +19,7 @@ impl NumberEditable {
     pub fn new(frozen_number: &NumberFrozen) -> Self {
         Self {
             definition: frozen_number.definition().clone(),
-            value: frozen_number.value().clone(),
+            value: frozen_number.value(),
         }
     }
 
@@ -35,7 +37,7 @@ impl NumberEditable {
 
     /// Returns a reference to the number definition.
     #[must_use]
-    pub fn definition(&self) -> &NumberDefinition {
+    pub const fn definition(&self) -> &NumberDefinition {
         &self.definition
     }
 

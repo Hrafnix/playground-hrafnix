@@ -113,12 +113,13 @@ impl GlobalObjectFrozen {
         s
     }
 
-    /// Converts the current `GlobalObjectFrozen` instance into an `GlobalObjectEditable` instance.
+    /// Converts the current `GlobalObjectFrozen` instance into a `GlobalObjectEditable` instance.
     #[must_use]
     pub fn thaw(&self) -> GlobalObjectEditable {
         GlobalObjectEditable::new_from_frozen(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all items in this global object.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -142,7 +143,7 @@ impl GlobalObjectFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -158,7 +159,7 @@ impl GlobalObjectFrozen {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &GlobalObjectDefinition {
+    pub const fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
     }
 }

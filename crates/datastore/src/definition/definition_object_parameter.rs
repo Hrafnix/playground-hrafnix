@@ -10,8 +10,11 @@ use std::sync::Arc;
 /// Builder for creating a `ParameterObjectDefinition`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ParameterObjectDefinitionBuilder {
+    /// Human-readable description for the object being built.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<ParameterKey>,
+    /// Map of item definitions keyed by their parameter key.
     items: BTreeMap<ParameterKey, ItemDefinitionType>,
 }
 
@@ -177,11 +180,14 @@ impl ParameterObjectDefinitionBuilder {
     }
 }
 
-/// Definition for an object, which is a collection of named parameter.
+/// Definition for an object, which is a collection of named parameters.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct ParameterObjectDefinition {
+    /// Human-readable description of this parameter object.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<ParameterKey>,
+    /// Map of item definitions keyed by their parameter key.
     items: Arc<BTreeMap<ParameterKey, ItemDefinitionType>>,
 }
 
@@ -213,7 +219,7 @@ impl ParameterObjectDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 

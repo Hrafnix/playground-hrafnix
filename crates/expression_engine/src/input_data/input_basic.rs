@@ -7,24 +7,27 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// the definition of a basic input data item.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BasicInputData {
+    /// The definition describing valid values for this input item.
     definition: BasicDefinition,
+    /// The raw string value provided by the user.
     data: ShareableString,
 }
 
 impl BasicInputData {
-    pub(crate) fn new(definition: BasicDefinition, data: ShareableString) -> Self {
+    /// Creates a new `BasicInputData` with the given `definition` and raw `data`.
+    pub(crate) const fn new(definition: BasicDefinition, data: ShareableString) -> Self {
         Self { definition, data }
     }
 
     /// Returns a reference to the definition of the basic input data.
     #[must_use]
-    pub fn definition(&self) -> &BasicDefinition {
+    pub const fn definition(&self) -> &BasicDefinition {
         &self.definition
     }
 
     /// Returns a reference to the data of the basic input data.
     #[must_use]
-    pub fn data(&self) -> &ShareableString {
+    pub const fn data(&self) -> &ShareableString {
         &self.data
     }
 

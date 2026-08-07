@@ -8,8 +8,11 @@ use shareable_string::ShareableString;
 /// Represents a table of data in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableEditable {
+    /// Definition metadata for this table value.
     definition: TableDefinition,
+    /// Parameter key associated with this table instance.
     parameter: ShareableString,
+    /// Row data; each inner `Vec` holds one value per column.
     rows: Vec<Vec<ShareableString>>,
 }
 
@@ -62,7 +65,7 @@ impl TableEditable {
 
     /// Returns a reference to the table definition.
     #[must_use]
-    pub fn definition(&self) -> &TableDefinition {
+    pub const fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
@@ -91,7 +94,7 @@ impl TableEditable {
         value: V,
     ) -> Result<(), StoreError> {
         let col_name = column_name.into();
-        let Some(column_index) = self.definition.get_column_index_by_name(col_name.clone()) else {
+        let Some(column_index) = self.definition.get_column_index_by_name(col_name) else {
             return Err(StoreError::KeyNotFound);
         };
 
@@ -140,7 +143,7 @@ impl TableEditable {
 
     /// Returns a reference to the parameter value for the table.
     #[must_use]
-    pub fn parameter(&self) -> &ShareableString {
+    pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
 }

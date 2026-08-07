@@ -4,20 +4,22 @@ use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
-/// Represents a choice data value in the editable data.
+/// Represents a boolean data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BooleanEditable {
+    /// Definition metadata for this boolean value.
     definition: BooleanDefinition,
+    /// Current value for this boolean data, stored as a `ShareableString`.
     value: ShareableString,
 }
 
 impl BooleanEditable {
     /// Creates a new `BooleanEditable` instance from a given `BooleanFrozen` value.
     #[must_use]
-    pub fn new(frozen_choice: &BooleanFrozen) -> Self {
+    pub fn new(frozen_boolean: &BooleanFrozen) -> Self {
         Self {
-            definition: frozen_choice.definition().clone(),
-            value: frozen_choice.value().clone(),
+            definition: frozen_boolean.definition().clone(),
+            value: frozen_boolean.value(),
         }
     }
 
@@ -33,9 +35,9 @@ impl BooleanEditable {
         self.value.clone()
     }
 
-    /// Returns a reference to the choice definition.
+    /// Returns a reference to the boolean definition.
     #[must_use]
-    pub fn definition(&self) -> &BooleanDefinition {
+    pub const fn definition(&self) -> &BooleanDefinition {
         &self.definition
     }
 

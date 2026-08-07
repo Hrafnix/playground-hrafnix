@@ -5,9 +5,13 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a file-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileDefinition {
+    /// Human-readable description of this file parameter.
     description: ShareableString,
+    /// File-extension filter (e.g., `"*.csv"`) used in open-file dialogs.
     extension_filter: ShareableString,
+    /// Whether this file should be included when archiving the project.
     bundle_on_archive: bool,
+    /// Default value for this file parameter.
     default_value: ShareableString,
 }
 
@@ -53,13 +57,13 @@ impl FileDefinition {
 
     /// Returns a reference to the extension filter.
     #[must_use]
-    pub fn extension_filter_ref(&self) -> &ShareableString {
+    pub const fn extension_filter_ref(&self) -> &ShareableString {
         &self.extension_filter
     }
 
-    /// Returns whether the file should be bundled on archive.
+    /// Returns whether the file should be bundled when archived.
     #[must_use]
-    pub fn bundle_on_archive(&self) -> bool {
+    pub const fn bundle_on_archive(&self) -> bool {
         self.bundle_on_archive
     }
 
@@ -82,7 +86,7 @@ impl FileDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -94,7 +98,7 @@ impl FileDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }

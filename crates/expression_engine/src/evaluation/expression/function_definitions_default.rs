@@ -4,10 +4,15 @@ use crate::evaluation::expression::function_definition::{
 use crate::{ComputedItem, ExpressionError};
 use datastore::store_key;
 
+/// The largest integer that can be represented exactly as an `f64` (2^53).
 const MAX_EXACT_INTEGER_IN_F64: i64 = 9_007_199_254_740_992;
+/// The minimum `i64` value expressed as an `f64` literal, used for range checks before casting.
 const I64_MIN_F64: f64 = -9_223_372_036_854_775_808.0;
+/// The maximum `i64` value expressed as an `f64` literal, used for range checks before casting.
 const I64_MAX_F64: f64 = 9_223_372_036_854_775_807.0;
 
+/// Truncates `value` to an `i64` via `trunc()`, returning an error if `value` is non-finite
+/// or outside the representable `i64` range.
 fn truncated_f64_to_i64(value: f64, function_name: &str) -> Result<i64, ExpressionError> {
     if !value.is_finite() {
         return Err(ExpressionError::new(
@@ -32,6 +37,8 @@ fn truncated_f64_to_i64(value: f64, function_name: &str) -> Result<i64, Expressi
     })
 }
 
+/// Converts `value` to an `f64`, returning an error if it is outside the range that
+/// can be represented exactly (i.e., beyond `±MAX_EXACT_INTEGER_IN_F64`).
 fn i64_to_f64(value: i64, function_name: &str) -> Result<f64, ExpressionError> {
     if !(-MAX_EXACT_INTEGER_IN_F64..=MAX_EXACT_INTEGER_IN_F64).contains(&value) {
         return Err(ExpressionError::new(
@@ -67,6 +74,7 @@ fn arg<'a>(
     })
 }
 
+/// Computes the sine of a float argument (radians).
 fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "sin")?;
 
@@ -79,6 +87,7 @@ fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the cosine of a float argument (radians).
 fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "cos")?;
 
@@ -91,6 +100,7 @@ fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the tangent of a float argument (radians).
 fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "tan")?;
 
@@ -103,6 +113,7 @@ fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the arcsine of a float argument, returning a value in radians.
 fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "arcsin")?;
 
@@ -115,6 +126,7 @@ fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the arccosine of a float argument, returning a value in radians.
 fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "arccos")?;
 
@@ -127,6 +139,7 @@ fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the arctangent of a float argument, returning a value in radians.
 fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "arctan")?;
 
@@ -162,6 +175,7 @@ fn mixed_numeric_types_error(function_name: &str) -> ExpressionError {
     )
 }
 
+/// Returns the absolute value of a numeric argument (float or integer).
 fn abs(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "abs")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.abs())),
@@ -173,11 +187,13 @@ fn abs(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the square root of a float argument.
 fn sqrt(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "sqrt")?, "sqrt")?;
     Ok(ComputedItem::Float(value.sqrt()))
 }
 
+/// Returns the smallest integer greater than or equal to the argument.
 fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "ceil")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.ceil())),
@@ -189,6 +205,7 @@ fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Returns the largest integer less than or equal to the argument.
 fn floor(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "floor")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.floor())),
@@ -200,6 +217,7 @@ fn floor(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Rounds the argument to the nearest integer (ties round away from zero).
 fn round(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "round")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.round())),
@@ -211,6 +229,7 @@ fn round(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Returns the minimum value among one or more numeric arguments of the same type.
 fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "min")? {
         ComputedItem::Float(first) => {
@@ -240,6 +259,7 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Returns the maximum value among one or more numeric arguments of the same type.
 fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "max")? {
         ComputedItem::Float(first) => {
@@ -269,6 +289,7 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Clamps the first argument to the inclusive range `[min, max]`.
 fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match (
         arg(args, 0, "clamp")?,
@@ -307,57 +328,68 @@ fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Computes the natural logarithm of a float argument.
 fn log(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "log")?, "log")?;
     Ok(ComputedItem::Float(value.ln()))
 }
 
+/// Computes the base-2 logarithm of a float argument.
 fn log2(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "log2")?, "log2")?;
     Ok(ComputedItem::Float(value.log2()))
 }
 
+/// Computes the base-10 logarithm of a float argument.
 fn log10(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "log10")?, "log10")?;
     Ok(ComputedItem::Float(value.log10()))
 }
 
+/// Computes `e^x` for a float argument.
 fn exp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "exp")?, "exp")?;
     Ok(ComputedItem::Float(value.exp()))
 }
 
+/// Computes `atan2(y, x)` for two float arguments, returning the angle in radians.
 fn arctan2(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let y = as_float(arg(args, 0, "arctan2")?, "arctan2")?;
     let x = as_float(arg(args, 1, "arctan2")?, "arctan2")?;
     Ok(ComputedItem::Float(y.atan2(x)))
 }
 
+/// Computes the hyperbolic sine of a float argument.
 fn sinh(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "sinh")?, "sinh")?;
     Ok(ComputedItem::Float(value.sinh()))
 }
 
+/// Computes the hyperbolic cosine of a float argument.
 fn cosh(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "cosh")?, "cosh")?;
     Ok(ComputedItem::Float(value.cosh()))
 }
 
+/// Computes the hyperbolic tangent of a float argument.
 fn tanh(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "tanh")?, "tanh")?;
     Ok(ComputedItem::Float(value.tanh()))
 }
 
+/// Converts a float argument from degrees to radians.
 fn to_radians(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "to_radians")?, "to_radians")?;
     Ok(ComputedItem::Float(value.to_radians()))
 }
 
+/// Converts a float argument from radians to degrees.
 fn to_degrees(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let value = as_float(arg(args, 0, "to_degrees")?, "to_degrees")?;
     Ok(ComputedItem::Float(value.to_degrees()))
 }
 
+/// Returns the number of characters in a string argument as an integer.
 fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "len")?;
 
@@ -378,6 +410,7 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Converts a numeric argument to an integer, truncating towards zero for floats.
 fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "to_int")? {
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
@@ -392,6 +425,8 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Converts a numeric argument to a float, returning an error for integers outside the
+/// exactly representable range.
 fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "to_float")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(*value)),
@@ -406,6 +441,7 @@ fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     }
 }
 
+/// Returns `true_value` if the boolean first argument is `true`, otherwise `false_value`.
 fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let condition = arg(args, 0, "if")?;
     let true_value = arg(args, 1, "if")?;
@@ -427,7 +463,7 @@ fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 /// Returns a `FunctionDefinitions` containing the default mathematical functions.
-pub(crate) fn get_default_function_definitions() -> FunctionDefinitions {
+pub(crate) fn default_function_definitions() -> FunctionDefinitions {
     FunctionDefinitions::new()
         .with(FunctionDefinition::new(
             store_key!("sin"),
@@ -605,7 +641,7 @@ mod tests {
     use shareable_string::prelude::*;
 
     fn call(name: &str, args: &[ComputedItem]) -> ComputedItem {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         let definition = definitions
             .get(name)
             .expect("function should be registered");
@@ -629,7 +665,7 @@ mod tests {
     }
 
     fn assert_errors(name: &str, args: &[ComputedItem]) {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         let definition = definitions
             .get(name)
             .expect("function should be registered");
@@ -869,7 +905,7 @@ mod tests {
 
     #[test]
     fn len_errors_for_non_string_argument() {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         let definition = definitions
             .get("len")
             .expect("function should be registered");
@@ -908,7 +944,7 @@ mod tests {
 
     #[test]
     fn arccos_and_arctan_are_registered_once() {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         assert!(definitions.get("arccos").is_some());
         assert!(definitions.get("arctan").is_some());
     }

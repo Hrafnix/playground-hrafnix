@@ -4,13 +4,18 @@ use shareable_string::ShareableString;
 /// Represents input data for a table, including its definition and the associated data.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TableInputData {
+    /// The definition that describes the columns and constraints of this table.
     definition: TableDefinition,
+    /// The name of the parameter variable that holds the row index during cell evaluation,
+    /// or an empty string if no such parameter is used.
     parameter: ShareableString,
+    /// The raw cell data, one inner `Vec<ShareableString>` per row.
     data: Vec<Vec<ShareableString>>,
 }
 
 impl TableInputData {
-    pub(crate) fn new(
+    /// Creates a new `TableInputData` with the given definition, parameter name, and raw data.
+    pub(crate) const fn new(
         definition: TableDefinition,
         parameter: ShareableString,
         data: Vec<Vec<ShareableString>>,
@@ -24,7 +29,7 @@ impl TableInputData {
 
     /// Returns a reference to the definition of the table input data.
     #[must_use]
-    pub fn definition(&self) -> &TableDefinition {
+    pub const fn definition(&self) -> &TableDefinition {
         &self.definition
     }
 
@@ -39,7 +44,7 @@ impl TableInputData {
     /// When non-empty, this name is bound to the current row index while each
     /// row's cell expressions are evaluated.
     #[must_use]
-    pub fn parameter(&self) -> &ShareableString {
+    pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
 

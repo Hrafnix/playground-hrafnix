@@ -5,7 +5,9 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a string-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StringDefinition {
+    /// Human-readable description of this string parameter.
     description: ShareableString,
+    /// Default value for this string parameter.
     default_value: ShareableString,
 }
 
@@ -46,7 +48,7 @@ impl StringDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -58,7 +60,7 @@ impl StringDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }

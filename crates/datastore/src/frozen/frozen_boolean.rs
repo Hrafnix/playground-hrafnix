@@ -7,8 +7,11 @@ use shareable_string::ShareableString;
 /// Represents a choice data value in the frozen data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BooleanFrozen {
+    /// Definition metadata for this boolean value.
     definition: BooleanDefinition,
+    /// Current value for this boolean data, stored as a `ShareableString`.
     value: ShareableString,
+    /// Pre-computed BLAKE3 hash of the value for fast diffing.
     hash: [u8; 32],
 }
 
@@ -43,7 +46,7 @@ impl BooleanFrozen {
     #[must_use]
     pub fn new_from_editable(basic: &BooleanEditable) -> Self {
         let definition = basic.definition().clone();
-        let value = basic.value().clone();
+        let value = basic.value();
         let mut s = Self {
             definition,
             value,
@@ -59,6 +62,7 @@ impl BooleanFrozen {
         BooleanEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of the current value.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -80,13 +84,13 @@ impl BooleanFrozen {
 
     /// Returns a reference to the choice definition.
     #[must_use]
-    pub fn definition(&self) -> &BooleanDefinition {
+    pub const fn definition(&self) -> &BooleanDefinition {
         &self.definition
     }
 
     /// Returns the pre-calculated BLAKE3 hash of the value.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 }

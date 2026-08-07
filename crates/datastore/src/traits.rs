@@ -30,7 +30,7 @@ pub trait TreePrint {
     }
 }
 
-/// Trait for editable objects that can be accessed by key.
+/// Trait for editable objects that can be accessed by a key.
 pub trait ObjectEditable {
     /// Returns a reference to the parameter with the specified key if it exists.
     fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemEditable>;

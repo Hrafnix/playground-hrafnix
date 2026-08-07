@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents a choice data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChoiceEditable {
+    /// Definition metadata for this choice value.
     definition: ChoiceDefinition,
+    /// Current value for this choice data, stored as a `ShareableString`.
     value: ShareableString,
 }
 
@@ -17,7 +19,7 @@ impl ChoiceEditable {
     pub fn new(frozen_choice: &ChoiceFrozen) -> Self {
         Self {
             definition: frozen_choice.definition().clone(),
-            value: frozen_choice.value().clone(),
+            value: frozen_choice.value(),
         }
     }
 
@@ -35,7 +37,7 @@ impl ChoiceEditable {
 
     /// Returns a reference to the choice definition.
     #[must_use]
-    pub fn definition(&self) -> &ChoiceDefinition {
+    pub const fn definition(&self) -> &ChoiceDefinition {
         &self.definition
     }
 

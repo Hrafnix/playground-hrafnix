@@ -2,14 +2,14 @@ use datastore::prelude::*;
 use expression_engine::prelude::*;
 
 /// A function that sums its integer arguments.
-fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, expression_engine::ExpressionError> {
+fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let mut total: i64 = 0;
     for arg in args {
         match arg {
             ComputedItem::Integer(value) => total += value,
             other => {
-                return Err(expression_engine::ExpressionError::new(
-                    expression_engine::ExpressionCategory::Evaluation,
+                return Err(ExpressionError::new(
+                    ExpressionCategory::Evaluation,
                     format!("add() expects integer arguments, got {other:?}"),
                 ));
             }
@@ -19,13 +19,11 @@ fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, expression_engine
 }
 
 /// A function that multiplies two float arguments.
-fn multiply_floats(
-    args: &[ComputedItem],
-) -> Result<ComputedItem, expression_engine::ExpressionError> {
+fn multiply_floats(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match args {
         [ComputedItem::Float(a), ComputedItem::Float(b)] => Ok(ComputedItem::Float(a * b)),
-        _ => Err(expression_engine::ExpressionError::new(
-            expression_engine::ExpressionCategory::Evaluation,
+        _ => Err(ExpressionError::new(
+            ExpressionCategory::Evaluation,
             "multiply() expects exactly two float arguments".to_string(),
         )),
     }

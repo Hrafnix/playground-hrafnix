@@ -122,8 +122,11 @@ impl TreePrint for MapItemDefinition {
 /// named `MapItemDefinition`s.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MapDefinition {
+    /// Human-readable description of this map parameter.
     description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
     ordered_keys: Vec<StoreKey>,
+    /// Schema of the map entries, keyed by item name.
     item_type: Arc<BTreeMap<StoreKey, MapItemDefinition>>,
 }
 
@@ -204,7 +207,7 @@ impl MapDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 

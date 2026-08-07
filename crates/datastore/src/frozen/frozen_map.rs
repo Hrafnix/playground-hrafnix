@@ -32,7 +32,7 @@ pub enum MapItemFrozen {
 impl MapItemFrozen {
     /// Returns the string value if this item is a string value.
     #[must_use]
-    pub fn get_string(&self) -> Option<&StringFrozen> {
+    pub const fn get_string(&self) -> Option<&StringFrozen> {
         match self {
             MapItemFrozen::String(string) => Some(string),
             _ => None,
@@ -41,7 +41,7 @@ impl MapItemFrozen {
 
     /// Returns the table value if this item is a table value.
     #[must_use]
-    pub fn get_table(&self) -> Option<&TableFrozen> {
+    pub const fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             MapItemFrozen::Table(table) => Some(table),
             _ => None,
@@ -68,7 +68,7 @@ impl MapItemFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the item.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         match self {
             MapItemFrozen::Boolean(boolean) => boolean.hash(),
             MapItemFrozen::Choice(choice) => choice.hash(),
@@ -241,6 +241,7 @@ impl MapEntryFrozen {
         MapEntryEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all items in this map entry.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -264,11 +265,11 @@ impl MapEntryFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the entry.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
-    /// Returns a reference to the item with the specified key, if it exists.
+    /// Returns a reference to the item with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemFrozen> {
         self.items.get(&key.into())
     }
@@ -425,6 +426,7 @@ impl MapFrozen {
         MapEditable::new(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all entries in this map.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -448,11 +450,11 @@ impl MapFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the map.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
-    /// Returns a reference to the item with the specified key, if it exists.
+    /// Returns a reference to the item with the specified key if it exists.
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapEntryFrozen> {
         self.items.get(&key.into())
     }
@@ -464,7 +466,7 @@ impl MapFrozen {
 
     /// Returns a reference to the map definition.
     #[must_use]
-    pub fn definition(&self) -> &MapDefinition {
+    pub const fn definition(&self) -> &MapDefinition {
         &self.definition
     }
 

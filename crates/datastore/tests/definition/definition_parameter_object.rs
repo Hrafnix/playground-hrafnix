@@ -18,7 +18,7 @@ fn test_parameter_object_definition_basic() {
 
 #[test]
 fn test_parameter_object_definition_equality() {
-    // Why: Test that two parameter object definitions with the same items are considered equal.
+    // Why: Test that two-parameter object definitions with the same items are considered equal.
     let def_1 = ParameterObjectDefinition::builder("Test Object")
         .with(
             ParameterKey::new("p_p1".into()).unwrap(),

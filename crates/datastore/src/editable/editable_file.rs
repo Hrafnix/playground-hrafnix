@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents a file data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileEditable {
+    /// Definition metadata for this file value.
     definition: FileDefinition,
+    /// Current value for this file data, stored as a `ShareableString`.
     value: ShareableString,
 }
 
@@ -17,7 +19,7 @@ impl FileEditable {
     pub fn new(frozen_file: &FileFrozen) -> Self {
         Self {
             definition: frozen_file.definition().clone(),
-            value: frozen_file.value().clone(),
+            value: frozen_file.value(),
         }
     }
 
@@ -35,7 +37,7 @@ impl FileEditable {
 
     /// Returns a reference to the file definition.
     #[must_use]
-    pub fn definition(&self) -> &FileDefinition {
+    pub const fn definition(&self) -> &FileDefinition {
         &self.definition
     }
 

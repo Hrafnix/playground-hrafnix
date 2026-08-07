@@ -36,9 +36,12 @@ impl fmt::Display for ParserToken {
     }
 }
 
+/// The result of parsing a complete expression into a Pratt-style token tree.
 #[derive(Debug)]
 pub(crate) struct Parser {
+    /// The root token of the parsed expression tree.
     token: ParserToken,
+    /// The original expression source text, retained for error reporting.
     source: ShareableString,
 }
 
@@ -70,14 +73,24 @@ impl Parser {
         }
     }
 
-    pub(crate) fn get_token(&self) -> &ParserToken {
+    /// Returns a reference to the root token of the parsed expression tree.
+    pub(crate) const fn get_token(&self) -> &ParserToken {
         &self.token
     }
 
-    pub(crate) fn get_source(&self) -> &ShareableString {
+    /// Returns a reference to the original source text used to build this parser.
+    pub(crate) const fn get_source(&self) -> &ShareableString {
         &self.source
     }
 
+    /// Recursive Pratt-expression parser.
+    ///
+    /// Parses tokens from `lexer` with a minimum binding power of `min_bp`,
+    /// returning the root [`ParserToken`] for the sub-expression.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on unexpected tokens or empty input.
     fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
         let mut lhs = match lexer.next() {
             LexerToken::Identifier(index, value) => ParserToken::Identifier(index, value),
@@ -282,6 +295,12 @@ impl Parser {
         }
     }
 
+    /// Returns the prefix binding power for the given operator, or an error if the operator
+    /// is not a valid prefix operator.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `op` is not a valid prefix operator.
     fn prefix_binding_power(
         op: &str,
         index: Span,
@@ -298,6 +317,8 @@ impl Parser {
         }
     }
 
+    /// Returns the postfix binding power for the given operator, or `None` if the operator
+    /// is not a valid postfix operator.
     fn postfix_binding_power(op: &str) -> Option<(u8, ())> {
         let res = match op {
             "[" | "(" => (21, ()),
@@ -306,6 +327,8 @@ impl Parser {
         Some(res)
     }
 
+    /// Returns the left and right binding powers for the given infix operator, or `None` if
+    /// the operator is not a valid infix operator.
     fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
         let res = match op {
             "=" => (2, 1),

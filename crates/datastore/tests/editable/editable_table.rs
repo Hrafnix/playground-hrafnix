@@ -21,17 +21,13 @@ fn test_editable_table_round_trip() {
     editable.add_row(0);
     assert_eq!(editable.row_count(), 1);
     assert_eq!(
-        editable
-            .cell_by_name(0, "col2")
-            .map(std::convert::AsRef::as_ref),
+        editable.cell_by_name(0, "col2").map(AsRef::as_ref),
         Some("test")
     );
 
     editable.set_cell(0, "col1", "5").expect("set cell");
     assert_eq!(
-        editable
-            .cell_by_name(0, "col1")
-            .map(std::convert::AsRef::as_ref),
+        editable.cell_by_name(0, "col1").map(AsRef::as_ref),
         Some("5")
     );
 

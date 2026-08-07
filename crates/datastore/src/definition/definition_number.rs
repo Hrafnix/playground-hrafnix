@@ -37,13 +37,14 @@ pub enum NumberConstraintEnum {
 /// Definition for an integer-based parameter constraint.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct NumberConstraint {
+    /// The actual constraint variant (none, min, max, or range).
     pub(crate) constraint_enum: NumberConstraintEnum,
 }
 
 impl NumberConstraint {
     /// Creates a new `NumberConstraint` with no constraint.
     #[must_use]
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self {
             constraint_enum: NumberConstraintEnum::None,
         }
@@ -51,7 +52,7 @@ impl NumberConstraint {
 
     /// Creates a new `NumberConstraint` with a minimum value constraint.
     #[must_use]
-    pub fn min(min: f64, inclusive: bool) -> Self {
+    pub const fn min(min: f64, inclusive: bool) -> Self {
         Self {
             constraint_enum: NumberConstraintEnum::Min { min, inclusive },
         }
@@ -59,7 +60,7 @@ impl NumberConstraint {
 
     /// Creates a new `NumberConstraint` with a maximum value constraint.
     #[must_use]
-    pub fn max(max: f64, inclusive: bool) -> Self {
+    pub const fn max(max: f64, inclusive: bool) -> Self {
         Self {
             constraint_enum: NumberConstraintEnum::Max { max, inclusive },
         }
@@ -68,7 +69,7 @@ impl NumberConstraint {
     /// Creates a new `NumberConstraint` with a range value constraint.
     ///
     /// If `value_1` is greater than `value_2`, the two values are swapped along with
-    /// their corresponding inclusivity flags so the resulting range is always valid.
+    /// their corresponding inclusivity flags, so the resulting range is always valid.
     ///
     /// If `value_1` and `value_2` are equal (or within a hair's breadth of it due to
     /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`
@@ -144,8 +145,11 @@ impl<'de> Deserialize<'de> for NumberConstraint {
 /// Definition for a number-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NumberDefinition {
+    /// Human-readable description of this number parameter.
     description: ShareableString,
+    /// Optional constraint (min, max, range, or none) applied to the value.
     constraint: NumberConstraint,
+    /// Default value for this number parameter.
     default_value: ShareableString,
 }
 
@@ -204,7 +208,7 @@ impl NumberDefinition {
 
     /// Returns a reference to the constraint.
     #[must_use]
-    pub fn constraint_ref(&self) -> &NumberConstraintEnum {
+    pub const fn constraint_ref(&self) -> &NumberConstraintEnum {
         &self.constraint.constraint_enum
     }
 
@@ -226,7 +230,7 @@ impl NumberDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -238,7 +242,7 @@ impl NumberDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }
@@ -255,6 +259,8 @@ impl PartialEq<NumberDefinition> for &NumberDefinition {
     }
 }
 
+/// Formats an `f64` for display, appending `.0` when the value has no
+/// fractional part and is not in scientific notation.
 fn format_number_value(value: f64) -> String {
     if !value.is_finite() {
         return value.to_string();

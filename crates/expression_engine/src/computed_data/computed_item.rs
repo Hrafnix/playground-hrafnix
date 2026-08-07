@@ -4,12 +4,15 @@ use std::fmt;
 /// Represents a computed table, consisting of column keys and rows of numeric values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ComputedTable {
+    /// The column names of the table, in order.
     keys: Vec<ShareableString>,
+    /// The evaluated numeric rows; each inner `Vec<f64>` corresponds to one row.
     rows: Vec<Vec<f64>>,
 }
 
 impl ComputedTable {
-    pub(crate) fn new(keys: Vec<ShareableString>, rows: Vec<Vec<f64>>) -> Self {
+    /// Creates a new `ComputedTable` with the given column `keys` and numeric `rows`.
+    pub(crate) const fn new(keys: Vec<ShareableString>, rows: Vec<Vec<f64>>) -> Self {
         Self { keys, rows }
     }
 

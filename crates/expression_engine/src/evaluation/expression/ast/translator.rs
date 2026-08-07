@@ -4,6 +4,7 @@ use crate::{ExpressionCategory, ExpressionError};
 use shareable_string::ShareableString;
 use std::fmt;
 
+/// A concrete value that appears literally in the source expression.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Literal {
     /// An integer literal (e.g. `42`), which is a constant numeric value rather than a
@@ -33,23 +34,40 @@ impl fmt::Display for Literal {
     }
 }
 
+/// Binary and unary operators supported in expressions.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Operators {
+    /// Addition (`+`).
     Add,
+    /// Subtraction (`-`).
     Subtract,
+    /// Multiplication (`*`).
     Multiply,
+    /// Division (`/`).
     Divide,
+    /// Remainder / modulus (`%`).
     Modulus,
+    /// Exponentiation (`^`).
     Power,
+    /// Arithmetic negation (unary `-`).
     Negate,
+    /// Equality comparison (`==`).
     Equal,
+    /// Inequality comparison (`!=`).
     NotEqual,
+    /// Strictly-less-than comparison (`<`).
     LessThan,
+    /// Less-than-or-equal comparison (`<=`).
     LessThanOrEqual,
+    /// Strictly-greater-than comparison (`>`).
     GreaterThan,
+    /// Greater-than-or-equal comparison (`>=`).
     GreaterThanOrEqual,
+    /// Logical AND (`&&`).
     And,
+    /// Logical OR (`||`).
     Or,
+    /// Logical NOT (`!`).
     Not,
 }
 
@@ -76,29 +94,49 @@ impl fmt::Display for Operators {
     }
 }
 
+/// A fully typed abstract syntax tree node produced by translating a [`ParserToken`] tree.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Expression {
+    /// A single literal value together with its source span.
     Literal(Span, Literal),
+    /// An infix binary operation.
     BinaryOperation {
+        /// The span covering the entire binary expression.
         span: Span,
+        /// The span that covers only the operator token.
         operator_span: Span,
+        /// The left-hand operand.
         left: Box<Expression>,
+        /// The binary operator.
         operator: Operators,
+        /// The right-hand operand.
         right: Box<Expression>,
     },
+    /// A prefix unary operation.
     UnaryOperation {
+        /// The span covering the entire unary expression.
         span: Span,
+        /// The unary operator.
         operator: Operators,
+        /// The operand being operated on.
         operand: Box<Expression>,
     },
+    /// A function call with zero or more arguments.
     FunctionCall {
+        /// The span covering the entire function-call expression.
         span: Span,
+        /// The name of the function being called.
         name: String,
+        /// The evaluated argument expressions.
         arguments: Vec<Expression>,
     },
+    /// A subscript-index expression (e.g. `table[0][col]`).
     Index {
+        /// The span covering the entire index expression.
         span: Span,
+        /// The name of the variable being indexed.
         name: String,
+        /// The sequence of index sub-expressions.
         index: Vec<Expression>,
     },
 }
@@ -128,7 +166,7 @@ impl fmt::Display for Expression {
             } => {
                 let args = arguments
                     .iter()
-                    .map(std::string::ToString::to_string)
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{name}({args})")
@@ -149,7 +187,7 @@ impl fmt::Display for Expression {
 }
 
 /// Returns the span associated with the given expression.
-pub(crate) fn expression_span(expression: &Expression) -> Span {
+pub(crate) const fn expression_span(expression: &Expression) -> Span {
     match expression {
         Expression::Literal(span, _)
         | Expression::BinaryOperation { span, .. }
@@ -159,8 +197,10 @@ pub(crate) fn expression_span(expression: &Expression) -> Span {
     }
 }
 
+/// Converts a [`Parser`]'s token tree into a fully typed [`Expression`] AST.
 #[derive(Debug)]
 pub(crate) struct Translator {
+    /// The root of the translated expression tree.
     expression: Expression,
 }
 
@@ -173,7 +213,8 @@ impl Translator {
         Self::translate_token(parser_token, &source).map(|expression| Self { expression })
     }
 
-    pub(crate) fn expression(&self) -> &Expression {
+    /// Returns a reference to the root [`Expression`] of this translator.
+    pub(crate) const fn expression(&self) -> &Expression {
         &self.expression
     }
 
@@ -364,6 +405,12 @@ impl Translator {
         ))
     }
 
+    /// Recursively translates a single [`ParserToken`] into an [`Expression`] node.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the token tree cannot be mapped to a valid expression
+    /// (e.g., an unsupported operator arity or an invalid numeric literal).
     fn translate_token(
         parser_token: ParserToken,
         source: &ShareableString,
@@ -538,7 +585,7 @@ mod tests {
 
     #[test]
     fn translates_field_access_via_bracket_indexing() {
-        // field access is now expressed as a second level of bracket indexing, and can be
+        // field access is now expressed as a second level of bracket indexing and can be
         // chained just like array/table indexing.
         assert_eq!(
             translate_str("p_map[key1][item1]").unwrap().to_string(),

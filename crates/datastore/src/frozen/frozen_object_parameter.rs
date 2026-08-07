@@ -119,6 +119,7 @@ impl ParameterObjectFrozen {
         ParameterObjectEditable::new_from_frozen(self)
     }
 
+    /// Recomputes and stores the BLAKE3 hash of all items in this parameter object.
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -142,7 +143,7 @@ impl ParameterObjectFrozen {
 
     /// Returns the pre-calculated BLAKE3 hash of the object.
     #[must_use]
-    pub fn hash(&self) -> [u8; 32] {
+    pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
 
@@ -158,7 +159,7 @@ impl ParameterObjectFrozen {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &ParameterObjectDefinition {
+    pub const fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }
 }

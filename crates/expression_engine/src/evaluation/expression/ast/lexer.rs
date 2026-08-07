@@ -33,11 +33,18 @@ pub(crate) enum LexerToken {
 /// - Operators: +, -, *, /, (, ), \[, \], ==, <, >, <=, >=, !=, &&, ||, %, ^, !, ,
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Lexer {
+    /// The tokens produced by lexing, stored in reverse order so `pop` yields the next token.
     tokens: Vec<LexerToken>,
+    /// The original expression source text.
     source: ShareableString,
 }
 
 impl Lexer {
+    /// Creates a new `Lexer` by tokenizing `input`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `input` contains invalid characters or unterminated string literals.
     pub(crate) fn new<S: Into<ShareableString>>(input: S) -> Result<Self, ExpressionError> {
         let input = input.into();
         let mut lexer = Self {
@@ -49,10 +56,17 @@ impl Lexer {
     }
 
     /// Returns the original expression text that this lexer tokenized.
-    pub(crate) fn source(&self) -> &ShareableString {
+    pub(crate) const fn source(&self) -> &ShareableString {
         &self.source
     }
 
+    /// Tokenizes `input` and populates `self.tokens`.
+    ///
+    /// On success the token list is reversed so that [`Self::next`] can use `Vec::pop`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an invalid character or unterminated string literal is found.
     fn tokenize(&mut self, input: &str) -> Result<(), ExpressionError> {
         let mut chars = input.chars().enumerate().peekable();
 
@@ -102,11 +116,19 @@ impl Lexer {
     }
 
     /// Returns whether `c` is allowed inside a quoted string literal: ASCII letters, digits,
-    /// underscore, dash, dot, `/`, and space (i.e. typical filesystem path characters).
-    fn is_valid_string_char(c: char) -> bool {
+    /// underscore, dash, dot, `/`, and space (i.e., typical filesystem path characters).
+    const fn is_valid_string_char(c: char) -> bool {
         c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/' | ' ')
     }
 
+    /// Tokenizes a quoted string literal starting just after the opening `"`.
+    ///
+    /// On success a [`LexerToken::Text`] containing the trimmed, unquoted contents is pushed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an invalid character is found inside the literal or if the closing
+    /// `"` is never reached.
     fn tokenize_text(
         &mut self,
         chars: &mut Peekable<Enumerate<Chars<'_>>>,
@@ -181,7 +203,10 @@ impl Lexer {
         if let Some(&(_, '(')) = chars.peek() {
             self.tokens.push(LexerToken::Operator(
                 Span::new(
-                    (start.saturating_add(number_len).saturating_sub(1)).max(start),
+                    start
+                        .saturating_add(number_len)
+                        .saturating_sub(1)
+                        .max(start),
                     2,
                 ),
                 "*".to_string(),
@@ -367,10 +392,16 @@ impl Lexer {
         }
     }
 
+    /// Removes and returns the next token from the front of the token stream.
+    ///
+    /// Returns [`LexerToken::EndOfInput`] once all tokens have been consumed.
     pub(crate) fn next(&mut self) -> LexerToken {
         self.tokens.pop().unwrap_or(LexerToken::EndOfInput)
     }
 
+    /// Returns a clone of the next token without consuming it.
+    ///
+    /// Returns [`LexerToken::EndOfInput`] once all tokens have been consumed.
     pub(crate) fn peek(&mut self) -> LexerToken {
         self.tokens
             .last()

@@ -52,7 +52,7 @@ impl ParameterObjectEditable {
 
     /// Returns a reference to the object definition.
     #[must_use]
-    pub fn definition(&self) -> &ParameterObjectDefinition {
+    pub const fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }
 }

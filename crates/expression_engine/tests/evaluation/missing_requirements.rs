@@ -40,7 +40,7 @@ fn no_missing_requirements_when_everything_is_present() {
 
 #[test]
 fn reports_missing_global() {
-    // Why: Test that a global referenced by an expression but not supplied is reported as missing.
+    // Why: Test that a global item referenced by an expression but not supplied is reported as missing.
     let engine = ExpressionEngine::new();
     let expression = ShareableString::from("g_missing + 1");
 

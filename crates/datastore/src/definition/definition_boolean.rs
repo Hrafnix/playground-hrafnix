@@ -5,9 +5,13 @@ use shareable_string::{ShareableString, SharedStringStore};
 /// Definition for a boolean parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BooleanDefinition {
+    /// Human-readable description of this boolean parameter.
     description: ShareableString,
+    /// Label displayed when the value is `true`.
     true_description: ShareableString,
+    /// Label displayed when the value is `false`.
     false_description: ShareableString,
+    /// Default value for this boolean parameter.
     default_value: ShareableString,
 }
 
@@ -66,7 +70,7 @@ impl BooleanDefinition {
 
     /// Returns a reference to the description.
     #[must_use]
-    pub fn description_ref(&self) -> &ShareableString {
+    pub const fn description_ref(&self) -> &ShareableString {
         &self.description
     }
 
@@ -78,7 +82,7 @@ impl BooleanDefinition {
 
     /// Returns a reference to the default value.
     #[must_use]
-    pub fn default_value_ref(&self) -> &ShareableString {
+    pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
 }

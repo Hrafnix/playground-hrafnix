@@ -7,7 +7,9 @@ use shareable_string::ShareableString;
 /// Represents a string data value in the editable data.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StringEditable {
+    /// Definition metadata for this string value.
     definition: StringDefinition,
+    /// Current value for this string data, stored as a `ShareableString`.
     value: ShareableString,
 }
 
@@ -17,7 +19,7 @@ impl StringEditable {
     pub fn new(frozen_string: &StringFrozen) -> Self {
         Self {
             definition: frozen_string.definition().clone(),
-            value: frozen_string.value().clone(),
+            value: frozen_string.value(),
         }
     }
 
@@ -29,7 +31,7 @@ impl StringEditable {
 
     /// Creates a new `StringEditable` instance with a specified value.
     #[must_use]
-    pub fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
+    pub const fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
         Self { definition, value }
     }
 
@@ -41,7 +43,7 @@ impl StringEditable {
 
     /// Returns a reference to the string definition.
     #[must_use]
-    pub fn definition(&self) -> &StringDefinition {
+    pub const fn definition(&self) -> &StringDefinition {
         &self.definition
     }
 

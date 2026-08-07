@@ -62,7 +62,7 @@ fn test_table_input_data_empty() {
 #[test]
 fn test_table_input_data_equality() {
     // Why: Test that two table input data items with the same content are considered
-    // equal, and differ when their definitions diverge.
+    // equal and differ when their definitions diverge.
     let data_1 = table_data_for(sample_table_frozen());
     let data_2 = table_data_for(sample_table_frozen());
     assert_eq!(data_1, data_2);
