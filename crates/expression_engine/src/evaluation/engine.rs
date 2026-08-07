@@ -1,6 +1,7 @@
 use crate::evaluation::expression::evaluator::evaluator;
 use crate::evaluation::expression::function_definition::{FunctionDefinition, FunctionDefinitions};
-use crate::evaluation::expression::function_definitions_default::get_default_function_definitions;
+use crate::evaluation::expression::function_definitions_default::default_function_definitions;
+use crate::evaluation::expression::globals_default::default_globals;
 use crate::expression::ast::ast_helper::string_to_expression;
 use crate::expression::requirements::MissingRequirements;
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     ParameterObjectInputData, VariableObjectComputedData, VariableObjectInputData,
 };
 use shareable_string::ShareableString;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 /// The `Engine` struct represents the core evaluation engine for processing expressions. It is designed to handle various types of expressions and provide a framework for evaluating them efficiently.
 /// The engine can be extended with additional features and optimizations as needed.
@@ -31,8 +32,8 @@ impl ExpressionEngine {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            globals: GlobalObjectComputedData::new(BTreeMap::new()),
-            functions: get_default_function_definitions(),
+            globals: default_globals(),
+            functions: default_function_definitions(),
         }
     }
 
@@ -66,13 +67,16 @@ impl ExpressionEngine {
         &mut self,
         globals: &GlobalObjectInputData,
     ) -> Result<(), Vec<ExpressionError>> {
-        let (computed_data, errors) = evaluator(&BTreeMap::new(), &self.functions, globals.data());
+        let (computed_data, errors) =
+            evaluator(default_globals().data(), &self.functions, globals.data());
 
         if !errors.is_empty() {
             return Err(errors);
         }
 
-        self.globals = GlobalObjectComputedData::new(computed_data);
+        let mut data = default_globals().data().clone();
+        data.extend(computed_data);
+        self.globals = GlobalObjectComputedData::new(data);
 
         Ok(())
     }

@@ -463,7 +463,7 @@ fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 }
 
 /// Returns a `FunctionDefinitions` containing the default mathematical functions.
-pub(crate) fn get_default_function_definitions() -> FunctionDefinitions {
+pub(crate) fn default_function_definitions() -> FunctionDefinitions {
     FunctionDefinitions::new()
         .with(FunctionDefinition::new(
             store_key!("sin"),
@@ -641,7 +641,7 @@ mod tests {
     use shareable_string::prelude::*;
 
     fn call(name: &str, args: &[ComputedItem]) -> ComputedItem {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         let definition = definitions
             .get(name)
             .expect("function should be registered");
@@ -665,7 +665,7 @@ mod tests {
     }
 
     fn assert_errors(name: &str, args: &[ComputedItem]) {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         let definition = definitions
             .get(name)
             .expect("function should be registered");
@@ -905,7 +905,7 @@ mod tests {
 
     #[test]
     fn len_errors_for_non_string_argument() {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         let definition = definitions
             .get("len")
             .expect("function should be registered");
@@ -944,7 +944,7 @@ mod tests {
 
     #[test]
     fn arccos_and_arctan_are_registered_once() {
-        let definitions = get_default_function_definitions();
+        let definitions = default_function_definitions();
         assert!(definitions.get("arccos").is_some());
         assert!(definitions.get("arctan").is_some());
     }

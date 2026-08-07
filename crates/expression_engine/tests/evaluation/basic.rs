@@ -254,6 +254,55 @@ fn test_basic_data_scientific_notation_expression() {
 }
 
 #[test]
+fn test_default_math_globals_are_available() {
+    let engine = ExpressionEngine::new();
+
+    assert_eq!(
+        engine.globals().get("g_pi"),
+        Some(&ComputedItem::Float(std::f64::consts::PI))
+    );
+    assert_eq!(
+        engine.globals().get("g_tau"),
+        Some(&ComputedItem::Float(std::f64::consts::TAU))
+    );
+    assert_eq!(
+        engine.globals().get("g_sqrt_2"),
+        Some(&ComputedItem::Float(std::f64::consts::SQRT_2))
+    );
+    assert_eq!(
+        engine.globals().get("g_ln_2"),
+        Some(&ComputedItem::Float(std::f64::consts::LN_2))
+    );
+}
+
+#[test]
+fn test_default_math_globals_are_available_when_evaluating_globals() {
+    let global_frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Test Object")
+            .with(
+                global_key!("g_circumference"),
+                NumberDefinition::new_with_default("A circumference", "2.0 * g_pi * 3.0"),
+            )
+            .finish(),
+    );
+    let global_data = GlobalObjectInputData::new(&global_frozen);
+    let mut engine = ExpressionEngine::new();
+
+    engine
+        .evaluate_globals(&global_data)
+        .expect("global evaluation should succeed");
+
+    assert_eq!(
+        engine.globals().get("g_circumference"),
+        Some(&ComputedItem::Float(6.0 * std::f64::consts::PI))
+    );
+    assert_eq!(
+        engine.globals().get("g_tau"),
+        Some(&ComputedItem::Float(std::f64::consts::TAU))
+    );
+}
+
+#[test]
 fn test_basic_global_data_integer_expression() {
     // Why: Test that a parameter expression can reference a global value evaluated beforehand.
     let global_frozen = GlobalObjectFrozen::new(
