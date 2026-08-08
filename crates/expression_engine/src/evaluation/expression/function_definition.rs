@@ -1,5 +1,5 @@
 use crate::{ComputedItem, ExpressionError};
-use datastore::key::StoreKey;
+use keys::store_key::StoreKey;
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 use std::sync::Arc;

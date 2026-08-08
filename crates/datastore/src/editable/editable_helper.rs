@@ -1,6 +1,6 @@
-use crate::StoreError;
 use crate::editable::{ItemEditable, MapEntryEditable, MapItemEditable};
 use crate::traits::ObjectEditable;
+use errors::StoreError;
 use shareable_string::ShareableString;
 
 /// Helper function to set the value of an editable object by key.

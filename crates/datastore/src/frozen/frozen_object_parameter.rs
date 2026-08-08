@@ -1,8 +1,8 @@
 use crate::definition::{ItemDefinitionType, ParameterObjectDefinition};
 use crate::editable::ParameterObjectEditable;
 use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
-use crate::key::ParameterKey;
 use crate::traits::TreePrint;
+use keys::parameter_key::ParameterKey;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;

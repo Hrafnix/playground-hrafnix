@@ -4,9 +4,9 @@
 # wrap around them, so invalid key literals would only panic at runtime
 # instead of failing to compile.
 disallowed-methods = [
-    { path = "datastore::key::ConstStoreKey::__new", reason = "construct via the `store_key!` macro instead so invalid keys fail to compile" },
-    { path = "datastore::key::ConstGlobalKey::__new", reason = "construct via the `global_key!` macro instead so invalid keys fail to compile" },
-    { path = "datastore::key::ConstParameterKey::__new", reason = "construct via the `parameter_key!` macro instead so invalid keys fail to compile" },
-    { path = "datastore::key::ConstVariableKey::__new", reason = "construct via the `variable_key!` macro instead so invalid keys fail to compile" },
+    { path = "keys::store_key::ConstStoreKey::__new", reason = "construct via the `store_key!` macro instead so invalid keys fail to compile" },
+    { path = "keys::global_key::ConstGlobalKey::__new", reason = "construct via the `global_key!` macro instead so invalid keys fail to compile" },
+    { path = "keys::parameter_key::ConstParameterKey::__new", reason = "construct via the `parameter_key!` macro instead so invalid keys fail to compile" },
+    { path = "keys::variable_key::ConstVariableKey::__new", reason = "construct via the `variable_key!` macro instead so invalid keys fail to compile" },
 ]
 too-many-lines-threshold = 225

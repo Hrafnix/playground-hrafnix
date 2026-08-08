@@ -1,5 +1,5 @@
 [package]
-name = "units"
+name = "keys"
 version.workspace = true
 rust-version.workspace = true
 edition.workspace = true
@@ -9,7 +9,8 @@ publish.workspace = true
 [dependencies]
 serde.workspace = true
 
-keys.workspace = true
+errors.workspace = true
+shareable_string.workspace = true
 
 [lints]
 workspace = true

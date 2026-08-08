@@ -11,10 +11,11 @@ blake3.workspace = true
 serde.workspace = true
 
 shareable_string.workspace = true
+errors.workspace = true
+keys.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
 
 [lints]
 workspace = true
-

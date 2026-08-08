@@ -1,5 +1,5 @@
 use datastore::definition::{ChoiceDefinition, ChoiceItemDefinition};
-use datastore::store_key;
+use keys::store_key;
 
 #[test]
 fn test_definition_choice() {

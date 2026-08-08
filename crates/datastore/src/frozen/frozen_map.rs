@@ -1,11 +1,11 @@
-use crate::StoreError;
 use crate::definition::{MapDefinition, MapItemDefinition};
 use crate::editable::{MapEditable, MapEntryEditable, MapItemEditable};
 use crate::frozen::{
     BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, NumberFrozen, StringFrozen, TableFrozen,
 };
-use crate::key::StoreKey;
 use crate::traits::TreePrint;
+use errors::StoreError;
+use keys::store_key::StoreKey;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
