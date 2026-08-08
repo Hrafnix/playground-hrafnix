@@ -66,6 +66,8 @@ pub enum StoreError {
     KeyInvalidPrefix(String),
     /// A key already exists.
     KeyConflict(String),
+    /// The key is a reserved keyword.
+    KeyReserved(String),
     /// The requested object was not found.
     ObjectNotFound,
     /// An object with the specified key already exists.
@@ -112,6 +114,7 @@ impl Display for StoreError {
                 write!(f, "Invalid key: '{s}'. Key is missing the required prefix")
             }
             StoreError::KeyConflict(s) => write!(f, "Key conflict: {s}"),
+            StoreError::KeyReserved(s) => write!(f, "Key reserved: {s}"),
             StoreError::ObjectNotFound => write!(f, "Object not found"),
             StoreError::ObjectKeyAlreadyExists => write!(f, "Object key already exists"),
             StoreError::ParameterNotFound => write!(f, "Parameter not found"),

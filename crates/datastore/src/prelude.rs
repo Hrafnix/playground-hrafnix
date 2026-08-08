@@ -7,13 +7,13 @@
 //! ```
 
 // Macros
-pub use crate::{global_key, parameter_key, store_key, variable_key};
+pub use crate::{global_key, parameter_key, store_key, unit_key, variable_key};
 
 // Core types
 pub use crate::StoreError;
 pub use crate::key::{
-    ConstGlobalKey, ConstParameterKey, ConstStoreKey, ConstVariableKey, GlobalKey, ParameterKey,
-    StoreKey, VariableKey,
+    ConstGlobalKey, ConstParameterKey, ConstStoreKey, ConstUnitKey, ConstVariableKey, GlobalKey,
+    ParameterKey, StoreKey, UnitKey, VariableKey,
 };
 
 // Definitions
