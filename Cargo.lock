@@ -1197,6 +1197,7 @@ dependencies = [
  "datastore",
  "keys",
  "shareable_string",
+ "units",
 ]
 
 [[package]]

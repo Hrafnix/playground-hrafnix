@@ -35,14 +35,14 @@ pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTrans
 // Frozen data
 pub use crate::frozen::{
     BooleanFrozen, ChoiceFrozen, FileFrozen, GlobalObjectFrozen, IntegerFrozen, ItemFrozen,
-    MapEntryFrozen, MapFrozen, MapItemFrozen, NumberFrozen, ParameterObjectFrozen, StringFrozen,
-    TableFrozen, VariableObjectFrozen,
+    MapEntryFrozen, MapFrozen, MapItemFrozen, NumberFrozen, NumberWithUnitsFrozen,
+    ParameterObjectFrozen, StringFrozen, TableFrozen, VariableObjectFrozen,
 };
 
 // Editable data
 pub use crate::editable::{
     BooleanEditable, ChoiceEditable, FileEditable, GlobalObjectEditable, IntegerEditable,
     ItemEditable, MapEditable, MapEntryEditable, MapItemEditable, NumberEditable,
-    ParameterObjectEditable, StringEditable, TableEditable, VariableObjectEditable,
-    editable_set_map_value, editable_set_value,
+    NumberWithUnitsEditable, ParameterObjectEditable, StringEditable, TableEditable,
+    VariableObjectEditable, editable_set_map_value, editable_set_value,
 };
