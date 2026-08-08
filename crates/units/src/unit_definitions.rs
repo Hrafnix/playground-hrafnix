@@ -16,7 +16,7 @@ pub enum UnitFamilyId {
     /// The family of units that measure length.
     Length = 3,
     /// The family of units that measure luminous intensity.
-    Luminosity = 4,
+    LuminousIntensity = 4,
     /// The family of units that measure the amount of substance.
     Amount = 5,
     /// The family of units that measure temperature.
@@ -25,8 +25,8 @@ pub enum UnitFamilyId {
     Time = 7,
     /// The family of units that measure volume.
     Volume = 8,
-    /// The family of units that measure weight.
-    Weight = 9,
+    /// The family of units that measure mass.
+    Mass = 9,
 }
 
 impl UnitFamilyId {
@@ -36,12 +36,12 @@ impl UnitFamilyId {
         Self::Area,
         Self::Current,
         Self::Length,
-        Self::Luminosity,
+        Self::LuminousIntensity,
         Self::Amount,
         Self::Temperature,
         Self::Time,
         Self::Volume,
-        Self::Weight,
+        Self::Mass,
     ];
 
     /// Returns the `UnitFamilyId` corresponding to the given u8 value.
@@ -52,12 +52,12 @@ impl UnitFamilyId {
             1 => Some(UnitFamilyId::Area),
             2 => Some(UnitFamilyId::Current),
             3 => Some(UnitFamilyId::Length),
-            4 => Some(UnitFamilyId::Luminosity),
+            4 => Some(UnitFamilyId::LuminousIntensity),
             5 => Some(UnitFamilyId::Amount),
             6 => Some(UnitFamilyId::Temperature),
             7 => Some(UnitFamilyId::Time),
             8 => Some(UnitFamilyId::Volume),
-            9 => Some(UnitFamilyId::Weight),
+            9 => Some(UnitFamilyId::Mass),
             _ => None,
         }
     }
@@ -70,12 +70,12 @@ impl UnitFamilyId {
             Self::Area => 1,
             Self::Current => 2,
             Self::Length => 3,
-            Self::Luminosity => 4,
+            Self::LuminousIntensity => 4,
             Self::Amount => 5,
             Self::Temperature => 6,
             Self::Time => 7,
             Self::Volume => 8,
-            Self::Weight => 9,
+            Self::Mass => 9,
         }
     }
 
@@ -87,12 +87,12 @@ impl UnitFamilyId {
             UnitFamilyId::Area => "Area",
             UnitFamilyId::Current => "Current",
             UnitFamilyId::Length => "Length",
-            UnitFamilyId::Luminosity => "Luminosity",
+            UnitFamilyId::LuminousIntensity => "Luminous Intensity",
             UnitFamilyId::Amount => "Amount",
             UnitFamilyId::Temperature => "Temperature",
             UnitFamilyId::Time => "Time",
             UnitFamilyId::Volume => "Volume",
-            UnitFamilyId::Weight => "Weight",
+            UnitFamilyId::Mass => "Mass",
         }
     }
     /// Returns the unit identifiers for all units in this family.
@@ -128,13 +128,13 @@ impl UnitFamilyId {
                 UnitId::Length_Yard,
                 UnitId::Length_Mile,
             ],
-            UnitFamilyId::Luminosity => &[
-                UnitId::Luminosity_Candela,
-                UnitId::Luminosity_Millicandela,
-                UnitId::Luminosity_Kilocandela,
-                UnitId::Luminosity_Hefnerkerze,
-                UnitId::Luminosity_InternationalCandle,
-                UnitId::Luminosity_DecimalCandle,
+            UnitFamilyId::LuminousIntensity => &[
+                UnitId::LuminousIntensity_Candela,
+                UnitId::LuminousIntensity_Millicandela,
+                UnitId::LuminousIntensity_Kilocandela,
+                UnitId::LuminousIntensity_Hefnerkerze,
+                UnitId::LuminousIntensity_InternationalCandle,
+                UnitId::LuminousIntensity_DecimalCandle,
             ],
             UnitFamilyId::Amount => &[
                 UnitId::Amount_Mole,
@@ -171,13 +171,13 @@ impl UnitFamilyId {
                 UnitId::Volume_Pint,
                 UnitId::Volume_Quart,
             ],
-            UnitFamilyId::Weight => &[
-                UnitId::Weight_Kilogram,
-                UnitId::Weight_Gram,
-                UnitId::Weight_Pound,
-                UnitId::Weight_Ounce,
-                UnitId::Weight_Tonne,
-                UnitId::Weight_Stone,
+            UnitFamilyId::Mass => &[
+                UnitId::Mass_Kilogram,
+                UnitId::Mass_Gram,
+                UnitId::Mass_Pound,
+                UnitId::Mass_Ounce,
+                UnitId::Mass_Tonne,
+                UnitId::Mass_Stone,
             ],
         }
     }
@@ -309,12 +309,12 @@ define_unit_ids! {
     Length_Yard = 306 => (Length, "u_length_yard", "yd", "A yard."),
     Length_Mile = 307 => (Length, "u_length_mile", "mi", "A mile."),
 
-    Luminosity_Candela = 400 => (Luminosity, "u_luminosity_candela", "cd", "A candela."),
-    Luminosity_Millicandela = 401 => (Luminosity, "u_luminosity_millicandela", "mcd", "A millicandela."),
-    Luminosity_Kilocandela = 402 => (Luminosity, "u_luminosity_kilocandela", "kcd", "A kilocandela."),
-    Luminosity_Hefnerkerze = 403 => (Luminosity, "u_luminosity_hefnerkerze", "hk", "A Hefnerkerze."),
-    Luminosity_InternationalCandle = 404 => (Luminosity, "u_luminosity_international_candle", "ic", "An international candle."),
-    Luminosity_DecimalCandle = 405 => (Luminosity, "u_luminosity_decimal_candle", "dc", "A decimal candle."),
+    LuminousIntensity_Candela = 400 => (LuminousIntensity, "u_luminous_intensity_candela", "cd", "A candela."),
+    LuminousIntensity_Millicandela = 401 => (LuminousIntensity, "u_luminous_intensity_millicandela", "mcd", "A millicandela."),
+    LuminousIntensity_Kilocandela = 402 => (LuminousIntensity, "u_luminous_intensity_kilocandela", "kcd", "A kilocandela."),
+    LuminousIntensity_Hefnerkerze = 403 => (LuminousIntensity, "u_luminous_intensity_hefnerkerze", "hk", "A Hefnerkerze."),
+    LuminousIntensity_InternationalCandle = 404 => (LuminousIntensity, "u_luminous_intensity_international_candle", "ic", "An international candle."),
+    LuminousIntensity_DecimalCandle = 405 => (LuminousIntensity, "u_luminous_intensity_decimal_candle", "dc", "A decimal candle."),
 
     Amount_Mole = 500 => (Amount, "u_amount_mole", "mol", "A mole."),
     Amount_Millimole = 501 => (Amount, "u_amount_millimole", "mmol", "A millimole."),
@@ -347,12 +347,12 @@ define_unit_ids! {
     Volume_Pint = 807 => (Volume, "u_volume_pint", "pt", "A US pint."),
     Volume_Quart = 808 => (Volume, "u_volume_quart", "qt", "A US quart."),
 
-    Weight_Kilogram = 900 => (Weight, "u_weight_kilogram", "kg", "A kilogram."),
-    Weight_Gram = 901 => (Weight, "u_weight_gram", "g", "A gram."),
-    Weight_Pound = 902 => (Weight, "u_weight_pound", "lb", "A pound."),
-    Weight_Ounce = 903 => (Weight, "u_weight_ounce", "oz", "An ounce."),
-    Weight_Tonne = 904 => (Weight, "u_weight_tonne", "t", "A metric tonne."),
-    Weight_Stone = 905 => (Weight, "u_weight_stone", "st", "A stone."),
+    Mass_Kilogram = 900 => (Mass, "u_mass_kilogram", "kg", "A kilogram."),
+    Mass_Gram = 901 => (Mass, "u_mass_gram", "g", "A gram."),
+    Mass_Pound = 902 => (Mass, "u_mass_pound", "lb", "A pound."),
+    Mass_Ounce = 903 => (Mass, "u_mass_ounce", "oz", "An ounce."),
+    Mass_Tonne = 904 => (Mass, "u_mass_tonne", "t", "A metric tonne."),
+    Mass_Stone = 905 => (Mass, "u_mass_stone", "st", "A stone."),
 }
 
 #[cfg(test)]
@@ -386,12 +386,12 @@ mod tests {
                 UnitFamilyId::Area => "Area",
                 UnitFamilyId::Current => "Current",
                 UnitFamilyId::Length => "Length",
-                UnitFamilyId::Luminosity => "Luminosity",
+                UnitFamilyId::LuminousIntensity => "Luminous Intensity",
                 UnitFamilyId::Amount => "Amount",
                 UnitFamilyId::Temperature => "Temperature",
                 UnitFamilyId::Time => "Time",
                 UnitFamilyId::Volume => "Volume",
-                UnitFamilyId::Weight => "Weight",
+                UnitFamilyId::Mass => "Mass",
             };
             assert_eq!(
                 family.description(),

@@ -111,7 +111,7 @@ fn test_definition_number_with_max_constraint() {
     let def = NumberWithUnitsDefinition::new_with_constraint(
         "A number parameter",
         NumberConstraint::max(10.0, true),
-        UnitId::Luminosity_InternationalCandle,
+        UnitId::LuminousIntensity_InternationalCandle,
     );
 
     // Check the various data items of the number definition.
@@ -135,20 +135,20 @@ fn test_definition_number_with_max_constraint() {
     assert_eq!(def.default_value_ref(), "");
     assert_eq!(
         def.preferred_units(),
-        UnitId::Luminosity_InternationalCandle
+        UnitId::LuminousIntensity_InternationalCandle
     );
     assert_eq!(
         def.preferred_units_ref(),
-        &UnitId::Luminosity_InternationalCandle
+        &UnitId::LuminousIntensity_InternationalCandle
     );
     let unit_keys: Vec<ShareableString> = def.unit_keys();
     assert_eq!(unit_keys.len(), 6);
-    assert_eq!(unit_keys[0], "u_luminosity_candela");
-    assert_eq!(unit_keys[1], "u_luminosity_millicandela");
-    assert_eq!(unit_keys[2], "u_luminosity_kilocandela");
-    assert_eq!(unit_keys[3], "u_luminosity_hefnerkerze");
-    assert_eq!(unit_keys[4], "u_luminosity_international_candle");
-    assert_eq!(unit_keys[5], "u_luminosity_decimal_candle");
+    assert_eq!(unit_keys[0], "u_luminous_intensity_candela");
+    assert_eq!(unit_keys[1], "u_luminous_intensity_millicandela");
+    assert_eq!(unit_keys[2], "u_luminous_intensity_kilocandela");
+    assert_eq!(unit_keys[3], "u_luminous_intensity_hefnerkerze");
+    assert_eq!(unit_keys[4], "u_luminous_intensity_international_candle");
+    assert_eq!(unit_keys[5], "u_luminous_intensity_decimal_candle");
     let unit_descriptions: Vec<ShareableString> = def.unit_descriptions();
     assert_eq!(unit_descriptions.len(), 6);
     assert_eq!(unit_descriptions[0], "cd");
@@ -165,7 +165,7 @@ fn test_definition_number_with_range_constraint() {
     let def = NumberWithUnitsDefinition::new_with_constraint(
         "A number parameter",
         NumberConstraint::range(0.0, 10.0, true, true),
-        UnitId::Weight_Gram,
+        UnitId::Mass_Gram,
     );
 
     // Check the various data items of the number definition.
@@ -191,16 +191,16 @@ fn test_definition_number_with_range_constraint() {
     );
     assert_eq!(def.default_value(), "");
     assert_eq!(def.default_value_ref(), "");
-    assert_eq!(def.preferred_units(), UnitId::Weight_Gram);
-    assert_eq!(def.preferred_units_ref(), &UnitId::Weight_Gram);
+    assert_eq!(def.preferred_units(), UnitId::Mass_Gram);
+    assert_eq!(def.preferred_units_ref(), &UnitId::Mass_Gram);
     let unit_keys: Vec<ShareableString> = def.unit_keys();
     assert_eq!(unit_keys.len(), 6);
-    assert_eq!(unit_keys[0], "u_weight_kilogram");
-    assert_eq!(unit_keys[1], "u_weight_gram");
-    assert_eq!(unit_keys[2], "u_weight_pound");
-    assert_eq!(unit_keys[3], "u_weight_ounce");
-    assert_eq!(unit_keys[4], "u_weight_tonne");
-    assert_eq!(unit_keys[5], "u_weight_stone");
+    assert_eq!(unit_keys[0], "u_mass_kilogram");
+    assert_eq!(unit_keys[1], "u_mass_gram");
+    assert_eq!(unit_keys[2], "u_mass_pound");
+    assert_eq!(unit_keys[3], "u_mass_ounce");
+    assert_eq!(unit_keys[4], "u_mass_tonne");
+    assert_eq!(unit_keys[5], "u_mass_stone");
     let unit_descriptions: Vec<ShareableString> = def.unit_descriptions();
     assert_eq!(unit_descriptions.len(), 6);
     assert_eq!(unit_descriptions[0], "kg");
