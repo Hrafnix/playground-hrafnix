@@ -45,6 +45,9 @@ const fn is_valid_key_with_prefix(s: &str, prefix: &str) -> bool {
     }
 
     let first_after_prefix = s_bytes[prefix_bytes.len()];
+    if prefix_bytes.is_empty() && first_after_prefix == b'_' {
+        return false;
+    }
     if !first_after_prefix.is_ascii_lowercase() {
         return false;
     }
@@ -100,10 +103,23 @@ pub const fn is_valid_key(s: &str) -> bool {
 /// The remaining characters may be lowercase a-z, digits 0-9, and underscores.
 fn validate_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
-    if is_valid_key(s) {
-        Ok(())
-    } else if s.is_empty() {
+
+    for keyword in KEY_WORDS {
+        if s == keyword {
+            return Err(StoreError::KeyReserved(s.to_string()));
+        }
+    }
+
+    for c in 'a'..='z' {
+        if s.starts_with(&format!("{c}_")) {
+            return Err(StoreError::KeyInvalidPrefix(s.to_string()));
+        }
+    }
+
+    if s.is_empty() {
         Err(StoreError::KeyEmpty)
+    } else if is_valid_key(s) {
+        Ok(())
     } else {
         Err(StoreError::KeyInvalidCharacter(s.to_string()))
     }
@@ -479,12 +495,12 @@ pub const fn is_valid_global_key(s: &str) -> bool {
 /// Validates that a global key starts with `g_` and has valid remaining characters.
 fn validate_global_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
-    if is_valid_global_key(s) {
-        Ok(())
+    if !s.starts_with("g_") {
+        Err(StoreError::KeyInvalidPrefix(s.to_string()))
     } else if s.is_empty() {
         Err(StoreError::KeyEmpty)
-    } else if !s.starts_with("g_") {
-        Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else if is_valid_global_key(s) {
+        Ok(())
     } else {
         Err(StoreError::KeyInvalidCharacter(s.to_string()))
     }
@@ -781,12 +797,13 @@ pub const fn is_valid_parameter_key(s: &str) -> bool {
 /// Validates that a parameter key starts with `p_` and has valid remaining characters.
 fn validate_parameter_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
-    if is_valid_parameter_key(s) {
-        Ok(())
-    } else if s.is_empty() {
+
+    if s.is_empty() {
         Err(StoreError::KeyEmpty)
     } else if !s.starts_with("p_") {
         Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else if is_valid_parameter_key(s) {
+        Ok(())
     } else {
         Err(StoreError::KeyInvalidCharacter(s.to_string()))
     }
@@ -1083,12 +1100,12 @@ pub const fn is_valid_variable_key(s: &str) -> bool {
 /// Validates that a variable key starts with `v_` and has valid remaining characters.
 fn validate_variable_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
-    if is_valid_variable_key(s) {
-        Ok(())
-    } else if s.is_empty() {
+    if s.is_empty() {
         Err(StoreError::KeyEmpty)
     } else if !s.starts_with("v_") {
         Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else if is_valid_variable_key(s) {
+        Ok(())
     } else {
         Err(StoreError::KeyInvalidCharacter(s.to_string()))
     }
@@ -1478,18 +1495,7 @@ mod tests {
         let p_key = ParameterKey::new(ShareableString::from("p_test")).unwrap();
         let g_key = GlobalKey::new(ShareableString::from("g_test")).unwrap();
         let v_key = VariableKey::new(ShareableString::from("v_test")).unwrap();
-        let s_key_p = StoreKey::new(ShareableString::from("p_test")).unwrap();
-        let s_key_g = StoreKey::new(ShareableString::from("g_test")).unwrap();
-        let s_key_v = StoreKey::new(ShareableString::from("v_test")).unwrap();
-
-        assert_eq!(p_key, s_key_p);
-        assert_eq!(s_key_p, p_key);
-
-        assert_eq!(v_key, s_key_v);
-        assert_eq!(s_key_v, v_key);
-
-        assert_eq!(g_key, s_key_g);
-        assert_eq!(s_key_g, g_key);
+        let s_key = StoreKey::new(ShareableString::from("store_test")).unwrap();
 
         assert_eq!(p_key, p_key);
         assert_eq!(g_key, g_key);
@@ -1497,10 +1503,12 @@ mod tests {
 
         assert_ne!(p_key, v_key);
         assert_ne!(v_key, p_key);
-        assert_ne!(p_key, s_key_v);
-        assert_ne!(v_key, s_key_p);
-        assert_ne!(g_key, s_key_p);
-        assert_ne!(g_key, s_key_v);
+        assert_ne!(p_key, s_key);
+        assert_ne!(s_key, p_key);
+        assert_ne!(g_key, s_key);
+        assert_ne!(s_key, g_key);
+        assert_ne!(v_key, s_key);
+        assert_ne!(s_key, v_key);
 
         // Const equality
         assert_eq!(CP, p_key);
@@ -1510,12 +1518,12 @@ mod tests {
         assert_eq!(CG, g_key);
         assert_eq!(g_key, CG);
 
-        assert_eq!(CP, s_key_p);
-        assert_eq!(s_key_p, CP);
-        assert_eq!(CG, s_key_g);
-        assert_eq!(s_key_g, CG);
-        assert_eq!(CV, s_key_v);
-        assert_eq!(s_key_v, CV);
+        assert_ne!(CP, s_key);
+        assert_ne!(s_key, CP);
+        assert_ne!(CG, s_key);
+        assert_ne!(s_key, CG);
+        assert_ne!(CV, s_key);
+        assert_ne!(s_key, CV);
     }
 
     #[test]
