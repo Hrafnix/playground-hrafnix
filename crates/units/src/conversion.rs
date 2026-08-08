@@ -34,12 +34,12 @@ const fn convert_to_base(unit: UnitId) -> f64 {
         UnitId::Length_Yard => 0.9144,
         UnitId::Length_Mile => 1609.34,
 
-        UnitId::Luminosity_Candela => 1.0,
-        UnitId::Luminosity_Millicandela => 0.001,
-        UnitId::Luminosity_Kilocandela => 1000.0,
-        UnitId::Luminosity_Hefnerkerze => 0.9,
-        UnitId::Luminosity_InternationalCandle => 1.0,
-        UnitId::Luminosity_DecimalCandle => 1.0,
+        UnitId::LuminousIntensity_Candela => 1.0,
+        UnitId::LuminousIntensity_Millicandela => 0.001,
+        UnitId::LuminousIntensity_Kilocandela => 1000.0,
+        UnitId::LuminousIntensity_Hefnerkerze => 0.9,
+        UnitId::LuminousIntensity_InternationalCandle => 1.0,
+        UnitId::LuminousIntensity_DecimalCandle => 1.0,
 
         UnitId::Amount_Mole => 1.0,
         UnitId::Amount_Millimole => 0.001,
@@ -72,12 +72,12 @@ const fn convert_to_base(unit: UnitId) -> f64 {
         UnitId::Volume_Pint => 0.473_176,
         UnitId::Volume_Quart => 0.946_353,
 
-        UnitId::Weight_Kilogram => 1.0,
-        UnitId::Weight_Gram => 0.001,
-        UnitId::Weight_Pound => 0.453_592,
-        UnitId::Weight_Ounce => 0.028_349_5,
-        UnitId::Weight_Tonne => 1000.0,
-        UnitId::Weight_Stone => 6.35029,
+        UnitId::Mass_Kilogram => 1.0,
+        UnitId::Mass_Gram => 0.001,
+        UnitId::Mass_Pound => 0.453_592,
+        UnitId::Mass_Ounce => 0.028_349_5,
+        UnitId::Mass_Tonne => 1000.0,
+        UnitId::Mass_Stone => 6.35029,
     }
 }
 
@@ -175,8 +175,8 @@ mod tests {
             (1.0, UnitId::Length_Yard, UnitId::Length_Foot, 3.0),
             (
                 1.0,
-                UnitId::Luminosity_Hefnerkerze,
-                UnitId::Luminosity_Candela,
+                UnitId::LuminousIntensity_Hefnerkerze,
+                UnitId::LuminousIntensity_Candela,
                 0.9,
             ),
             (3.0, UnitId::Amount_Kilomole, UnitId::Amount_Mole, 3_000.0),
@@ -187,7 +187,7 @@ mod tests {
                 UnitId::Volume_Liter,
                 4.54609,
             ),
-            (1.0, UnitId::Weight_Stone, UnitId::Weight_Kilogram, 6.35029),
+            (1.0, UnitId::Mass_Stone, UnitId::Mass_Kilogram, 6.35029),
         ];
 
         for (value, from_unit, to_unit, expected) in cases {
