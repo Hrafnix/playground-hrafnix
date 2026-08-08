@@ -1,7 +1,7 @@
-use crate::StoreError;
 use crate::definition::TableDefinition;
 use crate::frozen::TableFrozen;
 use crate::traits::TreePrint;
+use errors::StoreError;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 

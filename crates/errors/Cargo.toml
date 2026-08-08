@@ -1,5 +1,5 @@
 [package]
-name = "units"
+name = "errors"
 version.workspace = true
 rust-version.workspace = true
 edition.workspace = true
@@ -7,9 +7,6 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-serde.workspace = true
-
-keys.workspace = true
 
 [lints]
 workspace = true

@@ -1,8 +1,8 @@
 use crate::definition::GlobalObjectDefinition;
 use crate::editable::ItemEditable;
 use crate::frozen::GlobalObjectFrozen;
-use crate::key::GlobalKey;
 use crate::traits::{ObjectEditable, TreePrint};
+use keys::global_key::GlobalKey;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;

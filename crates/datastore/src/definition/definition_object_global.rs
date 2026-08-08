@@ -1,7 +1,7 @@
-use crate::StoreError;
 use crate::definition::ItemDefinitionType;
-use crate::key::GlobalKey;
 use crate::traits::TreePrint;
+use errors::StoreError;
+use keys::global_key::GlobalKey;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;

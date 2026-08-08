@@ -822,6 +822,8 @@ name = "datastore"
 version = "0.1.0"
 dependencies = [
  "blake3",
+ "errors",
+ "keys",
  "serde",
  "serde_json",
  "shareable_string",
@@ -1155,6 +1157,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dea2df4cf52843e0452895c455a1a2cfbb842a1e7329671acf418fdc53ed4c59"
 
 [[package]]
+name = "errors"
+version = "0.1.0"
+
+[[package]]
 name = "euclid"
 version = "0.22.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1188,6 +1194,7 @@ name = "expression_engine"
 version = "0.1.0"
 dependencies = [
  "datastore",
+ "keys",
  "shareable_string",
 ]
 
@@ -1817,6 +1824,15 @@ dependencies = [
  "cfg-if",
  "futures-util",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "keys"
+version = "0.1.0"
+dependencies = [
+ "errors",
+ "serde",
+ "shareable_string",
 ]
 
 [[package]]
@@ -3420,7 +3436,7 @@ checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
 name = "units"
 version = "0.1.0"
 dependencies = [
- "datastore",
+ "keys",
  "serde",
 ]
 

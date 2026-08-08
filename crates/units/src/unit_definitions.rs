@@ -1,5 +1,4 @@
-use datastore::key::ConstUnitKey;
-use datastore::unit_key;
+use keys::{ConstUnitKey, unit_key};
 use serde::{Deserialize, Serialize};
 
 /// `UnitFamilyId` is an enum that represents the different families of units.

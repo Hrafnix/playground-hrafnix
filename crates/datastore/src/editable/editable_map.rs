@@ -4,8 +4,8 @@ use crate::editable::{
     TableEditable,
 };
 use crate::frozen::{MapEntryFrozen, MapFrozen, MapItemFrozen};
-use crate::key::StoreKey;
 use crate::traits::TreePrint;
+use keys::store_key::StoreKey;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
