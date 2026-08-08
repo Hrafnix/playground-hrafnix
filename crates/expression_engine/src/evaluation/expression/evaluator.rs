@@ -1775,7 +1775,7 @@ mod tests {
             vec![ShareableString::from("3.0"), ShareableString::from("4.0")],
         ];
         let table_input_data = ObjectItemInputData::Table(TableInputData::new(
-            table_definition.clone(),
+            table_definition,
             "table".into(),
             table_data,
         ));
@@ -1856,7 +1856,7 @@ mod tests {
             vec![ShareableString::from("3.0"), ShareableString::from("4.0")],
         ];
         let table_input_data = ObjectItemInputData::Table(TableInputData::new(
-            table_definition.clone(),
+            table_definition,
             "table".into(),
             table_data,
         ));
@@ -1902,7 +1902,7 @@ mod tests {
             vec![ShareableString::from("3.0"), ShareableString::from("4.0")],
         ];
         let table_input_data = ObjectItemInputData::Table(TableInputData::new(
-            table_definition.clone(),
+            table_definition,
             "table".into(),
             table_data,
         ));
@@ -1911,7 +1911,6 @@ mod tests {
 
         let (_, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 3);
-        println!("{errors:?}");
         assert!(errors[0].to_string().contains(
             "Value 6.1 in column 'column 2' is less than the minimum allowed value of 10."
         ));

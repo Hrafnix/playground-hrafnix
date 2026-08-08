@@ -223,8 +223,8 @@ fn test_map_entry_frozen_equality() {
 
     assert_eq!(entry_1, entry_2);
     assert_ne!(entry_1, entry_3);
-    assert_eq!(&entry_1, entry_2.clone());
-    assert_ne!(entry_1.clone(), &entry_3);
+    assert_eq!(&entry_1, &entry_2);
+    assert_ne!(&entry_1, &entry_3);
 
     let item_1 = entry_1.get(store_key!("field1")).unwrap();
     let item_2 = entry_2.get(store_key!("field1")).unwrap();

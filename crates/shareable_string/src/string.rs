@@ -239,7 +239,7 @@ mod tests {
         let key = ShareableString::new("k");
 
         let mut map: FxHashMap<ShareableString, usize> = FxHashMap::default();
-        map.insert(key.clone(), 123);
+        map.insert(key, 123);
 
         assert_eq!(map.get("k"), Some(&123));
         assert_eq!(map.get("missing"), None);

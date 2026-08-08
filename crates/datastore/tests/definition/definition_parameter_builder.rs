@@ -101,7 +101,7 @@ fn test_parameter_object_definition_builder_insert() {
     let prop = StringDefinition::new("Desc");
     let key = ParameterKey::new("p_key1".into()).unwrap();
 
-    builder.insert(key.clone(), prop.clone());
+    builder.insert(key, prop);
     let def = builder.finish();
 
     assert_eq!(def.count(), 1);
