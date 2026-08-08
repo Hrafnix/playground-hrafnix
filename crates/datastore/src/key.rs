@@ -1389,6 +1389,305 @@ macro_rules! variable_key {
     };
 }
 
+/// Returns whether a string is a valid unit key.
+#[must_use]
+pub const fn is_valid_unit_key(s: &str) -> bool {
+    is_valid_key_with_prefix(s, "u_")
+}
+
+/// Validates that a unit key starts with `u_` and has valid remaining characters.
+fn validate_unit_key(key: &ShareableString) -> Result<(), StoreError> {
+    let s = key.as_str();
+
+    if s.is_empty() {
+        Err(StoreError::KeyEmpty)
+    } else if !s.starts_with("u_") {
+        Err(StoreError::KeyInvalidPrefix(s.to_string()))
+    } else if is_valid_unit_key(s) {
+        Ok(())
+    } else {
+        Err(StoreError::KeyInvalidCharacter(s.to_string()))
+    }
+}
+
+/// A validated unit key that is known at compile-time.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ConstUnitKey(pub(crate) &'static str);
+
+impl ConstUnitKey {
+    /// Creates a new `ConstUnitKey` from a validated literal.
+    /// Panics at compile-time if the key is invalid.
+    ///
+    /// Not part of the public API: use the `unit_key!` macro instead,
+    /// which wraps this in a `const { }` block so invalid keys are caught
+    /// at compile-time rather than only when the code path runs.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __new(key: &'static str) -> Self {
+        const_assert!(is_valid_unit_key(key), "Invalid UnitKey literal");
+        Self(key)
+    }
+
+    /// Returns the string slice.
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
+        self.0
+    }
+}
+
+impl Display for ConstUnitKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<ConstUnitKey> for UnitKey {
+    fn from(value: ConstUnitKey) -> Self {
+        Self {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<&ConstUnitKey> for UnitKey {
+    fn from(value: &ConstUnitKey) -> Self {
+        Self {
+            key: ShareableString::from(value.0),
+        }
+    }
+}
+
+impl From<ConstUnitKey> for ShareableString {
+    fn from(value: ConstUnitKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+impl From<&ConstUnitKey> for ShareableString {
+    fn from(value: &ConstUnitKey) -> Self {
+        ShareableString::from(value.0)
+    }
+}
+
+/// A validated unit key.
+/// Unit keys must start with `u_` and follow the rest of the `StoreKey` rules.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct UnitKey {
+    /// The underlying validated unit key string (must start with `u_`).
+    pub(crate) key: ShareableString,
+}
+
+impl UnitKey {
+    /// Creates a new `UnitKey` from a `ShareableString`.
+    ///
+    /// # Errors
+    ///
+    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
+        validate_unit_key(&key)?;
+        Ok(Self { key })
+    }
+
+    /// Creates a new `UnitKey` from a `ShareableString` without validating the key.
+    #[expect(unsafe_code)]
+    pub(crate) const unsafe fn new_unsafe(key: ShareableString) -> Self {
+        Self { key }
+    }
+
+    /// Returns the string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.key.as_str()
+    }
+
+    /// Returns the underlying `ShareableString`.
+    #[must_use]
+    pub const fn as_shareable_string(&self) -> &ShareableString {
+        &self.key
+    }
+
+    /// Returns a new `UnitKey` with its string interned through the given `SharedStringStore`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let laundered_key = store.launder(self.key.clone());
+
+        #[expect(unsafe_code)]
+        unsafe {
+            Self::new_unsafe(laundered_key)
+        }
+    }
+
+    /// Returns the BLAKE3 hash of the key.
+    #[must_use]
+    pub const fn current_blake3_hash(&self) -> [u8; 32] {
+        self.key.current_blake3_hash()
+    }
+}
+
+impl Serialize for UnitKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for UnitKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        UnitKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
+    }
+}
+
+impl AsRef<str> for UnitKey {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl PartialEq<&str> for UnitKey {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
+    }
+}
+
+impl PartialEq<UnitKey> for &str {
+    fn eq(&self, other: &UnitKey) -> bool {
+        *self == other.as_str()
+    }
+}
+
+impl PartialEq<String> for UnitKey {
+    fn eq(&self, other: &String) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<UnitKey> for String {
+    fn eq(&self, other: &UnitKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<ShareableString> for UnitKey {
+    fn eq(&self, other: &ShareableString) -> bool {
+        self.key.as_ref() == other.as_ref()
+    }
+}
+
+impl PartialEq<UnitKey> for ShareableString {
+    fn eq(&self, other: &UnitKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialOrd<&str> for UnitKey {
+    fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(*other)
+    }
+}
+
+impl PartialOrd<UnitKey> for &str {
+    fn partial_cmp(&self, other: &UnitKey) -> Option<std::cmp::Ordering> {
+        (*self).partial_cmp(other.as_str())
+    }
+}
+
+impl PartialOrd<String> for UnitKey {
+    fn partial_cmp(&self, other: &String) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.as_str())
+    }
+}
+
+impl PartialOrd<UnitKey> for String {
+    fn partial_cmp(&self, other: &UnitKey) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.as_str())
+    }
+}
+
+impl PartialOrd<ShareableString> for UnitKey {
+    fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
+        self.key.partial_cmp(other)
+    }
+}
+
+impl PartialOrd<UnitKey> for ShareableString {
+    fn partial_cmp(&self, other: &UnitKey) -> Option<std::cmp::Ordering> {
+        self.partial_cmp(other.as_str())
+    }
+}
+
+impl PartialEq<ConstUnitKey> for UnitKey {
+    fn eq(&self, other: &ConstUnitKey) -> bool {
+        self.as_str() == other.0
+    }
+}
+
+impl PartialEq<UnitKey> for ConstUnitKey {
+    fn eq(&self, other: &UnitKey) -> bool {
+        self.0 == other.as_str()
+    }
+}
+
+impl PartialOrd<ConstUnitKey> for UnitKey {
+    fn partial_cmp(&self, other: &ConstUnitKey) -> Option<std::cmp::Ordering> {
+        self.as_str().partial_cmp(other.0)
+    }
+}
+
+impl PartialOrd<UnitKey> for ConstUnitKey {
+    fn partial_cmp(&self, other: &UnitKey) -> Option<std::cmp::Ordering> {
+        self.0.partial_cmp(other.as_str())
+    }
+}
+
+impl Display for UnitKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.key)
+    }
+}
+
+impl From<UnitKey> for ShareableString {
+    fn from(value: UnitKey) -> Self {
+        value.key
+    }
+}
+
+impl From<&UnitKey> for ShareableString {
+    fn from(value: &UnitKey) -> Self {
+        value.key.clone()
+    }
+}
+
+impl std::borrow::Borrow<str> for UnitKey {
+    fn borrow(&self) -> &str {
+        self.key.as_str()
+    }
+}
+
+impl std::borrow::Borrow<ShareableString> for UnitKey {
+    fn borrow(&self) -> &ShareableString {
+        &self.key
+    }
+}
+
+/// A macro to create a `ConstUnitKey` from a string literal.
+/// Validates the key at compile-time, regardless of whether the result
+/// is bound with `let` or `const`.
+#[macro_export]
+macro_rules! unit_key {
+    ($key:expr) => {
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::key::ConstUnitKey::__new($key)
+        }
+    };
+}
+
 // =====================================================================
 // Cross-key relationships.
 // =====================================================================
@@ -1428,6 +1727,19 @@ impl PartialEq<StoreKey> for VariableKey {
 
 impl PartialEq<VariableKey> for StoreKey {
     fn eq(&self, other: &VariableKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+// Equality between UnitKey and StoreKey
+impl PartialEq<StoreKey> for UnitKey {
+    fn eq(&self, other: &StoreKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<UnitKey> for StoreKey {
+    fn eq(&self, other: &UnitKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
@@ -1482,6 +1794,18 @@ impl PartialEq<StoreKey> for ConstVariableKey {
     }
 }
 
+impl PartialEq<ConstUnitKey> for StoreKey {
+    fn eq(&self, other: &ConstUnitKey) -> bool {
+        self.as_str() == other.as_str()
+    }
+}
+
+impl PartialEq<StoreKey> for ConstUnitKey {
+    fn eq(&self, other: &StoreKey) -> bool {
+        self.0 == other.as_str()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1491,15 +1815,18 @@ mod tests {
         const CP: ConstParameterKey = parameter_key!("p_test");
         const CG: ConstGlobalKey = global_key!("g_test");
         const CV: ConstVariableKey = variable_key!("v_test");
+        const CU: ConstUnitKey = unit_key!("u_test");
 
         let p_key = ParameterKey::new(ShareableString::from("p_test")).unwrap();
         let g_key = GlobalKey::new(ShareableString::from("g_test")).unwrap();
         let v_key = VariableKey::new(ShareableString::from("v_test")).unwrap();
+        let u_key = UnitKey::new(ShareableString::from("u_test")).unwrap();
         let s_key = StoreKey::new(ShareableString::from("store_test")).unwrap();
 
         assert_eq!(p_key, p_key);
         assert_eq!(g_key, g_key);
         assert_eq!(v_key, v_key);
+        assert_eq!(u_key, u_key);
 
         assert_ne!(p_key, v_key);
         assert_ne!(v_key, p_key);
@@ -1509,6 +1836,8 @@ mod tests {
         assert_ne!(s_key, g_key);
         assert_ne!(v_key, s_key);
         assert_ne!(s_key, v_key);
+        assert_ne!(u_key, s_key);
+        assert_ne!(s_key, u_key);
 
         // Const equality
         assert_eq!(CP, p_key);
@@ -1517,6 +1846,8 @@ mod tests {
         assert_eq!(v_key, CV);
         assert_eq!(CG, g_key);
         assert_eq!(g_key, CG);
+        assert_eq!(CU, u_key);
+        assert_eq!(u_key, CU);
 
         assert_ne!(CP, s_key);
         assert_ne!(s_key, CP);
@@ -1524,6 +1855,8 @@ mod tests {
         assert_ne!(s_key, CG);
         assert_ne!(CV, s_key);
         assert_ne!(s_key, CV);
+        assert_ne!(CU, s_key);
+        assert_ne!(s_key, CU);
     }
 
     #[test]
@@ -1625,6 +1958,19 @@ mod tests {
     }
 
     #[test]
+    fn test_unit_key() {
+        let uk = UnitKey::new(ShareableString::new("u_key")).unwrap();
+        assert_eq!(uk.as_str(), "u_key");
+
+        let uk2 = unit_key!("u_const");
+        assert_eq!(uk2.as_str(), "u_const");
+
+        assert!(UnitKey::new(ShareableString::new("key")).is_err());
+        assert!(UnitKey::new(ShareableString::new("p_key")).is_err());
+        assert!(UnitKey::new(ShareableString::new("v_key")).is_err());
+    }
+
+    #[test]
     fn test_is_valid_key() {
         assert!(is_valid_key("a"));
         assert!(is_valid_key("abc"));
@@ -1703,6 +2049,17 @@ mod tests {
         // panic this test exercises.
         #[allow(clippy::disallowed_methods)]
         let _ = ConstVariableKey::__new("Invalid");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid UnitKey literal")]
+    fn test_const_unit_key_invalid() {
+        // Bypasses the `unit_key!` macro on purpose: the macro forces
+        // compile-time evaluation via a `const { }` block, which would turn
+        // this invalid literal into a compiler error instead of the runtime
+        // panic this test exercises.
+        #[allow(clippy::disallowed_methods)]
+        let _ = ConstUnitKey::__new("Invalid");
     }
 
     #[test]
