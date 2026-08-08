@@ -827,6 +827,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shareable_string",
+ "units",
 ]
 
 [[package]]

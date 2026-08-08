@@ -7,6 +7,7 @@ mod definition_global_object;
 mod definition_integer;
 mod definition_map;
 mod definition_number;
+mod definition_number_with_unit;
 mod definition_parameter_builder;
 mod definition_parameter_object;
 mod definition_string;
