@@ -91,8 +91,12 @@ pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, St
         return Ok(value);
     }
 
-    if to_unit == UnitId::None || from_unit == UnitId::None {
+    if to_unit == UnitId::None {
         return Ok(value);
+    }
+
+    if from_unit == UnitId::None {
+        return Err("Cannot convert a unitless value to a unit".into());
     }
 
     if from_unit.family_id() != to_unit.family_id() {
@@ -236,6 +240,19 @@ mod tests {
         assert_eq!(
             convert(1.0, UnitId::Length_Meter, UnitId::Time_Second),
             Err("Units are not compatible for conversion".into())
+        );
+    }
+
+    #[test]
+    fn converts_concrete_units_to_unitless_values() {
+        assert_eq!(convert(42.5, UnitId::Length_Meter, UnitId::None), Ok(42.5));
+    }
+
+    #[test]
+    fn rejects_converting_unitless_values_to_concrete_units() {
+        assert_eq!(
+            convert(42.5, UnitId::None, UnitId::Length_Meter),
+            Err("Cannot convert a unitless value to a unit".into())
         );
     }
 
