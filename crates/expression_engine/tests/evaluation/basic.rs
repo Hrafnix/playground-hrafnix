@@ -62,10 +62,10 @@ fn test_basic_data_choice_quoted_string() {
         .expect("evaluation should succeed");
 
     let choice = output.get("p_choice").unwrap();
-    if let ComputedItem::String(value) = choice {
+    if let ComputedItem::Identifier(value) = choice {
         assert_eq!(value.as_ref(), "option_2");
     } else {
-        panic!("expected string data");
+        panic!("expected identifier data");
     }
 }
 

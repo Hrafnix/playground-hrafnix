@@ -613,25 +613,17 @@ fn evaluate_expression(
                         operator_span,
                     )
                 }
-                (ComputedItem::String(left_string), ComputedItem::String(right_string)) => {
-                    evaluate_string_binary_operation(
-                        &operator,
-                        &left_string,
-                        &right_string,
-                        source,
-                        operator_span,
-                    )
-                }
                 (
-                    ComputedItem::Identifier(left_identifier),
-                    ComputedItem::Identifier(right_identifier),
+                    ComputedItem::String(left_string) | ComputedItem::Identifier(left_string),
+                    ComputedItem::String(right_string) | ComputedItem::Identifier(right_string),
                 ) => evaluate_string_binary_operation(
                     &operator,
-                    &left_identifier,
-                    &right_identifier,
+                    &left_string,
+                    &right_string,
                     source,
                     operator_span,
                 ),
+
                 (ComputedItem::Table(_), ComputedItem::Table(_)) => {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
@@ -669,12 +661,11 @@ fn evaluate_expression(
                     | ComputedItem::Table(_),
                 )
                 | (
-                    ComputedItem::Identifier(_),
+                    ComputedItem::Identifier(_) | ComputedItem::String(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
-                    | ComputedItem::String(_)
                     | ComputedItem::Table(_),
                 )
                 | (
@@ -684,15 +675,6 @@ fn evaluate_expression(
                     | ComputedItem::Float(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
-                    | ComputedItem::Table(_),
-                )
-                | (
-                    ComputedItem::String(_),
-                    ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
-                    | ComputedItem::Float(_)
-                    | ComputedItem::Integer(_)
-                    | ComputedItem::Identifier(_)
                     | ComputedItem::Table(_),
                 )
                 | (
@@ -773,13 +755,13 @@ fn evaluate_bare_identifier_unit(
 /// Validates that a computed string belongs to a unit definition's family.
 fn validate_unit_value(
     unit_definition: &datastore::definition::UnitDefinition,
-    computed: ComputedItem,
+    computed: &ComputedItem,
     source: &ShareableString,
     span: Span,
 ) -> Result<ComputedItem, ExpressionError> {
-    if let ComputedItem::String(value) = &computed {
+    if let ComputedItem::String(value) | ComputedItem::Identifier(value) = &computed {
         if unit_definition.contains(value) {
-            Ok(computed)
+            Ok(ComputedItem::Identifier(value.clone()))
         } else {
             Err(ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
@@ -841,9 +823,9 @@ fn evaluate_basic_expression(
         }
         Choice(choice_definition) => {
             // Validate that the computed value is one of the allowed choices
-            if let ComputedItem::String(value) = &computed {
+            if let ComputedItem::String(value) | ComputedItem::Identifier(value) = &computed {
                 if choice_definition.contains(value) {
-                    Ok(computed)
+                    Ok(ComputedItem::Identifier(value.clone()))
                 } else {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
@@ -1114,7 +1096,7 @@ fn evaluate_basic_expression(
                 ))
             }
         }
-        Unit(unit_definition) => validate_unit_value(unit_definition, computed, source, span),
+        Unit(unit_definition) => validate_unit_value(unit_definition, &computed, source, span),
     }
 }
 
