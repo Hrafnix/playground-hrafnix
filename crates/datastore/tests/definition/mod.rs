@@ -12,5 +12,6 @@ mod definition_parameter_builder;
 mod definition_parameter_object;
 mod definition_string;
 mod definition_table;
+mod definition_unit;
 mod definition_variable_builder;
 mod definition_variable_object;

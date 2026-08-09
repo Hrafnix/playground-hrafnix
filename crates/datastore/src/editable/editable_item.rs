@@ -1,7 +1,7 @@
 use crate::definition::ItemDefinitionType;
 use crate::editable::{
     BooleanEditable, ChoiceEditable, FileEditable, IntegerEditable, MapEditable, NumberEditable,
-    NumberWithUnitsEditable, StringEditable, TableEditable,
+    NumberWithUnitsEditable, StringEditable, TableEditable, UnitEditable,
 };
 use crate::frozen::ItemFrozen;
 use crate::traits::TreePrint;
@@ -28,6 +28,8 @@ pub enum ItemEditable {
     String(StringEditable),
     /// A table parameter.
     Table(TableEditable),
+    /// A unit parameter.
+    Unit(UnitEditable),
 }
 
 impl ItemEditable {
@@ -46,6 +48,7 @@ impl ItemEditable {
             }
             ItemFrozen::String(string) => ItemEditable::String(StringEditable::new(string)),
             ItemFrozen::Table(table) => ItemEditable::Table(TableEditable::new(table)),
+            ItemFrozen::Unit(unit) => ItemEditable::Unit(UnitEditable::new(unit)),
         }
     }
 
@@ -64,6 +67,7 @@ impl ItemEditable {
             }
             ItemEditable::String(string) => ItemFrozen::String(string.freeze()),
             ItemEditable::Table(table) => ItemFrozen::Table(table.freeze()),
+            ItemEditable::Unit(unit) => ItemFrozen::Unit(unit.freeze()),
         }
     }
 
@@ -82,6 +86,7 @@ impl ItemEditable {
             }
             ItemEditable::String(b) => ItemDefinitionType::String(b.definition().clone()),
             ItemEditable::Table(t) => ItemDefinitionType::Table(t.definition().clone()),
+            ItemEditable::Unit(u) => ItemDefinitionType::Unit(u.definition().clone()),
         }
     }
 
@@ -228,6 +233,24 @@ impl ItemEditable {
             _ => None,
         }
     }
+
+    /// Returns the unit value if this parameter is a unit parameter.
+    #[must_use]
+    pub const fn get_unit(&self) -> Option<&UnitEditable> {
+        match self {
+            Self::Unit(unit) => Some(unit),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the unit value if this parameter is a unit parameter.
+    #[must_use]
+    pub const fn get_mut_unit(&mut self) -> Option<&mut UnitEditable> {
+        match self {
+            Self::Unit(unit) => Some(unit),
+            _ => None,
+        }
+    }
 }
 
 impl TreePrint for ItemEditable {
@@ -250,6 +273,7 @@ impl TreePrint for ItemEditable {
             }
             Self::String(string) => string.tree_print(f, label, prefix, last),
             Self::Table(table) => table.tree_print(f, label, prefix, last),
+            Self::Unit(unit) => unit.tree_print(f, label, prefix, last),
         }
     }
 }

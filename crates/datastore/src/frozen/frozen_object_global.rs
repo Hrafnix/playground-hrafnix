@@ -73,6 +73,12 @@ impl GlobalObjectFrozen {
                 ItemDefinitionType::Table(table_def) => {
                     items.insert(key, ItemFrozen::Table(TableFrozen::new(table_def.clone())));
                 }
+                ItemDefinitionType::Unit(unit_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Unit(crate::frozen::UnitFrozen::new(unit_def.clone())),
+                    );
+                }
             }
         }
 

@@ -26,6 +26,8 @@ pub mod definition_object_variable;
 pub mod definition_string;
 /// Definitions for table-based data structures.
 pub mod definition_table;
+/// Definitions for unit-based data structures.
+pub mod definition_unit;
 
 pub use definition_boolean::*;
 pub use definition_choice::*;
@@ -41,3 +43,4 @@ pub use definition_object_parameter::*;
 pub use definition_object_variable::*;
 pub use definition_string::*;
 pub use definition_table::*;
+pub use definition_unit::*;

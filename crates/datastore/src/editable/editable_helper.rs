@@ -50,6 +50,9 @@ pub fn editable_set_value<
         ItemEditable::Table(table) => {
             table.set_parameter(value);
         }
+        ItemEditable::Unit(unit) => {
+            unit.set(value);
+        }
     }
 
     Ok(())
@@ -93,6 +96,9 @@ pub fn editable_set_map_value<S1: Into<ShareableString>, S2: Into<ShareableStrin
         }
         MapItemEditable::Table(table) => {
             table.set_parameter(value);
+        }
+        MapItemEditable::Unit(unit) => {
+            unit.set(value);
         }
     }
 

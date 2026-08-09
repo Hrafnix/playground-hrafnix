@@ -1,6 +1,6 @@
 use crate::definition::{ItemDefinitionType, ParameterObjectDefinition};
 use crate::editable::ParameterObjectEditable;
-use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen};
+use crate::frozen::{FileFrozen, ItemFrozen, MapFrozen, StringFrozen, TableFrozen, UnitFrozen};
 use crate::traits::TreePrint;
 use keys::parameter_key::ParameterKey;
 use serde::{Deserialize, Serialize};
@@ -72,6 +72,9 @@ impl ParameterObjectFrozen {
                 }
                 ItemDefinitionType::Table(table_def) => {
                     items.insert(key, ItemFrozen::Table(TableFrozen::new(table_def.clone())));
+                }
+                ItemDefinitionType::Unit(unit_def) => {
+                    items.insert(key, ItemFrozen::Unit(UnitFrozen::new(unit_def.clone())));
                 }
             }
         }

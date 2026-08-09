@@ -1,4 +1,6 @@
-use crate::BasicDefinition::{Boolean, Choice, File, Integer, Number, NumberWithUnits, String};
+use crate::BasicDefinition::{
+    Boolean, Choice, File, Integer, Number, NumberWithUnits, String, Unit,
+};
 use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::evaluation::expression::ast::translator::{
     Expression, Literal, Operators, expression_span,
@@ -611,25 +613,17 @@ fn evaluate_expression(
                         operator_span,
                     )
                 }
-                (ComputedItem::String(left_string), ComputedItem::String(right_string)) => {
-                    evaluate_string_binary_operation(
-                        &operator,
-                        &left_string,
-                        &right_string,
-                        source,
-                        operator_span,
-                    )
-                }
                 (
-                    ComputedItem::Identifier(left_identifier),
-                    ComputedItem::Identifier(right_identifier),
+                    ComputedItem::String(left_string) | ComputedItem::Identifier(left_string),
+                    ComputedItem::String(right_string) | ComputedItem::Identifier(right_string),
                 ) => evaluate_string_binary_operation(
                     &operator,
-                    &left_identifier,
-                    &right_identifier,
+                    &left_string,
+                    &right_string,
                     source,
                     operator_span,
                 ),
+
                 (ComputedItem::Table(_), ComputedItem::Table(_)) => {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
@@ -667,12 +661,11 @@ fn evaluate_expression(
                     | ComputedItem::Table(_),
                 )
                 | (
-                    ComputedItem::Identifier(_),
+                    ComputedItem::Identifier(_) | ComputedItem::String(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::Integer(_)
-                    | ComputedItem::String(_)
                     | ComputedItem::Table(_),
                 )
                 | (
@@ -682,15 +675,6 @@ fn evaluate_expression(
                     | ComputedItem::Float(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
-                    | ComputedItem::Table(_),
-                )
-                | (
-                    ComputedItem::String(_),
-                    ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
-                    | ComputedItem::Float(_)
-                    | ComputedItem::Integer(_)
-                    | ComputedItem::Identifier(_)
                     | ComputedItem::Table(_),
                 )
                 | (
@@ -748,6 +732,54 @@ fn evaluate_bare_identifier_choice(
     }
 }
 
+/// Validates a bare-identifier unit value against the definition's unit family.
+fn evaluate_bare_identifier_unit(
+    unit_definition: &datastore::definition::UnitDefinition,
+    name: &str,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    let value = ShareableString::from(name);
+    if unit_definition.contains(value.clone()) {
+        Ok(ComputedItem::Identifier(value))
+    } else {
+        Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Value '{value}' is not a valid unit."),
+            source.clone(),
+            SpanSet::from_span(span),
+        ))
+    }
+}
+
+/// Validates that a computed string belongs to a unit definition's family.
+fn validate_unit_value(
+    unit_definition: &datastore::definition::UnitDefinition,
+    computed: &ComputedItem,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    if let ComputedItem::String(value) | ComputedItem::Identifier(value) = &computed {
+        if unit_definition.contains(value) {
+            Ok(ComputedItem::Identifier(value.clone()))
+        } else {
+            Err(ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                format!("Value '{value}' is not a valid unit."),
+                source.clone(),
+                SpanSet::from_span(span),
+            ))
+        }
+    } else {
+        Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            format!("Expected a string value for unit, but got {computed:?}."),
+            source.clone(),
+            SpanSet::from_span(span),
+        ))
+    }
+}
+
 /// Evaluates the expression stored in a single [`BasicInputData`] item.
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
@@ -759,13 +791,17 @@ fn evaluate_basic_expression(
 
     let span = expression_span(&expression);
 
-    // A choice value may be written as a bare identifier (e.g. `option_1`) naming the
-    // choice directly, rather than a variable to look up. This only applies to choice
-    // definitions; every other definition kind evaluates the expression normally below.
-    if let (Choice(choice_definition), Expression::Literal(_, Literal::Identifier(name))) =
-        (basic.definition(), &expression)
-    {
-        return evaluate_bare_identifier_choice(choice_definition, name, source, span);
+    // Choice and unit values may be written as bare identifiers rather than variable references.
+    if let Expression::Literal(_, Literal::Identifier(name)) = &expression {
+        match basic.definition() {
+            Choice(choice_definition) => {
+                return evaluate_bare_identifier_choice(choice_definition, name, source, span);
+            }
+            Unit(unit_definition) => {
+                return evaluate_bare_identifier_unit(unit_definition, name, source, span);
+            }
+            _ => {}
+        }
     }
 
     let computed = evaluate_expression(computed_data, functions, source, expression)?;
@@ -787,9 +823,9 @@ fn evaluate_basic_expression(
         }
         Choice(choice_definition) => {
             // Validate that the computed value is one of the allowed choices
-            if let ComputedItem::String(value) = &computed {
+            if let ComputedItem::String(value) | ComputedItem::Identifier(value) = &computed {
                 if choice_definition.contains(value) {
-                    Ok(computed)
+                    Ok(ComputedItem::Identifier(value.clone()))
                 } else {
                     Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
@@ -1060,6 +1096,7 @@ fn evaluate_basic_expression(
                 ))
             }
         }
+        Unit(unit_definition) => validate_unit_value(unit_definition, &computed, source, span),
     }
 }
 

@@ -1,5 +1,6 @@
 use datastore::prelude::*;
 use std::collections::BTreeMap;
+use units::{UnitFamilyId, UnitId};
 
 #[test]
 fn test_editable_map_entry_round_trip() {
@@ -120,4 +121,34 @@ fn test_editable_map_get_mut() {
         "edited"
     );
     assert_ne!(frozen_map_2.hash(), frozen_map.hash());
+}
+
+#[test]
+fn test_editable_map_unit_round_trip() {
+    let item_type: BTreeMap<StoreKey, MapItemDefinition> = vec![(
+        store_key!("unit").into(),
+        MapItemDefinition::Unit(UnitDefinition::new_with_default(
+            "Length unit",
+            UnitFamilyId::Length,
+            UnitId::Length_Meter.string_id().as_str(),
+        )),
+    )]
+    .into_iter()
+    .collect();
+    let frozen = MapEntryFrozen::new(&item_type);
+    let mut editable = frozen.thaw();
+
+    editable
+        .get_mut("unit")
+        .expect("unit item")
+        .get_mut_unit()
+        .expect("unit value")
+        .set(UnitId::Length_Foot.string_id().as_str());
+
+    let refrozen = editable.freeze();
+    assert_eq!(
+        refrozen.get_unit("unit").map(UnitFrozen::value),
+        Some(UnitId::Length_Foot.string_id().into())
+    );
+    assert_ne!(refrozen.hash(), frozen.hash());
 }

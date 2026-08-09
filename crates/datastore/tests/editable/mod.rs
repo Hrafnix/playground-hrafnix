@@ -7,4 +7,5 @@ mod editable_integer;
 mod editable_map;
 mod editable_parameter_object;
 mod editable_table;
+mod editable_unit;
 mod editable_variable_object;
