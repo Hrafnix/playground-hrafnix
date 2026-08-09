@@ -60,6 +60,10 @@ fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
             table.parameter().clone(),
             table.rows().to_vec(),
         )),
+        MapItemFrozen::Unit(unit) => ObjectItemInputData::Basic(BasicInputData::new(
+            BasicDefinition::Unit(unit.definition().clone()),
+            unit.value(),
+        )),
     }
 }
 
@@ -156,6 +160,15 @@ fn item_to_input_data(
                     table.definition().clone(),
                     table.parameter().clone(),
                     table.rows().to_vec(),
+                )),
+            );
+        }
+        ItemFrozen::Unit(unit) => {
+            map.insert(
+                key,
+                ObjectItemInputData::Basic(BasicInputData::new(
+                    BasicDefinition::Unit(unit.definition().clone()),
+                    unit.value(),
                 )),
             );
         }

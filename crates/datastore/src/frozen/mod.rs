@@ -24,6 +24,8 @@ pub mod frozen_object_variable;
 pub mod frozen_string;
 /// Frozen table data.
 pub mod frozen_table;
+/// Frozen unit data.
+pub mod frozen_unit;
 
 pub use frozen_boolean::*;
 pub use frozen_choice::*;
@@ -38,3 +40,4 @@ pub use frozen_object_parameter::*;
 pub use frozen_object_variable::*;
 pub use frozen_string::*;
 pub use frozen_table::*;
+pub use frozen_unit::*;

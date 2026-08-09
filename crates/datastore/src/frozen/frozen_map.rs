@@ -2,7 +2,7 @@ use crate::definition::{MapDefinition, MapItemDefinition};
 use crate::editable::{MapEditable, MapEntryEditable, MapItemEditable};
 use crate::frozen::{
     BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, NumberFrozen, NumberWithUnitsFrozen,
-    StringFrozen, TableFrozen,
+    StringFrozen, TableFrozen, UnitFrozen,
 };
 use crate::traits::TreePrint;
 use errors::StoreError;
@@ -30,6 +30,8 @@ pub enum MapItemFrozen {
     String(StringFrozen),
     /// A table value.
     Table(TableFrozen),
+    /// A unit value.
+    Unit(UnitFrozen),
 }
 
 impl MapItemFrozen {
@@ -47,6 +49,15 @@ impl MapItemFrozen {
     pub const fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             MapItemFrozen::Table(table) => Some(table),
+            _ => None,
+        }
+    }
+
+    /// Returns the unit value if this item is a unit value.
+    #[must_use]
+    pub const fn get_unit(&self) -> Option<&UnitFrozen> {
+        match self {
+            MapItemFrozen::Unit(unit) => Some(unit),
             _ => None,
         }
     }
@@ -69,6 +80,7 @@ impl MapItemFrozen {
             }
             MapItemFrozen::String(basic) => MapItemDefinition::String(basic.definition().clone()),
             MapItemFrozen::Table(table) => MapItemDefinition::Table(table.definition().clone()),
+            MapItemFrozen::Unit(unit) => MapItemDefinition::Unit(unit.definition().clone()),
         }
     }
 
@@ -84,6 +96,7 @@ impl MapItemFrozen {
             MapItemFrozen::NumberWithUnits(number_with_units) => number_with_units.hash(),
             MapItemFrozen::String(basic) => basic.hash(),
             MapItemFrozen::Table(table) => table.hash(),
+            MapItemFrozen::Unit(unit) => unit.hash(),
         }
     }
 
@@ -113,6 +126,7 @@ impl MapItemFrozen {
             MapItemEditable::Table(table) => {
                 MapItemFrozen::Table(TableFrozen::new_from_editable(table))
             }
+            MapItemEditable::Unit(unit) => MapItemFrozen::Unit(UnitFrozen::new_from_editable(unit)),
         }
     }
 
@@ -154,6 +168,7 @@ impl TreePrint for MapItemFrozen {
             }
             MapItemFrozen::String(basic) => basic.tree_print(f, label, prefix, last),
             MapItemFrozen::Table(table) => table.tree_print(f, label, prefix, last),
+            MapItemFrozen::Unit(unit) => unit.tree_print(f, label, prefix, last),
         }
     }
 }
@@ -222,6 +237,12 @@ impl MapEntryFrozen {
                     items.insert(
                         key.clone(),
                         MapItemFrozen::Table(TableFrozen::new(table_definition.clone())),
+                    );
+                }
+                MapItemDefinition::Unit(unit_definition) => {
+                    items.insert(
+                        key.clone(),
+                        MapItemFrozen::Unit(UnitFrozen::new(unit_definition.clone())),
                     );
                 }
             }
@@ -311,6 +332,11 @@ impl MapEntryFrozen {
         } else {
             None
         }
+    }
+
+    /// Return the unit value if this item is a unit value.
+    pub fn get_unit<S: Into<ShareableString>>(&self, key: S) -> Option<&UnitFrozen> {
+        self.get(key).and_then(MapItemFrozen::get_unit)
     }
 
     /// Returns an iterator over the key-item pairs in the entry.

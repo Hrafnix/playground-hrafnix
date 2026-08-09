@@ -1,7 +1,7 @@
 use crate::definition::ItemDefinitionType;
 use crate::frozen::{
     BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, MapFrozen, NumberFrozen,
-    NumberWithUnitsFrozen, StringFrozen, TableFrozen,
+    NumberWithUnitsFrozen, StringFrozen, TableFrozen, UnitFrozen,
 };
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,8 @@ pub enum ItemFrozen {
     String(StringFrozen),
     /// A table parameter.
     Table(TableFrozen),
+    /// A unit parameter.
+    Unit(UnitFrozen),
 }
 
 impl ItemFrozen {
@@ -45,6 +47,7 @@ impl ItemFrozen {
             }
             ItemFrozen::String(s) => ItemDefinitionType::String(s.definition().clone()),
             ItemFrozen::Table(t) => ItemDefinitionType::Table(t.definition().clone()),
+            ItemFrozen::Unit(u) => ItemDefinitionType::Unit(u.definition().clone()),
         }
     }
 
@@ -61,6 +64,7 @@ impl ItemFrozen {
             Self::NumberWithUnits(nwu) => nwu.hash(),
             Self::String(s) => s.hash(),
             Self::Table(t) => t.hash(),
+            Self::Unit(u) => u.hash(),
         }
     }
 
@@ -69,6 +73,15 @@ impl ItemFrozen {
     pub fn get_choice(&self) -> Option<ChoiceFrozen> {
         match self {
             Self::Choice(c) => Some(c.clone()),
+            _ => None,
+        }
+    }
+
+    /// Returns the unit value if this parameter is a unit parameter.
+    #[must_use]
+    pub fn get_unit(&self) -> Option<UnitFrozen> {
+        match self {
+            Self::Unit(unit) => Some(unit.clone()),
             _ => None,
         }
     }
@@ -139,6 +152,7 @@ impl TreePrint for ItemFrozen {
             }
             Self::String(basic) => basic.tree_print(f, label, prefix, last),
             Self::Table(table) => table.tree_print(f, label, prefix, last),
+            Self::Unit(unit) => unit.tree_print(f, label, prefix, last),
         }
     }
 }
