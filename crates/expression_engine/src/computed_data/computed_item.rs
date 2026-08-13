@@ -77,6 +77,13 @@ pub enum ComputedItem {
     Integer(i64),
     /// A floating-point number.
     Float(f64),
+    /// A floating-point number with a concrete unit.
+    FloatWithUnit {
+        /// The numeric value, expressed in `unit`.
+        value: f64,
+        /// The concrete unit associated with `value`.
+        unit: UnitId,
+    },
     /// A String value.
     String(ShareableString),
     /// An Identifier value.
@@ -95,17 +102,17 @@ impl fmt::Display for ComputedItem {
             ComputedItem::Boolean(value) => write!(f, "{value}"),
             ComputedItem::Integer(value) => write!(f, "{value}"),
             ComputedItem::Float(value) => write!(f, "{value}"),
+            ComputedItem::FloatWithUnit { value, unit } => {
+                let unit_description = unit.description();
+                write!(f, "{value} {unit_description}")
+            }
             ComputedItem::String(value)
             | ComputedItem::File(value)
             | ComputedItem::Identifier(value) => write!(f, "{value}"),
             ComputedItem::Table(_) => write!(f, "{self:?}"),
             ComputedItem::Unit(value) => {
-                let family_description = value.family_id().description();
                 let unit_description = value.description();
-                write!(
-                    f,
-                    "Unit Family: {family_description}, Unit: {unit_description}"
-                )
+                write!(f, "Unit: {unit_description}")
             }
         }
     }

@@ -39,6 +39,28 @@ fn lookup_variable(
     }
 }
 
+/// Creates a computed float with unit metadata only when the unit is concrete.
+fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
+    if unit == UnitId::None {
+        ComputedItem::Float(value)
+    } else {
+        ComputedItem::FloatWithUnit { value, unit }
+    }
+}
+
+/// Returns whether an expression is a float literal, optionally prefixed with a single negation.
+fn is_signed_float_literal(expression: &Expression) -> bool {
+    match expression {
+        Expression::Literal(_, Literal::Float(_)) => true,
+        Expression::UnaryOperation {
+            operator: Operators::Negate,
+            operand,
+            ..
+        } => matches!(operand.as_ref(), Expression::Literal(_, Literal::Float(_))),
+        _ => false,
+    }
+}
+
 /// Applies a unary `operator` to `operand_value`, returning the result or an error.
 fn evaluate_unary_operation(
     operator: Operators,
@@ -48,6 +70,9 @@ fn evaluate_unary_operation(
 ) -> Result<ComputedItem, ExpressionError> {
     match (operator, operand_value) {
         (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
+        (Operators::Negate, ComputedItem::FloatWithUnit { value, unit: _ }) => {
+            Ok(ComputedItem::Float(-value))
+        }
         (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
             value.checked_mul(-1).ok_or_else(|| {
                 ExpressionError::new_complex(
@@ -595,15 +620,24 @@ fn evaluate_expression(
                         SpanSet::from_span(operator_span),
                     )),
                 },
-                (ComputedItem::Float(left_float), ComputedItem::Float(right_float)) => {
-                    evaluate_float_binary_operation(
-                        &operator,
-                        left_float,
-                        right_float,
-                        source,
-                        operator_span,
-                    )
-                }
+                (
+                    ComputedItem::Float(left_float)
+                    | ComputedItem::FloatWithUnit {
+                        value: left_float,
+                        unit: _,
+                    },
+                    ComputedItem::Float(right_float)
+                    | ComputedItem::FloatWithUnit {
+                        value: right_float,
+                        unit: _,
+                    },
+                ) => evaluate_float_binary_operation(
+                    &operator,
+                    left_float,
+                    right_float,
+                    source,
+                    operator_span,
+                ),
                 (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
                     evaluate_integer_binary_operation(
                         &operator,
@@ -647,6 +681,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_),
                     ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
@@ -657,6 +692,7 @@ fn evaluate_expression(
                     ComputedItem::File(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
@@ -664,7 +700,7 @@ fn evaluate_expression(
                     | ComputedItem::Unit(_),
                 )
                 | (
-                    ComputedItem::Float(_),
+                    ComputedItem::Float(_) | ComputedItem::FloatWithUnit { value: _, unit: _ },
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Identifier(_)
@@ -678,6 +714,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Integer(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::Unit(_),
@@ -687,6 +724,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_)
@@ -697,6 +735,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Integer(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
@@ -707,6 +746,7 @@ fn evaluate_expression(
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
@@ -958,7 +998,7 @@ fn evaluate_basic_expression(
         Number(number_definition) => {
             // Validate that the computed value is a number (integer or float)
             match &computed {
-                ComputedItem::Float(value) => {
+                ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
                     let constraint = number_definition.constraint();
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
@@ -1033,6 +1073,17 @@ fn evaluate_basic_expression(
             // Validate that the computed value is a number (integer or float)
             match &computed {
                 ComputedItem::Float(value) => {
+                    if number_definition.preferred_units() != UnitId::None {
+                        return Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Expected a numeric value with units for number definition, but got {computed:?}."
+                            ),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ));
+                    }
+
                     let constraint = number_definition.constraint();
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
@@ -1093,6 +1144,99 @@ fn evaluate_basic_expression(
                         NumberConstraintEnum::None => Ok(computed),
                     }
                 }
+                ComputedItem::FloatWithUnit { value, unit } => {
+                    if number_definition.preferred_units().family_id() != unit.family_id() {
+                        return Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Expected a numeric value with units for number definition, but got {computed:?}."
+                            ),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ));
+                    }
+
+                    let converted_value =
+                        convert(*value, *unit, number_definition.preferred_units()).map_err(
+                            |error| {
+                                ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    error,
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                )
+                            },
+                        )?;
+
+                    let computed = ComputedItem::FloatWithUnit {
+                        value: converted_value,
+                        unit: number_definition.preferred_units(),
+                    };
+
+                    let constraint = number_definition.constraint();
+                    match constraint {
+                        NumberConstraintEnum::Min { min, inclusive } => {
+                            if (converted_value) < min || (!inclusive && (converted_value) <= min) {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is less than the minimum allowed value of {min}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+                            Ok(computed)
+                        }
+                        NumberConstraintEnum::Max { max, inclusive } => {
+                            if (converted_value) > max || (!inclusive && (converted_value) >= max) {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is greater than the maximum allowed value of {max}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+                            Ok(computed)
+                        }
+                        NumberConstraintEnum::Range {
+                            min,
+                            max,
+                            min_inclusive,
+                            max_inclusive,
+                        } => {
+                            if (converted_value) < min
+                                || (!min_inclusive && (converted_value) <= min)
+                            {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is less than the minimum allowed value of {min}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+                            if (converted_value) > max
+                                || (!max_inclusive && (converted_value) >= max)
+                            {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is greater than the maximum allowed value of {max}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+
+                            Ok(computed)
+                        }
+                        NumberConstraintEnum::None => Ok(computed),
+                    }
+                }
                 _ => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
@@ -1107,7 +1251,9 @@ fn evaluate_basic_expression(
             // Validate that the computed value is a string
             if let ComputedItem::String(_) = &computed {
                 Ok(computed)
-            } else if let ComputedItem::Float(value) = &computed {
+            } else if let ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } =
+                &computed
+            {
                 Ok(ComputedItem::String(value.to_string().into()))
             } else if let ComputedItem::Integer(value) = &computed {
                 Ok(ComputedItem::String(value.to_string().into()))
@@ -1133,6 +1279,9 @@ fn evaluate_number_with_units_expression(
     let source = basic.data();
     let expression = string_to_expression(source)?;
     let span = expression_span(&expression);
+    let is_float_literal = is_signed_float_literal(&expression);
+    let is_identifier_reference =
+        matches!(expression, Expression::Literal(_, Literal::Identifier(_)));
     let computed = evaluate_expression(computed_data, functions, source, expression)?;
 
     let NumberWithUnits(number_definition) = basic.definition() else {
@@ -1144,26 +1293,39 @@ fn evaluate_number_with_units_expression(
         ));
     };
 
-    let ComputedItem::Float(value) = computed else {
-        return Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Expected a numeric value for number definition, but got {computed:?}."),
-            source.clone(),
-            SpanSet::from_span(span),
-        ));
+    let (value, source_unit) = match computed {
+        ComputedItem::Float(value) => {
+            let unit = if is_float_literal {
+                UnitId::from_unit_id_str(basic.units().as_str()).ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!("Unknown unit '{}'.", basic.units()),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?
+            } else {
+                UnitId::None
+            };
+            (value, unit)
+        }
+        ComputedItem::FloatWithUnit { value, unit } => (value, unit),
+        _ => {
+            return Err(ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                format!("Expected a numeric value for number definition, but got {computed:?}."),
+                source.clone(),
+                SpanSet::from_span(span),
+            ));
+        }
     };
 
-    let input_unit = UnitId::from_unit_id_str(basic.units().as_str()).ok_or_else(|| {
-        ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Unknown unit '{}'.", basic.units()),
-            source.clone(),
-            SpanSet::from_span(span),
-        )
-    })?;
+    if source_unit == UnitId::None && !is_float_literal && !is_identifier_reference {
+        return Ok(ComputedItem::Float(value));
+    }
 
     let value =
-        convert(value, input_unit, number_definition.preferred_units()).map_err(|error| {
+        convert(value, source_unit, number_definition.preferred_units()).map_err(|error| {
             ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 error,
@@ -1172,7 +1334,7 @@ fn evaluate_number_with_units_expression(
             )
         })?;
 
-    Ok(ComputedItem::Float(value))
+    Ok(computed_float(value, number_definition.preferred_units()))
 }
 
 /// Evaluates all cells in a [`TableInputData`] and returns the resulting rows of `f64` values.
@@ -1656,11 +1818,100 @@ mod tests {
 
         assert!(errors.is_empty());
         match result.get("distance") {
-            Some(ComputedItem::Float(value)) => {
+            Some(ComputedItem::FloatWithUnit { value, unit }) => {
                 assert!((*value - 3.280_839_895_013_123).abs() < f64::EPSILON);
+                assert_eq!(*unit, UnitId::Length_Foot);
             }
-            other => panic!("expected converted float, got {other:?}"),
+            other => panic!("expected converted float with unit, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn number_with_units_converts_negative_float_literal_to_preferred_units() {
+        let input_data = BTreeMap::from([(
+            "temperature".into(),
+            create_number_with_units_input_data(
+                "-1.0",
+                "u_temperature_celsius",
+                UnitId::Temperature_Fahrenheit,
+            ),
+        )]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        assert_eq!(
+            result.get("temperature"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: 30.2,
+                unit: UnitId::Temperature_Fahrenheit,
+            })
+        );
+    }
+
+    #[test]
+    fn numeric_operation_drops_units() {
+        let input_data = BTreeMap::from([(
+            "distance".into(),
+            create_number_with_units_input_data(
+                "1.0 + 1.0",
+                "u_length_meter",
+                UnitId::Length_Meter,
+            ),
+        )]);
+        let computed_data = BTreeMap::from([
+            (
+                "left".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 2.0,
+                    unit: UnitId::Length_Meter,
+                },
+            ),
+            (
+                "right".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 4.0,
+                    unit: UnitId::Time_Second,
+                },
+            ),
+        ]);
+        let operation_input = BTreeMap::from([(
+            "speed".into(),
+            create_number_basic_input_data("left / right"),
+        )]);
+
+        let (distance, distance_errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+        assert!(distance_errors.is_empty());
+        assert_eq!(distance.get("distance"), Some(&ComputedItem::Float(2.0)));
+
+        let (result, errors) = evaluator(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &operation_input,
+        );
+        assert!(errors.is_empty());
+        assert_eq!(result.get("speed"), Some(&ComputedItem::Float(0.5)));
+    }
+
+    #[test]
+    fn unitless_reference_cannot_be_converted_to_a_unit() {
+        let computed_data = BTreeMap::from([("unitless".into(), ComputedItem::Float(2.0))]);
+        let input_data = BTreeMap::from([(
+            "distance".into(),
+            create_number_with_units_input_data("unitless", "u_length_meter", UnitId::Length_Meter),
+        )]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 1);
+        assert!(
+            errors[0]
+                .to_string()
+                .contains("Cannot convert a unitless value to a unit")
+        );
     }
 
     #[test]
