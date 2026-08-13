@@ -106,7 +106,16 @@ impl ItemEditable {
     pub const fn get_boolean(&self) -> Option<&BooleanEditable> {
         match self {
             Self::Boolean(b) => Some(b),
-            _ => None,
+            Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -115,7 +124,16 @@ impl ItemEditable {
     pub const fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
         match self {
             Self::Boolean(b) => Some(b),
-            _ => None,
+            Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -124,7 +142,16 @@ impl ItemEditable {
     pub fn get_choice(&self) -> Option<ChoiceEditable> {
         match self {
             Self::Choice(c) => Some(c.clone()),
-            _ => None,
+            Self::Boolean(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -133,7 +160,16 @@ impl ItemEditable {
     pub const fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
         match self {
             Self::Choice(c) => Some(c),
-            _ => None,
+            Self::Boolean(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -142,7 +178,16 @@ impl ItemEditable {
     pub const fn get_file(&self) -> Option<&FileEditable> {
         match self {
             Self::File(f) => Some(f),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -151,7 +196,16 @@ impl ItemEditable {
     pub const fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
         match self {
             Self::File(f) => Some(f),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -160,7 +214,16 @@ impl ItemEditable {
     pub const fn get_integer(&self) -> Option<&IntegerEditable> {
         match self {
             Self::Integer(i) => Some(i),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -169,7 +232,16 @@ impl ItemEditable {
     pub const fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
         match self {
             Self::Integer(i) => Some(i),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -178,7 +250,16 @@ impl ItemEditable {
     pub const fn get_map(&self) -> Option<&MapEditable> {
         match self {
             Self::Map(m) => Some(m),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -187,7 +268,16 @@ impl ItemEditable {
     pub const fn get_mut_map(&mut self) -> Option<&mut MapEditable> {
         match self {
             Self::Map(m) => Some(m),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -196,7 +286,16 @@ impl ItemEditable {
     pub const fn get_number(&self) -> Option<&NumberEditable> {
         match self {
             Self::Number(n) => Some(n),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -205,7 +304,16 @@ impl ItemEditable {
     pub const fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
         match self {
             Self::Number(n) => Some(n),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -214,7 +322,16 @@ impl ItemEditable {
     pub const fn get_string(&self) -> Option<&StringEditable> {
         match self {
             Self::String(s) => Some(s),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -223,7 +340,16 @@ impl ItemEditable {
     pub const fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
         match self {
             Self::String(s) => Some(s),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -232,7 +358,16 @@ impl ItemEditable {
     pub const fn get_table(&self) -> Option<&TableEditable> {
         match self {
             Self::Table(t) => Some(t),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -241,7 +376,16 @@ impl ItemEditable {
     pub const fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
         match self {
             Self::Table(t) => Some(t),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -250,7 +394,16 @@ impl ItemEditable {
     pub const fn get_unit(&self) -> Option<&UnitEditable> {
         match self {
             Self::Unit(unit) => Some(unit),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_) => None,
         }
     }
 
@@ -259,7 +412,16 @@ impl ItemEditable {
     pub const fn get_mut_unit(&mut self) -> Option<&mut UnitEditable> {
         match self {
             Self::Unit(unit) => Some(unit),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_) => None,
         }
     }
 }

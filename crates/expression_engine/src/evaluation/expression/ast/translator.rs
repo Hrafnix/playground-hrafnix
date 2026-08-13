@@ -337,7 +337,10 @@ impl Translator {
                     index,
                 })
             }
-            other => Ok(Expression::Index {
+            other @ (Expression::Literal(..)
+            | Expression::BinaryOperation { .. }
+            | Expression::UnaryOperation { .. }
+            | Expression::FunctionCall { .. }) => Ok(Expression::Index {
                 span: combined_span,
                 name: other.to_string(),
                 index: vec![new_index],

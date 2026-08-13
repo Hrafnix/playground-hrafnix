@@ -87,7 +87,15 @@ impl MapItemEditable {
     pub const fn get_boolean(&self) -> Option<&BooleanEditable> {
         match self {
             MapItemEditable::Boolean(boolean) => Some(boolean),
-            _ => None,
+            MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -96,7 +104,15 @@ impl MapItemEditable {
     pub const fn get_mut_boolean(&mut self) -> Option<&mut BooleanEditable> {
         match self {
             MapItemEditable::Boolean(boolean) => Some(boolean),
-            _ => None,
+            MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -105,7 +121,15 @@ impl MapItemEditable {
     pub const fn get_choice(&self) -> Option<&ChoiceEditable> {
         match self {
             MapItemEditable::Choice(choice) => Some(choice),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -114,7 +138,15 @@ impl MapItemEditable {
     pub const fn get_mut_choice(&mut self) -> Option<&mut ChoiceEditable> {
         match self {
             MapItemEditable::Choice(choice) => Some(choice),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -123,7 +155,15 @@ impl MapItemEditable {
     pub const fn get_file(&self) -> Option<&FileEditable> {
         match self {
             MapItemEditable::File(file) => Some(file),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -132,7 +172,15 @@ impl MapItemEditable {
     pub const fn get_mut_file(&mut self) -> Option<&mut FileEditable> {
         match self {
             MapItemEditable::File(file) => Some(file),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -141,7 +189,15 @@ impl MapItemEditable {
     pub const fn get_integer(&self) -> Option<&IntegerEditable> {
         match self {
             MapItemEditable::Integer(integer) => Some(integer),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -150,7 +206,15 @@ impl MapItemEditable {
     pub const fn get_mut_integer(&mut self) -> Option<&mut IntegerEditable> {
         match self {
             MapItemEditable::Integer(integer) => Some(integer),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -159,7 +223,15 @@ impl MapItemEditable {
     pub const fn get_number(&self) -> Option<&NumberEditable> {
         match self {
             MapItemEditable::Number(number) => Some(number),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -168,7 +240,15 @@ impl MapItemEditable {
     pub const fn get_mut_number(&mut self) -> Option<&mut NumberEditable> {
         match self {
             MapItemEditable::Number(number) => Some(number),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -177,7 +257,15 @@ impl MapItemEditable {
     pub const fn get_string(&self) -> Option<&StringEditable> {
         match self {
             MapItemEditable::String(string) => Some(string),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -186,7 +274,15 @@ impl MapItemEditable {
     pub const fn get_mut_string(&mut self) -> Option<&mut StringEditable> {
         match self {
             MapItemEditable::String(string) => Some(string),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -195,7 +291,15 @@ impl MapItemEditable {
     pub const fn get_table(&self) -> Option<&TableEditable> {
         match self {
             MapItemEditable::Table(table) => Some(table),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -204,7 +308,15 @@ impl MapItemEditable {
     pub const fn get_mut_table(&mut self) -> Option<&mut TableEditable> {
         match self {
             MapItemEditable::Table(table) => Some(table),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::TableWithUnits(_)
+            | MapItemEditable::Unit(_) => None,
         }
     }
 
@@ -213,7 +325,15 @@ impl MapItemEditable {
     pub const fn get_unit(&self) -> Option<&UnitEditable> {
         match self {
             MapItemEditable::Unit(unit) => Some(unit),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_) => None,
         }
     }
 
@@ -222,7 +342,15 @@ impl MapItemEditable {
     pub const fn get_mut_unit(&mut self) -> Option<&mut UnitEditable> {
         match self {
             MapItemEditable::Unit(unit) => Some(unit),
-            _ => None,
+            MapItemEditable::Boolean(_)
+            | MapItemEditable::Choice(_)
+            | MapItemEditable::File(_)
+            | MapItemEditable::Integer(_)
+            | MapItemEditable::Number(_)
+            | MapItemEditable::NumberWithUnits(_)
+            | MapItemEditable::String(_)
+            | MapItemEditable::Table(_)
+            | MapItemEditable::TableWithUnits(_) => None,
         }
     }
 

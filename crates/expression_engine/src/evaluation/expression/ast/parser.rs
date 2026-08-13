@@ -57,7 +57,10 @@ impl Parser {
                 token: result,
                 source,
             }),
-            t => {
+            t @ (LexerToken::Identifier(..)
+            | LexerToken::Numeric(..)
+            | LexerToken::Operator(..)
+            | LexerToken::Text(..)) => {
                 let index_set = Self::token_index_set(&t);
 
                 Err(ExpressionError::new_complex(
@@ -244,7 +247,11 @@ impl Parser {
                 LexerToken::Operator(_index, value) if value == "," => {
                     lexer.next();
                 }
-                _ => break,
+                LexerToken::Identifier(..)
+                | LexerToken::Numeric(..)
+                | LexerToken::Operator(..)
+                | LexerToken::Text(..)
+                | LexerToken::EndOfInput => break,
             }
         }
 
@@ -256,7 +263,11 @@ impl Parser {
     fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionError> {
         match lexer.next() {
             LexerToken::Operator(_index, value) if value == expected => Ok(()),
-            t => {
+            t @ (LexerToken::Identifier(..)
+            | LexerToken::Numeric(..)
+            | LexerToken::Operator(..)
+            | LexerToken::Text(..)
+            | LexerToken::EndOfInput) => {
                 let index_set = Self::token_index_set(&t);
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Parse,

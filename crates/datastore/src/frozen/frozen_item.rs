@@ -79,7 +79,16 @@ impl ItemFrozen {
     pub fn get_choice(&self) -> Option<ChoiceFrozen> {
         match self {
             Self::Choice(c) => Some(c.clone()),
-            _ => None,
+            Self::Boolean(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -88,7 +97,16 @@ impl ItemFrozen {
     pub fn get_unit(&self) -> Option<UnitFrozen> {
         match self {
             Self::Unit(unit) => Some(unit.clone()),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_) => None,
         }
     }
 
@@ -97,7 +115,16 @@ impl ItemFrozen {
     pub const fn get_file(&self) -> Option<&FileFrozen> {
         match self {
             Self::File(f) => Some(f),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -106,7 +133,16 @@ impl ItemFrozen {
     pub const fn get_map(&self) -> Option<&MapFrozen> {
         match self {
             Self::Map(m) => Some(m),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -115,7 +151,16 @@ impl ItemFrozen {
     pub const fn get_number(&self) -> Option<&NumberFrozen> {
         match self {
             Self::Number(n) => Some(n),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -124,7 +169,16 @@ impl ItemFrozen {
     pub const fn get_string(&self) -> Option<&StringFrozen> {
         match self {
             Self::String(s) => Some(s),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::Table(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 
@@ -133,7 +187,16 @@ impl ItemFrozen {
     pub const fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             Self::Table(t) => Some(t),
-            _ => None,
+            Self::Boolean(_)
+            | Self::Choice(_)
+            | Self::File(_)
+            | Self::Integer(_)
+            | Self::Map(_)
+            | Self::Number(_)
+            | Self::NumberWithUnits(_)
+            | Self::String(_)
+            | Self::TableWithUnits(_)
+            | Self::Unit(_) => None,
         }
     }
 }
