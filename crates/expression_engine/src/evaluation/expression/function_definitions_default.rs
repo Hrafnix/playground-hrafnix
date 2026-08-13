@@ -78,86 +78,51 @@ fn arg<'a>(
 fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "sin")?;
 
-    match arg {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(value.sin())),
-        _ => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "sin function argument must be a number".to_string(),
-        )),
-    }
+    Ok(ComputedItem::Float(as_float(arg, "sin")?.sin()))
 }
 
 /// Computes the cosine of a float argument (radians).
 fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "cos")?;
 
-    match arg {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(value.cos())),
-        _ => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "cos function argument must be a number".to_string(),
-        )),
-    }
+    Ok(ComputedItem::Float(as_float(arg, "cos")?.cos()))
 }
 
 /// Computes the tangent of a float argument (radians).
 fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "tan")?;
 
-    match arg {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(value.tan())),
-        _ => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "tan function argument must be a number".to_string(),
-        )),
-    }
+    Ok(ComputedItem::Float(as_float(arg, "tan")?.tan()))
 }
 
 /// Computes the arcsine of a float argument, returning a value in radians.
 fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "arcsin")?;
 
-    match arg {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(value.asin())),
-        _ => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "arcsin function argument must be a number".to_string(),
-        )),
-    }
+    Ok(ComputedItem::Float(as_float(arg, "arcsin")?.asin()))
 }
 
 /// Computes the arccosine of a float argument, returning a value in radians.
 fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "arccos")?;
 
-    match arg {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(value.acos())),
-        _ => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "arccos function argument must be a number".to_string(),
-        )),
-    }
+    Ok(ComputedItem::Float(as_float(arg, "arccos")?.acos()))
 }
 
 /// Computes the arctangent of a float argument, returning a value in radians.
 fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     let arg = arg(args, 0, "arctan")?;
 
-    match arg {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(value.atan())),
-        _ => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "arctan function argument must be a number".to_string(),
-        )),
-    }
+    Ok(ComputedItem::Float(as_float(arg, "arctan")?.atan()))
 }
 
-/// Extracts a floating-point value from a `ComputedItem`. Only the `Float`
-/// variant is accepted; `Integer` is intentionally rejected so that integer
-/// and floating-point values are never silently converted into one another.
+/// Extracts a floating-point value from a `ComputedItem`. Both unitless and
+/// unit-bearing floats are accepted; integers are intentionally rejected so
+/// that integer and floating-point values are never silently converted into
+/// one another.
 fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, ExpressionError> {
     match item {
-        ComputedItem::Float(value) => Ok(*value),
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => Ok(*value),
         _ => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             format!("{function_name} function argument must be a float"),
@@ -414,7 +379,7 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "to_int")? {
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
-        ComputedItem::Float(value) => {
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
             let int_value = truncated_f64_to_i64(*value, "to_int")?;
             Ok(ComputedItem::Integer(int_value))
         }
@@ -429,7 +394,9 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 /// exactly representable range.
 fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "to_float")? {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(*value)),
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+            Ok(ComputedItem::Float(*value))
+        }
         ComputedItem::Integer(value) => {
             let float_value = i64_to_f64(*value, "to_float")?;
             Ok(ComputedItem::Float(float_value))

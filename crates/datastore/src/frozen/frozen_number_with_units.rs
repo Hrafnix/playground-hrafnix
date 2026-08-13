@@ -82,6 +82,7 @@ impl NumberWithUnitsFrozen {
         h.update(b"Number");
 
         h.update(&self.value.current_blake3_hash());
+        h.update(&self.units.current_blake3_hash());
 
         let digest = h.finalize();
         self.hash = *digest.as_bytes();

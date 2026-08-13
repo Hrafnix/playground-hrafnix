@@ -9,8 +9,8 @@ use crate::evaluation::expression::function_definition::{ArgumentCount, Function
 use crate::expression::ast::ast_helper::string_to_expression;
 use crate::input_data::input_basic_with_units::BasicInputWithUnitsData;
 use crate::{
-    BasicInputData, ComputedItem, ComputedTable, ExpressionCategory, ExpressionError,
-    ObjectItemInputData, TableInputData,
+    BasicInputData, ComputedItem, ComputedTable, ComputedTableWithUnits, ExpressionCategory,
+    ExpressionError, ObjectItemInputData, TableInputData, TableWithUnitsInputData,
 };
 use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
 use shareable_string::ShareableString;
@@ -39,6 +39,28 @@ fn lookup_variable(
     }
 }
 
+/// Creates a computed float with unit metadata only when the unit is concrete.
+fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
+    if unit == UnitId::None {
+        ComputedItem::Float(value)
+    } else {
+        ComputedItem::FloatWithUnit { value, unit }
+    }
+}
+
+/// Returns whether an expression is a float literal, optionally prefixed with a single negation.
+fn is_signed_float_literal(expression: &Expression) -> bool {
+    match expression {
+        Expression::Literal(_, Literal::Float(_)) => true,
+        Expression::UnaryOperation {
+            operator: Operators::Negate,
+            operand,
+            ..
+        } => matches!(operand.as_ref(), Expression::Literal(_, Literal::Float(_))),
+        _ => false,
+    }
+}
+
 /// Applies a unary `operator` to `operand_value`, returning the result or an error.
 fn evaluate_unary_operation(
     operator: Operators,
@@ -48,6 +70,9 @@ fn evaluate_unary_operation(
 ) -> Result<ComputedItem, ExpressionError> {
     match (operator, operand_value) {
         (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
+        (Operators::Negate, ComputedItem::FloatWithUnit { value, unit: _ }) => {
+            Ok(ComputedItem::Float(-value))
+        }
         (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
             value.checked_mul(-1).ok_or_else(|| {
                 ExpressionError::new_complex(
@@ -241,7 +266,17 @@ fn evaluate_integer_binary_operation(
                     SpanSet::from_span(span),
                 )
             })?;
-            Ok(ComputedItem::Integer(left_value.pow(exponent)))
+            left_value.checked_pow(exponent).map_or_else(
+                || {
+                    Err(ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        "Integer overflow.".to_string(),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    ))
+                },
+                |value| Ok(ComputedItem::Integer(value)),
+            )
         }
         Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
         Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
@@ -438,10 +473,26 @@ fn evaluate_index_operation(
         lookup_variable(computed_data, name, source, span)?
     };
 
-    if let ComputedItem::Table(table) = item {
+    if matches!(
+        &item,
+        ComputedItem::Table(_) | ComputedItem::TableWithUnits(_)
+    ) {
         if indexes.is_empty() {
-            return Ok(ComputedItem::Table(table));
+            return Ok(item);
         }
+
+        let (table, table_with_units) = match &item {
+            ComputedItem::Table(table) => (table, None),
+            ComputedItem::TableWithUnits(table) => (table.as_table(), Some(table)),
+            _ => {
+                return Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    "Expected a table for table indexing.".to_string(),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ));
+            }
+        };
 
         let index_1 = indexes.first().ok_or_else(|| {
             ExpressionError::new_complex(
@@ -491,16 +542,18 @@ fn evaluate_index_operation(
 
         return match index_2 {
             ComputedItem::Identifier(s) | ComputedItem::String(s) => {
-                if let Some(value) = table.get_cell_by_name(row_index, s) {
-                    Ok(ComputedItem::Float(value))
-                } else {
-                    Err(ExpressionError::new_complex(
+                let value = table.get_cell_by_name(row_index, s).ok_or_else(|| {
+                    ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
                         format!("Field '{s}' not found in the table row."),
                         source.clone(),
                         SpanSet::from_span(span),
-                    ))
-                }
+                    )
+                })?;
+                let unit = table_with_units
+                    .and_then(|table| table.get_unit_by_name(s.clone()))
+                    .unwrap_or(UnitId::None);
+                Ok(computed_float(value, unit))
             }
             ComputedItem::Integer(i) => {
                 let size = usize::try_from(*i)
@@ -520,16 +573,18 @@ fn evaluate_index_operation(
                     )
                 })?;
 
-                if let Some(value) = table.get_cell(row_index, size) {
-                    Ok(ComputedItem::Float(value))
-                } else {
-                    Err(ExpressionError::new_complex(
+                let value = table.get_cell(row_index, size).ok_or_else(|| {
+                    ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
                         format!("Field '{i}' not found in the table row."),
                         source.clone(),
                         SpanSet::from_span(span),
-                    ))
-                }
+                    )
+                })?;
+                let unit = table_with_units
+                    .and_then(|table| table.get_unit(size))
+                    .unwrap_or(UnitId::None);
+                Ok(computed_float(value, unit))
             }
             other => Err(ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
@@ -595,15 +650,24 @@ fn evaluate_expression(
                         SpanSet::from_span(operator_span),
                     )),
                 },
-                (ComputedItem::Float(left_float), ComputedItem::Float(right_float)) => {
-                    evaluate_float_binary_operation(
-                        &operator,
-                        left_float,
-                        right_float,
-                        source,
-                        operator_span,
-                    )
-                }
+                (
+                    ComputedItem::Float(left_float)
+                    | ComputedItem::FloatWithUnit {
+                        value: left_float,
+                        unit: _,
+                    },
+                    ComputedItem::Float(right_float)
+                    | ComputedItem::FloatWithUnit {
+                        value: right_float,
+                        unit: _,
+                    },
+                ) => evaluate_float_binary_operation(
+                    &operator,
+                    left_float,
+                    right_float,
+                    source,
+                    operator_span,
+                ),
                 (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
                     evaluate_integer_binary_operation(
                         &operator,
@@ -623,68 +687,106 @@ fn evaluate_expression(
                     source,
                     operator_span,
                 ),
-
-                (ComputedItem::Table(_), ComputedItem::Table(_)) => {
-                    Err(ExpressionError::new_complex(
+                (ComputedItem::Unit(left_unit), ComputedItem::Unit(right_unit)) => match operator {
+                    Operators::Equal => Ok(ComputedItem::Boolean(left_unit == right_unit)),
+                    Operators::NotEqual => Ok(ComputedItem::Boolean(left_unit != right_unit)),
+                    _ => Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for tables: {operator:?}"),
+                        format!("Unsupported operator for units: {operator:?}"),
                         source.clone(),
                         SpanSet::from_span(operator_span),
-                    ))
-                }
+                    )),
+                },
+                (
+                    ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
+                    ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
+                ) => Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("Unsupported operator for tables: {operator:?}"),
+                    source.clone(),
+                    SpanSet::from_span(operator_span),
+                )),
 
                 (
                     ComputedItem::Boolean(_),
                     ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
-                    | ComputedItem::Table(_),
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_),
                 )
                 | (
                     ComputedItem::File(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
-                    | ComputedItem::Table(_),
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_),
                 )
                 | (
-                    ComputedItem::Float(_),
+                    ComputedItem::Float(_) | ComputedItem::FloatWithUnit { value: _, unit: _ },
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
-                    | ComputedItem::Table(_),
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_),
                 )
                 | (
                     ComputedItem::Identifier(_) | ComputedItem::String(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Integer(_)
-                    | ComputedItem::Table(_),
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_),
                 )
                 | (
                     ComputedItem::Integer(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
                     | ComputedItem::String(_)
-                    | ComputedItem::Table(_),
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_),
                 )
                 | (
-                    ComputedItem::Table(_),
+                    ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::File(_)
                     | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Integer(_)
                     | ComputedItem::Identifier(_)
-                    | ComputedItem::String(_),
+                    | ComputedItem::String(_)
+                    | ComputedItem::Unit(_),
+                )
+                | (
+                    ComputedItem::Unit(_),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { value: _, unit: _ }
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::String(_)
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_),
                 ) => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!("Unsupported operator for mixed types: {operator:?}"),
@@ -732,48 +834,45 @@ fn evaluate_bare_identifier_choice(
     }
 }
 
-/// Validates a bare-identifier unit value against the definition's unit family.
-fn evaluate_bare_identifier_unit(
-    unit_definition: &datastore::definition::UnitDefinition,
-    name: &str,
-    source: &ShareableString,
-    span: Span,
-) -> Result<ComputedItem, ExpressionError> {
-    let value = ShareableString::from(name);
-    if unit_definition.contains(value.clone()) {
-        Ok(ComputedItem::Identifier(value))
-    } else {
-        Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Value '{value}' is not a valid unit."),
-            source.clone(),
-            SpanSet::from_span(span),
-        ))
-    }
-}
-
-/// Validates that a computed string belongs to a unit definition's family.
+/// Validates that a computed unit value belongs to a unit definition's family.
 fn validate_unit_value(
     unit_definition: &datastore::definition::UnitDefinition,
     computed: &ComputedItem,
     source: &ShareableString,
     span: Span,
 ) -> Result<ComputedItem, ExpressionError> {
-    if let ComputedItem::String(value) | ComputedItem::Identifier(value) = &computed {
-        if unit_definition.contains(value) {
-            Ok(ComputedItem::Identifier(value.clone()))
-        } else {
-            Err(ExpressionError::new_complex(
+    let unit = match computed {
+        ComputedItem::Unit(unit) => *unit,
+        ComputedItem::String(value) | ComputedItem::Identifier(value) => {
+            UnitId::from_unit_id_str(value.as_str()).ok_or_else(|| {
+                ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("Value '{value}' is not a valid unit ID."),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                )
+            })?
+        }
+        _ => {
+            return Err(ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
-                format!("Value '{value}' is not a valid unit."),
+                format!("Expected a unit value, but got {computed:?}."),
                 source.clone(),
                 SpanSet::from_span(span),
-            ))
+            ));
         }
+    };
+
+    if unit_definition.unit_family().unit_ids().contains(&unit) {
+        Ok(ComputedItem::Unit(unit))
     } else {
         Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
-            format!("Expected a string value for unit, but got {computed:?}."),
+            format!(
+                "Value '{}' is not a valid unit ID for {}.",
+                unit.string_id(),
+                unit_definition.unit_family().description()
+            ),
             source.clone(),
             SpanSet::from_span(span),
         ))
@@ -798,7 +897,8 @@ fn evaluate_basic_expression(
                 return evaluate_bare_identifier_choice(choice_definition, name, source, span);
             }
             Unit(unit_definition) => {
-                return evaluate_bare_identifier_unit(unit_definition, name, source, span);
+                let computed = ComputedItem::Identifier(name.clone().into());
+                return validate_unit_value(unit_definition, &computed, source, span);
             }
             _ => {}
         }
@@ -934,7 +1034,7 @@ fn evaluate_basic_expression(
         Number(number_definition) => {
             // Validate that the computed value is a number (integer or float)
             match &computed {
-                ComputedItem::Float(value) => {
+                ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
                     let constraint = number_definition.constraint();
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
@@ -1009,6 +1109,17 @@ fn evaluate_basic_expression(
             // Validate that the computed value is a number (integer or float)
             match &computed {
                 ComputedItem::Float(value) => {
+                    if number_definition.preferred_units() != UnitId::None {
+                        return Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Expected a numeric value with units for number definition, but got {computed:?}."
+                            ),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ));
+                    }
+
                     let constraint = number_definition.constraint();
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
@@ -1069,6 +1180,99 @@ fn evaluate_basic_expression(
                         NumberConstraintEnum::None => Ok(computed),
                     }
                 }
+                ComputedItem::FloatWithUnit { value, unit } => {
+                    if number_definition.preferred_units().family_id() != unit.family_id() {
+                        return Err(ExpressionError::new_complex(
+                            ExpressionCategory::Evaluation,
+                            format!(
+                                "Expected a numeric value with units for number definition, but got {computed:?}."
+                            ),
+                            source.clone(),
+                            SpanSet::from_span(span),
+                        ));
+                    }
+
+                    let converted_value =
+                        convert(*value, *unit, number_definition.preferred_units()).map_err(
+                            |error| {
+                                ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    error,
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                )
+                            },
+                        )?;
+
+                    let computed = ComputedItem::FloatWithUnit {
+                        value: converted_value,
+                        unit: number_definition.preferred_units(),
+                    };
+
+                    let constraint = number_definition.constraint();
+                    match constraint {
+                        NumberConstraintEnum::Min { min, inclusive } => {
+                            if (converted_value) < min || (!inclusive && (converted_value) <= min) {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is less than the minimum allowed value of {min}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+                            Ok(computed)
+                        }
+                        NumberConstraintEnum::Max { max, inclusive } => {
+                            if (converted_value) > max || (!inclusive && (converted_value) >= max) {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is greater than the maximum allowed value of {max}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+                            Ok(computed)
+                        }
+                        NumberConstraintEnum::Range {
+                            min,
+                            max,
+                            min_inclusive,
+                            max_inclusive,
+                        } => {
+                            if (converted_value) < min
+                                || (!min_inclusive && (converted_value) <= min)
+                            {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is less than the minimum allowed value of {min}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+                            if (converted_value) > max
+                                || (!max_inclusive && (converted_value) >= max)
+                            {
+                                return Err(ExpressionError::new_complex(
+                                    ExpressionCategory::Evaluation,
+                                    format!(
+                                        "Value {converted_value} is greater than the maximum allowed value of {max}."
+                                    ),
+                                    source.clone(),
+                                    SpanSet::from_span(span),
+                                ));
+                            }
+
+                            Ok(computed)
+                        }
+                        NumberConstraintEnum::None => Ok(computed),
+                    }
+                }
                 _ => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
@@ -1083,7 +1287,9 @@ fn evaluate_basic_expression(
             // Validate that the computed value is a string
             if let ComputedItem::String(_) = &computed {
                 Ok(computed)
-            } else if let ComputedItem::Float(value) = &computed {
+            } else if let ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } =
+                &computed
+            {
                 Ok(ComputedItem::String(value.to_string().into()))
             } else if let ComputedItem::Integer(value) = &computed {
                 Ok(ComputedItem::String(value.to_string().into()))
@@ -1109,6 +1315,9 @@ fn evaluate_number_with_units_expression(
     let source = basic.data();
     let expression = string_to_expression(source)?;
     let span = expression_span(&expression);
+    let is_float_literal = is_signed_float_literal(&expression);
+    let is_identifier_reference =
+        matches!(expression, Expression::Literal(_, Literal::Identifier(_)));
     let computed = evaluate_expression(computed_data, functions, source, expression)?;
 
     let NumberWithUnits(number_definition) = basic.definition() else {
@@ -1120,26 +1329,39 @@ fn evaluate_number_with_units_expression(
         ));
     };
 
-    let ComputedItem::Float(value) = computed else {
-        return Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Expected a numeric value for number definition, but got {computed:?}."),
-            source.clone(),
-            SpanSet::from_span(span),
-        ));
+    let (value, source_unit) = match computed {
+        ComputedItem::Float(value) => {
+            let unit = if is_float_literal {
+                UnitId::from_unit_id_str(basic.units().as_str()).ok_or_else(|| {
+                    ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!("Unknown unit '{}'.", basic.units()),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    )
+                })?
+            } else {
+                UnitId::None
+            };
+            (value, unit)
+        }
+        ComputedItem::FloatWithUnit { value, unit } => (value, unit),
+        _ => {
+            return Err(ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                format!("Expected a numeric value for number definition, but got {computed:?}."),
+                source.clone(),
+                SpanSet::from_span(span),
+            ));
+        }
     };
 
-    let input_unit = UnitId::from_unit_id_str(basic.units().as_str()).ok_or_else(|| {
-        ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Unknown unit '{}'.", basic.units()),
-            source.clone(),
-            SpanSet::from_span(span),
-        )
-    })?;
+    if source_unit == UnitId::None && !is_float_literal && !is_identifier_reference {
+        return Ok(ComputedItem::Float(value));
+    }
 
     let value =
-        convert(value, input_unit, number_definition.preferred_units()).map_err(|error| {
+        convert(value, source_unit, number_definition.preferred_units()).map_err(|error| {
             ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 error,
@@ -1148,7 +1370,7 @@ fn evaluate_number_with_units_expression(
             )
         })?;
 
-    Ok(ComputedItem::Float(value))
+    Ok(computed_float(value, number_definition.preferred_units()))
 }
 
 /// Evaluates all cells in a [`TableInputData`] and returns the resulting rows of `f64` values.
@@ -1168,8 +1390,15 @@ fn evaluate_table_expression(
             parameter_span,
         )
         .map_err(|e| vec![e])?;
+        let referenced = match referenced {
+            ComputedItem::TableWithUnits(referenced_table) => {
+                ComputedItem::Table(referenced_table.into_table())
+            }
+            other => other,
+        };
         return match referenced {
             ComputedItem::Table(referenced_table) => {
+                let referenced_table = &referenced_table;
                 let table_definition = table.definition();
                 if table_definition.count() != referenced_table.keys().len() {
                     return Err(vec![ExpressionError::new_complex(
@@ -1187,7 +1416,9 @@ fn evaluate_table_expression(
 
                 let mut errors = Vec::new();
 
+                let mut converted_rows = Vec::with_capacity(referenced_table.row_count());
                 for row in referenced_table.rows() {
+                    let mut converted_row = Vec::with_capacity(row.len());
                     for (j, data) in row.iter().enumerate() {
                         let Some(column_definition) = table_definition.get_by_index(j) else {
                             errors.push(ExpressionError::new_complex(
@@ -1200,9 +1431,10 @@ fn evaluate_table_expression(
                             ));
                             continue;
                         };
+                        let data = *data;
                         match column_definition.constraint() {
                             NumberConstraintEnum::Min { min, inclusive } => {
-                                if *data < min || (!inclusive && *data <= min) {
+                                if data < min || (!inclusive && data <= min) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1215,7 +1447,7 @@ fn evaluate_table_expression(
                                 }
                             }
                             NumberConstraintEnum::Max { max, inclusive } => {
-                                if *data > max || (!inclusive && *data >= max) {
+                                if data > max || (!inclusive && data >= max) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1233,7 +1465,7 @@ fn evaluate_table_expression(
                                 min_inclusive,
                                 max_inclusive,
                             } => {
-                                if *data < min || (!min_inclusive && *data <= min) {
+                                if data < min || (!min_inclusive && data <= min) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1244,7 +1476,7 @@ fn evaluate_table_expression(
                                         SpanSet::from_span(parameter_span),
                                     ));
                                 }
-                                if *data > max || (!max_inclusive && *data >= max) {
+                                if data > max || (!max_inclusive && data >= max) {
                                     errors.push(ExpressionError::new_complex(
                                         ExpressionCategory::Evaluation,
                                         format!(
@@ -1258,14 +1490,16 @@ fn evaluate_table_expression(
                             }
                             NumberConstraintEnum::None => {}
                         }
+                        converted_row.push(data);
                     }
+                    converted_rows.push(converted_row);
                 }
 
                 if !errors.is_empty() {
                     return Err(errors);
                 }
 
-                Ok(referenced_table.rows().to_vec())
+                Ok(converted_rows)
             }
             other => Err(vec![ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
@@ -1300,7 +1534,242 @@ fn evaluate_table_expression(
                 BasicInputData::new(Number(number_definition.clone()), basic_data.clone());
 
             match evaluate_basic_expression(computed_data, functions, &basic_input_data) {
-                Ok(ComputedItem::Float(value)) => {
+                Ok(ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. }) => {
+                    evaluated_row.push(value);
+                }
+                Ok(other) => {
+                    let cell_source = ShareableString::from(basic_data.as_str().to_string());
+                    let cell_span = Span::new(0, basic_data.as_str().chars().count());
+                    return Err(vec![ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        format!("Expected a numeric value for table cell, but got {other:?}."),
+                        cell_source,
+                        SpanSet::from_span(cell_span),
+                    )]);
+                }
+                Err(e) => {
+                    return Err(vec![e]);
+                }
+            }
+        }
+        evaluated_rows.push(evaluated_row);
+    }
+    Ok(evaluated_rows)
+}
+
+/// Evaluates all cells in a [`TableWithUnitsInputData`] and returns the resulting rows of `f64` values.
+fn evaluate_table_with_units_expression(
+    computed_data: &BTreeMap<ShareableString, ComputedItem>,
+    functions: &FunctionDefinitions,
+    table: &TableWithUnitsInputData,
+) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
+    let parameter = table.parameter();
+    if !parameter.as_str().is_empty() {
+        let parameter_source = ShareableString::from(parameter.as_str().to_string());
+        let parameter_span = Span::new(0, parameter.as_str().chars().count());
+        let referenced = lookup_variable(
+            computed_data,
+            parameter.as_str(),
+            &parameter_source,
+            parameter_span,
+        )
+        .map_err(|e| vec![e])?;
+
+        let (referenced_table, source_units) = match referenced {
+            ComputedItem::Table(referenced_table) => (referenced_table, None),
+            ComputedItem::TableWithUnits(referenced_table) => {
+                let (referenced_table, units) = referenced_table.into_table_and_units();
+                (referenced_table, Some(units))
+            }
+            other => {
+                return Err(vec![ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Parameter '{parameter}' is expected to reference a table, but got {other:?}."
+                    ),
+                    parameter_source,
+                    SpanSet::from_span(parameter_span),
+                )]);
+            }
+        };
+
+        let table_definition = table.definition();
+        if table_definition.count() != referenced_table.keys().len() {
+            return Err(vec![ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                format!(
+                    "Parameter '{}' references a table with {} columns, but the current table expects {} columns.",
+                    parameter,
+                    referenced_table.keys().len(),
+                    table.definition().count()
+                ),
+                parameter_source,
+                SpanSet::from_span(parameter_span),
+            )]);
+        }
+        if let Some(units) = &source_units {
+            if units.len() != referenced_table.column_count() {
+                return Err(vec![ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!(
+                        "Parameter '{}' references a table with {} units for {} columns.",
+                        parameter,
+                        units.len(),
+                        referenced_table.column_count()
+                    ),
+                    parameter_source,
+                    SpanSet::from_span(parameter_span),
+                )]);
+            }
+        }
+        let mut errors = Vec::new();
+
+        let mut converted_rows = Vec::with_capacity(referenced_table.row_count());
+        for row in referenced_table.rows() {
+            let mut converted_row = Vec::with_capacity(row.len());
+            for (j, data) in row.iter().enumerate() {
+                let Some(column_definition) = table_definition.get_by_index(j) else {
+                    errors.push(ExpressionError::new_complex(
+                                ExpressionCategory::Evaluation,
+                                format!(
+                                    "Parameter '{parameter}' references a table with no column definition at index {j}."
+                                ),
+                                parameter_source.clone(),
+                                SpanSet::from_span(parameter_span),
+                            ));
+                    continue;
+                };
+                let source_unit = source_units
+                    .as_ref()
+                    .and_then(|units| units.get(j))
+                    .copied()
+                    .unwrap_or(UnitId::None);
+                let data = match convert(*data, source_unit, column_definition.preferred_units()) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        errors.push(ExpressionError::new_complex(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Cannot convert parameter '{parameter}' column '{}' from {} to {}: {error}",
+                                            column_definition.description(),
+                                            source_unit.string_id(),
+                                            column_definition.preferred_units().string_id(),
+                                        ),
+                                        parameter_source.clone(),
+                                        SpanSet::from_span(parameter_span),
+                                    ));
+                        continue;
+                    }
+                };
+                match column_definition.constraint() {
+                    NumberConstraintEnum::Min { min, inclusive } => {
+                        if data < min || (!inclusive && data <= min) {
+                            errors.push(ExpressionError::new_complex(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
+                                            data, column_definition.description(), min
+                                        ),
+                                        parameter_source.clone(),
+                                        SpanSet::from_span(parameter_span),
+                                    ));
+                        }
+                    }
+                    NumberConstraintEnum::Max { max, inclusive } => {
+                        if data > max || (!inclusive && data >= max) {
+                            errors.push(ExpressionError::new_complex(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
+                                            data, column_definition.description(), max
+                                        ),
+                                        parameter_source.clone(),
+                                        SpanSet::from_span(parameter_span),
+                                    ));
+                        }
+                    }
+                    NumberConstraintEnum::Range {
+                        min,
+                        max,
+                        min_inclusive,
+                        max_inclusive,
+                    } => {
+                        if data < min || (!min_inclusive && data <= min) {
+                            errors.push(ExpressionError::new_complex(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
+                                            data, column_definition.description(), min
+                                        ),
+                                        parameter_source.clone(),
+                                        SpanSet::from_span(parameter_span),
+                                    ));
+                        }
+                        if data > max || (!max_inclusive && data >= max) {
+                            errors.push(ExpressionError::new_complex(
+                                        ExpressionCategory::Evaluation,
+                                        format!(
+                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
+                                            data, column_definition.description(), max
+                                        ),
+                                        parameter_source.clone(),
+                                        SpanSet::from_span(parameter_span),
+                                    ));
+                        }
+                    }
+                    NumberConstraintEnum::None => {}
+                }
+                converted_row.push(data);
+            }
+            converted_rows.push(converted_row);
+        }
+
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
+        return Ok(converted_rows);
+    }
+
+    let definition = table.definition();
+
+    let mut evaluated_rows = Vec::new();
+
+    for row in table.data() {
+        let mut evaluated_row = Vec::new();
+        let units = table.units();
+
+        for (i, basic_data) in row.iter().enumerate() {
+            let Some(number_definition) = definition.get_by_index(i) else {
+                let cell_source = ShareableString::from(basic_data.as_str().to_string());
+                let cell_span = Span::new(0, basic_data.as_str().chars().count());
+                return Err(vec![ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("No column definition exists for table cell at index {i}."),
+                    cell_source,
+                    SpanSet::from_span(cell_span),
+                )]);
+            };
+            let Some(unit) = units.get(i) else {
+                let cell_source = ShareableString::from(basic_data.as_str().to_string());
+                let cell_span = Span::new(0, basic_data.as_str().chars().count());
+                return Err(vec![ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("No unit exists for table cell at index {i}."),
+                    cell_source,
+                    SpanSet::from_span(cell_span),
+                )]);
+            };
+
+            let basic_input_data = BasicInputWithUnitsData::new(
+                NumberWithUnits(number_definition.clone()),
+                basic_data.clone(),
+                unit.clone(),
+            );
+
+            match evaluate_number_with_units_expression(computed_data, functions, &basic_input_data)
+            {
+                Ok(ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, unit: _ }) => {
                     evaluated_row.push(value);
                 }
                 Ok(other) => {
@@ -1381,6 +1850,36 @@ pub(crate) fn evaluator(
                     }
                 }
             }
+            ObjectItemInputData::TableWithUnits(table_data) => {
+                // For table data, we need to evaluate the expression for each row.
+                let keys = table_data
+                    .definition()
+                    .keys()
+                    .map(ShareableString::from)
+                    .collect::<Vec<_>>();
+                let units: Vec<UnitId> = table_data
+                    .definition()
+                    .iter()
+                    .map(|(_, definition)| definition.preferred_units())
+                    .collect();
+                match evaluate_table_with_units_expression(computed_data, functions, table_data) {
+                    Ok(evaluated_table) => {
+                        let computed_table = if units.iter().all(|unit| *unit == UnitId::None) {
+                            ComputedItem::Table(ComputedTable::new(keys, evaluated_table))
+                        } else {
+                            ComputedItem::TableWithUnits(ComputedTableWithUnits::new(
+                                keys,
+                                units,
+                                evaluated_table,
+                            ))
+                        };
+                        result.insert(key.clone(), computed_table);
+                    }
+                    Err(e) => {
+                        errors.extend(e);
+                    }
+                }
+            }
         }
     }
 
@@ -1446,6 +1945,46 @@ mod tests {
             ComputedItem::Boolean(value) => assert_eq!(*value, expected_value),
             _ => panic!("Expected a boolean computed item"),
         }
+    }
+
+    #[test]
+    fn unit_definition_evaluates_to_a_typed_unit() {
+        let definition = UnitDefinition::new("Length", units::UnitFamilyId::Length);
+        let functions = FunctionDefinitions::new();
+        let computed_data = BTreeMap::new();
+
+        let bare_unit = BasicInputData::new(
+            BasicDefinition::Unit(definition.clone()),
+            "u_length_meter".into(),
+        );
+        assert_eq!(
+            evaluate_basic_expression(&computed_data, &functions, &bare_unit),
+            Ok(ComputedItem::Unit(UnitId::Length_Meter))
+        );
+
+        let quoted_unit = BasicInputData::new(
+            BasicDefinition::Unit(definition),
+            "\"u_length_foot\"".into(),
+        );
+        assert_eq!(
+            evaluate_basic_expression(&computed_data, &functions, &quoted_unit),
+            Ok(ComputedItem::Unit(UnitId::Length_Foot))
+        );
+    }
+
+    #[test]
+    fn unit_definition_rejects_a_unit_from_another_family() {
+        let definition = UnitDefinition::new("Length", units::UnitFamilyId::Length);
+        let source = ShareableString::from("selected_unit");
+
+        let result = validate_unit_value(
+            &definition,
+            &ComputedItem::Unit(UnitId::Time_Second),
+            &source,
+            Span::new(0, source.as_str().chars().count()),
+        );
+
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1569,6 +2108,18 @@ mod tests {
     }
 
     #[test]
+    fn integer_power_overflow_returns_an_error() {
+        let input_data = BTreeMap::from([("x".into(), create_integer_basic_input_data("2 ^ 63"))]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].to_string().contains("Integer overflow."));
+    }
+
+    #[test]
     fn float_test() {
         let computed_data = BTreeMap::new();
         let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("42.0"))]);
@@ -1592,11 +2143,100 @@ mod tests {
 
         assert!(errors.is_empty());
         match result.get("distance") {
-            Some(ComputedItem::Float(value)) => {
+            Some(ComputedItem::FloatWithUnit { value, unit }) => {
                 assert!((*value - 3.280_839_895_013_123).abs() < f64::EPSILON);
+                assert_eq!(*unit, UnitId::Length_Foot);
             }
-            other => panic!("expected converted float, got {other:?}"),
+            other => panic!("expected converted float with unit, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn number_with_units_converts_negative_float_literal_to_preferred_units() {
+        let input_data = BTreeMap::from([(
+            "temperature".into(),
+            create_number_with_units_input_data(
+                "-1.0",
+                "u_temperature_celsius",
+                UnitId::Temperature_Fahrenheit,
+            ),
+        )]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        assert_eq!(
+            result.get("temperature"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: 30.2,
+                unit: UnitId::Temperature_Fahrenheit,
+            })
+        );
+    }
+
+    #[test]
+    fn numeric_operation_drops_units() {
+        let input_data = BTreeMap::from([(
+            "distance".into(),
+            create_number_with_units_input_data(
+                "1.0 + 1.0",
+                "u_length_meter",
+                UnitId::Length_Meter,
+            ),
+        )]);
+        let computed_data = BTreeMap::from([
+            (
+                "left".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 2.0,
+                    unit: UnitId::Length_Meter,
+                },
+            ),
+            (
+                "right".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 4.0,
+                    unit: UnitId::Time_Second,
+                },
+            ),
+        ]);
+        let operation_input = BTreeMap::from([(
+            "speed".into(),
+            create_number_basic_input_data("left / right"),
+        )]);
+
+        let (distance, distance_errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+        assert!(distance_errors.is_empty());
+        assert_eq!(distance.get("distance"), Some(&ComputedItem::Float(2.0)));
+
+        let (result, errors) = evaluator(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &operation_input,
+        );
+        assert!(errors.is_empty());
+        assert_eq!(result.get("speed"), Some(&ComputedItem::Float(0.5)));
+    }
+
+    #[test]
+    fn unitless_reference_cannot_be_converted_to_a_unit() {
+        let computed_data = BTreeMap::from([("unitless".into(), ComputedItem::Float(2.0))]);
+        let input_data = BTreeMap::from([(
+            "distance".into(),
+            create_number_with_units_input_data("unitless", "u_length_meter", UnitId::Length_Meter),
+        )]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 1);
+        assert!(
+            errors[0]
+                .to_string()
+                .contains("Cannot convert a unitless value to a unit")
+        );
     }
 
     #[test]
@@ -1703,6 +2343,36 @@ mod tests {
         .unwrap();
 
         check_number_float(&result, 3.5);
+    }
+
+    #[test]
+    fn field_access_on_table_with_units_preserves_column_unit() {
+        let computed_data = BTreeMap::from([(
+            "t".into(),
+            ComputedItem::TableWithUnits(ComputedTableWithUnits::new(
+                vec!["length".into()],
+                vec![UnitId::Length_Meter],
+                vec![vec![3.5]],
+            )),
+        )]);
+        let source = ShareableString::from("t[0][length]");
+        let expression = string_to_expression(&source).unwrap();
+
+        let result = evaluate_expression(
+            &computed_data,
+            &FunctionDefinitions::new(),
+            &source,
+            expression,
+        )
+        .unwrap();
+
+        assert_eq!(
+            result,
+            ComputedItem::FloatWithUnit {
+                value: 3.5,
+                unit: UnitId::Length_Meter,
+            }
+        );
     }
 
     #[test]
@@ -2005,6 +2675,96 @@ mod tests {
         } else {
             panic!("Expected a computed table");
         }
+    }
+
+    #[test]
+    fn table_with_units_parameter_converts_values_to_target_units() {
+        let computed_data = BTreeMap::from([(
+            "source".into(),
+            ComputedItem::TableWithUnits(ComputedTableWithUnits::new(
+                vec!["length".into()],
+                vec![UnitId::Length_Centimeter],
+                vec![vec![100.0]],
+            )),
+        )]);
+        let table_definition = TableWithUnitsDefinition::new(
+            "Target Table",
+            vec![(
+                store_key!("length"),
+                NumberWithUnitsDefinition::new("length", UnitId::Length_Meter),
+            )],
+        );
+        let table_input_data = ObjectItemInputData::TableWithUnits(TableWithUnitsInputData::new(
+            table_definition,
+            "source".into(),
+            vec![],
+            vec![],
+        ));
+        let input_data = BTreeMap::from([("target".into(), table_input_data)]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        let ComputedItem::TableWithUnits(table) = &result["target"] else {
+            panic!("Expected a computed table with units");
+        };
+        assert_eq!(table.units(), &[UnitId::Length_Meter]);
+        assert_eq!(table.rows(), &[vec![1.0]]);
+    }
+
+    #[test]
+    fn table_with_only_none_units_produces_unitless_computed_table() {
+        let table_definition = TableWithUnitsDefinition::new(
+            "Unitless Table",
+            vec![(
+                store_key!("value"),
+                NumberWithUnitsDefinition::new("value", UnitId::None),
+            )],
+        );
+        let table_input_data = ObjectItemInputData::TableWithUnits(TableWithUnitsInputData::new(
+            table_definition,
+            "".into(),
+            vec![UnitId::None.string_id().into()],
+            vec![vec![ShareableString::from("1.0")]],
+        ));
+        let input_data = BTreeMap::from([("table".into(), table_input_data)]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        let ComputedItem::Table(table) = &result["table"] else {
+            panic!("Expected a unitless computed table");
+        };
+        assert_eq!(table.rows(), &[vec![1.0]]);
+    }
+
+    #[test]
+    fn table_with_units_evaluates_cells_in_preferred_units() {
+        let table_definition = TableWithUnitsDefinition::new(
+            "Length Table",
+            vec![(
+                store_key!("length"),
+                NumberWithUnitsDefinition::new("length", UnitId::Length_Meter),
+            )],
+        );
+        let table_input_data = ObjectItemInputData::TableWithUnits(TableWithUnitsInputData::new(
+            table_definition,
+            "".into(),
+            vec![UnitId::Length_Meter.string_id().into()],
+            vec![vec![ShareableString::from("1.0")]],
+        ));
+        let input_data = BTreeMap::from([("table".into(), table_input_data)]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        let ComputedItem::TableWithUnits(table) = &result["table"] else {
+            panic!("Expected a computed table with units");
+        };
+        assert_eq!(table.units(), &[UnitId::Length_Meter]);
+        assert_eq!(table.rows(), &[vec![1.0]]);
     }
 
     #[test]
