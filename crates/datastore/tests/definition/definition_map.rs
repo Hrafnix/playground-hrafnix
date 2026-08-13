@@ -107,3 +107,32 @@ fn test_map_definition_equality() {
     assert_eq!(*item_1, item_2);
     assert_ne!(item_1, *item_3);
 }
+
+#[test]
+fn test_map_definition_deduplicates_column_keys() {
+    let map_def = MapDefinition::new(
+        "Measurements",
+        vec![
+            (
+                store_key!("length"),
+                NumberDefinition::new("Initial length"),
+            ),
+            (store_key!("duration"), NumberDefinition::new("Duration")),
+            (
+                store_key!("length"),
+                NumberDefinition::new("Replacement length"),
+            ),
+        ],
+    );
+
+    assert_eq!(map_def.count(), 2);
+    assert_eq!(
+        map_def.keys().map(StoreKey::as_str).collect::<Vec<_>>(),
+        vec!["duration", "length"]
+    );
+    if let Some(MapItemDefinition::Number(def)) = map_def.get(store_key!("length")) {
+        assert_eq!(def.description().as_ref(), "Replacement length");
+    } else {
+        panic!("Expected map item definition for 'length' to be a NumberDefinition");
+    }
+}

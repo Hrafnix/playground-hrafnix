@@ -19,6 +19,9 @@ pub struct TableWithUnitsDefinition {
 
 impl TableWithUnitsDefinition {
     /// Creates a new `TableWithUnitsDefinition` with a description and a list of columns.
+    ///
+    /// If duplicate keys are provided, the last occurrence will be used, and the order of the keys will
+    /// reflect the order of their last occurrence.
     pub fn new<S1: Into<ShareableString>, K: Into<StoreKey>>(
         description: S1,
         columns: Vec<(K, NumberWithUnitsDefinition)>,
@@ -27,8 +30,9 @@ impl TableWithUnitsDefinition {
         let mut ordered_keys = Vec::new();
         for (k, v) in columns {
             let key = k.into();
-            items.insert(key.clone(), v);
-            ordered_keys.push(key);
+            ordered_keys.retain(|existing_key| existing_key != &key);
+            ordered_keys.push(key.clone());
+            items.insert(key, v);
         }
         Self {
             description: description.into(),

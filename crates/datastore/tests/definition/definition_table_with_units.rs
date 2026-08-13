@@ -41,3 +41,42 @@ fn test_table_with_units_definition() {
         Some(1)
     );
 }
+
+#[test]
+fn test_table_with_units_definition_deduplicates_column_keys() {
+    let table_def = TableWithUnitsDefinition::new(
+        "Measurements",
+        vec![
+            (
+                store_key!("length"),
+                NumberWithUnitsDefinition::new("Initial length", units::UnitId::Length_Meter),
+            ),
+            (
+                store_key!("duration"),
+                NumberWithUnitsDefinition::new("Duration", units::UnitId::Time_Second),
+            ),
+            (
+                store_key!("length"),
+                NumberWithUnitsDefinition::new("Replacement length", units::UnitId::Length_Foot),
+            ),
+        ],
+    );
+
+    assert_eq!(table_def.count(), 2);
+    assert_eq!(
+        table_def.keys().map(StoreKey::as_str).collect::<Vec<_>>(),
+        vec!["duration", "length"]
+    );
+    assert_eq!(
+        table_def
+            .get_by_index(1)
+            .map(NumberWithUnitsDefinition::description),
+        Some("Replacement length".into())
+    );
+    assert_eq!(
+        table_def
+            .get_by_index(1)
+            .map(NumberWithUnitsDefinition::preferred_units),
+        Some(units::UnitId::Length_Foot)
+    );
+}

@@ -71,3 +71,31 @@ fn test_table_definition_equality() {
     assert_eq!(&table_def_1, table_def_2);
     assert_ne!(table_def_1, &table_def_3);
 }
+
+#[test]
+fn test_table_definition_deduplicates_column_keys() {
+    let table_def = TableDefinition::new(
+        "Measurements",
+        vec![
+            (
+                store_key!("length"),
+                NumberDefinition::new("Initial length"),
+            ),
+            (store_key!("duration"), NumberDefinition::new("Duration")),
+            (
+                store_key!("length"),
+                NumberDefinition::new("Replacement length"),
+            ),
+        ],
+    );
+
+    assert_eq!(table_def.count(), 2);
+    assert_eq!(
+        table_def.keys().map(StoreKey::as_str).collect::<Vec<_>>(),
+        vec!["duration", "length"]
+    );
+    assert_eq!(
+        table_def.get_by_index(1).map(NumberDefinition::description),
+        Some("Replacement length".into())
+    );
+}
