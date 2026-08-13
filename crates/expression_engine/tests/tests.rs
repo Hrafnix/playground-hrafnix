@@ -16,7 +16,8 @@
     clippy::unreadable_literal,
     clippy::unnecessary_wraps,
     clippy::similar_names,
-    clippy::arithmetic_side_effects
+    clippy::arithmetic_side_effects,
+    clippy::wildcard_enum_match_arm
 )]
 
 mod evaluation;

@@ -127,7 +127,9 @@ impl<'de> Deserialize<'de> for IntegerConstraint {
                     max_inclusive,
                 ));
             }
-            other => other,
+            other @ (IntegerConstraintEnum::Min { .. }
+            | IntegerConstraintEnum::Max { .. }
+            | IntegerConstraintEnum::None) => other,
         };
 
         Ok(Self { constraint_enum })

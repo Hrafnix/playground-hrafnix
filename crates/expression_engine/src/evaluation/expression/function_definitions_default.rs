@@ -123,7 +123,14 @@ fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, ExpressionError> {
     match item {
         ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => Ok(*value),
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             format!("{function_name} function argument must be a float"),
         )),
@@ -145,7 +152,14 @@ fn abs(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "abs")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.abs())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(value.abs())),
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "abs function argument must be a number".to_string(),
         )),
@@ -163,7 +177,14 @@ fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "ceil")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.ceil())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "ceil function argument must be a number".to_string(),
         )),
@@ -175,7 +196,14 @@ fn floor(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "floor")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.floor())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "floor function argument must be a number".to_string(),
         )),
@@ -187,7 +215,14 @@ fn round(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match arg(args, 0, "round")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.round())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "round function argument must be a number".to_string(),
         )),
@@ -202,7 +237,15 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             for arg in args.get(1..).unwrap_or_default() {
                 match arg {
                     ComputedItem::Float(value) => result = result.min(*value),
-                    _ => return Err(mixed_numeric_types_error("min")),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::FloatWithUnit { .. }
+                    | ComputedItem::String(_)
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("min")),
                 }
             }
             Ok(ComputedItem::Float(result))
@@ -212,12 +255,27 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             for arg in args.get(1..).unwrap_or_default() {
                 match arg {
                     ComputedItem::Integer(value) => result = result.min(*value),
-                    _ => return Err(mixed_numeric_types_error("min")),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { .. }
+                    | ComputedItem::String(_)
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("min")),
                 }
             }
             Ok(ComputedItem::Integer(result))
         }
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "min function argument must be a number".to_string(),
         )),
@@ -232,7 +290,15 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             for arg in args.get(1..).unwrap_or_default() {
                 match arg {
                     ComputedItem::Float(value) => result = result.max(*value),
-                    _ => return Err(mixed_numeric_types_error("max")),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::Integer(_)
+                    | ComputedItem::FloatWithUnit { .. }
+                    | ComputedItem::String(_)
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("max")),
                 }
             }
             Ok(ComputedItem::Float(result))
@@ -242,12 +308,27 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             for arg in args.get(1..).unwrap_or_default() {
                 match arg {
                     ComputedItem::Integer(value) => result = result.max(*value),
-                    _ => return Err(mixed_numeric_types_error("max")),
+                    ComputedItem::Boolean(_)
+                    | ComputedItem::Float(_)
+                    | ComputedItem::FloatWithUnit { .. }
+                    | ComputedItem::String(_)
+                    | ComputedItem::Identifier(_)
+                    | ComputedItem::File(_)
+                    | ComputedItem::Table(_)
+                    | ComputedItem::TableWithUnits(_)
+                    | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("max")),
                 }
             }
             Ok(ComputedItem::Integer(result))
         }
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "max function argument must be a number".to_string(),
         )),
@@ -368,7 +449,15 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             })?;
             Ok(ComputedItem::Integer(len))
         }
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::Float(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "len function argument must be a string".to_string(),
         )),
@@ -383,7 +472,13 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             let int_value = truncated_f64_to_i64(*value, "to_int")?;
             Ok(ComputedItem::Integer(int_value))
         }
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "to_int function argument must be a number".to_string(),
         )),
@@ -401,7 +496,13 @@ fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             let float_value = i64_to_f64(*value, "to_float")?;
             Ok(ComputedItem::Float(float_value))
         }
-        _ => Err(ExpressionError::new(
+        ComputedItem::Boolean(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "to_float function argument must be a number".to_string(),
         )),
@@ -422,7 +523,15 @@ fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
                 Ok(false_value.clone())
             }
         }
-        _ => Err(ExpressionError::new(
+        ComputedItem::Integer(_)
+        | ComputedItem::Float(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => Err(ExpressionError::new(
             crate::ExpressionCategory::Evaluation,
             "if function first argument must be a boolean".to_string(),
         )),

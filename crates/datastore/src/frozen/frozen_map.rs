@@ -42,7 +42,15 @@ impl MapItemFrozen {
     pub const fn get_string(&self) -> Option<&StringFrozen> {
         match self {
             MapItemFrozen::String(string) => Some(string),
-            _ => None,
+            MapItemFrozen::Boolean(_)
+            | MapItemFrozen::Choice(_)
+            | MapItemFrozen::File(_)
+            | MapItemFrozen::Integer(_)
+            | MapItemFrozen::Number(_)
+            | MapItemFrozen::NumberWithUnits(_)
+            | MapItemFrozen::Table(_)
+            | MapItemFrozen::TableWithUnits(_)
+            | MapItemFrozen::Unit(_) => None,
         }
     }
 
@@ -51,7 +59,15 @@ impl MapItemFrozen {
     pub const fn get_table(&self) -> Option<&TableFrozen> {
         match self {
             MapItemFrozen::Table(table) => Some(table),
-            _ => None,
+            MapItemFrozen::Boolean(_)
+            | MapItemFrozen::Choice(_)
+            | MapItemFrozen::File(_)
+            | MapItemFrozen::Integer(_)
+            | MapItemFrozen::Number(_)
+            | MapItemFrozen::NumberWithUnits(_)
+            | MapItemFrozen::String(_)
+            | MapItemFrozen::TableWithUnits(_)
+            | MapItemFrozen::Unit(_) => None,
         }
     }
 
@@ -60,7 +76,15 @@ impl MapItemFrozen {
     pub const fn get_unit(&self) -> Option<&UnitFrozen> {
         match self {
             MapItemFrozen::Unit(unit) => Some(unit),
-            _ => None,
+            MapItemFrozen::Boolean(_)
+            | MapItemFrozen::Choice(_)
+            | MapItemFrozen::File(_)
+            | MapItemFrozen::Integer(_)
+            | MapItemFrozen::Number(_)
+            | MapItemFrozen::NumberWithUnits(_)
+            | MapItemFrozen::String(_)
+            | MapItemFrozen::Table(_)
+            | MapItemFrozen::TableWithUnits(_) => None,
         }
     }
 

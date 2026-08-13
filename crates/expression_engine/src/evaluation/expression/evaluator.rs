@@ -57,7 +57,11 @@ fn is_signed_float_literal(expression: &Expression) -> bool {
             operand,
             ..
         } => matches!(operand.as_ref(), Expression::Literal(_, Literal::Float(_))),
-        _ => false,
+        Expression::Literal(..)
+        | Expression::BinaryOperation { .. }
+        | Expression::UnaryOperation { .. }
+        | Expression::FunctionCall { .. }
+        | Expression::Index { .. } => false,
     }
 }
 
@@ -106,7 +110,18 @@ fn evaluate_boolean_binary_operation(
         Operators::Or => Ok(ComputedItem::Boolean(left_value || right_value)),
         Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
         Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
-        _ => Err(ExpressionError::new_complex(
+        Operators::Add
+        | Operators::Subtract
+        | Operators::Multiply
+        | Operators::Divide
+        | Operators::Modulus
+        | Operators::Power
+        | Operators::Negate
+        | Operators::LessThan
+        | Operators::LessThanOrEqual
+        | Operators::GreaterThan
+        | Operators::GreaterThanOrEqual
+        | Operators::Not => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
             format!("Unsupported operator for booleans: {operator:?}"),
             source.clone(),
@@ -156,7 +171,12 @@ fn evaluate_float_binary_operation(
         Operators::LessThanOrEqual => Ok(ComputedItem::Boolean(left_value <= right_value)),
         Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
         Operators::GreaterThanOrEqual => Ok(ComputedItem::Boolean(left_value >= right_value)),
-        _ => Err(ExpressionError::new_complex(
+        Operators::Negate
+        | Operators::Equal
+        | Operators::NotEqual
+        | Operators::And
+        | Operators::Or
+        | Operators::Not => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
             format!("Unsupported operator for floats: {operator:?}"),
             source.clone(),
@@ -284,12 +304,14 @@ fn evaluate_integer_binary_operation(
         Operators::LessThanOrEqual => Ok(ComputedItem::Boolean(left_value <= right_value)),
         Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
         Operators::GreaterThanOrEqual => Ok(ComputedItem::Boolean(left_value >= right_value)),
-        _ => Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Unsupported operator for integers: {operator:?}"),
-            source.clone(),
-            SpanSet::from_span(span),
-        )),
+        Operators::Negate | Operators::Not | Operators::And | Operators::Or => {
+            Err(ExpressionError::new_complex(
+                ExpressionCategory::Evaluation,
+                format!("Unsupported operator for integers: {operator:?}"),
+                source.clone(),
+                SpanSet::from_span(span),
+            ))
+        }
     }
 }
 
@@ -304,7 +326,20 @@ fn evaluate_string_binary_operation(
     match operator {
         Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
         Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
-        _ => Err(ExpressionError::new_complex(
+        Operators::Negate
+        | Operators::And
+        | Operators::Or
+        | Operators::Not
+        | Operators::LessThan
+        | Operators::LessThanOrEqual
+        | Operators::GreaterThan
+        | Operators::GreaterThanOrEqual
+        | Operators::Add
+        | Operators::Subtract
+        | Operators::Multiply
+        | Operators::Divide
+        | Operators::Modulus
+        | Operators::Power => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
             format!("Unsupported operator for strings: {operator:?}"),
             source.clone(),
@@ -484,7 +519,14 @@ fn evaluate_index_operation(
         let (table, table_with_units) = match &item {
             ComputedItem::Table(table) => (table, None),
             ComputedItem::TableWithUnits(table) => (table.as_table(), Some(table)),
-            _ => {
+            ComputedItem::Boolean(_)
+            | ComputedItem::Integer(_)
+            | ComputedItem::Float(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::File(_)
+            | ComputedItem::Unit(_) => {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     "Expected a table for table indexing.".to_string(),
@@ -530,7 +572,15 @@ fn evaluate_index_operation(
                     )
                 })?
             }
-            _ => {
+            ComputedItem::Boolean(_)
+            | ComputedItem::Float(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::File(_)
+            | ComputedItem::Table(_)
+            | ComputedItem::TableWithUnits(_)
+            | ComputedItem::Unit(_) => {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!("Expected an integer index for the table, got {index_1:?}"),
@@ -586,7 +636,13 @@ fn evaluate_index_operation(
                     .unwrap_or(UnitId::None);
                 Ok(computed_float(value, unit))
             }
-            other => Err(ExpressionError::new_complex(
+            other @ (ComputedItem::Boolean(_)
+            | ComputedItem::Float(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::File(_)
+            | ComputedItem::Table(_)
+            | ComputedItem::TableWithUnits(_)
+            | ComputedItem::Unit(_)) => Err(ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 format!("Expected a string or integer index for the table field, got {other:?}"),
                 source.clone(),
@@ -643,7 +699,20 @@ fn evaluate_expression(
                 (ComputedItem::File(left_file), ComputedItem::File(right_file)) => match operator {
                     Operators::Equal => Ok(ComputedItem::Boolean(left_file == right_file)),
                     Operators::NotEqual => Ok(ComputedItem::Boolean(left_file != right_file)),
-                    _ => Err(ExpressionError::new_complex(
+                    Operators::Add
+                    | Operators::Subtract
+                    | Operators::Multiply
+                    | Operators::Divide
+                    | Operators::Modulus
+                    | Operators::Power
+                    | Operators::Negate
+                    | Operators::LessThan
+                    | Operators::LessThanOrEqual
+                    | Operators::GreaterThan
+                    | Operators::GreaterThanOrEqual
+                    | Operators::And
+                    | Operators::Or
+                    | Operators::Not => Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for files: {operator:?}"),
                         source.clone(),
@@ -690,7 +759,20 @@ fn evaluate_expression(
                 (ComputedItem::Unit(left_unit), ComputedItem::Unit(right_unit)) => match operator {
                     Operators::Equal => Ok(ComputedItem::Boolean(left_unit == right_unit)),
                     Operators::NotEqual => Ok(ComputedItem::Boolean(left_unit != right_unit)),
-                    _ => Err(ExpressionError::new_complex(
+                    Operators::Add
+                    | Operators::Subtract
+                    | Operators::Multiply
+                    | Operators::Divide
+                    | Operators::Modulus
+                    | Operators::Power
+                    | Operators::Negate
+                    | Operators::LessThan
+                    | Operators::LessThanOrEqual
+                    | Operators::GreaterThan
+                    | Operators::GreaterThanOrEqual
+                    | Operators::And
+                    | Operators::Or
+                    | Operators::Not => Err(ExpressionError::new_complex(
                         ExpressionCategory::Evaluation,
                         format!("Unsupported operator for units: {operator:?}"),
                         source.clone(),
@@ -853,7 +935,13 @@ fn validate_unit_value(
                 )
             })?
         }
-        _ => {
+        ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::Float(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_) => {
             return Err(ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 format!("Expected a unit value, but got {computed:?}."),
@@ -900,7 +988,7 @@ fn evaluate_basic_expression(
                 let computed = ComputedItem::Identifier(name.clone().into());
                 return validate_unit_value(unit_definition, &computed, source, span);
             }
-            _ => {}
+            Boolean(_) | File(_) | Integer(_) | Number(_) | NumberWithUnits(_) | String(_) => {}
         }
     }
 
@@ -1095,7 +1183,14 @@ fn evaluate_basic_expression(
                         NumberConstraintEnum::None => Ok(computed),
                     }
                 }
-                _ => Err(ExpressionError::new_complex(
+                ComputedItem::Boolean(_)
+                | ComputedItem::Integer(_)
+                | ComputedItem::String(_)
+                | ComputedItem::Identifier(_)
+                | ComputedItem::File(_)
+                | ComputedItem::Table(_)
+                | ComputedItem::TableWithUnits(_)
+                | ComputedItem::Unit(_) => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
                         "Expected a numeric value for number definition, but got {computed:?}."
@@ -1273,7 +1368,14 @@ fn evaluate_basic_expression(
                         NumberConstraintEnum::None => Ok(computed),
                     }
                 }
-                _ => Err(ExpressionError::new_complex(
+                ComputedItem::Boolean(_)
+                | ComputedItem::Integer(_)
+                | ComputedItem::String(_)
+                | ComputedItem::Identifier(_)
+                | ComputedItem::File(_)
+                | ComputedItem::Table(_)
+                | ComputedItem::TableWithUnits(_)
+                | ComputedItem::Unit(_) => Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
                         "Expected a numeric value for number definition, but got {computed:?}."
@@ -1346,7 +1448,14 @@ fn evaluate_number_with_units_expression(
             (value, unit)
         }
         ComputedItem::FloatWithUnit { value, unit } => (value, unit),
-        _ => {
+        ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::File(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => {
             return Err(ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 format!("Expected a numeric value for number definition, but got {computed:?}."),
@@ -1394,7 +1503,15 @@ fn evaluate_table_expression(
             ComputedItem::TableWithUnits(referenced_table) => {
                 ComputedItem::Table(referenced_table.into_table())
             }
-            other => other,
+            other @ (ComputedItem::Boolean(_)
+            | ComputedItem::Integer(_)
+            | ComputedItem::Float(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::File(_)
+            | ComputedItem::Table(_)
+            | ComputedItem::Unit(_)) => other,
         };
         return match referenced {
             ComputedItem::Table(referenced_table) => {
@@ -1501,7 +1618,15 @@ fn evaluate_table_expression(
 
                 Ok(converted_rows)
             }
-            other => Err(vec![ExpressionError::new_complex(
+            other @ (ComputedItem::Boolean(_)
+            | ComputedItem::Integer(_)
+            | ComputedItem::Float(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::File(_)
+            | ComputedItem::TableWithUnits(_)
+            | ComputedItem::Unit(_)) => Err(vec![ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
                 format!(
                     "Parameter '{parameter}' is expected to reference a table, but got {other:?}."
@@ -1581,7 +1706,14 @@ fn evaluate_table_with_units_expression(
                 let (referenced_table, units) = referenced_table.into_table_and_units();
                 (referenced_table, Some(units))
             }
-            other => {
+            other @ (ComputedItem::Boolean(_)
+            | ComputedItem::Integer(_)
+            | ComputedItem::Float(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::File(_)
+            | ComputedItem::Unit(_)) => {
                 return Err(vec![ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!(
@@ -1917,7 +2049,15 @@ mod tests {
     fn check_number_float(computed_item: &ComputedItem, expected_value: f64) {
         match computed_item {
             ComputedItem::Float(value) => assert_eq!(*value, expected_value),
-            _ => panic!("Expected a numeric computed item"),
+            ComputedItem::Boolean(_)
+            | ComputedItem::Integer(_)
+            | ComputedItem::FloatWithUnit { .. }
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::File(_)
+            | ComputedItem::Table(_)
+            | ComputedItem::TableWithUnits(_)
+            | ComputedItem::Unit(_) => panic!("Expected a numeric computed item"),
         }
     }
 
