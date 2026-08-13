@@ -266,7 +266,17 @@ fn evaluate_integer_binary_operation(
                     SpanSet::from_span(span),
                 )
             })?;
-            Ok(ComputedItem::Integer(left_value.pow(exponent)))
+            left_value.checked_pow(exponent).map_or_else(
+                || {
+                    Err(ExpressionError::new_complex(
+                        ExpressionCategory::Evaluation,
+                        "Integer overflow.".to_string(),
+                        source.clone(),
+                        SpanSet::from_span(span),
+                    ))
+                },
+                |value| Ok(ComputedItem::Integer(value)),
+            )
         }
         Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
         Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
@@ -2095,6 +2105,18 @@ mod tests {
         check_number_integer(&result["h"], 1);
         check_number_integer(&result["i"], -3);
         check_number_integer(&result["j"], 1);
+    }
+
+    #[test]
+    fn integer_power_overflow_returns_an_error() {
+        let input_data = BTreeMap::from([("x".into(), create_integer_basic_input_data("2 ^ 63"))]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].to_string().contains("Integer overflow."));
     }
 
     #[test]
