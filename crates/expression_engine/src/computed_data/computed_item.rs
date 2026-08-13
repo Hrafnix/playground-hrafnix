@@ -1,5 +1,6 @@
 use shareable_string::ShareableString;
 use std::fmt;
+use units::UnitId;
 
 /// Represents a computed table, consisting of column keys and rows of numeric values.
 #[derive(Debug, Clone, PartialEq)]
@@ -84,6 +85,8 @@ pub enum ComputedItem {
     File(ShareableString),
     /// A table represented as a `ComputedTable`.
     Table(ComputedTable),
+    /// A unit identifier.
+    Unit(UnitId),
 }
 
 impl fmt::Display for ComputedItem {
@@ -96,6 +99,14 @@ impl fmt::Display for ComputedItem {
             | ComputedItem::File(value)
             | ComputedItem::Identifier(value) => write!(f, "{value}"),
             ComputedItem::Table(_) => write!(f, "{self:?}"),
+            ComputedItem::Unit(value) => {
+                let family_description = value.family_id().description();
+                let unit_description = value.description();
+                write!(
+                    f,
+                    "Unit Family: {family_description}, Unit: {unit_description}"
+                )
+            }
         }
     }
 }
