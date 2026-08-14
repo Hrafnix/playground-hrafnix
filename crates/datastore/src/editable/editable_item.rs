@@ -1,7 +1,8 @@
 use crate::definition::ItemDefinitionType;
 use crate::editable::{
     BooleanEditable, ChoiceEditable, FileEditable, IntegerEditable, MapEditable, NumberEditable,
-    NumberWithUnitsEditable, StringEditable, TableEditable, TableWithUnitsEditable, UnitEditable,
+    NumberWithUnitsEditable, SeparatorEditable, StringEditable, TabEditable, TableEditable,
+    TableWithUnitsEditable, UnitEditable,
 };
 use crate::frozen::ItemFrozen;
 use crate::traits::TreePrint;
@@ -32,6 +33,10 @@ pub enum ItemEditable {
     TableWithUnits(TableWithUnitsEditable),
     /// A unit parameter.
     Unit(UnitEditable),
+    /// A tab structural element.
+    Tab(TabEditable),
+    /// A separator structural element.
+    Separator(SeparatorEditable),
 }
 
 impl ItemEditable {
@@ -54,6 +59,10 @@ impl ItemEditable {
                 ItemEditable::TableWithUnits(TableWithUnitsEditable::new(table_with_units))
             }
             ItemFrozen::Unit(unit) => ItemEditable::Unit(UnitEditable::new(unit)),
+            ItemFrozen::Tab(tab) => ItemEditable::Tab(TabEditable::new(tab)),
+            ItemFrozen::Separator(separator) => {
+                ItemEditable::Separator(SeparatorEditable::new(separator))
+            }
         }
     }
 
@@ -76,6 +85,8 @@ impl ItemEditable {
                 ItemFrozen::TableWithUnits(table_with_units.freeze())
             }
             ItemEditable::Unit(unit) => ItemFrozen::Unit(unit.freeze()),
+            ItemEditable::Tab(tab) => ItemFrozen::Tab(tab.freeze()),
+            ItemEditable::Separator(separator) => ItemFrozen::Separator(separator.freeze()),
         }
     }
 
@@ -98,6 +109,8 @@ impl ItemEditable {
                 ItemDefinitionType::TableWithUnits(twu.definition().clone())
             }
             ItemEditable::Unit(u) => ItemDefinitionType::Unit(u.definition().clone()),
+            ItemEditable::Tab(t) => ItemDefinitionType::Tab(t.definition().clone()),
+            ItemEditable::Separator(s) => ItemDefinitionType::Separator(s.definition().clone()),
         }
     }
 
@@ -115,6 +128,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -133,6 +148,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -151,6 +168,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -169,6 +188,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -187,6 +208,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -205,6 +228,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -223,6 +248,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -241,6 +268,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -259,6 +288,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -277,6 +308,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -295,6 +328,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -313,6 +348,8 @@ impl ItemEditable {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -331,6 +368,8 @@ impl ItemEditable {
             | Self::NumberWithUnits(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -349,6 +388,8 @@ impl ItemEditable {
             | Self::NumberWithUnits(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -367,6 +408,8 @@ impl ItemEditable {
             | Self::NumberWithUnits(_)
             | Self::String(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -385,6 +428,8 @@ impl ItemEditable {
             | Self::NumberWithUnits(_)
             | Self::String(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -403,6 +448,8 @@ impl ItemEditable {
             | Self::NumberWithUnits(_)
             | Self::String(_)
             | Self::Table(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::TableWithUnits(_) => None,
         }
     }
@@ -421,6 +468,8 @@ impl ItemEditable {
             | Self::NumberWithUnits(_)
             | Self::String(_)
             | Self::Table(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::TableWithUnits(_) => None,
         }
     }
@@ -450,6 +499,8 @@ impl TreePrint for ItemEditable {
                 table_with_units.tree_print(f, label, prefix, last)
             }
             Self::Unit(unit) => unit.tree_print(f, label, prefix, last),
+            Self::Tab(tab) => tab.tree_print(f, label, prefix, last),
+            Self::Separator(separator) => separator.tree_print(f, label, prefix, last),
         }
     }
 }

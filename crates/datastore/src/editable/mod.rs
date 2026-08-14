@@ -22,8 +22,12 @@ pub mod editable_object_global;
 pub mod editable_object_parameter;
 /// Editable variable object data.
 pub mod editable_object_variable;
+/// Editable separator data.
+pub mod editable_separator;
 /// Editable string data.
 pub mod editable_string;
+/// Editable tab data.
+pub mod editable_tab;
 /// Editable table data.
 pub mod editable_table;
 /// Editable table with units data.
@@ -43,7 +47,9 @@ pub use editable_number_with_units::*;
 pub use editable_object_global::*;
 pub use editable_object_parameter::*;
 pub use editable_object_variable::*;
+pub use editable_separator::*;
 pub use editable_string::*;
+pub use editable_tab::*;
 pub use editable_table::*;
 pub use editable_table_with_units::*;
 pub use editable_unit::*;

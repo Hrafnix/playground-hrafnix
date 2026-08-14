@@ -1,7 +1,8 @@
 use crate::definition::ItemDefinitionType;
 use crate::frozen::{
     BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, MapFrozen, NumberFrozen,
-    NumberWithUnitsFrozen, StringFrozen, TableFrozen, TableWithUnitsFrozen, UnitFrozen,
+    NumberWithUnitsFrozen, SeparatorFrozen, StringFrozen, TabFrozen, TableFrozen,
+    TableWithUnitsFrozen, UnitFrozen,
 };
 use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,10 @@ pub enum ItemFrozen {
     TableWithUnits(TableWithUnitsFrozen),
     /// A unit parameter.
     Unit(UnitFrozen),
+    /// A tab structural element.
+    Tab(TabFrozen),
+    /// A separator structural element.
+    Separator(SeparatorFrozen),
 }
 
 impl ItemFrozen {
@@ -53,6 +58,8 @@ impl ItemFrozen {
                 ItemDefinitionType::TableWithUnits(twu.definition().clone())
             }
             ItemFrozen::Unit(u) => ItemDefinitionType::Unit(u.definition().clone()),
+            ItemFrozen::Tab(t) => ItemDefinitionType::Tab(t.definition().clone()),
+            ItemFrozen::Separator(s) => ItemDefinitionType::Separator(s.definition().clone()),
         }
     }
 
@@ -71,6 +78,8 @@ impl ItemFrozen {
             Self::Table(t) => t.hash(),
             Self::TableWithUnits(twu) => twu.hash(),
             Self::Unit(u) => u.hash(),
+            Self::Tab(t) => t.hash(),
+            Self::Separator(s) => s.hash(),
         }
     }
 
@@ -88,6 +97,8 @@ impl ItemFrozen {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -106,6 +117,8 @@ impl ItemFrozen {
             | Self::NumberWithUnits(_)
             | Self::String(_)
             | Self::Table(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::TableWithUnits(_) => None,
         }
     }
@@ -124,6 +137,8 @@ impl ItemFrozen {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -142,6 +157,8 @@ impl ItemFrozen {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -160,6 +177,8 @@ impl ItemFrozen {
             | Self::String(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -178,6 +197,8 @@ impl ItemFrozen {
             | Self::NumberWithUnits(_)
             | Self::Table(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -196,6 +217,8 @@ impl ItemFrozen {
             | Self::NumberWithUnits(_)
             | Self::String(_)
             | Self::TableWithUnits(_)
+            | Self::Tab(_)
+            | Self::Separator(_)
             | Self::Unit(_) => None,
         }
     }
@@ -225,6 +248,8 @@ impl TreePrint for ItemFrozen {
                 table_with_units.tree_print(f, label, prefix, last)
             }
             Self::Unit(unit) => unit.tree_print(f, label, prefix, last),
+            Self::Tab(tab) => tab.tree_print(f, label, prefix, last),
+            Self::Separator(separator) => separator.tree_print(f, label, prefix, last),
         }
     }
 }

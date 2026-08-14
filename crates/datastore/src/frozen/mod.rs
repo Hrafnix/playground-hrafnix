@@ -20,8 +20,12 @@ pub mod frozen_object_global;
 pub mod frozen_object_parameter;
 /// Frozen variable object data.
 pub mod frozen_object_variable;
+/// Frozen separator data.
+pub mod frozen_separator;
 /// Frozen string data.
 pub mod frozen_string;
+/// Frozen tab data.
+pub mod frozen_tab;
 /// Frozen table data.
 pub mod frozen_table;
 /// Frozen table with units data.
@@ -40,7 +44,9 @@ pub use frozen_number_with_units::*;
 pub use frozen_object_global::*;
 pub use frozen_object_parameter::*;
 pub use frozen_object_variable::*;
+pub use frozen_separator::*;
 pub use frozen_string::*;
+pub use frozen_tab::*;
 pub use frozen_table::*;
 pub use frozen_table_with_units::*;
 pub use frozen_unit::*;
