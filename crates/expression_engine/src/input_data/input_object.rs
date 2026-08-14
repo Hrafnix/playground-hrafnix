@@ -193,6 +193,9 @@ fn item_to_input_data(
                 )),
             );
         }
+        ItemFrozen::Tab(_) | ItemFrozen::Separator(_) => {
+            // Tabs and Separators are not represented in input data.
+        }
     }
 }
 

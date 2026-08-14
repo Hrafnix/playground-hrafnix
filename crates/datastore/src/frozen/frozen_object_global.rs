@@ -89,6 +89,20 @@ impl GlobalObjectFrozen {
                         ItemFrozen::Unit(crate::frozen::UnitFrozen::new(unit_def.clone())),
                     );
                 }
+                ItemDefinitionType::Tab(tab_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Tab(crate::frozen::TabFrozen::new(tab_def.clone())),
+                    );
+                }
+                ItemDefinitionType::Separator(separator_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Separator(crate::frozen::SeparatorFrozen::new(
+                            separator_def.clone(),
+                        )),
+                    );
+                }
             }
         }
 

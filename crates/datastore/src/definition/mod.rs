@@ -22,8 +22,12 @@ pub mod definition_object_global;
 pub mod definition_object_parameter;
 /// Definitions for object variable configurations within data structures.
 pub mod definition_object_variable;
+/// Definitions for separator-based data structures.
+pub mod definition_separator;
 /// Definitions for string-based data structures.
 pub mod definition_string;
+/// Definitions for tab-based data structures.
+pub mod definition_tab;
 /// Definitions for table-based data structures.
 pub mod definition_table;
 /// Definitions for table-based data structures with units.
@@ -43,7 +47,9 @@ pub use definition_number_with_units::*;
 pub use definition_object_global::*;
 pub use definition_object_parameter::*;
 pub use definition_object_variable::*;
+pub use definition_separator::*;
 pub use definition_string::*;
+pub use definition_tab::*;
 pub use definition_table::*;
 pub use definition_table_with_units::*;
 pub use definition_unit::*;

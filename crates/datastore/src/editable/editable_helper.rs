@@ -56,6 +56,11 @@ pub fn editable_set_value<
         ItemEditable::Unit(unit) => {
             unit.set(value);
         }
+        ItemEditable::Tab(_) | ItemEditable::Separator(_) => {
+            return Err(StoreError::InvalidType(
+                "Cannot set a value for a Tab or Separator item.".to_string(),
+            ));
+        }
     }
 
     Ok(())

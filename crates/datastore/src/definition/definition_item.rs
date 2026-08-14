@@ -1,7 +1,7 @@
 use crate::definition::{
     BooleanDefinition, ChoiceDefinition, IntegerDefinition, MapDefinition, NumberDefinition,
-    NumberWithUnitsDefinition, StringDefinition, TableDefinition, TableWithUnitsDefinition,
-    UnitDefinition,
+    NumberWithUnitsDefinition, SeparatorDefinition, StringDefinition, TabDefinition,
+    TableDefinition, TableWithUnitsDefinition, UnitDefinition,
 };
 use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
@@ -33,6 +33,10 @@ pub enum ItemDefinitionType {
     TableWithUnits(TableWithUnitsDefinition),
     /// A Unit item.
     Unit(UnitDefinition),
+    /// A tab structural element.
+    Tab(TabDefinition),
+    /// A separator structural element.
+    Separator(SeparatorDefinition),
 }
 
 impl From<StringDefinition> for ItemDefinitionType {
@@ -101,6 +105,18 @@ impl From<UnitDefinition> for ItemDefinitionType {
     }
 }
 
+impl From<TabDefinition> for ItemDefinitionType {
+    fn from(definition: TabDefinition) -> Self {
+        ItemDefinitionType::Tab(definition)
+    }
+}
+
+impl From<SeparatorDefinition> for ItemDefinitionType {
+    fn from(definition: SeparatorDefinition) -> Self {
+        ItemDefinitionType::Separator(definition)
+    }
+}
+
 impl ItemDefinitionType {
     /// Returns a new `ItemDefinitionType` with strings laundered through the provided store.
     #[must_use]
@@ -117,6 +133,8 @@ impl ItemDefinitionType {
             Self::Table(def) => Self::Table(def.launder(store)),
             Self::TableWithUnits(def) => Self::TableWithUnits(def.launder(store)),
             Self::Unit(def) => Self::Unit(def.launder(store)),
+            Self::Tab(def) => Self::Tab(def.launder(store)),
+            Self::Separator(def) => Self::Separator(def.launder(store)),
         }
     }
 }
@@ -157,6 +175,8 @@ impl TreePrint for ItemDefinitionType {
                 table_with_units.tree_print(f, label, prefix, last)
             }
             Self::Unit(unit) => unit.tree_print(f, label, prefix, last),
+            Self::Tab(tab) => tab.tree_print(f, label, prefix, last),
+            Self::Separator(separator) => separator.tree_print(f, label, prefix, last),
         }
     }
 }
