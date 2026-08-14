@@ -16,6 +16,7 @@ pub struct IntegerEditable {
 impl IntegerEditable {
     /// Creates a new `IntegerEditable` instance from a given `IntegerFrozen` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_number: &IntegerFrozen) -> Self {
         Self {
             definition: frozen_number.definition().clone(),
@@ -25,12 +26,14 @@ impl IntegerEditable {
 
     /// Converts the current `IntegerEditable` instance into an `IntegerFrozen` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> IntegerFrozen {
         IntegerFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
+    #[hotpath::measure]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -42,24 +45,28 @@ impl IntegerEditable {
     }
 
     /// Sets the value and updates the hash.
+    #[hotpath::measure]
     pub fn set<S: Into<ShareableString>>(&mut self, value: S) {
         self.value = value.into();
     }
 }
 
 impl PartialEq<&IntegerEditable> for IntegerEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&IntegerEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<IntegerEditable> for &IntegerEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &IntegerEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for IntegerEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

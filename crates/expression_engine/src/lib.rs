@@ -69,6 +69,7 @@ pub enum BasicDefinition {
 impl BasicDefinition {
     /// Returns a new `BasicDefinition` with strings laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             BasicDefinition::Boolean(boolean) => BasicDefinition::Boolean(boolean.launder(store)),
@@ -121,6 +122,7 @@ pub struct ExpressionError {
 
 impl ExpressionError {
     /// Creates a new `ExpressionError`.
+    #[hotpath::measure]
     pub fn new(category: ExpressionCategory, message: impl Into<ShareableString>) -> Self {
         Self {
             category,
@@ -130,6 +132,7 @@ impl ExpressionError {
     }
 
     /// Creates a new `ExpressionError` with additional context, including the original expression and the indices where the error occurred.
+    #[hotpath::measure]
     pub(crate) fn new_complex(
         category: ExpressionCategory,
         message: impl Into<ShareableString>,
@@ -148,6 +151,7 @@ impl ExpressionError {
 
     /// Returns a new `ExpressionError` with the message laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             category: self.category.clone(),
@@ -165,6 +169,7 @@ impl ExpressionError {
     ///
     /// Indices are interpreted as character offsets (matching how the lexer produces
     /// them via `input.chars().enumerate()`).
+    #[hotpath::measure]
     fn underline(&self) -> Option<String> {
         let chars: Vec<char> = self.context.original_expression.as_ref().chars().collect();
         let len = chars.len();
@@ -194,6 +199,7 @@ impl ExpressionError {
 }
 
 impl fmt::Display for ExpressionError {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

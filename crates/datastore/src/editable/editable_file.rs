@@ -16,6 +16,7 @@ pub struct FileEditable {
 impl FileEditable {
     /// Creates a new `FileEditable` instance from a given `FileFrozen` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_file: &FileFrozen) -> Self {
         Self {
             definition: frozen_file.definition().clone(),
@@ -25,12 +26,14 @@ impl FileEditable {
 
     /// Converts the current `FileEditable` instance into a `FileFrozen` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> FileFrozen {
         FileFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
+    #[hotpath::measure]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -42,24 +45,28 @@ impl FileEditable {
     }
 
     /// Sets the value and updates the hash.
+    #[hotpath::measure]
     pub fn set<S: Into<ShareableString>>(&mut self, value: S) {
         self.value = value.into();
     }
 }
 
 impl PartialEq<&FileEditable> for FileEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&FileEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<FileEditable> for &FileEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &FileEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for FileEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

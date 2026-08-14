@@ -23,6 +23,7 @@ pub struct GlobalObjectFrozen {
 impl GlobalObjectFrozen {
     /// Creates a new `GlobalObjectFrozen` with a definition.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(definition: GlobalObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -116,6 +117,7 @@ impl GlobalObjectFrozen {
     }
 
     /// Creates a new `GlobalObjectFrozen` with a description and items.
+    #[hotpath::measure]
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<GlobalKey, ItemFrozen>,
@@ -136,6 +138,7 @@ impl GlobalObjectFrozen {
 
     /// Creates a new `GlobalObjectFrozen` from a given `GlobalObjectEditable` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_editable(editable_object: &GlobalObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -153,11 +156,13 @@ impl GlobalObjectFrozen {
 
     /// Converts the current `GlobalObjectFrozen` instance into a `GlobalObjectEditable` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn thaw(&self) -> GlobalObjectEditable {
         GlobalObjectEditable::new_from_frozen(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all items in this global object.
+    #[hotpath::measure]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -186,11 +191,13 @@ impl GlobalObjectFrozen {
     }
 
     /// Returns a reference to the parameter with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemFrozen> {
         self.items.get(&key.into())
     }
 
     /// Returns an iterator over the key-parameter pairs in the object.
+    #[hotpath::measure]
     pub fn iter(&self) -> impl Iterator<Item = (&GlobalKey, &ItemFrozen)> {
         self.items.iter()
     }
@@ -203,18 +210,21 @@ impl GlobalObjectFrozen {
 }
 
 impl PartialEq<&GlobalObjectFrozen> for GlobalObjectFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &&GlobalObjectFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<GlobalObjectFrozen> for &GlobalObjectFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &GlobalObjectFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for GlobalObjectFrozen {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -242,6 +252,7 @@ impl TreePrint for GlobalObjectFrozen {
 }
 
 impl std::fmt::Display for GlobalObjectFrozen {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }

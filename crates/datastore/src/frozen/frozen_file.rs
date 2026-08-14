@@ -18,6 +18,7 @@ pub struct FileFrozen {
 impl FileFrozen {
     /// Creates a new `FileFrozen` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(definition: FileDefinition) -> Self {
         let value = definition.default_value();
 
@@ -32,6 +33,7 @@ impl FileFrozen {
 
     /// Creates a new `FileFrozen` instance with a specified value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_with_value(definition: FileDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -44,6 +46,7 @@ impl FileFrozen {
 
     /// Creates a new `FileFrozen` instance from a given `FileEditable` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_editable(basic: &FileEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value();
@@ -58,11 +61,13 @@ impl FileFrozen {
 
     /// Converts the current `FileFrozen` instance into a `FileEditable` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn thaw(&self) -> FileEditable {
         FileEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.
+    #[hotpath::measure]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -78,6 +83,7 @@ impl FileFrozen {
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
+    #[hotpath::measure]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -96,18 +102,21 @@ impl FileFrozen {
 }
 
 impl PartialEq<&FileFrozen> for FileFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &&FileFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<FileFrozen> for &FileFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &FileFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for FileFrozen {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

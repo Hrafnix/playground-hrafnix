@@ -38,6 +38,7 @@ pub enum MapItemEditable {
 impl MapItemEditable {
     /// Creates a new `MapItemEditable` instance from a given `MapItemFrozen` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_item: &MapItemFrozen) -> Self {
         match frozen_item {
             MapItemFrozen::Boolean(boolean) => {
@@ -63,6 +64,7 @@ impl MapItemEditable {
 
     /// Converts the current `MapItemEditable` instance into a `MapItemFrozen` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> MapItemFrozen {
         match self {
             MapItemEditable::Boolean(boolean) => MapItemFrozen::Boolean(boolean.freeze()),
@@ -356,6 +358,7 @@ impl MapItemEditable {
 
     /// Returns the map item definition.
     #[must_use]
+    #[hotpath::measure]
     pub fn definition(&self) -> MapItemDefinition {
         match self {
             MapItemEditable::Boolean(boolean) => {
@@ -385,18 +388,21 @@ impl MapItemEditable {
 }
 
 impl PartialEq<&MapItemEditable> for MapItemEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&MapItemEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<MapItemEditable> for &MapItemEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &MapItemEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for MapItemEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -433,6 +439,7 @@ pub struct MapEntryEditable {
 impl MapEntryEditable {
     /// Creates a new `MapEntryEditable` from a `MapEntryFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_entry: &MapEntryFrozen) -> Self {
         Self {
             items: frozen_entry
@@ -444,21 +451,25 @@ impl MapEntryEditable {
 
     /// Converts this `MapEntryEditable` into a `MapEntryFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> MapEntryFrozen {
         MapEntryFrozen::new_from_editable(self)
     }
 
     /// Returns a reference to the item with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemEditable> {
         self.items.get(&key.into())
     }
 
     /// Returns a mutable reference to the item with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapItemEditable> {
         self.items.get_mut(key.as_ref())
     }
 
     /// Return the string value if this item is a string value.
+    #[hotpath::measure]
     pub fn get_string<S: Into<ShareableString>>(&self, key: S) -> Option<&StringEditable> {
         if let Some(item) = self.get(key) {
             item.get_string()
@@ -468,6 +479,7 @@ impl MapEntryEditable {
     }
 
     /// Return the table value if this item is a table value.
+    #[hotpath::measure]
     pub fn get_table<S: Into<ShareableString>>(&self, key: S) -> Option<&TableEditable> {
         if let Some(item) = self.get(key) {
             item.get_table()
@@ -477,12 +489,14 @@ impl MapEntryEditable {
     }
 
     /// Returns an iterator over the key-item pairs in the entry.
+    #[hotpath::measure]
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapItemEditable)> {
         self.items.iter()
     }
 
     /// Returns the schema of this entry, derived from its current items.
     #[must_use]
+    #[hotpath::measure]
     pub fn definition(&self) -> BTreeMap<StoreKey, MapItemDefinition> {
         self.items
             .iter()
@@ -492,18 +506,21 @@ impl MapEntryEditable {
 }
 
 impl PartialEq<&MapEntryEditable> for MapEntryEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&MapEntryEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<MapEntryEditable> for &MapEntryEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &MapEntryEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for MapEntryEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -538,6 +555,7 @@ pub struct MapEditable {
 impl MapEditable {
     /// Creates a new `MapEditable` from a `MapFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_map: &MapFrozen) -> Self {
         Self {
             definition: frozen_map.definition().clone(),
@@ -550,21 +568,25 @@ impl MapEditable {
 
     /// Converts this `MapEditable` into a `MapFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> MapFrozen {
         MapFrozen::new_from_editable(self)
     }
 
     /// Returns a reference to the item with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapEntryEditable> {
         self.items.get(&key.into())
     }
 
     /// Returns a mutable reference to the item with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut MapEntryEditable> {
         self.items.get_mut(key.as_ref())
     }
 
     /// Creates a new entry in the map with the specified key.
+    #[hotpath::measure]
     pub fn create<S: Into<StoreKey>>(&mut self, key: S) {
         let key = key.into();
         let frozen = MapEntryFrozen::new(self.definition.item_type());
@@ -573,6 +595,7 @@ impl MapEditable {
     }
 
     /// Returns an iterator over the key-item pairs in the map.
+    #[hotpath::measure]
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapEntryEditable)> {
         self.items.iter()
     }
@@ -585,24 +608,28 @@ impl MapEditable {
 
     /// Returns the number of items in the map.
     #[must_use]
+    #[hotpath::measure]
     pub fn count(&self) -> usize {
         self.items.len()
     }
 }
 
 impl PartialEq<&MapEditable> for MapEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&MapEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<MapEditable> for &MapEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &MapEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for MapEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

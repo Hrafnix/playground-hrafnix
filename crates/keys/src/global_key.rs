@@ -18,6 +18,7 @@ pub const fn is_valid_global_key(s: &str) -> bool {
 }
 
 /// Validates that a global key starts with `g_` and has valid remaining characters.
+#[hotpath::measure]
 fn validate_global_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
     if !s.starts_with("g_") {
@@ -57,12 +58,14 @@ impl ConstGlobalKey {
 }
 
 impl Display for ConstGlobalKey {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
 impl From<ConstGlobalKey> for GlobalKey {
+    #[hotpath::measure]
     fn from(value: ConstGlobalKey) -> Self {
         GlobalKey {
             key: ShareableString::from(value.0),
@@ -71,6 +74,7 @@ impl From<ConstGlobalKey> for GlobalKey {
 }
 
 impl From<&ConstGlobalKey> for GlobalKey {
+    #[hotpath::measure]
     fn from(value: &ConstGlobalKey) -> Self {
         GlobalKey {
             key: ShareableString::from(value.0),
@@ -79,12 +83,14 @@ impl From<&ConstGlobalKey> for GlobalKey {
 }
 
 impl From<ConstGlobalKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: ConstGlobalKey) -> Self {
         ShareableString::from(value.0)
     }
 }
 
 impl From<&ConstGlobalKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &ConstGlobalKey) -> Self {
         ShareableString::from(value.0)
     }
@@ -104,6 +110,7 @@ impl GlobalKey {
     /// # Errors
     ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    #[hotpath::measure]
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_global_key(&key)?;
         Ok(Self { key })
@@ -122,6 +129,7 @@ impl GlobalKey {
 
     /// Returns the string slice.
     #[must_use]
+    #[hotpath::measure]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
@@ -134,6 +142,7 @@ impl GlobalKey {
 
     /// Returns a new `GlobalKey` with its string interned through the given `SharedStringStore`.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -151,6 +160,7 @@ impl GlobalKey {
 }
 
 impl Serialize for GlobalKey {
+    #[hotpath::measure]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -160,6 +170,7 @@ impl Serialize for GlobalKey {
 }
 
 impl<'de> Deserialize<'de> for GlobalKey {
+    #[hotpath::measure]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -170,144 +181,168 @@ impl<'de> Deserialize<'de> for GlobalKey {
 }
 
 impl AsRef<str> for GlobalKey {
+    #[hotpath::measure]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
 impl PartialEq<&str> for GlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &&str) -> bool {
         self.as_str() == *other
     }
 }
 
 impl PartialEq<GlobalKey> for &str {
+    #[hotpath::measure]
     fn eq(&self, other: &GlobalKey) -> bool {
         *self == other.as_str()
     }
 }
 
 impl PartialEq<String> for GlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &String) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<GlobalKey> for String {
+    #[hotpath::measure]
     fn eq(&self, other: &GlobalKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<ShareableString> for GlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &ShareableString) -> bool {
         self.key.as_ref() == other.as_ref()
     }
 }
 
 impl PartialEq<GlobalKey> for ShareableString {
+    #[hotpath::measure]
     fn eq(&self, other: &GlobalKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialOrd<&str> for GlobalKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(*other)
     }
 }
 
 impl PartialOrd<GlobalKey> for &str {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
         (*self).partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<String> for GlobalKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &String) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<GlobalKey> for String {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<ShareableString> for GlobalKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
         self.key.partial_cmp(other)
     }
 }
 
 impl PartialOrd<GlobalKey> for ShareableString {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
         self.partial_cmp(other.as_str())
     }
 }
 
 impl PartialEq<ConstGlobalKey> for GlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &ConstGlobalKey) -> bool {
         self.as_str() == other.0
     }
 }
 
 impl PartialEq<GlobalKey> for ConstGlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &GlobalKey) -> bool {
         self.0 == other.as_str()
     }
 }
 
 impl PartialOrd<ConstGlobalKey> for GlobalKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ConstGlobalKey) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.0)
     }
 }
 
 impl PartialOrd<GlobalKey> for ConstGlobalKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &GlobalKey) -> Option<std::cmp::Ordering> {
         self.0.partial_cmp(other.as_str())
     }
 }
 
 impl Display for GlobalKey {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.key)
     }
 }
 
 impl From<GlobalKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: GlobalKey) -> Self {
         value.key
     }
 }
 
 impl From<&GlobalKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &GlobalKey) -> Self {
         value.key.clone()
     }
 }
 
 impl PartialEq<crate::store_key::StoreKey> for GlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &crate::store_key::StoreKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<crate::store_key::StoreKey> for ConstGlobalKey {
+    #[hotpath::measure]
     fn eq(&self, other: &crate::store_key::StoreKey) -> bool {
         self.0 == other.as_str()
     }
 }
 
 impl std::borrow::Borrow<str> for GlobalKey {
+    #[hotpath::measure]
     fn borrow(&self) -> &str {
         self.key.as_str()
     }
 }
 
 impl std::borrow::Borrow<ShareableString> for GlobalKey {
+    #[hotpath::measure]
     fn borrow(&self) -> &ShareableString {
         &self.key
     }

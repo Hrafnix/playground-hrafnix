@@ -45,6 +45,7 @@ impl Lexer {
     /// # Errors
     ///
     /// Returns an error if `input` contains invalid characters or unterminated string literals.
+    #[hotpath::measure]
     pub(crate) fn new<S: Into<ShareableString>>(input: S) -> Result<Self, ExpressionError> {
         let input = input.into();
         let mut lexer = Self {
@@ -67,6 +68,7 @@ impl Lexer {
     /// # Errors
     ///
     /// Returns an error if an invalid character or unterminated string literal is found.
+    #[hotpath::measure]
     fn tokenize(&mut self, input: &str) -> Result<(), ExpressionError> {
         let mut chars = input.chars().enumerate().peekable();
 
@@ -129,6 +131,7 @@ impl Lexer {
     ///
     /// Returns an error if an invalid character is found inside the literal or if the closing
     /// `"` is never reached.
+    #[hotpath::measure]
     fn tokenize_text(
         &mut self,
         chars: &mut Peekable<Enumerate<Chars<'_>>>,
@@ -177,6 +180,7 @@ impl Lexer {
 
     /// Tokenizes a number that starts with a leading `.` (e.g. `.5`), or a
     /// bare `.` operator if no digits follow.
+    #[hotpath::measure]
     fn tokenize_dot_number(&mut self, chars: &mut Peekable<Enumerate<Chars<'_>>>, start: usize) {
         let mut s = String::from(".");
         while let Some(&(_, c)) = chars.peek() {
@@ -215,6 +219,7 @@ impl Lexer {
     }
 
     /// Tokenizes a number that starts with a digit (e.g. `123`, `45.67`).
+    #[hotpath::measure]
     fn tokenize_number(
         &mut self,
         chars: &mut Peekable<Enumerate<Chars<'_>>>,
@@ -252,6 +257,7 @@ impl Lexer {
     }
 
     /// Tokenizes an identifier (e.g. `variable_name`, `function1`).
+    #[hotpath::measure]
     fn tokenize_identifier(
         &mut self,
         chars: &mut Peekable<Enumerate<Chars<'_>>>,
@@ -276,6 +282,7 @@ impl Lexer {
 
     /// Tokenizes an operator, including two-character operators such as
     /// `==`, `<=`, `>=`, `!=`, `&&`, and `||`.
+    #[hotpath::measure]
     fn tokenize_operator(
         &mut self,
         chars: &mut Peekable<Enumerate<Chars<'_>>>,
@@ -303,6 +310,7 @@ impl Lexer {
     /// Validates the tokens collected so far, returning an error if any `LexerToken` is invalid.
     /// This includes cases where an identifier starts with `_`, a number has multiple decimal points,
     /// or a standalone operator is malformed (e.g., `&`, `|`, `=`, or `.`).
+    #[hotpath::measure]
     fn validate_tokens(&self, input: &str) -> Result<(), ExpressionError> {
         for token in &self.tokens {
             match token {
@@ -353,6 +361,7 @@ impl Lexer {
     /// from `chars` and append it to `s`. If the characters following the current position
     /// don't form a valid exponent (i.e. `e` optionally followed by a sign and at least one
     /// digit), `chars` and `s` are left untouched.
+    #[hotpath::measure]
     fn consume_exponent(chars: &mut Peekable<Enumerate<Chars<'_>>>, s: &mut String) {
         let mut lookahead = chars.clone();
         let mut exponent = String::new();
@@ -395,6 +404,7 @@ impl Lexer {
     /// Removes and returns the next token from the front of the token stream.
     ///
     /// Returns [`LexerToken::EndOfInput`] once all tokens have been consumed.
+    #[hotpath::measure]
     pub(crate) fn next(&mut self) -> LexerToken {
         self.tokens.pop().unwrap_or(LexerToken::EndOfInput)
     }
@@ -402,6 +412,7 @@ impl Lexer {
     /// Returns a clone of the next token without consuming it.
     ///
     /// Returns [`LexerToken::EndOfInput`] once all tokens have been consumed.
+    #[hotpath::measure]
     pub(crate) fn peek(&mut self) -> LexerToken {
         self.tokens
             .last()

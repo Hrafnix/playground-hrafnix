@@ -17,6 +17,7 @@ pub struct FileDefinition {
 
 impl FileDefinition {
     /// Creates a new file-based `FileDefinition`.
+    #[hotpath::measure]
     pub fn new<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
         extension_filter: S2,
@@ -31,6 +32,7 @@ impl FileDefinition {
     }
 
     /// Creates a new file-based `FileDefinition` with a default value.
+    #[hotpath::measure]
     pub fn new_with_default<
         S1: Into<ShareableString>,
         S2: Into<ShareableString>,
@@ -51,6 +53,7 @@ impl FileDefinition {
 
     /// Returns the extension filter.
     #[must_use]
+    #[hotpath::measure]
     pub fn extension_filter(&self) -> ShareableString {
         self.extension_filter.clone()
     }
@@ -69,6 +72,7 @@ impl FileDefinition {
 
     /// Returns a new `FileDefinition` with strings laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -80,6 +84,7 @@ impl FileDefinition {
 
     /// Returns the description of the parameter.
     #[must_use]
+    #[hotpath::measure]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -92,6 +97,7 @@ impl FileDefinition {
 
     /// Returns the default value of the parameter.
     #[must_use]
+    #[hotpath::measure]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
@@ -104,18 +110,21 @@ impl FileDefinition {
 }
 
 impl PartialEq<&FileDefinition> for FileDefinition {
+    #[hotpath::measure]
     fn eq(&self, other: &&FileDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<FileDefinition> for &FileDefinition {
+    #[hotpath::measure]
     fn eq(&self, other: &FileDefinition) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for FileDefinition {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

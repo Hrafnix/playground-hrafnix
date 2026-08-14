@@ -17,6 +17,7 @@ pub(crate) struct MissingRequirements {
 
 impl MissingRequirements {
     /// Analyzes `expression` against the provided key sets and returns any missing requirements.
+    #[hotpath::measure]
     pub(crate) fn new(
         expression: &Expression,
         item_keys: &HashSet<ShareableString>,
@@ -62,6 +63,7 @@ impl MissingRequirements {
     }
 
     /// Returns `true` if any required globals, parameters, variables, or functions are missing.
+    #[hotpath::measure]
     pub(crate) fn missing_requirements_exist(&self) -> bool {
         !self.globals.is_empty()
             || !self.parameters.is_empty()
@@ -70,41 +72,49 @@ impl MissingRequirements {
     }
 
     /// Returns the names of missing globals.
+    #[hotpath::measure]
     pub(crate) fn globals(&self) -> &[ShareableString] {
         &self.globals
     }
 
     /// Returns `true` if any globals are missing.
+    #[hotpath::measure]
     pub(crate) fn missing_globals(&self) -> bool {
         !self.globals.is_empty()
     }
 
     /// Returns the names of missing parameters.
+    #[hotpath::measure]
     pub(crate) fn parameters(&self) -> &[ShareableString] {
         &self.parameters
     }
 
     /// Returns `true` if any parameters are missing.
+    #[hotpath::measure]
     pub(crate) fn missing_parameters(&self) -> bool {
         !self.parameters.is_empty()
     }
 
     /// Returns the names of missing variables.
+    #[hotpath::measure]
     pub(crate) fn variables(&self) -> &[ShareableString] {
         &self.variables
     }
 
     /// Returns `true` if any variables are missing.
+    #[hotpath::measure]
     pub(crate) fn missing_variables(&self) -> bool {
         !self.variables.is_empty()
     }
 
     /// Returns the names of missing functions.
+    #[hotpath::measure]
     pub(crate) fn functions(&self) -> &[ShareableString] {
         &self.functions
     }
 
     /// Returns `true` if any functions are missing.
+    #[hotpath::measure]
     pub(crate) fn missing_functions(&self) -> bool {
         !self.functions.is_empty()
     }
@@ -128,6 +138,7 @@ pub(crate) struct ExpressionRequirements {
 
 impl ExpressionRequirements {
     /// Walks `expression` and collects all referenced globals, parameters, variables, and functions.
+    #[hotpath::measure]
     pub(crate) fn new(expression: &Expression) -> Self {
         let mut global = Vec::new();
         let mut parameters = Vec::new();
@@ -157,6 +168,7 @@ impl ExpressionRequirements {
     /// Classifies a name (e.g. `g_foo`, `p_bar`, `v_baz`) into the appropriate
     /// requirement bucket based on its prefix, recording it only the first time
     /// it is encountered.
+    #[hotpath::measure]
     fn record_name(
         name: &str,
         global: &mut Vec<ShareableString>,
@@ -180,6 +192,7 @@ impl ExpressionRequirements {
 
     /// Recursively walks an `Expression` tree, collecting the globals,
     /// parameters, variables, and function names it references.
+    #[hotpath::measure]
     fn collect_requirements(
         expression: &Expression,
         global: &mut Vec<ShareableString>,

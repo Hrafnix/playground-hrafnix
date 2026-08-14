@@ -2,6 +2,7 @@ use crate::{ComputedItem, GlobalObjectComputedData};
 use std::collections::BTreeMap;
 
 /// Returns a `GlobalObjectComputedData` containing default global constants.
+#[hotpath::measure]
 pub(crate) fn default_globals() -> GlobalObjectComputedData {
     let mut globals_map = BTreeMap::new();
 

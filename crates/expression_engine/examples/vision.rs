@@ -22,6 +22,7 @@ struct Component {
 }
 
 impl Component {
+    #[hotpath::measure]
     fn new(
         name: impl Into<ShareableString>,
         parameters: ParameterObjectInputData,
@@ -35,10 +36,12 @@ impl Component {
         }
     }
 
+    #[hotpath::measure]
     fn add_child(&mut self, child: Self) {
         self.children.push(child);
     }
 
+    #[hotpath::measure]
     fn evaluate(
         &self,
         engine: &ExpressionEngine,
@@ -71,6 +74,7 @@ struct EvaluationQueue<'a> {
 }
 
 impl<'a> EvaluationQueue<'a> {
+    #[hotpath::measure]
     fn enqueue_children(
         &mut self,
         children: &'a [Component],
@@ -90,6 +94,7 @@ impl<'a> EvaluationQueue<'a> {
         }
     }
 
+    #[hotpath::measure]
     fn dequeue(&mut self) -> Option<QueuedComponent<'a>> {
         self.pending.pop_front()
     }
@@ -129,10 +134,12 @@ impl Model {
         }
     }
 
+    #[hotpath::measure]
     fn add_child(&mut self, child: Component) {
         self.children.push(child);
     }
 
+    #[hotpath::measure]
     fn evaluate(
         &self,
         engine: &mut ExpressionEngine,
@@ -188,6 +195,7 @@ impl Model {
     }
 }
 
+#[hotpath::measure]
 fn input_parameters(key: ConstParameterKey, expression: &str) -> ParameterObjectInputData {
     let definition = ParameterObjectDefinition::builder("Component parameters")
         .with(
@@ -199,6 +207,7 @@ fn input_parameters(key: ConstParameterKey, expression: &str) -> ParameterObject
     ParameterObjectInputData::new(&ParameterObjectFrozen::new(definition))
 }
 
+#[hotpath::measure]
 fn input_variables(key: ConstVariableKey, expression: &str) -> VariableObjectInputData {
     let definition = VariableObjectDefinition::builder("Component variables")
         .with(
@@ -210,8 +219,9 @@ fn input_variables(key: ConstVariableKey, expression: &str) -> VariableObjectInp
     VariableObjectInputData::new(&VariableObjectFrozen::new(definition))
 }
 
-fn main() -> ExitCode {
-    let extended_globals = GlobalObjectInputData::new(&GlobalObjectFrozen::new(
+#[hotpath::measure]
+fn create_extended_globals() -> GlobalObjectInputData {
+    GlobalObjectInputData::new(&GlobalObjectFrozen::new(
         GlobalObjectDefinition::builder("Gantry crane design assumptions")
             .with(
                 global_key!("g_allowable_utilization"),
@@ -246,8 +256,12 @@ fn main() -> ExitCode {
                 NumberDefinition::new_with_default("Wheel load rating in newtons", "80000.0"),
             )
             .finish(),
-    ));
-    let settings = GlobalObjectInputData::new(&GlobalObjectFrozen::new(
+    ))
+}
+
+#[hotpath::measure]
+fn create_settings() -> GlobalObjectInputData {
+    GlobalObjectInputData::new(&GlobalObjectFrozen::new(
         GlobalObjectDefinition::builder("Gantry crane calculated settings")
             .with(
                 global_key!("g_design_load_n"),
@@ -257,16 +271,11 @@ fn main() -> ExitCode {
                 ),
             )
             .finish(),
-    ));
-    let mut model = Model::new(
-        input_parameters(parameter_key!("p_payload_kg"), "12000.0"),
-        input_variables(
-            variable_key!("v_impact_factor"),
-            "max(1.10, 1.0 + p_payload_kg / 100000.0)",
-        ),
-        settings,
-    );
+    ))
+}
 
+#[hotpath::measure]
+fn create_girder_component() -> Component {
     let mut girder = Component::new(
         "Main Girder",
         input_parameters(parameter_key!("p_girder_load_n"), "g_design_load_n"),
@@ -286,6 +295,23 @@ fn main() -> ExitCode {
             "ceil(p_flange_force_n / (g_steel_yield_mpa * g_allowable_utilization))",
         ),
     ));
+    girder
+}
+
+#[hotpath::measure]
+fn create_model() -> Model {
+    let settings = create_settings();
+    let mut model = Model::new(
+        input_parameters(parameter_key!("p_payload_kg"), "12000.0"),
+        input_variables(
+            variable_key!("v_impact_factor"),
+            "max(1.10, 1.0 + p_payload_kg / 100000.0)",
+        ),
+        settings,
+    );
+
+    let girder = create_girder_component();
+
     model.add_child(girder);
     model.add_child(Component::new(
         "Hoist Rope",
@@ -303,6 +329,14 @@ fn main() -> ExitCode {
             "ceil(p_total_wheel_load_n / g_wheel_rating_n)",
         ),
     ));
+    model
+}
+
+#[hotpath::main]
+fn main() -> ExitCode {
+    let extended_globals = create_extended_globals();
+
+    let model = create_model();
 
     let mut engine = ExpressionEngine::new();
     if let Err(errors) = engine.evaluate_globals(&extended_globals) {

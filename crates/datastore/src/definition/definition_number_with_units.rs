@@ -19,6 +19,7 @@ pub struct NumberWithUnitsDefinition {
 
 impl NumberWithUnitsDefinition {
     /// Creates a new number-based `NumberWithUnitsDefinition`.
+    #[hotpath::measure]
     pub fn new<S1: Into<ShareableString>>(description: S1, preferred_units: UnitId) -> Self {
         Self {
             description: description.into(),
@@ -29,6 +30,7 @@ impl NumberWithUnitsDefinition {
     }
 
     /// Creates a new number-based `NumberWithUnitsDefinition` with a default value.
+    #[hotpath::measure]
     pub fn new_with_default<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
         default_value: S2,
@@ -43,6 +45,7 @@ impl NumberWithUnitsDefinition {
     }
 
     /// Creates a new number-based `NumberWithUnitsDefinition` with a constraint.
+    #[hotpath::measure]
     pub fn new_with_constraint<S: Into<ShareableString>>(
         description: S,
         constraint: NumberConstraint,
@@ -57,6 +60,7 @@ impl NumberWithUnitsDefinition {
     }
 
     /// Creates a new number-based `NumberWithUnitsDefinition` with a default value.
+    #[hotpath::measure]
     pub fn new_with_constraint_and_default<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
         constraint: NumberConstraint,
@@ -73,6 +77,7 @@ impl NumberWithUnitsDefinition {
 
     /// Returns the constraint.
     #[must_use]
+    #[hotpath::measure]
     pub fn constraint(&self) -> NumberConstraintEnum {
         self.constraint.constraint_enum.clone()
     }
@@ -85,6 +90,7 @@ impl NumberWithUnitsDefinition {
 
     /// Returns a new `NumberWithUnitsDefinition` with strings laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -96,6 +102,7 @@ impl NumberWithUnitsDefinition {
 
     /// Returns the description of the parameter.
     #[must_use]
+    #[hotpath::measure]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -108,6 +115,7 @@ impl NumberWithUnitsDefinition {
 
     /// Returns the default value of the parameter.
     #[must_use]
+    #[hotpath::measure]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
@@ -132,6 +140,7 @@ impl NumberWithUnitsDefinition {
 
     /// Returns the keys of the units in the preferred units' family.
     #[must_use]
+    #[hotpath::measure]
     pub fn unit_keys(&self) -> Vec<ShareableString> {
         self.preferred_units
             .family_id()
@@ -143,6 +152,7 @@ impl NumberWithUnitsDefinition {
 
     /// Returns the descriptions of the units in the preferred units' family.
     #[must_use]
+    #[hotpath::measure]
     pub fn unit_descriptions(&self) -> Vec<ShareableString> {
         self.preferred_units
             .family_id()
@@ -154,12 +164,14 @@ impl NumberWithUnitsDefinition {
 }
 
 impl PartialEq<&NumberWithUnitsDefinition> for NumberWithUnitsDefinition {
+    #[hotpath::measure]
     fn eq(&self, other: &&NumberWithUnitsDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<NumberWithUnitsDefinition> for &NumberWithUnitsDefinition {
+    #[hotpath::measure]
     fn eq(&self, other: &NumberWithUnitsDefinition) -> bool {
         *self == other
     }
@@ -167,6 +179,7 @@ impl PartialEq<NumberWithUnitsDefinition> for &NumberWithUnitsDefinition {
 
 /// Formats an `f64` for display, appending `.0` when the value has no
 /// fractional part and is not in scientific notation.
+#[hotpath::measure]
 fn format_number_value(value: f64) -> String {
     if !value.is_finite() {
         return value.to_string();
@@ -181,6 +194,7 @@ fn format_number_value(value: f64) -> String {
 }
 
 impl TreePrint for NumberWithUnitsDefinition {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

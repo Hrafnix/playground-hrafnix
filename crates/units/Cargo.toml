@@ -6,8 +6,15 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[features]
+default = []
+hotpath = ["hotpath/hotpath"]
+hotpath-alloc = ["hotpath/hotpath-alloc"]
+
 [dependencies]
 serde.workspace = true
+
+hotpath.workspace = true
 
 keys.workspace = true
 
