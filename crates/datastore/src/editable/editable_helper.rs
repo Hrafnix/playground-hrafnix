@@ -8,6 +8,7 @@ use shareable_string::ShareableString;
 /// # Errors
 ///
 /// Returns a `StoreError` if the key does not exist or if the value type does not match the expected type.
+#[hotpath::measure]
 pub fn editable_set_value<
     T: ObjectEditable,
     S1: Into<ShareableString>,
@@ -71,6 +72,7 @@ pub fn editable_set_value<
 /// # Errors
 ///
 /// Returns a `StoreError` if the key or item key does not exist.
+#[hotpath::measure]
 pub fn editable_set_map_value<S1: Into<ShareableString>, S2: Into<ShareableString>>(
     entry: &mut MapEntryEditable,
     key: S1,

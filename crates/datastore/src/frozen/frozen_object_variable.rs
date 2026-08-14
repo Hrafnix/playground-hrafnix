@@ -23,6 +23,7 @@ pub struct VariableObjectFrozen {
 impl VariableObjectFrozen {
     /// Creates a new `VariableObjectFrozen` with a definition.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(definition: VariableObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -113,6 +114,7 @@ impl VariableObjectFrozen {
     }
 
     /// Creates a new `VariableObjectFrozen` with a description and items.
+    #[hotpath::measure]
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<VariableKey, ItemFrozen>,
@@ -133,6 +135,7 @@ impl VariableObjectFrozen {
 
     /// Creates a new `VariableObjectFrozen` from a given `VariableObjectEditable` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_editable(editable_object: &VariableObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -150,11 +153,13 @@ impl VariableObjectFrozen {
 
     /// Converts the current `VariableObjectFrozen` instance into a `VariableObjectEditable` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn thaw(&self) -> VariableObjectEditable {
         VariableObjectEditable::new_from_frozen(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all items in this variable object.
+    #[hotpath::measure]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -183,11 +188,13 @@ impl VariableObjectFrozen {
     }
 
     /// Returns a reference to the parameter with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemFrozen> {
         self.items.get(&key.into())
     }
 
     /// Returns an iterator over the key-parameter pairs in the object.
+    #[hotpath::measure]
     pub fn iter(&self) -> impl Iterator<Item = (&VariableKey, &ItemFrozen)> {
         self.items.iter()
     }
@@ -200,18 +207,21 @@ impl VariableObjectFrozen {
 }
 
 impl PartialEq<&VariableObjectFrozen> for VariableObjectFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &&VariableObjectFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<VariableObjectFrozen> for &VariableObjectFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &VariableObjectFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for VariableObjectFrozen {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -239,6 +249,7 @@ impl TreePrint for VariableObjectFrozen {
 }
 
 impl std::fmt::Display for VariableObjectFrozen {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }

@@ -18,6 +18,7 @@ pub struct StringFrozen {
 impl StringFrozen {
     /// Creates a new `StringFrozen` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(definition: StringDefinition) -> Self {
         let value = definition.default_value();
 
@@ -32,6 +33,7 @@ impl StringFrozen {
 
     /// Creates a new `StringFrozen` instance with a specified value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_with_value(definition: StringDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -44,6 +46,7 @@ impl StringFrozen {
 
     /// Creates a new `StringFrozen` instance from a given `StringEditable` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_editable(basic: &StringEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value();
@@ -58,11 +61,13 @@ impl StringFrozen {
 
     /// Converts the current `StringFrozen` instance into a `StringEditable` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn thaw(&self) -> StringEditable {
         StringEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.
+    #[hotpath::measure]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -78,6 +83,7 @@ impl StringFrozen {
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
+    #[hotpath::measure]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -96,18 +102,21 @@ impl StringFrozen {
 }
 
 impl PartialEq<&StringFrozen> for StringFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &&StringFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<StringFrozen> for &StringFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &StringFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for StringFrozen {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

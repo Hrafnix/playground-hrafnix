@@ -18,6 +18,7 @@ pub const fn is_valid_parameter_key(s: &str) -> bool {
 }
 
 /// Validates that a parameter key starts with `p_` and has valid remaining characters.
+#[hotpath::measure]
 fn validate_parameter_key(key: &ShareableString) -> Result<(), StoreError> {
     let s = key.as_str();
 
@@ -58,12 +59,14 @@ impl ConstParameterKey {
 }
 
 impl Display for ConstParameterKey {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
 impl From<ConstParameterKey> for ParameterKey {
+    #[hotpath::measure]
     fn from(value: ConstParameterKey) -> Self {
         ParameterKey {
             key: ShareableString::from(value.0),
@@ -72,6 +75,7 @@ impl From<ConstParameterKey> for ParameterKey {
 }
 
 impl From<&ConstParameterKey> for ParameterKey {
+    #[hotpath::measure]
     fn from(value: &ConstParameterKey) -> Self {
         ParameterKey {
             key: ShareableString::from(value.0),
@@ -80,12 +84,14 @@ impl From<&ConstParameterKey> for ParameterKey {
 }
 
 impl From<ConstParameterKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: ConstParameterKey) -> Self {
         ShareableString::from(value.0)
     }
 }
 
 impl From<&ConstParameterKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &ConstParameterKey) -> Self {
         ShareableString::from(value.0)
     }
@@ -105,6 +111,7 @@ impl ParameterKey {
     /// # Errors
     ///
     /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    #[hotpath::measure]
     pub fn new(key: ShareableString) -> Result<Self, StoreError> {
         validate_parameter_key(&key)?;
         Ok(Self { key })
@@ -123,6 +130,7 @@ impl ParameterKey {
 
     /// Returns the string slice.
     #[must_use]
+    #[hotpath::measure]
     pub fn as_str(&self) -> &str {
         self.key.as_str()
     }
@@ -135,6 +143,7 @@ impl ParameterKey {
 
     /// Returns a new `ParameterKey` with its string interned through the given `SharedStringStore`.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         let laundered_key = store.launder(self.key.clone());
 
@@ -152,6 +161,7 @@ impl ParameterKey {
 }
 
 impl Serialize for ParameterKey {
+    #[hotpath::measure]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -161,6 +171,7 @@ impl Serialize for ParameterKey {
 }
 
 impl<'de> Deserialize<'de> for ParameterKey {
+    #[hotpath::measure]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -171,150 +182,175 @@ impl<'de> Deserialize<'de> for ParameterKey {
 }
 
 impl AsRef<str> for ParameterKey {
+    #[hotpath::measure]
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
 impl PartialEq<&str> for ParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &&str) -> bool {
         self.as_str() == *other
     }
 }
 
 impl PartialEq<ParameterKey> for &str {
+    #[hotpath::measure]
     fn eq(&self, other: &ParameterKey) -> bool {
         *self == other.as_str()
     }
 }
 
 impl PartialEq<String> for ParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &String) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<ParameterKey> for String {
+    #[hotpath::measure]
     fn eq(&self, other: &ParameterKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<ShareableString> for ParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &ShareableString) -> bool {
         self.key.as_ref() == other.as_ref()
     }
 }
 
 impl PartialEq<ParameterKey> for ShareableString {
+    #[hotpath::measure]
     fn eq(&self, other: &ParameterKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialOrd<&str> for ParameterKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(*other)
     }
 }
 
 impl PartialOrd<ParameterKey> for &str {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ParameterKey) -> Option<std::cmp::Ordering> {
         (*self).partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<String> for ParameterKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &String) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<ParameterKey> for String {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ParameterKey) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<ShareableString> for ParameterKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
         self.key.partial_cmp(other)
     }
 }
 
 impl PartialOrd<ParameterKey> for ShareableString {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ParameterKey) -> Option<std::cmp::Ordering> {
         self.partial_cmp(other.as_str())
     }
 }
 
 impl PartialEq<ConstParameterKey> for ParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &ConstParameterKey) -> bool {
         self.as_str() == other.0
     }
 }
 
 impl PartialEq<ParameterKey> for ConstParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &ParameterKey) -> bool {
         self.0 == other.as_str()
     }
 }
 
 impl PartialOrd<ConstParameterKey> for ParameterKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ConstParameterKey) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.0)
     }
 }
 
 impl PartialOrd<ParameterKey> for ConstParameterKey {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ParameterKey) -> Option<std::cmp::Ordering> {
         self.0.partial_cmp(other.as_str())
     }
 }
 
 impl Display for ParameterKey {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.key)
     }
 }
 
 impl From<ParameterKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: ParameterKey) -> Self {
         value.key
     }
 }
 
 impl From<&ParameterKey> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &ParameterKey) -> Self {
         value.key.clone()
     }
 }
 
 impl PartialEq<crate::store_key::StoreKey> for ParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &crate::store_key::StoreKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<crate::variable_key::VariableKey> for ParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &crate::variable_key::VariableKey) -> bool {
         self.as_str() == other.as_str()
     }
 }
 
 impl PartialEq<crate::store_key::StoreKey> for ConstParameterKey {
+    #[hotpath::measure]
     fn eq(&self, other: &crate::store_key::StoreKey) -> bool {
         self.0 == other.as_str()
     }
 }
 
 impl std::borrow::Borrow<str> for ParameterKey {
+    #[hotpath::measure]
     fn borrow(&self) -> &str {
         self.key.as_str()
     }
 }
 
 impl std::borrow::Borrow<ShareableString> for ParameterKey {
+    #[hotpath::measure]
     fn borrow(&self) -> &ShareableString {
         &self.key
     }

@@ -24,6 +24,7 @@ pub enum ObjectItemInputData {
 
 /// Converts a single `MapItemFrozen` (an entry within a `Map` item) into its
 /// corresponding `ObjectItemInputData`.
+#[hotpath::measure]
 fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
     match map_item {
         MapItemFrozen::Boolean(boolean) => ObjectItemInputData::Basic(BasicInputData::new(
@@ -83,6 +84,7 @@ fn map_item_to_input_data(map_item: &MapItemFrozen) -> ObjectItemInputData {
 /// Most item kinds map to a single entry, but `Map` items are flattened:
 /// each field of each entry becomes its own item, addressed by a
 /// `key[entry].field` path.
+#[hotpath::measure]
 fn item_to_input_data(
     map: &mut BTreeMap<ShareableString, ObjectItemInputData>,
     key: ShareableString,
@@ -210,6 +212,7 @@ pub struct GlobalObjectInputData {
 impl GlobalObjectInputData {
     /// Creates a new `GlobalObjectInputData` instance from the given `GlobalObjectFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_data: &GlobalObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
@@ -236,6 +239,7 @@ pub struct ParameterObjectInputData {
 impl ParameterObjectInputData {
     /// Creates a new `ParameterObjectInputData` instance from the given `ParameterObjectFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_data: &ParameterObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {
@@ -262,6 +266,7 @@ pub struct VariableObjectInputData {
 impl VariableObjectInputData {
     /// Creates a new `VariableObjectInputData` instance from the given `VariableObjectFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_data: &VariableObjectFrozen) -> Self {
         let mut data = BTreeMap::new();
         for (key, item) in frozen_data.iter() {

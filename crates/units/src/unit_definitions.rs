@@ -213,6 +213,7 @@ macro_rules! define_unit_ids {
             ];
 
             /// Returns the `UnitId` corresponding to the given string identifier.
+            #[hotpath::measure]
             pub fn from_unit_id_str(unit_id_str: &str) -> Option<Self> {
                 match unit_id_str {
                     $(

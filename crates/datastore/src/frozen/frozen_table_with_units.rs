@@ -28,6 +28,7 @@ impl TableWithUnitsFrozen {
     /// Column units are initialised from each column's preferred unit in
     /// definition order; rows start empty.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(definition: TableWithUnitsDefinition) -> Self {
         let units = definition
             .iter()
@@ -48,6 +49,7 @@ impl TableWithUnitsFrozen {
     ///
     /// `units` must contain one entry per column in definition column order.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_rows(
         definition: TableWithUnitsDefinition,
         rows: Vec<Vec<ShareableString>>,
@@ -66,6 +68,7 @@ impl TableWithUnitsFrozen {
 
     /// Creates a new `TableWithUnitsFrozen` from a `TableWithUnitsEditable`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_editable(editable_table: &TableWithUnitsEditable) -> Self {
         let mut table = Self {
             definition: editable_table.definition().clone(),
@@ -80,11 +83,13 @@ impl TableWithUnitsFrozen {
 
     /// Converts this `TableWithUnitsFrozen` into a `TableWithUnitsEditable`.
     #[must_use]
+    #[hotpath::measure]
     pub fn thaw(&self) -> TableWithUnitsEditable {
         TableWithUnitsEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all column units and row cells.
+    #[hotpath::measure]
     fn update_hash(&mut self) {
         let mut hasher = blake3::Hasher::new();
         hasher.update(&[0x01]);
@@ -118,11 +123,13 @@ impl TableWithUnitsFrozen {
 
     /// Returns the value of a cell by row and column index.
     #[must_use]
+    #[hotpath::measure]
     pub fn cell_by_index(&self, row: usize, column: usize) -> Option<&ShareableString> {
         self.rows.get(row)?.get(column)
     }
 
     /// Returns the value of a cell by row index and column name.
+    #[hotpath::measure]
     pub fn cell_by_name<S: Into<ShareableString>>(
         &self,
         row: usize,
@@ -136,29 +143,34 @@ impl TableWithUnitsFrozen {
 
     /// Returns the row at the specified index.
     #[must_use]
+    #[hotpath::measure]
     pub fn row(&self, row: usize) -> Option<&Vec<ShareableString>> {
         self.rows.get(row)
     }
 
     /// Returns a reference to all rows in the table.
     #[must_use]
+    #[hotpath::measure]
     pub fn rows(&self) -> &[Vec<ShareableString>] {
         &self.rows
     }
 
     /// Returns a slice of all column units, one per column in definition order.
     #[must_use]
+    #[hotpath::measure]
     pub fn units(&self) -> &[ShareableString] {
         &self.units
     }
 
     /// Returns the unit for the column at the given index.
     #[must_use]
+    #[hotpath::measure]
     pub fn unit_by_index(&self, column: usize) -> Option<&ShareableString> {
         self.units.get(column)
     }
 
     /// Returns the unit for the column with the given name.
+    #[hotpath::measure]
     pub fn unit_by_name<S: Into<ShareableString>>(
         &self,
         column_name: S,
@@ -177,12 +189,14 @@ impl TableWithUnitsFrozen {
 
     /// Returns the number of rows in the table.
     #[must_use]
+    #[hotpath::measure]
     pub fn row_count(&self) -> usize {
         self.rows.len()
     }
 
     /// Returns the number of columns in the table.
     #[must_use]
+    #[hotpath::measure]
     pub fn column_count(&self) -> usize {
         self.definition.count()
     }
@@ -201,18 +215,21 @@ impl TableWithUnitsFrozen {
 }
 
 impl PartialEq<&TableWithUnitsFrozen> for TableWithUnitsFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &&TableWithUnitsFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<TableWithUnitsFrozen> for &TableWithUnitsFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &TableWithUnitsFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for TableWithUnitsFrozen {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

@@ -86,6 +86,7 @@ const fn convert_to_base(unit: UnitId) -> f64 {
 /// # Errors
 ///
 /// Returns an error if the units are not compatible for conversion (i.e., they belong to different unit families).
+#[hotpath::measure]
 pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, String> {
     if from_unit == to_unit {
         return Ok(value);

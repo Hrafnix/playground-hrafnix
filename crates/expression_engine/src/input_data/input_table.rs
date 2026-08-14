@@ -35,6 +35,7 @@ impl TableInputData {
 
     /// Returns a reference to the data of the table input data.
     #[must_use]
+    #[hotpath::measure]
     pub fn data(&self) -> &[Vec<ShareableString>] {
         &self.data
     }
@@ -50,6 +51,7 @@ impl TableInputData {
 
     /// Returns a new `TableInputData` with strings laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &shareable_string::SharedStringStore) -> Self {
         let laundered_definition = self.definition.launder(store);
         let laundered_data = self

@@ -16,6 +16,7 @@ pub struct ShareableString {
 
 impl ShareableString {
     /// Creates a new `ShareableString` from the given value and computes its BLAKE3 hash.
+    #[hotpath::measure]
     pub fn new<S: Into<String>>(value: S) -> Self {
         let s: String = value.into();
 
@@ -41,6 +42,7 @@ impl ShareableString {
 
     /// Returns the string as a string slice.
     #[must_use]
+    #[hotpath::measure]
     pub fn as_str(&self) -> &str {
         &self.data
     }
@@ -53,84 +55,98 @@ impl ShareableString {
 
     /// Returns true if both `ShareableString`s point to the same memory location.
     #[must_use]
+    #[hotpath::measure]
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.data, &other.data)
     }
 
     /// Checks if the string starts with the given prefix.
     #[must_use]
+    #[hotpath::measure]
     pub fn starts_with(&self, prefix: &str) -> bool {
         self.as_str().starts_with(prefix)
     }
 }
 
 impl Borrow<str> for ShareableString {
+    #[hotpath::measure]
     fn borrow(&self) -> &str {
         &self.data
     }
 }
 
 impl Hash for ShareableString {
+    #[hotpath::measure]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.data.hash(state);
     }
 }
 
 impl PartialEq for ShareableString {
+    #[hotpath::measure]
     fn eq(&self, other: &Self) -> bool {
         self.ptr_eq(other) || (self.blake3_hash == other.blake3_hash && *self.data == *other.data)
     }
 }
 
 impl PartialEq<str> for ShareableString {
+    #[hotpath::measure]
     fn eq(&self, other: &str) -> bool {
         &*self.data == other
     }
 }
 
 impl PartialEq<&str> for ShareableString {
+    #[hotpath::measure]
     fn eq(&self, other: &&str) -> bool {
         &*self.data == *other
     }
 }
 
 impl PartialEq<ShareableString> for str {
+    #[hotpath::measure]
     fn eq(&self, other: &ShareableString) -> bool {
         self == &*other.data
     }
 }
 
 impl PartialEq<ShareableString> for &str {
+    #[hotpath::measure]
     fn eq(&self, other: &ShareableString) -> bool {
         *self == &*other.data
     }
 }
 
 impl PartialEq<String> for ShareableString {
+    #[hotpath::measure]
     fn eq(&self, other: &String) -> bool {
         &*self.data == other.as_str()
     }
 }
 
 impl PartialEq<ShareableString> for String {
+    #[hotpath::measure]
     fn eq(&self, other: &ShareableString) -> bool {
         self.as_str() == &*other.data
     }
 }
 
 impl From<String> for ShareableString {
+    #[hotpath::measure]
     fn from(value: String) -> Self {
         Self::new(value)
     }
 }
 
 impl From<&String> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &String) -> Self {
         Self::new(value.as_str())
     }
 }
 
 impl From<&str> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &str) -> Self {
         Self::new(value)
     }
@@ -139,54 +155,63 @@ impl From<&str> for ShareableString {
 impl Eq for ShareableString {}
 
 impl Ord for ShareableString {
+    #[hotpath::measure]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.as_str().cmp(other.as_str())
     }
 }
 
 impl PartialOrd for ShareableString {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl PartialOrd<str> for ShareableString {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &str) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other)
     }
 }
 
 impl PartialOrd<&str> for ShareableString {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &&str) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(*other)
     }
 }
 
 impl PartialOrd<ShareableString> for str {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
         self.partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<ShareableString> for &str {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
         (*self).partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<String> for ShareableString {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &String) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl PartialOrd<ShareableString> for String {
+    #[hotpath::measure]
     fn partial_cmp(&self, other: &ShareableString) -> Option<std::cmp::Ordering> {
         self.as_str().partial_cmp(other.as_str())
     }
 }
 
 impl Serialize for ShareableString {
+    #[hotpath::measure]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -196,6 +221,7 @@ impl Serialize for ShareableString {
 }
 
 impl<'de> Deserialize<'de> for ShareableString {
+    #[hotpath::measure]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -206,24 +232,28 @@ impl<'de> Deserialize<'de> for ShareableString {
 }
 
 impl Default for ShareableString {
+    #[hotpath::measure]
     fn default() -> Self {
         Self::new("")
     }
 }
 
 impl AsRef<str> for ShareableString {
+    #[hotpath::measure]
     fn as_ref(&self) -> &str {
         &self.data
     }
 }
 
 impl From<&ShareableString> for ShareableString {
+    #[hotpath::measure]
     fn from(value: &ShareableString) -> Self {
         value.clone()
     }
 }
 
 impl std::fmt::Display for ShareableString {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.data)
     }

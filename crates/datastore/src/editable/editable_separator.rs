@@ -13,6 +13,7 @@ pub struct SeparatorEditable {
 impl SeparatorEditable {
     /// Creates a new `SeparatorEditable` instance from a given `SeparatorFrozen` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_separator: &SeparatorFrozen) -> Self {
         Self {
             definition: frozen_separator.definition().clone(),
@@ -21,6 +22,7 @@ impl SeparatorEditable {
 
     /// Converts the current `SeparatorEditable` instance into a `SeparatorFrozen` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> SeparatorFrozen {
         SeparatorFrozen::new_from_editable(self)
     }
@@ -33,18 +35,21 @@ impl SeparatorEditable {
 }
 
 impl PartialEq<&SeparatorEditable> for SeparatorEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&SeparatorEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<SeparatorEditable> for &SeparatorEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &SeparatorEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for SeparatorEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

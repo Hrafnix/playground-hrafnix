@@ -39,12 +39,14 @@ impl TableWithUnitsInputData {
 
     /// Returns a reference to the units of the table input data.
     #[must_use]
+    #[hotpath::measure]
     pub fn units(&self) -> &[ShareableString] {
         &self.units
     }
 
     /// Returns a reference to the data of the table input data.
     #[must_use]
+    #[hotpath::measure]
     pub fn data(&self) -> &[Vec<ShareableString>] {
         &self.data
     }
@@ -60,6 +62,7 @@ impl TableWithUnitsInputData {
 
     /// Returns a new `TableWithUnitsInputData` with strings laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &shareable_string::SharedStringStore) -> Self {
         let laundered_definition = self.definition.launder(store);
         let laundered_units = self.units.iter().map(|unit| store.launder(unit)).collect();

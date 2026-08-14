@@ -17,6 +17,7 @@ pub struct BooleanDefinition {
 
 impl BooleanDefinition {
     /// Creates a new `BooleanDefinition` with the specified description.
+    #[hotpath::measure]
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
@@ -27,6 +28,7 @@ impl BooleanDefinition {
     }
 
     /// Creates a new `BooleanDefinition` with the specified description and default value.
+    #[hotpath::measure]
     pub fn new_with_default<S: Into<ShareableString>>(description: S, default_value: bool) -> Self {
         Self {
             description: description.into(),
@@ -38,12 +40,14 @@ impl BooleanDefinition {
 
     /// Returns a vector of IDs for the choices.
     #[must_use]
+    #[hotpath::measure]
     pub fn ids(&self) -> Vec<ShareableString> {
         vec![ShareableString::new("true"), ShareableString::new("false")]
     }
 
     /// Returns a vector of descriptions for the choices.
     #[must_use]
+    #[hotpath::measure]
     pub fn descriptions(&self) -> Vec<ShareableString> {
         vec![
             self.true_description.clone(),
@@ -53,6 +57,7 @@ impl BooleanDefinition {
 
     /// Returns a new `BooleanDefinition` with strings laundered through the provided store.
     #[must_use]
+    #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -64,6 +69,7 @@ impl BooleanDefinition {
 
     /// Returns the description of the parameter.
     #[must_use]
+    #[hotpath::measure]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -76,6 +82,7 @@ impl BooleanDefinition {
 
     /// Returns the default value of the parameter.
     #[must_use]
+    #[hotpath::measure]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
@@ -88,18 +95,21 @@ impl BooleanDefinition {
 }
 
 impl PartialEq<&BooleanDefinition> for BooleanDefinition {
+    #[hotpath::measure]
     fn eq(&self, other: &&BooleanDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<BooleanDefinition> for &BooleanDefinition {
+    #[hotpath::measure]
     fn eq(&self, other: &BooleanDefinition) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for BooleanDefinition {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

@@ -23,6 +23,7 @@ pub struct ParameterObjectFrozen {
 impl ParameterObjectFrozen {
     /// Creates a new `ParameterObjectFrozen` with a definition.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(definition: ParameterObjectDefinition) -> Self {
         let mut items = BTreeMap::new();
         for (item_key, item_definition_type) in definition.iter() {
@@ -113,6 +114,7 @@ impl ParameterObjectFrozen {
     }
 
     /// Creates a new `ParameterObjectFrozen` with a description and items.
+    #[hotpath::measure]
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<ParameterKey, ItemFrozen>,
@@ -133,6 +135,7 @@ impl ParameterObjectFrozen {
 
     /// Creates a new `ParameterObjectFrozen` from a given `ParameterObjectEditable` value.
     #[must_use]
+    #[hotpath::measure]
     pub fn new_from_editable(editable_object: &ParameterObjectEditable) -> Self {
         let definition = editable_object.definition().clone();
         let items = editable_object
@@ -150,11 +153,13 @@ impl ParameterObjectFrozen {
 
     /// Converts the current `ParameterObjectFrozen` instance into a `ParameterObjectEditable` instance.
     #[must_use]
+    #[hotpath::measure]
     pub fn thaw(&self) -> ParameterObjectEditable {
         ParameterObjectEditable::new_from_frozen(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all items in this parameter object.
+    #[hotpath::measure]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -183,11 +188,13 @@ impl ParameterObjectFrozen {
     }
 
     /// Returns a reference to the parameter with the specified key if it exists.
+    #[hotpath::measure]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemFrozen> {
         self.items.get(&key.into())
     }
 
     /// Returns an iterator over the key-parameter pairs in the object.
+    #[hotpath::measure]
     pub fn iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemFrozen)> {
         self.items.iter()
     }
@@ -200,18 +207,21 @@ impl ParameterObjectFrozen {
 }
 
 impl PartialEq<&ParameterObjectFrozen> for ParameterObjectFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &&ParameterObjectFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<ParameterObjectFrozen> for &ParameterObjectFrozen {
+    #[hotpath::measure]
     fn eq(&self, other: &ParameterObjectFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for ParameterObjectFrozen {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -239,6 +249,7 @@ impl TreePrint for ParameterObjectFrozen {
 }
 
 impl std::fmt::Display for ParameterObjectFrozen {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }

@@ -19,18 +19,21 @@ impl ComputedTable {
 
     /// Returns a reference to the keys of the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn keys(&self) -> &[ShareableString] {
         &self.keys
     }
 
     /// Returns a reference to the rows of the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn rows(&self) -> &[Vec<f64>] {
         &self.rows
     }
 
     /// Returns the value of a cell by row and column index.
     #[must_use]
+    #[hotpath::measure]
     pub fn get_cell(&self, row_index: usize, column_index: usize) -> Option<f64> {
         if let Some(row) = self.rows.get(row_index) {
             if let Some(&value) = row.get(column_index) {
@@ -42,6 +45,7 @@ impl ComputedTable {
     }
 
     /// Returns the value of a cell by row index and column name.
+    #[hotpath::measure]
     pub fn get_cell_by_name<S: Into<ShareableString>>(
         &self,
         row_index: usize,
@@ -57,12 +61,14 @@ impl ComputedTable {
 
     /// Returns the number of rows in the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn row_count(&self) -> usize {
         self.rows.len()
     }
 
     /// Returns the number of columns in the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn column_count(&self) -> usize {
         self.keys.len()
     }
@@ -79,6 +85,7 @@ pub struct ComputedTableWithUnits {
 
 impl ComputedTableWithUnits {
     /// Creates a computed table with units for at least one column.
+    #[hotpath::measure]
     pub(crate) fn new(keys: Vec<ShareableString>, units: Vec<UnitId>, rows: Vec<Vec<f64>>) -> Self {
         debug_assert_eq!(keys.len(), units.len());
         debug_assert!(units.iter().any(|unit| *unit != UnitId::None));
@@ -97,36 +104,42 @@ impl ComputedTableWithUnits {
 
     /// Splits this table into its numeric data and column units.
     #[must_use]
+    #[hotpath::measure]
     pub(crate) fn into_table_and_units(self) -> (ComputedTable, Vec<UnitId>) {
         (self.table, self.units)
     }
 
     /// Discards column units and returns this table's numeric data.
     #[must_use]
+    #[hotpath::measure]
     pub(crate) fn into_table(self) -> ComputedTable {
         self.table
     }
 
     /// Returns a reference to the keys of the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn keys(&self) -> &[ShareableString] {
         self.table.keys()
     }
 
     /// Returns the canonical units of the table columns, in key order.
     #[must_use]
+    #[hotpath::measure]
     pub fn units(&self) -> &[UnitId] {
         &self.units
     }
 
     /// Returns the unit associated with a column index.
     #[must_use]
+    #[hotpath::measure]
     pub fn get_unit(&self, column_index: usize) -> Option<UnitId> {
         self.units.get(column_index).copied()
     }
 
     /// Returns the unit associated with a column name.
     #[must_use]
+    #[hotpath::measure]
     pub fn get_unit_by_name<S: Into<ShareableString>>(&self, column_name: S) -> Option<UnitId> {
         let column_name = column_name.into();
         self.table
@@ -138,17 +151,20 @@ impl ComputedTableWithUnits {
 
     /// Returns a reference to the rows of the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn rows(&self) -> &[Vec<f64>] {
         self.table.rows()
     }
 
     /// Returns the value of a cell by row and column index.
     #[must_use]
+    #[hotpath::measure]
     pub fn get_cell(&self, row_index: usize, column_index: usize) -> Option<f64> {
         self.table.get_cell(row_index, column_index)
     }
 
     /// Returns the value of a cell by row index and column name.
+    #[hotpath::measure]
     pub fn get_cell_by_name<S: Into<ShareableString>>(
         &self,
         row_index: usize,
@@ -159,12 +175,14 @@ impl ComputedTableWithUnits {
 
     /// Returns the number of rows in the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn row_count(&self) -> usize {
         self.table.row_count()
     }
 
     /// Returns the number of columns in the computed table.
     #[must_use]
+    #[hotpath::measure]
     pub fn column_count(&self) -> usize {
         self.table.column_count()
     }
@@ -201,6 +219,7 @@ pub enum ComputedItem {
 }
 
 impl fmt::Display for ComputedItem {
+    #[hotpath::measure]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ComputedItem::Boolean(value) => write!(f, "{value}"),

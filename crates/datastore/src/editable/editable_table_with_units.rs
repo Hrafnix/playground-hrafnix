@@ -24,6 +24,7 @@ pub struct TableWithUnitsEditable {
 impl TableWithUnitsEditable {
     /// Creates a new `TableWithUnitsEditable` from a `TableWithUnitsFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn new(frozen_table: &TableWithUnitsFrozen) -> Self {
         Self {
             definition: frozen_table.definition().clone(),
@@ -35,17 +36,20 @@ impl TableWithUnitsEditable {
 
     /// Converts this `TableWithUnitsEditable` into a `TableWithUnitsFrozen`.
     #[must_use]
+    #[hotpath::measure]
     pub fn freeze(&self) -> TableWithUnitsFrozen {
         TableWithUnitsFrozen::new_from_editable(self)
     }
 
     /// Returns the value of a cell by row and column index.
     #[must_use]
+    #[hotpath::measure]
     pub fn cell_by_index(&self, row: usize, column: usize) -> Option<&ShareableString> {
         self.rows.get(row)?.get(column)
     }
 
     /// Returns the value of a cell by row index and column name.
+    #[hotpath::measure]
     pub fn cell_by_name<S: Into<ShareableString>>(
         &self,
         row: usize,
@@ -59,29 +63,34 @@ impl TableWithUnitsEditable {
 
     /// Returns the row at the specified index.
     #[must_use]
+    #[hotpath::measure]
     pub fn row(&self, row: usize) -> Option<&Vec<ShareableString>> {
         self.rows.get(row)
     }
 
     /// Returns a reference to all rows in the table.
     #[must_use]
+    #[hotpath::measure]
     pub fn rows(&self) -> &[Vec<ShareableString>] {
         &self.rows
     }
 
     /// Returns a slice of all column units, one per column in definition order.
     #[must_use]
+    #[hotpath::measure]
     pub fn units(&self) -> &[ShareableString] {
         &self.units
     }
 
     /// Returns the unit for the column at the given index.
     #[must_use]
+    #[hotpath::measure]
     pub fn unit_by_index(&self, column: usize) -> Option<&ShareableString> {
         self.units.get(column)
     }
 
     /// Returns the unit for the column with the given name.
+    #[hotpath::measure]
     pub fn unit_by_name<S: Into<ShareableString>>(
         &self,
         column_name: S,
@@ -100,12 +109,14 @@ impl TableWithUnitsEditable {
 
     /// Returns the number of rows in the table.
     #[must_use]
+    #[hotpath::measure]
     pub fn row_count(&self) -> usize {
         self.rows.len()
     }
 
     /// Returns the number of columns in the table.
     #[must_use]
+    #[hotpath::measure]
     pub fn column_count(&self) -> usize {
         self.definition.count()
     }
@@ -119,6 +130,7 @@ impl TableWithUnitsEditable {
     /// resolved column index is not present in the row data.
     ///
     /// [`set_column_unit`]: Self::set_column_unit
+    #[hotpath::measure]
     pub fn set_cell<S: Into<ShareableString>, V: Into<ShareableString>>(
         &mut self,
         row: usize,
@@ -147,6 +159,7 @@ impl TableWithUnitsEditable {
     /// # Errors
     ///
     /// Returns `StoreError::IndexNotFound` if `column` does not identify a unit.
+    #[hotpath::measure]
     pub fn set_unit_by_index<U: Into<ShareableString>>(
         &mut self,
         column: usize,
@@ -165,6 +178,7 @@ impl TableWithUnitsEditable {
     ///
     /// Returns `StoreError::KeyNotFound` if `column_name` does not match a column
     /// in the table's definition.
+    #[hotpath::measure]
     pub fn set_unit_by_name<S: Into<ShareableString>, U: Into<ShareableString>>(
         &mut self,
         column_name: S,
@@ -184,6 +198,7 @@ impl TableWithUnitsEditable {
     ///
     /// Returns `StoreError::KeyNotFound` if `column_name` does not match a column
     /// in the table's definition.
+    #[hotpath::measure]
     pub fn set_column_unit<S: Into<ShareableString>, U: Into<ShareableString>>(
         &mut self,
         column_name: S,
@@ -193,6 +208,7 @@ impl TableWithUnitsEditable {
     }
 
     /// Adds a new row initialised from the columns' default values.
+    #[hotpath::measure]
     pub fn add_row(&mut self, row: usize) {
         let full_row: Vec<ShareableString> = self
             .definition
@@ -207,6 +223,7 @@ impl TableWithUnitsEditable {
     }
 
     /// Removes a row.
+    #[hotpath::measure]
     pub fn remove_row(&mut self, row: usize) {
         if self.rows.is_empty() {
             return;
@@ -220,6 +237,7 @@ impl TableWithUnitsEditable {
     }
 
     /// Sets the parameter value for the table.
+    #[hotpath::measure]
     pub fn set_parameter<S: Into<ShareableString>>(&mut self, parameter: S) {
         self.parameter = parameter.into();
     }
@@ -232,18 +250,21 @@ impl TableWithUnitsEditable {
 }
 
 impl PartialEq<&TableWithUnitsEditable> for TableWithUnitsEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &&TableWithUnitsEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<TableWithUnitsEditable> for &TableWithUnitsEditable {
+    #[hotpath::measure]
     fn eq(&self, other: &TableWithUnitsEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for TableWithUnitsEditable {
+    #[hotpath::measure]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
