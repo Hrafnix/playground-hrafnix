@@ -137,7 +137,7 @@ fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, ExpressionE
         | ComputedItem::Integer(_)
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -168,7 +168,7 @@ fn abs(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -195,7 +195,7 @@ fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -215,7 +215,7 @@ fn floor(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -235,7 +235,7 @@ fn round(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -259,7 +259,7 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
                     | ComputedItem::FloatWithUnit { .. }
                     | ComputedItem::String(_)
                     | ComputedItem::Identifier(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::TableWithUnits(_)
                     | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("min")),
@@ -277,7 +277,7 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
                     | ComputedItem::FloatWithUnit { .. }
                     | ComputedItem::String(_)
                     | ComputedItem::Identifier(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::TableWithUnits(_)
                     | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("min")),
@@ -289,7 +289,7 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -313,7 +313,7 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
                     | ComputedItem::FloatWithUnit { .. }
                     | ComputedItem::String(_)
                     | ComputedItem::Identifier(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::TableWithUnits(_)
                     | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("max")),
@@ -331,7 +331,7 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
                     | ComputedItem::FloatWithUnit { .. }
                     | ComputedItem::String(_)
                     | ComputedItem::Identifier(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::TableWithUnits(_)
                     | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("max")),
@@ -343,7 +343,7 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -484,7 +484,7 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Float(_)
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -506,7 +506,7 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         ComputedItem::Boolean(_)
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -531,7 +531,7 @@ fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         ComputedItem::Boolean(_)
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(
@@ -561,7 +561,7 @@ fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => Err(ExpressionError::new(

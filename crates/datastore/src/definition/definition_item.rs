@@ -1,7 +1,7 @@
 use crate::definition::{
-    BooleanDefinition, ChoiceDefinition, IntegerDefinition, MapDefinition, NumberDefinition,
-    NumberWithUnitsDefinition, SeparatorDefinition, StringDefinition, TabDefinition,
-    TableDefinition, TableWithUnitsDefinition, UnitDefinition,
+    BooleanDefinition, ChoiceDefinition, FolderDefinition, IntegerDefinition, MapDefinition,
+    NumberDefinition, NumberWithUnitsDefinition, SeparatorDefinition, StringDefinition,
+    TabDefinition, TableDefinition, TableWithUnitsDefinition, UnitDefinition,
 };
 use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
@@ -17,6 +17,8 @@ pub enum ItemDefinitionType {
     Choice(ChoiceDefinition),
     /// A file item.
     File(FileDefinition),
+    /// A folder item.
+    Folder(FolderDefinition),
     /// An integer item.
     Integer(IntegerDefinition),
     /// A map item.
@@ -139,6 +141,7 @@ impl ItemDefinitionType {
             Self::Boolean(def) => Self::Boolean(def.launder(store)),
             Self::Choice(def) => Self::Choice(def.launder(store)),
             Self::File(def) => Self::File(def.launder(store)),
+            Self::Folder(def) => Self::Folder(def.launder(store)),
             Self::Integer(def) => Self::Integer(def.launder(store)),
             Self::Map(def) => Self::Map(def.launder(store)),
             Self::Number(def) => Self::Number(def.launder(store)),
@@ -180,6 +183,7 @@ impl TreePrint for ItemDefinitionType {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Folder(folder) => folder.tree_print(f, label, prefix, last),
             Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
             Self::Number(number) => number.tree_print(f, label, prefix, last),

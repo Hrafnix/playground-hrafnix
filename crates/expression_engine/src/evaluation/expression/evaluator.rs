@@ -1,5 +1,5 @@
 use crate::BasicDefinition::{
-    Boolean, Choice, File, Integer, Number, NumberWithUnits, String, Unit,
+    Boolean, Choice, File, Folder, Integer, Number, NumberWithUnits, String, Unit,
 };
 use crate::evaluation::expression::ast::span::{Span, SpanSet};
 use crate::evaluation::expression::ast::translator::{
@@ -535,7 +535,7 @@ fn evaluate_index_operation(
             | ComputedItem::FloatWithUnit { .. }
             | ComputedItem::String(_)
             | ComputedItem::Identifier(_)
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::Unit(_) => {
                 return Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
@@ -587,7 +587,7 @@ fn evaluate_index_operation(
             | ComputedItem::FloatWithUnit { .. }
             | ComputedItem::String(_)
             | ComputedItem::Identifier(_)
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::Table(_)
             | ComputedItem::TableWithUnits(_)
             | ComputedItem::Unit(_) => {
@@ -649,7 +649,7 @@ fn evaluate_index_operation(
             other @ (ComputedItem::Boolean(_)
             | ComputedItem::Float(_)
             | ComputedItem::FloatWithUnit { .. }
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::Table(_)
             | ComputedItem::TableWithUnits(_)
             | ComputedItem::Unit(_)) => Err(ExpressionError::new_complex(
@@ -707,7 +707,7 @@ fn evaluate_expression(
                         operator_span,
                     )
                 }
-                (ComputedItem::File(left_file), ComputedItem::File(right_file)) => match operator {
+                (ComputedItem::Path(left_file), ComputedItem::Path(right_file)) => match operator {
                     Operators::Equal => Ok(ComputedItem::Boolean(left_file == right_file)),
                     Operators::NotEqual => Ok(ComputedItem::Boolean(left_file != right_file)),
                     Operators::Add
@@ -802,7 +802,7 @@ fn evaluate_expression(
 
                 (
                     ComputedItem::Boolean(_),
-                    ComputedItem::File(_)
+                    ComputedItem::Path(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
@@ -813,7 +813,7 @@ fn evaluate_expression(
                     | ComputedItem::Unit(_),
                 )
                 | (
-                    ComputedItem::File(_),
+                    ComputedItem::Path(_),
                     ComputedItem::Boolean(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::FloatWithUnit { value: _, unit: _ }
@@ -827,7 +827,7 @@ fn evaluate_expression(
                 | (
                     ComputedItem::Float(_) | ComputedItem::FloatWithUnit { value: _, unit: _ },
                     ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Integer(_)
                     | ComputedItem::String(_)
@@ -838,7 +838,7 @@ fn evaluate_expression(
                 | (
                     ComputedItem::Identifier(_) | ComputedItem::String(_),
                     ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Integer(_)
@@ -849,7 +849,7 @@ fn evaluate_expression(
                 | (
                     ComputedItem::Integer(_),
                     ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
@@ -861,7 +861,7 @@ fn evaluate_expression(
                 | (
                     ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
                     ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Integer(_)
@@ -872,7 +872,7 @@ fn evaluate_expression(
                 | (
                     ComputedItem::Unit(_),
                     ComputedItem::Boolean(_)
-                    | ComputedItem::File(_)
+                    | ComputedItem::Path(_)
                     | ComputedItem::Float(_)
                     | ComputedItem::FloatWithUnit { value: _, unit: _ }
                     | ComputedItem::Identifier(_)
@@ -952,7 +952,7 @@ fn validate_unit_value(
         | ComputedItem::Integer(_)
         | ComputedItem::Float(_)
         | ComputedItem::FloatWithUnit { .. }
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_) => {
             return Err(ExpressionError::new_complex(
@@ -1002,7 +1002,8 @@ fn evaluate_basic_expression(
                 let computed = ComputedItem::Identifier(name.clone().into());
                 return validate_unit_value(unit_definition, &computed, source, span);
             }
-            Boolean(_) | File(_) | Integer(_) | Number(_) | NumberWithUnits(_) | String(_) => {}
+            Boolean(_) | File(_) | Folder(_) | Integer(_) | Number(_) | NumberWithUnits(_)
+            | String(_) => {}
         }
     }
 
@@ -1047,15 +1048,31 @@ fn evaluate_basic_expression(
         }
         File(_file_definition) => {
             // Validate that the computed value is a file path
-            if let ComputedItem::File(_path) = &computed {
+            if let ComputedItem::Path(_path) = &computed {
                 // Could add additional validation here (e.g., path exists, is readable)
                 Ok(computed)
             } else if let ComputedItem::String(value) = &computed {
-                Ok(ComputedItem::File(value.clone()))
+                Ok(ComputedItem::Path(value.clone()))
             } else {
                 Err(ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
                     format!("Expected a file path for file definition, but got {computed:?}."),
+                    source.clone(),
+                    SpanSet::from_span(span),
+                ))
+            }
+        }
+        Folder(_folder_definition) => {
+            // Validate that the computed value is a folder path
+            if let ComputedItem::Path(_path) = &computed {
+                // Could add additional validation here (e.g., path exists, is a directory)
+                Ok(computed)
+            } else if let ComputedItem::String(value) = &computed {
+                Ok(ComputedItem::Path(value.clone()))
+            } else {
+                Err(ExpressionError::new_complex(
+                    ExpressionCategory::Evaluation,
+                    format!("Expected a folder path for folder definition, but got {computed:?}."),
                     source.clone(),
                     SpanSet::from_span(span),
                 ))
@@ -1201,7 +1218,7 @@ fn evaluate_basic_expression(
                 | ComputedItem::Integer(_)
                 | ComputedItem::String(_)
                 | ComputedItem::Identifier(_)
-                | ComputedItem::File(_)
+                | ComputedItem::Path(_)
                 | ComputedItem::Table(_)
                 | ComputedItem::TableWithUnits(_)
                 | ComputedItem::Unit(_) => Err(ExpressionError::new_complex(
@@ -1386,7 +1403,7 @@ fn evaluate_basic_expression(
                 | ComputedItem::Integer(_)
                 | ComputedItem::String(_)
                 | ComputedItem::Identifier(_)
-                | ComputedItem::File(_)
+                | ComputedItem::Path(_)
                 | ComputedItem::Table(_)
                 | ComputedItem::TableWithUnits(_)
                 | ComputedItem::Unit(_) => Err(ExpressionError::new_complex(
@@ -1467,7 +1484,7 @@ fn evaluate_number_with_units_expression(
         | ComputedItem::Integer(_)
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
-        | ComputedItem::File(_)
+        | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => {
@@ -1525,7 +1542,7 @@ fn evaluate_table_expression(
             | ComputedItem::FloatWithUnit { .. }
             | ComputedItem::String(_)
             | ComputedItem::Identifier(_)
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::Table(_)
             | ComputedItem::Unit(_)) => other,
         };
@@ -1640,7 +1657,7 @@ fn evaluate_table_expression(
             | ComputedItem::FloatWithUnit { .. }
             | ComputedItem::String(_)
             | ComputedItem::Identifier(_)
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::TableWithUnits(_)
             | ComputedItem::Unit(_)) => Err(vec![ExpressionError::new_complex(
                 ExpressionCategory::Evaluation,
@@ -1729,7 +1746,7 @@ fn evaluate_table_with_units_expression(
             | ComputedItem::FloatWithUnit { .. }
             | ComputedItem::String(_)
             | ComputedItem::Identifier(_)
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::Unit(_)) => {
                 return Err(vec![ExpressionError::new_complex(
                     ExpressionCategory::Evaluation,
@@ -2072,7 +2089,7 @@ mod tests {
             | ComputedItem::FloatWithUnit { .. }
             | ComputedItem::String(_)
             | ComputedItem::Identifier(_)
-            | ComputedItem::File(_)
+            | ComputedItem::Path(_)
             | ComputedItem::Table(_)
             | ComputedItem::TableWithUnits(_)
             | ComputedItem::Unit(_) => panic!("Expected a numeric computed item"),

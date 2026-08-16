@@ -2,81 +2,54 @@ use crate::traits::TreePrint;
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
-/// Definition for a file-based parameter.
+/// Definition for a folder-based parameter.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct FileDefinition {
-    /// Human-readable description of this file parameter.
+pub struct FolderDefinition {
+    /// Human-readable description of this folder parameter.
     description: ShareableString,
-    /// File-extension filter (e.g., `"*.csv"`) used in open-file dialogs.
-    extension_filter: ShareableString,
-    /// Whether this file should be included when archiving the project and whether file dialogs should be used to select the file.
+    /// Whether this folder should be included when archiving the project and whether file dialogs should be used to select the folder.
     is_input: bool,
-    /// Default value for this file parameter.
+    /// Default value for this folder parameter.
     default_value: ShareableString,
 }
 
-impl FileDefinition {
-    /// Creates a new file-based `FileDefinition`.
+impl FolderDefinition {
+    /// Creates a new folder-based `FolderDefinition`.
     #[hotpath::measure]
-    pub fn new<S1: Into<ShareableString>, S2: Into<ShareableString>>(
-        description: S1,
-        extension_filter: S2,
-        is_input: bool,
-    ) -> Self {
+    pub fn new<S: Into<ShareableString>>(description: S, is_input: bool) -> Self {
         Self {
             description: description.into(),
-            extension_filter: extension_filter.into(),
             is_input,
             default_value: ShareableString::default(),
         }
     }
 
-    /// Creates a new file-based `FileDefinition` with a default value.
+    /// Creates a new folder-based `FolderDefinition` with a default value.
     #[hotpath::measure]
-    pub fn new_with_default<
-        S1: Into<ShareableString>,
-        S2: Into<ShareableString>,
-        S3: Into<ShareableString>,
-    >(
+    pub fn new_with_default<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
-        extension_filter: S2,
         is_input: bool,
-        default_value: S3,
+        default_value: S2,
     ) -> Self {
         Self {
             description: description.into(),
-            extension_filter: extension_filter.into(),
             is_input,
             default_value: default_value.into(),
         }
     }
 
-    /// Returns the extension filter.
-    #[must_use]
-    #[hotpath::measure]
-    pub fn extension_filter(&self) -> ShareableString {
-        self.extension_filter.clone()
-    }
-
-    /// Returns a reference to the extension filter.
-    #[must_use]
-    pub const fn extension_filter_ref(&self) -> &ShareableString {
-        &self.extension_filter
-    }
-
-    /// Returns whether the file should be bundled when archived and whether file dialogs should be used to select the file.
+    /// Returns whether the folder should be included when archiving the project and whether file dialogs should be used to select the folder.
     #[must_use]
     pub const fn is_input(&self) -> bool {
         self.is_input
     }
 
-    /// Returns a new `FileDefinition` with strings laundered through the provided store.
+    /// Returns a new `FolderDefinition` with strings laundered through the provided store.
     #[must_use]
     #[hotpath::measure]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
-            extension_filter: store.launder(&self.extension_filter),
             is_input: self.is_input,
             default_value: store.launder(&self.default_value),
         }
@@ -109,21 +82,21 @@ impl FileDefinition {
     }
 }
 
-impl PartialEq<&FileDefinition> for FileDefinition {
+impl PartialEq<&FolderDefinition> for FolderDefinition {
     #[hotpath::measure]
-    fn eq(&self, other: &&FileDefinition) -> bool {
+    fn eq(&self, other: &&FolderDefinition) -> bool {
         self == *other
     }
 }
 
-impl PartialEq<FileDefinition> for &FileDefinition {
+impl PartialEq<FolderDefinition> for &FolderDefinition {
     #[hotpath::measure]
-    fn eq(&self, other: &FileDefinition) -> bool {
+    fn eq(&self, other: &FolderDefinition) -> bool {
         *self == other
     }
 }
 
-impl TreePrint for FileDefinition {
+impl TreePrint for FolderDefinition {
     #[hotpath::measure]
     fn tree_print(
         &self,
@@ -134,13 +107,12 @@ impl TreePrint for FileDefinition {
     ) -> std::fmt::Result {
         writeln!(
             f,
-            "{}{}{} ({}) File - default: \"{}\" [{}]",
+            "{}{}{} ({}) Folder - default: \"{}\"",
             prefix,
             Self::branch_char(last),
             label,
             self.description,
-            self.default_value,
-            self.extension_filter
+            self.default_value
         )
     }
 }

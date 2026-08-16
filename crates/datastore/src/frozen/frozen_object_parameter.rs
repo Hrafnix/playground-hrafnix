@@ -44,6 +44,12 @@ impl ParameterObjectFrozen {
                 ItemDefinitionType::File(file_def) => {
                     items.insert(key, ItemFrozen::File(FileFrozen::new(file_def.clone())));
                 }
+                ItemDefinitionType::Folder(folder_def) => {
+                    items.insert(
+                        key,
+                        ItemFrozen::Folder(crate::frozen::FolderFrozen::new(folder_def.clone())),
+                    );
+                }
                 ItemDefinitionType::Integer(integer_def) => {
                     items.insert(
                         key,

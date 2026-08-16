@@ -4,6 +4,8 @@ pub mod editable_boolean;
 pub mod editable_choice;
 /// Editable file data.
 pub mod editable_file;
+/// Editable folder data.
+pub mod editable_folder;
 /// Helper functions for editable objects.
 pub mod editable_helper;
 /// Editable integer data.
@@ -38,6 +40,7 @@ pub mod editable_unit;
 pub use editable_boolean::*;
 pub use editable_choice::*;
 pub use editable_file::*;
+pub use editable_folder::*;
 pub use editable_helper::*;
 pub use editable_integer::*;
 pub use editable_item::*;
