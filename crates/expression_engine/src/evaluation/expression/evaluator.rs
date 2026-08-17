@@ -15,7 +15,59 @@ use crate::{
 use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
+use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use units::{UnitId, conversion::convert};
+
+/// Rejects floating-point values that cannot be safely represented in computed output.
+#[hotpath::measure]
+fn finite_float(value: f64, source: &ShareableString, span: Span) -> Result<f64, ExpressionError> {
+    if value.is_finite() {
+        Ok(value)
+    } else {
+        Err(ExpressionError::new_complex(
+            ExpressionCategory::Evaluation,
+            "Floating-point results must be finite.".to_string(),
+            source.clone(),
+            SpanSet::from_span(span),
+        ))
+    }
+}
+
+/// Rejects computed values containing non-finite floating-point data.
+#[hotpath::measure]
+fn ensure_finite_computed_item(
+    item: ComputedItem,
+    source: &ShareableString,
+    span: Span,
+) -> Result<ComputedItem, ExpressionError> {
+    match &item {
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+            finite_float(*value, source, span)?;
+        }
+        ComputedItem::Table(table) => {
+            for row in table.rows() {
+                for value in row {
+                    finite_float(*value, source, span)?;
+                }
+            }
+        }
+        ComputedItem::TableWithUnits(table) => {
+            for row in table.rows() {
+                for value in row {
+                    finite_float(*value, source, span)?;
+                }
+            }
+        }
+        ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::Path(_)
+        | ComputedItem::Unit(_) => {}
+    }
+
+    Ok(item)
+}
 
 /// Looks up `variable_name` in `computed_data`, returning its value or an evaluation error.
 #[hotpath::measure]
@@ -27,7 +79,7 @@ fn lookup_variable(
 ) -> Result<ComputedItem, ExpressionError> {
     let key = ShareableString::from(variable_name);
     match computed_data.get(&key) {
-        Some(computed_item) => Ok(computed_item.clone()),
+        Some(computed_item) => ensure_finite_computed_item(computed_item.clone(), source, span),
         None => Err(ExpressionError::new_complex(
             ExpressionCategory::Evaluation,
             format!(
@@ -77,10 +129,14 @@ fn evaluate_unary_operation(
     span: Span,
 ) -> Result<ComputedItem, ExpressionError> {
     match (operator, operand_value) {
-        (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(-value)),
-        (Operators::Negate, ComputedItem::FloatWithUnit { value, unit: _ }) => {
-            Ok(ComputedItem::Float(-value))
-        }
+        (
+            Operators::Negate,
+            ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, unit: _ },
+        ) => Ok(ComputedItem::Float(finite_float(
+            value.neg(),
+            source,
+            span,
+        )?)),
         (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
             value.checked_mul(-1).ok_or_else(|| {
                 ExpressionError::new_complex(
@@ -145,9 +201,21 @@ fn evaluate_float_binary_operation(
     span: Span,
 ) -> Result<ComputedItem, ExpressionError> {
     match operator {
-        Operators::Add => Ok(ComputedItem::Float(left_value + right_value)),
-        Operators::Subtract => Ok(ComputedItem::Float(left_value - right_value)),
-        Operators::Multiply => Ok(ComputedItem::Float(left_value * right_value)),
+        Operators::Add => Ok(ComputedItem::Float(finite_float(
+            left_value.add(right_value),
+            source,
+            span,
+        )?)),
+        Operators::Subtract => Ok(ComputedItem::Float(finite_float(
+            left_value.sub(right_value),
+            source,
+            span,
+        )?)),
+        Operators::Multiply => Ok(ComputedItem::Float(finite_float(
+            left_value.mul(right_value),
+            source,
+            span,
+        )?)),
         Operators::Divide => {
             if right_value == 0.0 {
                 Err(ExpressionError::new_complex(
@@ -157,7 +225,11 @@ fn evaluate_float_binary_operation(
                     SpanSet::from_span(span),
                 ))
             } else {
-                Ok(ComputedItem::Float(left_value / right_value))
+                Ok(ComputedItem::Float(finite_float(
+                    left_value.div(right_value),
+                    source,
+                    span,
+                )?))
             }
         }
         Operators::Modulus => {
@@ -169,10 +241,18 @@ fn evaluate_float_binary_operation(
                     SpanSet::from_span(span),
                 ))
             } else {
-                Ok(ComputedItem::Float(left_value % right_value))
+                Ok(ComputedItem::Float(finite_float(
+                    left_value.rem(right_value),
+                    source,
+                    span,
+                )?))
             }
         }
-        Operators::Power => Ok(ComputedItem::Float(left_value.powf(right_value))),
+        Operators::Power => Ok(ComputedItem::Float(finite_float(
+            left_value.powf(right_value),
+            source,
+            span,
+        )?)),
         Operators::LessThan => Ok(ComputedItem::Boolean(left_value < right_value)),
         Operators::LessThanOrEqual => Ok(ComputedItem::Boolean(left_value <= right_value)),
         Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
@@ -451,7 +531,7 @@ fn evaluate_function_call_operation(
         ArgumentCount::Unbounded => {}
     }
 
-    definition.call(&evaluated_arguments)
+    ensure_finite_computed_item(definition.call(&evaluated_arguments)?, source, span)
 }
 
 /// Evaluates a subscript-index expression (e.g. `table[0][col]`), returning the referenced cell value.
@@ -675,7 +755,7 @@ fn evaluate_expression(
     match expression {
         Expression::Literal(span, literal) => match literal {
             Literal::Integer(value) => Ok(ComputedItem::Integer(value)),
-            Literal::Float(value) => Ok(ComputedItem::Float(value)),
+            Literal::Float(value) => Ok(ComputedItem::Float(finite_float(value, source, span)?)),
             Literal::Identifier(value) => Ok(lookup_variable(computed_data, &value, source, span)?),
             Literal::Text(value) => Ok(ComputedItem::String(ShareableString::from(value))),
             Literal::Boolean(value) => Ok(ComputedItem::Boolean(value)),
@@ -2058,6 +2138,63 @@ mod tests {
     use super::*;
     use crate::prelude::*;
     use datastore::prelude::*;
+    use std::ops::AddAssign;
+
+    fn assert_non_finite_expression_is_rejected(expression: &str, functions: &FunctionDefinitions) {
+        let source = ShareableString::from(expression);
+        let expression = string_to_expression(&source).expect("expression should parse");
+        let result = evaluate_expression(&BTreeMap::new(), functions, &source, expression);
+
+        assert!(
+            result.is_err_and(|error| error.to_string().contains("must be finite")),
+            "{source} should reject a non-finite result"
+        );
+    }
+
+    #[test]
+    fn rejects_non_finite_float_results() {
+        let functions =
+            crate::evaluation::expression::function_definitions_default::default_function_definitions();
+
+        for expression in [
+            "1e308 * 1e308",
+            "(-1.0) ^ 0.5",
+            "sqrt(-1.0)",
+            "log(0.0)",
+            "exp(1000.0)",
+        ] {
+            assert_non_finite_expression_is_rejected(expression, &functions);
+        }
+    }
+
+    #[test]
+    fn rejects_non_finite_computed_values_and_custom_function_results() {
+        let source = ShareableString::from("value");
+        let expression = string_to_expression(&source).expect("expression should parse");
+        let computed_data = BTreeMap::from([(
+            ShareableString::from("value"),
+            ComputedItem::Float(f64::NAN),
+        )]);
+        assert!(
+            evaluate_expression(
+                &computed_data,
+                &FunctionDefinitions::new(),
+                &source,
+                expression
+            )
+            .is_err()
+        );
+
+        let source = ShareableString::from("not_finite()");
+        let expression = string_to_expression(&source).expect("expression should parse");
+        let functions = FunctionDefinitions::new().with(FunctionDefinition::new(
+            store_key!("not_finite"),
+            "returns an invalid float",
+            ArgumentCount::Exact { count: 0 },
+            |_| Ok(ComputedItem::Float(f64::NAN)),
+        ));
+        assert!(evaluate_expression(&BTreeMap::new(), &functions, &source, expression).is_err());
+    }
 
     fn create_number_basic_input_data(value: &str) -> ObjectItemInputData {
         let definition = Number(NumberDefinition::new("Test Number"));
@@ -2687,8 +2824,8 @@ mod tests {
         let mut total = 0.0;
         for arg in args {
             match arg {
-                ComputedItem::Float(v) => total += v,
-                ComputedItem::Integer(v) => total += *v as f64,
+                ComputedItem::Float(v) => total.add_assign(v),
+                ComputedItem::Integer(v) => total.add_assign(*v as f64),
                 other => {
                     return Err(ExpressionError::new(
                         ExpressionCategory::Evaluation,

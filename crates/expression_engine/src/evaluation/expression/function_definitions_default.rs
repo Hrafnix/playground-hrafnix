@@ -749,6 +749,7 @@ pub(crate) fn default_function_definitions() -> FunctionDefinitions {
 mod tests {
     use super::*;
     use shareable_string::prelude::*;
+    use std::ops::Sub;
 
     fn call(name: &str, args: &[ComputedItem]) -> ComputedItem {
         let definitions = default_function_definitions();
@@ -761,7 +762,7 @@ mod tests {
     fn assert_float_eq(name: &str, args: &[ComputedItem], expected: f64) {
         let result = call(name, args);
         assert!(
-            matches!(result, ComputedItem::Float(value) if (value - expected).abs() < 1e-9),
+            matches!(result, ComputedItem::Float(value) if value.sub(expected).abs() < 1e-9),
             "{name} returned {result:?}, expected a float close to {expected}"
         );
     }

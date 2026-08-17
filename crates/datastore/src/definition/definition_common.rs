@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::ops::{AddAssign, Sub, SubAssign};
 
 /// Definition for a number-based parameter constraint.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -89,9 +90,9 @@ impl NumberConstraint {
         // If the range is degenerate (or within a hair's breadth of it due to
         // floating-point imprecision), widen it symmetrically by `f64::EPSILON`
         // so `min` and `max` never end up equal.
-        if (max - min).abs() < f64::EPSILON {
-            min -= f64::EPSILON;
-            max += f64::EPSILON;
+        if (max.sub(min)).abs() < f64::EPSILON {
+            min.sub_assign(f64::EPSILON);
+            max.add_assign(f64::EPSILON);
         }
 
         Self {
