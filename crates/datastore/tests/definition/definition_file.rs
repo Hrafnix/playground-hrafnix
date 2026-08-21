@@ -10,7 +10,7 @@ fn test_definition_file() {
     assert_eq!(def.description_ref(), "A file parameter");
     assert_eq!(def.extension_filter(), "txt");
     assert_eq!(def.extension_filter_ref(), "txt");
-    assert!(!def.bundle_on_archive());
+    assert!(!def.is_input());
     assert_eq!(def.default_value(), "");
     assert_eq!(def.default_value_ref(), "");
 }
@@ -25,7 +25,7 @@ fn test_definition_file_with_default() {
     assert_eq!(def.description_ref(), "A Default file parameter");
     assert_eq!(def.extension_filter(), "exe");
     assert_eq!(def.extension_filter_ref(), "exe");
-    assert!(def.bundle_on_archive());
+    assert!(def.is_input());
     assert_eq!(def.default_value(), "test.exe");
     assert_eq!(def.default_value_ref(), "test.exe");
 }

@@ -179,13 +179,14 @@ impl FunctionDefinitions {
 mod tests {
     use super::*;
     use datastore::prelude::*;
+    use std::ops::AddAssign;
 
     fn add(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         let mut sum = 0.0;
         for arg in args {
             match arg {
-                ComputedItem::Float(v) => sum += v,
-                ComputedItem::Integer(v) => sum += *v as f64,
+                ComputedItem::Float(v) => sum.add_assign(v),
+                ComputedItem::Integer(v) => sum.add_assign(*v as f64),
                 _ => {
                     return Err(ExpressionError::new(
                         crate::ExpressionCategory::Evaluation,

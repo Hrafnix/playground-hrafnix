@@ -1,5 +1,6 @@
 use datastore::prelude::*;
 use expression_engine::prelude::*;
+use std::ops::{Mul, Sub};
 
 /// A function that sums its integer arguments.
 fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
@@ -21,7 +22,7 @@ fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> 
 /// A function that multiplies two float arguments.
 fn multiply_floats(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
     match args {
-        [ComputedItem::Float(a), ComputedItem::Float(b)] => Ok(ComputedItem::Float(a * b)),
+        [ComputedItem::Float(a), ComputedItem::Float(b)] => Ok(ComputedItem::Float(a.mul(b))),
         _ => Err(ExpressionError::new(
             ExpressionCategory::Evaluation,
             "multiply() expects exactly two float arguments".to_string(),
@@ -208,7 +209,7 @@ fn float_returning_function_works_with_number_definition() {
         ComputedItem::Float(value) => {
             let expected: f64 = 10.0;
             assert!(
-                (value - expected).abs() < f64::EPSILON,
+                value.sub(expected).abs() < f64::EPSILON,
                 "expected {expected}, got {value}"
             );
         }

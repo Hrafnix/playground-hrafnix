@@ -208,8 +208,8 @@ pub enum ComputedItem {
     String(ShareableString),
     /// An Identifier value.
     Identifier(ShareableString),
-    /// Path to a file.
-    File(ShareableString),
+    /// Path to a file/folder.
+    Path(ShareableString),
     /// A table represented as a `ComputedTable`.
     Table(ComputedTable),
     /// A table represented as a `ComputedTableWithUnits`.
@@ -230,7 +230,7 @@ impl fmt::Display for ComputedItem {
                 write!(f, "{value} {unit_description}")
             }
             ComputedItem::String(value)
-            | ComputedItem::File(value)
+            | ComputedItem::Path(value)
             | ComputedItem::Identifier(value) => write!(f, "{value}"),
             ComputedItem::Table(_) | ComputedItem::TableWithUnits(_) => write!(f, "{self:?}"),
             ComputedItem::Unit(value) => {

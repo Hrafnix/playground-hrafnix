@@ -33,6 +33,9 @@ pub fn editable_set_value<
         ItemEditable::File(file) => {
             file.set(value);
         }
+        ItemEditable::Folder(folder) => {
+            folder.set(value);
+        }
         ItemEditable::Integer(integer) => {
             integer.set(value);
         }

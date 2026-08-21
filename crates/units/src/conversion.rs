@@ -1,4 +1,5 @@
 use crate::unit_definitions::{UnitFamilyId, UnitId};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[allow(
     clippy::match_same_arms,
@@ -88,6 +89,10 @@ const fn convert_to_base(unit: UnitId) -> f64 {
 /// Returns an error if the units are not compatible for conversion (i.e., they belong to different unit families).
 #[hotpath::measure]
 pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, String> {
+    if !value.is_finite() {
+        return Err("Unit conversion input must be finite".into());
+    }
+
     if from_unit == to_unit {
         return Ok(value);
     }
@@ -105,32 +110,40 @@ pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, St
     }
 
     if from_unit.family_id() == UnitFamilyId::Temperature {
-        return match (from_unit, to_unit) {
+        let converted = match (from_unit, to_unit) {
             (UnitId::Temperature_Celsius, UnitId::Temperature_Fahrenheit) => {
-                Ok((value * (9.0 / 5.0)) + 32.0)
+                value.mul_add(9.0.div(5.0), 32.0)
             }
             (UnitId::Temperature_Fahrenheit, UnitId::Temperature_Celsius) => {
-                Ok((value - 32.0) * (5.0 / 9.0))
+                value.sub(32.0).mul(5.0.div(9.0))
             }
-            (UnitId::Temperature_Celsius, UnitId::Temperature_Kelvin) => Ok(value + 273.15),
-            (UnitId::Temperature_Kelvin, UnitId::Temperature_Celsius) => Ok(value - 273.15),
+            (UnitId::Temperature_Celsius, UnitId::Temperature_Kelvin) => value.add(273.15),
+            (UnitId::Temperature_Kelvin, UnitId::Temperature_Celsius) => value.sub(273.15),
             (UnitId::Temperature_Fahrenheit, UnitId::Temperature_Kelvin) => {
-                Ok((value - 32.0) * (5.0 / 9.0) + 273.15)
+                value.sub(32.0).mul_add(5.0.div(9.0), 273.15)
             }
             (UnitId::Temperature_Kelvin, UnitId::Temperature_Fahrenheit) => {
-                Ok((value - 273.15) * (9.0 / 5.0) + 32.0)
+                value.sub(273.15).mul_add(9.0.div(5.0), 32.0)
             }
             _ => {
                 // This case should never happen because we check for unit family compatibility before calling this function.
-                Err("Units are not compatible for conversion".into())
+                return Err("Units are not compatible for conversion".into());
             }
         };
+        return converted
+            .is_finite()
+            .then_some(converted)
+            .ok_or_else(|| "Unit conversion result must be finite".into());
     }
 
     let from_base = convert_to_base(from_unit);
     let to_base = convert_to_base(to_unit);
 
-    Ok(value * (from_base / to_base))
+    let converted = value.mul(from_base.div(to_base));
+    converted
+        .is_finite()
+        .then_some(converted)
+        .ok_or_else(|| "Unit conversion result must be finite".into())
 }
 
 #[cfg(test)]
@@ -138,11 +151,12 @@ pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, St
 mod tests {
     use super::{convert, convert_to_base};
     use crate::unit_definitions::{UnitFamilyId, UnitId};
+    use std::ops::{Mul, Sub};
 
     fn assert_approx_eq(actual: f64, expected: f64) {
-        let tolerance = 1e-12 * expected.abs().max(1.0);
+        let tolerance = 1e-12_f64.mul(expected.abs().max(1.0));
         assert!(
-            (actual - expected).abs() <= tolerance,
+            actual.sub(expected).abs() <= tolerance,
             "expected {expected}, got {actual}"
         );
     }
@@ -255,6 +269,13 @@ mod tests {
             convert(42.5, UnitId::None, UnitId::Length_Meter),
             Err("Cannot convert a unitless value to a unit".into())
         );
+    }
+
+    #[test]
+    fn rejects_non_finite_inputs_and_results() {
+        assert!(convert(f64::NAN, UnitId::Length_Meter, UnitId::Length_Foot).is_err());
+        assert!(convert(f64::INFINITY, UnitId::Length_Meter, UnitId::Length_Foot).is_err());
+        assert!(convert(f64::MAX, UnitId::Length_Kilometer, UnitId::Length_Meter).is_err());
     }
 
     #[test]

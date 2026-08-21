@@ -6,6 +6,8 @@ pub mod definition_choice;
 pub mod definition_common;
 /// Definitions for file data structures.
 pub mod definition_file;
+/// Definitions for folder-based data structures.
+pub mod definition_folder;
 /// Definitions for integer-based data structures.
 pub mod definition_integer;
 /// Definitions for parameter within objects or containers.
@@ -39,6 +41,7 @@ pub use definition_boolean::*;
 pub use definition_choice::*;
 pub use definition_common::*;
 pub use definition_file::*;
+pub use definition_folder::*;
 pub use definition_integer::*;
 pub use definition_item::*;
 pub use definition_map::*;

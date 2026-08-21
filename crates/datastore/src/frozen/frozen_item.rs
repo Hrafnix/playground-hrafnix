@@ -1,6 +1,6 @@
 use crate::definition::ItemDefinitionType;
 use crate::frozen::{
-    BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, MapFrozen, NumberFrozen,
+    BooleanFrozen, ChoiceFrozen, FileFrozen, FolderFrozen, IntegerFrozen, MapFrozen, NumberFrozen,
     NumberWithUnitsFrozen, SeparatorFrozen, StringFrozen, TabFrozen, TableFrozen,
     TableWithUnitsFrozen, UnitFrozen,
 };
@@ -16,6 +16,8 @@ pub enum ItemFrozen {
     Choice(ChoiceFrozen),
     /// A file parameter.
     File(FileFrozen),
+    /// A folder parameter.
+    Folder(FolderFrozen),
     /// An integer parameter.
     Integer(IntegerFrozen),
     /// A map parameter.
@@ -47,6 +49,7 @@ impl ItemFrozen {
             ItemFrozen::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
             ItemFrozen::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
             ItemFrozen::File(f) => ItemDefinitionType::File(f.definition().clone()),
+            ItemFrozen::Folder(f) => ItemDefinitionType::Folder(f.definition().clone()),
             ItemFrozen::Integer(i) => ItemDefinitionType::Integer(i.definition().clone()),
             ItemFrozen::Map(m) => ItemDefinitionType::Map(m.definition().clone()),
             ItemFrozen::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
@@ -71,6 +74,7 @@ impl ItemFrozen {
             Self::Boolean(b) => b.hash(),
             Self::Choice(c) => c.hash(),
             Self::File(f) => f.hash(),
+            Self::Folder(f) => f.hash(),
             Self::Integer(i) => i.hash(),
             Self::Map(m) => m.hash(),
             Self::Number(n) => n.hash(),
@@ -92,6 +96,7 @@ impl ItemFrozen {
             Self::Choice(c) => Some(c.clone()),
             Self::Boolean(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -114,6 +119,7 @@ impl ItemFrozen {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -133,6 +139,7 @@ impl ItemFrozen {
             Self::File(f) => Some(f),
             Self::Boolean(_)
             | Self::Choice(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -154,6 +161,7 @@ impl ItemFrozen {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Number(_)
             | Self::NumberWithUnits(_)
@@ -174,6 +182,7 @@ impl ItemFrozen {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::NumberWithUnits(_)
@@ -194,6 +203,7 @@ impl ItemFrozen {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -214,6 +224,7 @@ impl ItemFrozen {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -240,6 +251,7 @@ impl TreePrint for ItemFrozen {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Folder(folder) => folder.tree_print(f, label, prefix, last),
             Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
             Self::Number(number) => number.tree_print(f, label, prefix, last),

@@ -118,6 +118,15 @@ fn item_to_input_data(
                 )),
             );
         }
+        ItemFrozen::Folder(folder) => {
+            map.insert(
+                key,
+                ObjectItemInputData::Basic(BasicInputData::new(
+                    BasicDefinition::Folder(folder.definition().clone()),
+                    folder.value(),
+                )),
+            );
+        }
         ItemFrozen::Integer(integer) => {
             map.insert(
                 key,

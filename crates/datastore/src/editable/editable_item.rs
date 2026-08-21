@@ -1,8 +1,8 @@
 use crate::definition::ItemDefinitionType;
 use crate::editable::{
-    BooleanEditable, ChoiceEditable, FileEditable, IntegerEditable, MapEditable, NumberEditable,
-    NumberWithUnitsEditable, SeparatorEditable, StringEditable, TabEditable, TableEditable,
-    TableWithUnitsEditable, UnitEditable,
+    BooleanEditable, ChoiceEditable, FileEditable, FolderEditable, IntegerEditable, MapEditable,
+    NumberEditable, NumberWithUnitsEditable, SeparatorEditable, StringEditable, TabEditable,
+    TableEditable, TableWithUnitsEditable, UnitEditable,
 };
 use crate::frozen::ItemFrozen;
 use crate::traits::TreePrint;
@@ -17,6 +17,8 @@ pub enum ItemEditable {
     Choice(ChoiceEditable),
     /// A file parameter.
     File(FileEditable),
+    /// A folder parameter.
+    Folder(FolderEditable),
     /// An integer parameter.
     Integer(IntegerEditable),
     /// A map parameter.
@@ -48,6 +50,7 @@ impl ItemEditable {
             ItemFrozen::Boolean(boolean) => ItemEditable::Boolean(BooleanEditable::new(boolean)),
             ItemFrozen::Choice(choice) => ItemEditable::Choice(ChoiceEditable::new(choice)),
             ItemFrozen::File(file) => ItemEditable::File(FileEditable::new(file)),
+            ItemFrozen::Folder(folder) => ItemEditable::Folder(FolderEditable::new(folder)),
             ItemFrozen::Integer(integer) => ItemEditable::Integer(IntegerEditable::new(integer)),
             ItemFrozen::Map(map) => ItemEditable::Map(MapEditable::new(map)),
             ItemFrozen::Number(number) => ItemEditable::Number(NumberEditable::new(number)),
@@ -75,6 +78,7 @@ impl ItemEditable {
             ItemEditable::Boolean(boolean) => ItemFrozen::Boolean(boolean.freeze()),
             ItemEditable::Choice(choice) => ItemFrozen::Choice(choice.freeze()),
             ItemEditable::File(file) => ItemFrozen::File(file.freeze()),
+            ItemEditable::Folder(folder) => ItemFrozen::Folder(folder.freeze()),
             ItemEditable::Integer(integer) => ItemFrozen::Integer(integer.freeze()),
             ItemEditable::Map(map) => ItemFrozen::Map(map.freeze()),
             ItemEditable::Number(number) => ItemFrozen::Number(number.freeze()),
@@ -100,6 +104,7 @@ impl ItemEditable {
             ItemEditable::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
             ItemEditable::Choice(c) => ItemDefinitionType::Choice(c.definition().clone()),
             ItemEditable::File(f) => ItemDefinitionType::File(f.definition().clone()),
+            ItemEditable::Folder(folder) => ItemDefinitionType::Folder(folder.definition().clone()),
             ItemEditable::Integer(i) => ItemDefinitionType::Integer(i.definition().clone()),
             ItemEditable::Map(m) => ItemDefinitionType::Map(m.definition().clone()),
             ItemEditable::Number(n) => ItemDefinitionType::Number(n.definition().clone()),
@@ -124,6 +129,7 @@ impl ItemEditable {
             Self::Boolean(b) => Some(b),
             Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -144,6 +150,7 @@ impl ItemEditable {
             Self::Boolean(b) => Some(b),
             Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -165,6 +172,7 @@ impl ItemEditable {
             Self::Choice(c) => Some(c.clone()),
             Self::Boolean(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -185,6 +193,7 @@ impl ItemEditable {
             Self::Choice(c) => Some(c),
             Self::Boolean(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -205,6 +214,7 @@ impl ItemEditable {
             Self::File(f) => Some(f),
             Self::Boolean(_)
             | Self::Choice(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -225,6 +235,7 @@ impl ItemEditable {
             Self::File(f) => Some(f),
             Self::Boolean(_)
             | Self::Choice(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -246,6 +257,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Map(_)
             | Self::Number(_)
             | Self::NumberWithUnits(_)
@@ -266,6 +278,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Map(_)
             | Self::Number(_)
             | Self::NumberWithUnits(_)
@@ -286,6 +299,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Number(_)
             | Self::NumberWithUnits(_)
@@ -306,6 +320,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Number(_)
             | Self::NumberWithUnits(_)
@@ -326,6 +341,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::NumberWithUnits(_)
@@ -346,6 +362,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::NumberWithUnits(_)
@@ -366,6 +383,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -386,6 +404,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -406,6 +425,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -426,6 +446,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -446,6 +467,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -466,6 +488,7 @@ impl ItemEditable {
             Self::Boolean(_)
             | Self::Choice(_)
             | Self::File(_)
+            | Self::Folder(_)
             | Self::Integer(_)
             | Self::Map(_)
             | Self::Number(_)
@@ -492,6 +515,7 @@ impl TreePrint for ItemEditable {
             Self::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
             Self::Choice(choice) => choice.tree_print(f, label, prefix, last),
             Self::File(file) => file.tree_print(f, label, prefix, last),
+            Self::Folder(folder) => folder.tree_print(f, label, prefix, last),
             Self::Integer(integer) => integer.tree_print(f, label, prefix, last),
             Self::Map(map) => map.tree_print(f, label, prefix, last),
             Self::Number(number) => number.tree_print(f, label, prefix, last),

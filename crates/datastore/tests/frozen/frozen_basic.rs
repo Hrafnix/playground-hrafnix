@@ -107,7 +107,7 @@ fn test_basic_frozen_file() {
     // Check the frozen file object.
     assert_eq!(frozen_basic.definition().description(), "A file parameter");
     assert_eq!(frozen_basic.definition().extension_filter(), "txt");
-    assert!(!frozen_basic.definition().bundle_on_archive());
+    assert!(!frozen_basic.definition().is_input());
     assert_eq!(frozen_basic.definition().default_value(), "");
     assert_eq!(frozen_basic.value(), "");
     assert_ne!(frozen_basic.hash(), [0u8; 32]);
@@ -126,7 +126,7 @@ fn test_basic_frozen_file_with_default() {
     // Check the frozen file object.
     assert_eq!(frozen_basic.definition().description(), "A file parameter");
     assert_eq!(frozen_basic.definition().extension_filter(), "txt");
-    assert!(frozen_basic.definition().bundle_on_archive());
+    assert!(frozen_basic.definition().is_input());
     assert_eq!(frozen_basic.definition().default_value(), "test.txt");
     assert_eq!(frozen_basic.value(), "test.txt");
     assert_ne!(frozen_basic.hash(), [0u8; 32]);

@@ -1,6 +1,7 @@
 use datastore::prelude::*;
 use expression_engine::prelude::*;
 use std::collections::BTreeMap;
+use std::ops::{Mul, Sub};
 
 #[test]
 fn test_basic_data_choice_bare_identifier() {
@@ -247,7 +248,7 @@ fn test_basic_data_scientific_notation_expression() {
 
     let number = output.get("p_number").unwrap();
     if let ComputedItem::Float(number) = number {
-        assert!((*number - 175.0).abs() < f64::EPSILON);
+        assert!((*number).sub(175.0).abs() < f64::EPSILON);
     } else {
         panic!("expected float data");
     }
@@ -294,7 +295,7 @@ fn test_default_math_globals_are_available_when_evaluating_globals() {
 
     assert_eq!(
         engine.globals().get("g_circumference"),
-        Some(&ComputedItem::Float(6.0 * std::f64::consts::PI))
+        Some(&ComputedItem::Float(6.0.mul(std::f64::consts::PI)))
     );
     assert_eq!(
         engine.globals().get("g_tau"),
