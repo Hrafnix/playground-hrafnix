@@ -616,6 +616,7 @@ dependencies = [
  "egui",
  "env_logger",
  "expression_engine",
+ "translation",
 ]
 
 [[package]]
@@ -1263,6 +1264,7 @@ dependencies = [
  "keys",
  "message",
  "shareable_string",
+ "translation",
  "units",
 ]
 

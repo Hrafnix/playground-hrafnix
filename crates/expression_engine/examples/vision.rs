@@ -8,6 +8,7 @@
 
 use datastore::prelude::*;
 use expression_engine::prelude::*;
+use message::message::Message;
 use std::collections::VecDeque;
 use std::process::ExitCode;
 
@@ -47,8 +48,7 @@ impl Component {
         engine: &ExpressionEngine,
         parent_parameters: &ParameterObjectComputedData,
         parent_variables: &VariableObjectComputedData,
-    ) -> Result<(ParameterObjectComputedData, VariableObjectComputedData), Vec<ExpressionError>>
-    {
+    ) -> Result<(ParameterObjectComputedData, VariableObjectComputedData), Vec<Message>> {
         let parameters = engine.evaluate_child_parameters(
             parent_parameters,
             parent_variables,
@@ -109,7 +109,7 @@ struct EvaluatedComponent {
 #[derive(Debug)]
 struct EvaluationFailure {
     path: Vec<ShareableString>,
-    errors: Vec<ExpressionError>,
+    errors: Vec<Message>,
 }
 
 #[derive(Debug)]
@@ -334,6 +334,8 @@ fn create_model() -> Model {
 
 #[hotpath::main]
 fn main() -> ExitCode {
+    let store = SharedStringStore::new();
+    let translations = translation::generate_translation_map(&store);
     let extended_globals = create_extended_globals();
 
     let model = create_model();
@@ -341,7 +343,10 @@ fn main() -> ExitCode {
     let mut engine = ExpressionEngine::new();
     if let Err(errors) = engine.evaluate_globals(&extended_globals) {
         for error in errors {
-            eprintln!("{MODEL_NAME}: {error}");
+            let rendered = error
+                .translated_message(&translations, "en")
+                .unwrap_or_else(|| error.translate_data().message_key().clone());
+            eprintln!("{MODEL_NAME}: {rendered}");
         }
         return ExitCode::FAILURE;
     }
@@ -367,7 +372,10 @@ fn main() -> ExitCode {
                 .collect::<Vec<_>>()
                 .join(" > ");
             for error in failure.errors {
-                eprintln!("{path}: {error}");
+                let rendered = error
+                    .translated_message(&translations, "en")
+                    .unwrap_or_else(|| error.translate_data().message_key().clone());
+                eprintln!("{path}: {rendered}");
             }
             ExitCode::FAILURE
         }

@@ -1,6 +1,7 @@
 use crate::BasicDefinition::{
     Boolean, Choice, File, Folder, Integer, Number, NumberWithUnits, String, Unit,
 };
+use crate::evaluation::create_error_message;
 use crate::evaluation::expression::ast::translator::{
     Expression, Literal, Operators, expression_span,
 };
@@ -8,10 +9,11 @@ use crate::evaluation::expression::function_definition::{ArgumentCount, Function
 use crate::expression::ast::ast_helper::string_to_expression;
 use crate::input_data::input_basic_with_units::BasicInputWithUnitsData;
 use crate::{
-    BasicInputData, ComputedItem, ComputedTable, ComputedTableWithUnits, ExpressionCategory,
-    ExpressionError, ObjectItemInputData, TableInputData, TableWithUnitsInputData,
+    BasicInputData, ComputedItem, ComputedTable, ComputedTableWithUnits, ObjectItemInputData,
+    TableInputData, TableWithUnitsInputData,
 };
 use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
+use message::message::{Message, MessageCategory};
 use message::span::{Span, SpanSet};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -20,15 +22,16 @@ use units::{UnitId, conversion::convert};
 
 /// Rejects floating-point values that cannot be safely represented in computed output.
 #[hotpath::measure]
-fn finite_float(value: f64, source: &ShareableString, span: Span) -> Result<f64, ExpressionError> {
+fn finite_float(value: f64, source: &ShareableString, span: Span) -> Result<f64, Message> {
     if value.is_finite() {
         Ok(value)
     } else {
-        Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            "Floating-point results must be finite.".to_string(),
-            source.clone(),
-            SpanSet::from_span(span),
+        Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_floating_point_not_finite".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         ))
     }
 }
@@ -39,7 +42,7 @@ fn ensure_finite_computed_item(
     item: ComputedItem,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match &item {
         ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
             finite_float(*value, source, span)?;
@@ -76,18 +79,18 @@ fn lookup_variable(
     variable_name: &str,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     let key = ShareableString::from(variable_name);
     match computed_data.get(&key) {
         Some(computed_item) => ensure_finite_computed_item(computed_item.clone(), source, span),
-        None => Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!(
-                "Variable '{variable_name}' not found in computed data. \
-            If you want to use a literal string, wrap it in quotes \"{variable_name}\"."
-            ),
-            source.clone(),
-            SpanSet::from_span(span),
+        None => Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_variable_not_found".into(),
+            [("variable".into(), variable_name.to_string().into())]
+                .into_iter()
+                .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )),
     }
 }
@@ -127,7 +130,7 @@ fn evaluate_unary_operation(
     operand_value: ComputedItem,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match (operator, operand_value) {
         (
             Operators::Negate,
@@ -139,20 +142,22 @@ fn evaluate_unary_operation(
         )?)),
         (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
             value.checked_mul(-1).ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Integer overflow.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_integer_overflow".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?,
         )),
         (Operators::Not, ComputedItem::Boolean(value)) => Ok(ComputedItem::Boolean(!value)),
-        _ => Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            "Invalid unary operation.".to_string(),
-            source.clone(),
-            SpanSet::from_span(span),
+        _ => Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_invalid_unary_operation".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )),
     }
 }
@@ -165,7 +170,7 @@ fn evaluate_boolean_binary_operation(
     right_value: bool,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match operator {
         Operators::And => Ok(ComputedItem::Boolean(left_value && right_value)),
         Operators::Or => Ok(ComputedItem::Boolean(left_value || right_value)),
@@ -182,11 +187,17 @@ fn evaluate_boolean_binary_operation(
         | Operators::LessThanOrEqual
         | Operators::GreaterThan
         | Operators::GreaterThanOrEqual
-        | Operators::Not => Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Unsupported operator for booleans: {operator:?}"),
-            source.clone(),
-            SpanSet::from_span(span),
+        | Operators::Not => Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_unsupported_operator".into(),
+            [
+                ("operator".into(), format!("{operator:?}").into()),
+                ("type".into(), "boolean".to_string().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )),
     }
 }
@@ -199,7 +210,7 @@ fn evaluate_float_binary_operation(
     right_value: f64,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match operator {
         Operators::Add => Ok(ComputedItem::Float(finite_float(
             left_value.add(right_value),
@@ -218,11 +229,12 @@ fn evaluate_float_binary_operation(
         )?)),
         Operators::Divide => {
             if right_value == 0.0 {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Division by zero.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_division_by_zero".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             } else {
                 Ok(ComputedItem::Float(finite_float(
@@ -234,11 +246,12 @@ fn evaluate_float_binary_operation(
         }
         Operators::Modulus => {
             if right_value == 0.0 {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Modulus by zero.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_modulus_by_zero".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             } else {
                 Ok(ComputedItem::Float(finite_float(
@@ -262,11 +275,17 @@ fn evaluate_float_binary_operation(
         | Operators::NotEqual
         | Operators::And
         | Operators::Or
-        | Operators::Not => Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Unsupported operator for floats: {operator:?}"),
-            source.clone(),
-            SpanSet::from_span(span),
+        | Operators::Not => Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_unsupported_operator".into(),
+            [
+                ("operator".into(), format!("{operator:?}").into()),
+                ("type".into(), "float".to_string().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )),
     }
 }
@@ -279,17 +298,18 @@ fn evaluate_integer_binary_operation(
     right_value: i64,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match operator {
         Operators::Add => {
             let checked_add = left_value.checked_add(right_value);
             match checked_add {
                 Some(result) => Ok(ComputedItem::Integer(result)),
-                None => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Integer overflow.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                None => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_integer_overflow".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )),
             }
         }
@@ -297,11 +317,12 @@ fn evaluate_integer_binary_operation(
             let checked_sub = left_value.checked_sub(right_value);
             match checked_sub {
                 Some(result) => Ok(ComputedItem::Integer(result)),
-                None => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Integer overflow.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                None => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_integer_overflow".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )),
             }
         }
@@ -309,11 +330,12 @@ fn evaluate_integer_binary_operation(
             let checked_mul = left_value.checked_mul(right_value);
             match checked_mul {
                 Some(result) => Ok(ComputedItem::Integer(result)),
-                None => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Integer overflow.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                None => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_integer_overflow".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )),
             }
         }
@@ -324,18 +346,20 @@ fn evaluate_integer_binary_operation(
                 Some(result) => Ok(ComputedItem::Integer(result)),
                 None => {
                     if right_value == 0 {
-                        Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            "Division by zero.".to_string(),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        Err(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_division_by_zero".into(),
+                            [].into_iter().collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         ))
                     } else {
-                        Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            "Integer overflow.".to_string(),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        Err(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_integer_overflow".into(),
+                            [].into_iter().collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         ))
                     }
                 }
@@ -347,18 +371,20 @@ fn evaluate_integer_binary_operation(
                 Some(result) => Ok(ComputedItem::Integer(result)),
                 None => {
                     if right_value == 0 {
-                        Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            "Modulus by zero.".to_string(),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        Err(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_modulus_by_zero".into(),
+                            [].into_iter().collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         ))
                     } else {
-                        Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            "Integer overflow.".to_string(),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        Err(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_integer_overflow".into(),
+                            [].into_iter().collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         ))
                     }
                 }
@@ -366,20 +392,22 @@ fn evaluate_integer_binary_operation(
         }
         Operators::Power => {
             let exponent = u32::try_from(right_value).map_err(|_| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Integer exponent must be non-negative and fit within `u32`.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_invalid_integer_exponent".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?;
             left_value.checked_pow(exponent).map_or_else(
                 || {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        "Integer overflow.".to_string(),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    Err(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_integer_overflow".into(),
+                        [].into_iter().collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     ))
                 },
                 |value| Ok(ComputedItem::Integer(value)),
@@ -392,11 +420,17 @@ fn evaluate_integer_binary_operation(
         Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
         Operators::GreaterThanOrEqual => Ok(ComputedItem::Boolean(left_value >= right_value)),
         Operators::Negate | Operators::Not | Operators::And | Operators::Or => {
-            Err(ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                format!("Unsupported operator for integers: {operator:?}"),
-                source.clone(),
-                SpanSet::from_span(span),
+            Err(create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_unsupported_operator".into(),
+                [
+                    ("operator".into(), format!("{operator:?}").into()),
+                    ("type".into(), "integer".to_string().into()),
+                ]
+                .into_iter()
+                .collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             ))
         }
     }
@@ -410,7 +444,7 @@ fn evaluate_string_binary_operation(
     right_value: &ShareableString,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match operator {
         Operators::Equal => Ok(ComputedItem::Boolean(left_value == right_value)),
         Operators::NotEqual => Ok(ComputedItem::Boolean(left_value != right_value)),
@@ -427,11 +461,17 @@ fn evaluate_string_binary_operation(
         | Operators::Multiply
         | Operators::Divide
         | Operators::Modulus
-        | Operators::Power => Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Unsupported operator for strings: {operator:?}"),
-            source.clone(),
-            SpanSet::from_span(span),
+        | Operators::Power => Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_unsupported_operator".into(),
+            [
+                ("operator".into(), format!("{operator:?}").into()),
+                ("type".into(), "string".to_string().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )),
     }
 }
@@ -446,13 +486,16 @@ fn evaluate_function_call_operation(
     functions: &FunctionDefinitions,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     let definition = functions.get(function_name).ok_or_else(|| {
-        ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Function '{function_name}' is not defined."),
-            source.clone(),
-            SpanSet::from_span(span),
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_function_not_defined".into(),
+            [("function".into(), function_name.to_string().into())]
+                .into_iter()
+                .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )
     })?;
 
@@ -469,62 +512,82 @@ fn evaluate_function_call_operation(
     match definition.parameter_constraints() {
         ArgumentCount::Exact { count } => {
             if evaluated_arguments.len() != *count {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Function '{}' requires exactly {} arguments, got {}.",
-                        function_name,
-                        count,
-                        evaluated_arguments.len()
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_function_wrong_argument_count_exact".into(),
+                    [
+                        ("function".into(), function_name.to_string().into()),
+                        ("expected".into(), count.to_string().into()),
+                        (
+                            "actual".into(),
+                            evaluated_arguments.len().to_string().into(),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ));
             }
         }
         ArgumentCount::Min { min } => {
             if evaluated_arguments.len() < *min {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Function '{}' requires at least {} arguments, got {}.",
-                        function_name,
-                        min,
-                        evaluated_arguments.len()
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_function_wrong_argument_count_minimum".into(),
+                    [
+                        ("function".into(), function_name.to_string().into()),
+                        ("minimum".into(), min.to_string().into()),
+                        (
+                            "actual".into(),
+                            evaluated_arguments.len().to_string().into(),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ));
             }
         }
         ArgumentCount::Max { max } => {
             if evaluated_arguments.len() > *max {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Function '{}' allows at most {} arguments, got {}.",
-                        function_name,
-                        max,
-                        evaluated_arguments.len()
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_function_wrong_argument_count_maximum".into(),
+                    [
+                        ("function".into(), function_name.to_string().into()),
+                        ("maximum".into(), max.to_string().into()),
+                        (
+                            "actual".into(),
+                            evaluated_arguments.len().to_string().into(),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ));
             }
         }
         ArgumentCount::Range { min, max } => {
             if evaluated_arguments.len() < *min || evaluated_arguments.len() > *max {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Function '{}' requires between {} and {} arguments, got {}.",
-                        function_name,
-                        min,
-                        max,
-                        evaluated_arguments.len()
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_function_wrong_argument_count_range".into(),
+                    [
+                        ("function".into(), function_name.to_string().into()),
+                        ("minimum".into(), min.to_string().into()),
+                        ("maximum".into(), max.to_string().into()),
+                        (
+                            "actual".into(),
+                            evaluated_arguments.len().to_string().into(),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ));
             }
         }
@@ -543,16 +606,16 @@ fn evaluate_index_operation(
     functions: &FunctionDefinitions,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     if index.len() != 2 && index.len() != 4 {
-        return Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!(
-                "Indexing requires exactly 2 or 4 indices, got {}",
-                index.len()
-            ),
-            source.clone(),
-            SpanSet::from_span(span),
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_invalid_index_count".into(),
+            [("actual".into(), index.len().to_string().into())]
+                .into_iter()
+                .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         ));
     }
 
@@ -574,19 +637,21 @@ fn evaluate_index_operation(
     }
 
     let index_1 = indexes.first().ok_or_else(|| {
-        ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            "Missing first index.".to_string(),
-            source.clone(),
-            SpanSet::from_span(span),
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_missing_first_index".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )
     })?;
     let index_2 = indexes.get(1).ok_or_else(|| {
-        ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            "Missing second index.".to_string(),
-            source.clone(),
-            SpanSet::from_span(span),
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_missing_second_index".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         )
     })?;
 
@@ -617,29 +682,32 @@ fn evaluate_index_operation(
             | ComputedItem::Identifier(_)
             | ComputedItem::Path(_)
             | ComputedItem::Unit(_) => {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    "Expected a table for table indexing.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_table_for_indexing".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ));
             }
         };
 
         let index_1 = indexes.first().ok_or_else(|| {
-            ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                "Missing first index.".to_string(),
-                source.clone(),
-                SpanSet::from_span(span),
+            create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_missing_first_index".into(),
+                [].into_iter().collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             )
         })?;
         let index_2 = indexes.get(1).ok_or_else(|| {
-            ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                "Missing second index.".to_string(),
-                source.clone(),
-                SpanSet::from_span(span),
+            create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_missing_second_index".into(),
+                [].into_iter().collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             )
         })?;
 
@@ -650,15 +718,17 @@ fn evaluate_index_operation(
                     .filter(|size| *size < table.row_count());
 
                 size.ok_or_else(|| {
-                    ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!(
-                            "Row index {} is out of bounds for a table with {} rows.",
-                            i,
-                            table.row_count()
-                        ),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_table_row_index_out_of_bounds".into(),
+                        [
+                            ("index".into(), i.to_string().into()),
+                            ("count".into(), table.row_count().to_string().into()),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     )
                 })?
             }
@@ -671,11 +741,14 @@ fn evaluate_index_operation(
             | ComputedItem::Table(_)
             | ComputedItem::TableWithUnits(_)
             | ComputedItem::Unit(_) => {
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Expected an integer index for the table, got {index_1:?}"),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_table_row_index".into(),
+                    [("actual".into(), format!("{index_1:?}").into())]
+                        .into_iter()
+                        .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ));
             }
         };
@@ -683,11 +756,14 @@ fn evaluate_index_operation(
         return match index_2 {
             ComputedItem::Identifier(s) | ComputedItem::String(s) => {
                 let value = table.get_cell_by_name(row_index, s).ok_or_else(|| {
-                    ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Field '{s}' not found in the table row."),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_table_field_not_found".into(),
+                        [("field".into(), s.to_string().into())]
+                            .into_iter()
+                            .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     )
                 })?;
                 let unit = table_with_units
@@ -701,24 +777,29 @@ fn evaluate_index_operation(
                     .filter(|size| *size < table.column_count());
 
                 let size = size.ok_or_else(|| {
-                    ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!(
-                            "Column index {} is out of bounds for a table with {} columns.",
-                            i,
-                            table.column_count()
-                        ),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_table_column_index_out_of_bounds".into(),
+                        [
+                            ("index".into(), i.to_string().into()),
+                            ("count".into(), table.column_count().to_string().into()),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     )
                 })?;
 
                 let value = table.get_cell(row_index, size).ok_or_else(|| {
-                    ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Field '{i}' not found in the table row."),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_table_field_not_found".into(),
+                        [("field".into(), i.to_string().into())]
+                            .into_iter()
+                            .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     )
                 })?;
                 let unit = table_with_units
@@ -732,11 +813,14 @@ fn evaluate_index_operation(
             | ComputedItem::Path(_)
             | ComputedItem::Table(_)
             | ComputedItem::TableWithUnits(_)
-            | ComputedItem::Unit(_)) => Err(ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                format!("Expected a string or integer index for the table field, got {other:?}"),
-                source.clone(),
-                SpanSet::from_span(span),
+            | ComputedItem::Unit(_)) => Err(create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_expected_table_field_index".into(),
+                [("actual".into(), format!("{other:?}").into())]
+                    .into_iter()
+                    .collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             )),
         };
     }
@@ -751,7 +835,7 @@ fn evaluate_expression(
     functions: &FunctionDefinitions,
     source: &ShareableString,
     expression: Expression,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     match expression {
         Expression::Literal(span, literal) => match literal {
             Literal::Integer(value) => Ok(ComputedItem::Integer(value)),
@@ -803,11 +887,17 @@ fn evaluate_expression(
                     | Operators::GreaterThanOrEqual
                     | Operators::And
                     | Operators::Or
-                    | Operators::Not => Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for files: {operator:?}"),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
+                    | Operators::Not => Err(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_unsupported_operator".into(),
+                        [
+                            ("operator".into(), format!("{operator:?}").into()),
+                            ("type".into(), "file".to_string().into()),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(operator_span)),
                     )),
                 },
                 (
@@ -863,21 +953,33 @@ fn evaluate_expression(
                     | Operators::GreaterThanOrEqual
                     | Operators::And
                     | Operators::Or
-                    | Operators::Not => Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unsupported operator for units: {operator:?}"),
-                        source.clone(),
-                        SpanSet::from_span(operator_span),
+                    | Operators::Not => Err(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_unsupported_operator".into(),
+                        [
+                            ("operator".into(), format!("{operator:?}").into()),
+                            ("type".into(), "unit".to_string().into()),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(operator_span)),
                     )),
                 },
                 (
                     ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
                     ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
-                ) => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Unsupported operator for tables: {operator:?}"),
-                    source.clone(),
-                    SpanSet::from_span(operator_span),
+                ) => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_unsupported_operator".into(),
+                    [
+                        ("operator".into(), format!("{operator:?}").into()),
+                        ("type".into(), "table".to_string().into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(operator_span)),
                 )),
 
                 (
@@ -960,11 +1062,17 @@ fn evaluate_expression(
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::TableWithUnits(_),
-                ) => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Unsupported operator for mixed types: {operator:?}"),
-                    source.clone(),
-                    SpanSet::from_span(operator_span),
+                ) => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_unsupported_operator".into(),
+                    [
+                        ("operator".into(), format!("{operator:?}").into()),
+                        ("type".into(), "mixed type".to_string().into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(operator_span)),
                 )),
             }
         }
@@ -994,16 +1102,19 @@ fn evaluate_bare_identifier_choice(
     name: &str,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     let value = ShareableString::from(name);
     if choice_definition.contains(value.clone()) {
         Ok(ComputedItem::Identifier(value))
     } else {
-        Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!("Value '{value}' is not a valid choice."),
-            source.clone(),
-            SpanSet::from_span(span),
+        Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_invalid_choice".into(),
+            [("value".into(), value.to_string().into())]
+                .into_iter()
+                .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         ))
     }
 }
@@ -1015,16 +1126,19 @@ fn validate_unit_value(
     computed: &ComputedItem,
     source: &ShareableString,
     span: Span,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     let unit = match computed {
         ComputedItem::Unit(unit) => *unit,
         ComputedItem::String(value) | ComputedItem::Identifier(value) => {
             UnitId::from_unit_id_str(value.as_str()).ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Value '{value}' is not a valid unit ID."),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_invalid_unit_id".into(),
+                    [("value".into(), value.to_string().into())]
+                        .into_iter()
+                        .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?
         }
@@ -1035,11 +1149,14 @@ fn validate_unit_value(
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_) => {
-            return Err(ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                format!("Expected a unit value, but got {computed:?}."),
-                source.clone(),
-                SpanSet::from_span(span),
+            return Err(create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_expected_unit_value".into(),
+                [("actual".into(), format!("{computed:?}").into())]
+                    .into_iter()
+                    .collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             ));
         }
     };
@@ -1047,26 +1164,36 @@ fn validate_unit_value(
     if unit_definition.unit_family().unit_ids().contains(&unit) {
         Ok(ComputedItem::Unit(unit))
     } else {
-        Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            format!(
-                "Value '{}' is not a valid unit ID for {}.",
-                unit.string_id(),
-                unit_definition.unit_family().description()
-            ),
-            source.clone(),
-            SpanSet::from_span(span),
+        Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_invalid_unit_for_family".into(),
+            [
+                ("value".into(), unit.string_id().into()),
+                (
+                    "family".into(),
+                    unit_definition
+                        .unit_family()
+                        .description()
+                        .to_string()
+                        .into(),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         ))
     }
 }
 
 /// Evaluates the expression stored in a single [`BasicInputData`] item.
+#[allow(clippy::too_many_lines)]
 #[hotpath::measure]
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
     basic: &BasicInputData,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     let source = basic.data();
     let expression = string_to_expression(source)?;
 
@@ -1094,13 +1221,17 @@ fn evaluate_basic_expression(
             if let ComputedItem::Boolean(_value) = &computed {
                 Ok(computed)
             } else {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected a boolean value for boolean definition, but got {computed:?}."
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "boolean".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             }
         }
@@ -1110,19 +1241,28 @@ fn evaluate_basic_expression(
                 if choice_definition.contains(value) {
                     Ok(ComputedItem::Identifier(value.clone()))
                 } else {
-                    Err(ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Value '{value}' is not a valid choice."),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    Err(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_invalid_choice".into(),
+                        [("value".into(), value.to_string().into())]
+                            .into_iter()
+                            .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     ))
                 }
             } else {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Expected a string value for choice, but got {computed:?}."),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "choice string".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             }
         }
@@ -1134,11 +1274,17 @@ fn evaluate_basic_expression(
             } else if let ComputedItem::String(value) = &computed {
                 Ok(ComputedItem::Path(value.clone()))
             } else {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Expected a file path for file definition, but got {computed:?}."),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "file path".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             }
         }
@@ -1150,11 +1296,17 @@ fn evaluate_basic_expression(
             } else if let ComputedItem::String(value) = &computed {
                 Ok(ComputedItem::Path(value.clone()))
             } else {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Expected a folder path for folder definition, but got {computed:?}."),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "folder path".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             }
         }
@@ -1165,26 +1317,34 @@ fn evaluate_basic_expression(
                 match constraint {
                     IntegerConstraintEnum::Min { min, inclusive } => {
                         if *value < min || (!inclusive && *value == min) {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Value {value} is less than the minimum allowed value of {min}."
-                                ),
-                                source.clone(),
-                                SpanSet::from_span(span),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_value_below_minimum".into(),
+                                [
+                                    ("value".into(), value.to_string().into()),
+                                    ("minimum".into(), min.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(source.clone()),
+                                Some(SpanSet::from_span(span)),
                             ));
                         }
                         Ok(computed)
                     }
                     IntegerConstraintEnum::Max { max, inclusive } => {
                         if *value > max || (!inclusive && *value == max) {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Value {value} is greater than the maximum allowed value of {max}."
-                                ),
-                                source.clone(),
-                                SpanSet::from_span(span),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_value_above_maximum".into(),
+                                [
+                                    ("value".into(), value.to_string().into()),
+                                    ("maximum".into(), max.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(source.clone()),
+                                Some(SpanSet::from_span(span)),
                             ));
                         }
                         Ok(computed)
@@ -1196,23 +1356,31 @@ fn evaluate_basic_expression(
                         max_inclusive,
                     } => {
                         if *value < min || (!min_inclusive && *value == min) {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Value {value} is less than the minimum allowed value of {min}."
-                                ),
-                                source.clone(),
-                                SpanSet::from_span(span),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_value_below_minimum".into(),
+                                [
+                                    ("value".into(), value.to_string().into()),
+                                    ("minimum".into(), min.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(source.clone()),
+                                Some(SpanSet::from_span(span)),
                             ));
                         }
                         if *value > max || (!max_inclusive && *value == max) {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Value {value} is greater than the maximum allowed value of {max}."
-                                ),
-                                source.clone(),
-                                SpanSet::from_span(span),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_value_above_maximum".into(),
+                                [
+                                    ("value".into(), value.to_string().into()),
+                                    ("maximum".into(), max.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(source.clone()),
+                                Some(SpanSet::from_span(span)),
                             ));
                         }
                         Ok(computed)
@@ -1220,13 +1388,17 @@ fn evaluate_basic_expression(
                     IntegerConstraintEnum::None => Ok(computed),
                 }
             } else {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected an integer value for integer definition, but got {computed:?}."
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "integer".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             }
         }
@@ -1238,26 +1410,34 @@ fn evaluate_basic_expression(
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
                             if (*value) < min || (!inclusive && (*value) <= min) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is less than the minimum allowed value of {min}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_below_minimum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("minimum".into(), min.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             Ok(computed)
                         }
                         NumberConstraintEnum::Max { max, inclusive } => {
                             if (*value) > max || (!inclusive && (*value) >= max) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is greater than the maximum allowed value of {max}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_above_maximum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("maximum".into(), max.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             Ok(computed)
@@ -1269,23 +1449,31 @@ fn evaluate_basic_expression(
                             max_inclusive,
                         } => {
                             if (*value) < min || (!min_inclusive && (*value) <= min) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is less than the minimum allowed value of {min}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_below_minimum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("minimum".into(), min.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             if (*value) > max || (!max_inclusive && (*value) >= max) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is greater than the maximum allowed value of {max}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_above_maximum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("maximum".into(), max.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
 
@@ -1301,13 +1489,17 @@ fn evaluate_basic_expression(
                 | ComputedItem::Path(_)
                 | ComputedItem::Table(_)
                 | ComputedItem::TableWithUnits(_)
-                | ComputedItem::Unit(_) => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected a numeric value for number definition, but got {computed:?}."
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                | ComputedItem::Unit(_) => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "number".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )),
             }
         }
@@ -1316,13 +1508,17 @@ fn evaluate_basic_expression(
             match &computed {
                 ComputedItem::Float(value) => {
                     if number_definition.preferred_units() != UnitId::None {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!(
-                                "Expected a numeric value with units for number definition, but got {computed:?}."
-                            ),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        return Err(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_expected_definition_value".into(),
+                            [
+                                ("expected".into(), "number with units".to_string().into()),
+                                ("actual".into(), format!("{computed:?}").into()),
+                            ]
+                            .into_iter()
+                            .collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         ));
                     }
 
@@ -1330,26 +1526,34 @@ fn evaluate_basic_expression(
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
                             if (*value) < min || (!inclusive && (*value) <= min) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is less than the minimum allowed value of {min}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_below_minimum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("minimum".into(), min.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             Ok(computed)
                         }
                         NumberConstraintEnum::Max { max, inclusive } => {
                             if (*value) > max || (!inclusive && (*value) >= max) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is greater than the maximum allowed value of {max}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_above_maximum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("maximum".into(), max.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             Ok(computed)
@@ -1361,23 +1565,31 @@ fn evaluate_basic_expression(
                             max_inclusive,
                         } => {
                             if (*value) < min || (!min_inclusive && (*value) <= min) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is less than the minimum allowed value of {min}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_below_minimum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("minimum".into(), min.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             if (*value) > max || (!max_inclusive && (*value) >= max) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {value} is greater than the maximum allowed value of {max}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_above_maximum".into(),
+                                    [
+                                        ("value".into(), value.to_string().into()),
+                                        ("maximum".into(), max.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
 
@@ -1388,24 +1600,29 @@ fn evaluate_basic_expression(
                 }
                 ComputedItem::FloatWithUnit { value, unit } => {
                     if number_definition.preferred_units().family_id() != unit.family_id() {
-                        return Err(ExpressionError::new_complex(
-                            ExpressionCategory::Evaluation,
-                            format!(
-                                "Expected a numeric value with units for number definition, but got {computed:?}."
-                            ),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        return Err(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_expected_definition_value".into(),
+                            [
+                                ("expected".into(), "number with units".to_string().into()),
+                                ("actual".into(), format!("{computed:?}").into()),
+                            ]
+                            .into_iter()
+                            .collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         ));
                     }
 
                     let converted_value =
                         convert(*value, *unit, number_definition.preferred_units()).map_err(
                             |error| {
-                                ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    error,
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_unit_conversion_failed".into(),
+                                    [("error".into(), error.into())].into_iter().collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 )
                             },
                         )?;
@@ -1419,26 +1636,34 @@ fn evaluate_basic_expression(
                     match constraint {
                         NumberConstraintEnum::Min { min, inclusive } => {
                             if (converted_value) < min || (!inclusive && (converted_value) <= min) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {converted_value} is less than the minimum allowed value of {min}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_below_minimum".into(),
+                                    [
+                                        ("value".into(), converted_value.to_string().into()),
+                                        ("minimum".into(), min.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             Ok(computed)
                         }
                         NumberConstraintEnum::Max { max, inclusive } => {
                             if (converted_value) > max || (!inclusive && (converted_value) >= max) {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {converted_value} is greater than the maximum allowed value of {max}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_above_maximum".into(),
+                                    [
+                                        ("value".into(), converted_value.to_string().into()),
+                                        ("maximum".into(), max.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             Ok(computed)
@@ -1452,25 +1677,33 @@ fn evaluate_basic_expression(
                             if (converted_value) < min
                                 || (!min_inclusive && (converted_value) <= min)
                             {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {converted_value} is less than the minimum allowed value of {min}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_below_minimum".into(),
+                                    [
+                                        ("value".into(), converted_value.to_string().into()),
+                                        ("minimum".into(), min.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
                             if (converted_value) > max
                                 || (!max_inclusive && (converted_value) >= max)
                             {
-                                return Err(ExpressionError::new_complex(
-                                    ExpressionCategory::Evaluation,
-                                    format!(
-                                        "Value {converted_value} is greater than the maximum allowed value of {max}."
-                                    ),
-                                    source.clone(),
-                                    SpanSet::from_span(span),
+                                return Err(create_error_message(
+                                    MessageCategory::ExpressionEvaluation,
+                                    "expression_engine_evaluation_value_above_maximum".into(),
+                                    [
+                                        ("value".into(), converted_value.to_string().into()),
+                                        ("maximum".into(), max.to_string().into()),
+                                    ]
+                                    .into_iter()
+                                    .collect(),
+                                    Some(source.clone()),
+                                    Some(SpanSet::from_span(span)),
                                 ));
                             }
 
@@ -1486,13 +1719,17 @@ fn evaluate_basic_expression(
                 | ComputedItem::Path(_)
                 | ComputedItem::Table(_)
                 | ComputedItem::TableWithUnits(_)
-                | ComputedItem::Unit(_) => Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Expected a numeric value for number definition, but got {computed:?}."
-                    ),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                | ComputedItem::Unit(_) => Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "number".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )),
             }
         }
@@ -1507,11 +1744,17 @@ fn evaluate_basic_expression(
             } else if let ComputedItem::Integer(value) = &computed {
                 Ok(ComputedItem::String(value.to_string().into()))
             } else {
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("Expected a string value for string definition, but got {computed:?}."),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                Err(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_definition_value".into(),
+                    [
+                        ("expected".into(), "string".to_string().into()),
+                        ("actual".into(), format!("{computed:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 ))
             }
         }
@@ -1525,7 +1768,7 @@ fn evaluate_number_with_units_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
     basic: &BasicInputWithUnitsData,
-) -> Result<ComputedItem, ExpressionError> {
+) -> Result<ComputedItem, Message> {
     let source = basic.data();
     let expression = string_to_expression(source)?;
     let span = expression_span(&expression);
@@ -1535,11 +1778,12 @@ fn evaluate_number_with_units_expression(
     let computed = evaluate_expression(computed_data, functions, source, expression)?;
 
     let NumberWithUnits(number_definition) = basic.definition() else {
-        return Err(ExpressionError::new_complex(
-            ExpressionCategory::Evaluation,
-            "Expected a number-with-units definition.".to_string(),
-            source.clone(),
-            SpanSet::from_span(span),
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_expected_number_with_units_definition".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
         ));
     };
 
@@ -1547,11 +1791,14 @@ fn evaluate_number_with_units_expression(
         ComputedItem::Float(value) => {
             let unit = if is_float_literal {
                 UnitId::from_unit_id_str(basic.units().as_str()).ok_or_else(|| {
-                    ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Unknown unit '{}'.", basic.units()),
-                        source.clone(),
-                        SpanSet::from_span(span),
+                    create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_unknown_unit".into(),
+                        [("unit".into(), basic.units().into())]
+                            .into_iter()
+                            .collect(),
+                        Some(source.clone()),
+                        Some(SpanSet::from_span(span)),
                     )
                 })?
             } else {
@@ -1568,11 +1815,17 @@ fn evaluate_number_with_units_expression(
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => {
-            return Err(ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                format!("Expected a numeric value for number definition, but got {computed:?}."),
-                source.clone(),
-                SpanSet::from_span(span),
+            return Err(create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_expected_definition_value".into(),
+                [
+                    ("expected".into(), "number".to_string().into()),
+                    ("actual".into(), format!("{computed:?}").into()),
+                ]
+                .into_iter()
+                .collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             ));
         }
     };
@@ -1583,11 +1836,12 @@ fn evaluate_number_with_units_expression(
 
     let value =
         convert(value, source_unit, number_definition.preferred_units()).map_err(|error| {
-            ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                error,
-                source.clone(),
-                SpanSet::from_span(span),
+            create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_unit_conversion_failed".into(),
+                [("error".into(), error.into())].into_iter().collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
             )
         })?;
 
@@ -1600,7 +1854,7 @@ fn evaluate_table_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
     table: &TableInputData,
-) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
+) -> Result<Vec<Vec<f64>>, Vec<Message>> {
     let parameter = table.parameter();
     if !parameter.as_str().is_empty() {
         let parameter_source = ShareableString::from(parameter.as_str().to_string());
@@ -1631,16 +1885,24 @@ fn evaluate_table_expression(
                 let referenced_table = &referenced_table;
                 let table_definition = table.definition();
                 if table_definition.count() != referenced_table.keys().len() {
-                    return Err(vec![ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!(
-                            "Parameter '{}' references a table with {} columns, but the current table expects {} columns.",
-                            parameter,
-                            referenced_table.keys().len(),
-                            table.definition().count()
-                        ),
-                        parameter_source,
-                        SpanSet::from_span(parameter_span),
+                    return Err(vec![create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_table_column_count_mismatch".into(),
+                        [
+                            ("parameter".into(), parameter.to_string().into()),
+                            (
+                                "actual".into(),
+                                referenced_table.keys().len().to_string().into(),
+                            ),
+                            (
+                                "expected".into(),
+                                table.definition().count().to_string().into(),
+                            ),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        Some(parameter_source),
+                        Some(SpanSet::from_span(parameter_span)),
                     )]);
                 }
 
@@ -1651,13 +1913,18 @@ fn evaluate_table_expression(
                     let mut converted_row = Vec::with_capacity(row.len());
                     for (j, data) in row.iter().enumerate() {
                         let Some(column_definition) = table_definition.get_by_index(j) else {
-                            errors.push(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Parameter '{parameter}' references a table with no column definition at index {j}."
-                                ),
-                                parameter_source.clone(),
-                                SpanSet::from_span(parameter_span),
+                            errors.push(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_table_missing_column_definition"
+                                    .into(),
+                                [
+                                    ("parameter".into(), parameter.to_string().into()),
+                                    ("index".into(), j.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(parameter_source.clone()),
+                                Some(SpanSet::from_span(parameter_span)),
                             ));
                             continue;
                         };
@@ -1665,27 +1932,37 @@ fn evaluate_table_expression(
                         match column_definition.constraint() {
                             NumberConstraintEnum::Min { min, inclusive } => {
                                 if data < min || (!inclusive && data <= min) {
-                                    errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
-                                            data, column_definition.description(), min
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
+                                    errors.push(create_error_message(
+                                        MessageCategory::ExpressionEvaluation,
+                                        "expression_engine_evaluation_table_value_below_minimum"
+                                            .into(),
+                                        [
+                                            ("value".into(), data.to_string().into()),
+                                            ("column".into(), column_definition.description()),
+                                            ("minimum".into(), min.to_string().into()),
+                                        ]
+                                        .into_iter()
+                                        .collect(),
+                                        Some(parameter_source.clone()),
+                                        Some(SpanSet::from_span(parameter_span)),
                                     ));
                                 }
                             }
                             NumberConstraintEnum::Max { max, inclusive } => {
                                 if data > max || (!inclusive && data >= max) {
-                                    errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
-                                            data, column_definition.description(), max
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
+                                    errors.push(create_error_message(
+                                        MessageCategory::ExpressionEvaluation,
+                                        "expression_engine_evaluation_table_value_above_maximum"
+                                            .into(),
+                                        [
+                                            ("value".into(), data.to_string().into()),
+                                            ("column".into(), column_definition.description()),
+                                            ("maximum".into(), max.to_string().into()),
+                                        ]
+                                        .into_iter()
+                                        .collect(),
+                                        Some(parameter_source.clone()),
+                                        Some(SpanSet::from_span(parameter_span)),
                                     ));
                                 }
                             }
@@ -1696,25 +1973,35 @@ fn evaluate_table_expression(
                                 max_inclusive,
                             } => {
                                 if data < min || (!min_inclusive && data <= min) {
-                                    errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
-                                            data, column_definition.description(), min
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
+                                    errors.push(create_error_message(
+                                        MessageCategory::ExpressionEvaluation,
+                                        "expression_engine_evaluation_table_value_below_minimum"
+                                            .into(),
+                                        [
+                                            ("value".into(), data.to_string().into()),
+                                            ("column".into(), column_definition.description()),
+                                            ("minimum".into(), min.to_string().into()),
+                                        ]
+                                        .into_iter()
+                                        .collect(),
+                                        Some(parameter_source.clone()),
+                                        Some(SpanSet::from_span(parameter_span)),
                                     ));
                                 }
                                 if data > max || (!max_inclusive && data >= max) {
-                                    errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
-                                            data, column_definition.description(), max
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
+                                    errors.push(create_error_message(
+                                        MessageCategory::ExpressionEvaluation,
+                                        "expression_engine_evaluation_table_value_above_maximum"
+                                            .into(),
+                                        [
+                                            ("value".into(), data.to_string().into()),
+                                            ("column".into(), column_definition.description()),
+                                            ("maximum".into(), max.to_string().into()),
+                                        ]
+                                        .into_iter()
+                                        .collect(),
+                                        Some(parameter_source.clone()),
+                                        Some(SpanSet::from_span(parameter_span)),
                                     ));
                                 }
                             }
@@ -1739,13 +2026,17 @@ fn evaluate_table_expression(
             | ComputedItem::Identifier(_)
             | ComputedItem::Path(_)
             | ComputedItem::TableWithUnits(_)
-            | ComputedItem::Unit(_)) => Err(vec![ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                format!(
-                    "Parameter '{parameter}' is expected to reference a table, but got {other:?}."
-                ),
-                parameter_source,
-                SpanSet::from_span(parameter_span),
+            | ComputedItem::Unit(_)) => Err(vec![create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_expected_table_parameter".into(),
+                [
+                    ("parameter".into(), parameter.to_string().into()),
+                    ("actual".into(), format!("{other:?}").into()),
+                ]
+                .into_iter()
+                .collect(),
+                Some(parameter_source),
+                Some(SpanSet::from_span(parameter_span)),
             )]),
         };
     }
@@ -1760,11 +2051,14 @@ fn evaluate_table_expression(
             let Some(number_definition) = definition.get_by_index(i) else {
                 let cell_source = ShareableString::from(basic_data.as_str().to_string());
                 let cell_span = Span::new(0, basic_data.as_str().chars().count());
-                return Err(vec![ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("No column definition exists for table cell at index {i}."),
-                    cell_source,
-                    SpanSet::from_span(cell_span),
+                return Err(vec![create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_cell_missing_column_definition".into(),
+                    [("index".into(), i.to_string().into())]
+                        .into_iter()
+                        .collect(),
+                    Some(cell_source),
+                    Some(SpanSet::from_span(cell_span)),
                 )]);
             };
 
@@ -1778,11 +2072,14 @@ fn evaluate_table_expression(
                 Ok(other) => {
                     let cell_source = ShareableString::from(basic_data.as_str().to_string());
                     let cell_span = Span::new(0, basic_data.as_str().chars().count());
-                    return Err(vec![ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Expected a numeric value for table cell, but got {other:?}."),
-                        cell_source,
-                        SpanSet::from_span(cell_span),
+                    return Err(vec![create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_expected_table_cell_number".into(),
+                        [("actual".into(), format!("{other:?}").into())]
+                            .into_iter()
+                            .collect(),
+                        Some(cell_source),
+                        Some(SpanSet::from_span(cell_span)),
                     )]);
                 }
                 Err(e) => {
@@ -1801,7 +2098,7 @@ fn evaluate_table_with_units_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
     table: &TableWithUnitsInputData,
-) -> Result<Vec<Vec<f64>>, Vec<ExpressionError>> {
+) -> Result<Vec<Vec<f64>>, Vec<Message>> {
     let parameter = table.parameter();
     if !parameter.as_str().is_empty() {
         let parameter_source = ShareableString::from(parameter.as_str().to_string());
@@ -1828,43 +2125,60 @@ fn evaluate_table_with_units_expression(
             | ComputedItem::Identifier(_)
             | ComputedItem::Path(_)
             | ComputedItem::Unit(_)) => {
-                return Err(vec![ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Parameter '{parameter}' is expected to reference a table, but got {other:?}."
-                    ),
-                    parameter_source,
-                    SpanSet::from_span(parameter_span),
+                return Err(vec![create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_expected_table_parameter".into(),
+                    [
+                        ("parameter".into(), parameter.to_string().into()),
+                        ("actual".into(), format!("{other:?}").into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(parameter_source),
+                    Some(SpanSet::from_span(parameter_span)),
                 )]);
             }
         };
 
         let table_definition = table.definition();
         if table_definition.count() != referenced_table.keys().len() {
-            return Err(vec![ExpressionError::new_complex(
-                ExpressionCategory::Evaluation,
-                format!(
-                    "Parameter '{}' references a table with {} columns, but the current table expects {} columns.",
-                    parameter,
-                    referenced_table.keys().len(),
-                    table.definition().count()
-                ),
-                parameter_source,
-                SpanSet::from_span(parameter_span),
+            return Err(vec![create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_table_column_count_mismatch".into(),
+                [
+                    ("parameter".into(), parameter.to_string().into()),
+                    (
+                        "actual".into(),
+                        referenced_table.keys().len().to_string().into(),
+                    ),
+                    (
+                        "expected".into(),
+                        table.definition().count().to_string().into(),
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+                Some(parameter_source),
+                Some(SpanSet::from_span(parameter_span)),
             )]);
         }
         if let Some(units) = &source_units {
             if units.len() != referenced_table.column_count() {
-                return Err(vec![ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!(
-                        "Parameter '{}' references a table with {} units for {} columns.",
-                        parameter,
-                        units.len(),
-                        referenced_table.column_count()
-                    ),
-                    parameter_source,
-                    SpanSet::from_span(parameter_span),
+                return Err(vec![create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_unit_count_mismatch".into(),
+                    [
+                        ("parameter".into(), parameter.to_string().into()),
+                        ("actual".into(), units.len().to_string().into()),
+                        (
+                            "expected".into(),
+                            referenced_table.column_count().to_string().into(),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(parameter_source),
+                    Some(SpanSet::from_span(parameter_span)),
                 )]);
             }
         }
@@ -1875,14 +2189,18 @@ fn evaluate_table_with_units_expression(
             let mut converted_row = Vec::with_capacity(row.len());
             for (j, data) in row.iter().enumerate() {
                 let Some(column_definition) = table_definition.get_by_index(j) else {
-                    errors.push(ExpressionError::new_complex(
-                                ExpressionCategory::Evaluation,
-                                format!(
-                                    "Parameter '{parameter}' references a table with no column definition at index {j}."
-                                ),
-                                parameter_source.clone(),
-                                SpanSet::from_span(parameter_span),
-                            ));
+                    errors.push(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_table_missing_column_definition".into(),
+                        [
+                            ("parameter".into(), parameter.to_string().into()),
+                            ("index".into(), j.to_string().into()),
+                        ]
+                        .into_iter()
+                        .collect(),
+                        Some(parameter_source.clone()),
+                        Some(SpanSet::from_span(parameter_span)),
+                    ));
                     continue;
                 };
                 let source_unit = source_units
@@ -1893,45 +2211,64 @@ fn evaluate_table_with_units_expression(
                 let data = match convert(*data, source_unit, column_definition.preferred_units()) {
                     Ok(value) => value,
                     Err(error) => {
-                        errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Cannot convert parameter '{parameter}' column '{}' from {} to {}: {error}",
-                                            column_definition.description(),
-                                            source_unit.string_id(),
-                                            column_definition.preferred_units().string_id(),
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
-                                    ));
+                        errors.push(create_error_message(
+                            MessageCategory::ExpressionEvaluation,
+                            "expression_engine_evaluation_table_unit_conversion_failed".into(),
+                            [
+                                ("parameter".into(), parameter.to_string().into()),
+                                ("column".into(), column_definition.description()),
+                                ("source_unit".into(), source_unit.string_id().into()),
+                                (
+                                    "target_unit".into(),
+                                    column_definition
+                                        .preferred_units()
+                                        .string_id()
+                                        .to_string()
+                                        .into(),
+                                ),
+                                ("error".into(), error.into()),
+                            ]
+                            .into_iter()
+                            .collect(),
+                            Some(parameter_source.clone()),
+                            Some(SpanSet::from_span(parameter_span)),
+                        ));
                         continue;
                     }
                 };
                 match column_definition.constraint() {
                     NumberConstraintEnum::Min { min, inclusive } => {
                         if data < min || (!inclusive && data <= min) {
-                            errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
-                                            data, column_definition.description(), min
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
-                                    ));
+                            errors.push(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_table_value_below_minimum".into(),
+                                [
+                                    ("value".into(), data.to_string().into()),
+                                    ("column".into(), column_definition.description()),
+                                    ("minimum".into(), min.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(parameter_source.clone()),
+                                Some(SpanSet::from_span(parameter_span)),
+                            ));
                         }
                     }
                     NumberConstraintEnum::Max { max, inclusive } => {
                         if data > max || (!inclusive && data >= max) {
-                            errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
-                                            data, column_definition.description(), max
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
-                                    ));
+                            errors.push(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_table_value_above_maximum".into(),
+                                [
+                                    ("value".into(), data.to_string().into()),
+                                    ("column".into(), column_definition.description()),
+                                    ("maximum".into(), max.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(parameter_source.clone()),
+                                Some(SpanSet::from_span(parameter_span)),
+                            ));
                         }
                     }
                     NumberConstraintEnum::Range {
@@ -1941,26 +2278,34 @@ fn evaluate_table_with_units_expression(
                         max_inclusive,
                     } => {
                         if data < min || (!min_inclusive && data <= min) {
-                            errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is less than the minimum allowed value of {}.",
-                                            data, column_definition.description(), min
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
-                                    ));
+                            errors.push(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_table_value_below_minimum".into(),
+                                [
+                                    ("value".into(), data.to_string().into()),
+                                    ("column".into(), column_definition.description()),
+                                    ("minimum".into(), min.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(parameter_source.clone()),
+                                Some(SpanSet::from_span(parameter_span)),
+                            ));
                         }
                         if data > max || (!max_inclusive && data >= max) {
-                            errors.push(ExpressionError::new_complex(
-                                        ExpressionCategory::Evaluation,
-                                        format!(
-                                            "Value {} in column '{}' is greater than the maximum allowed value of {}.",
-                                            data, column_definition.description(), max
-                                        ),
-                                        parameter_source.clone(),
-                                        SpanSet::from_span(parameter_span),
-                                    ));
+                            errors.push(create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_table_value_above_maximum".into(),
+                                [
+                                    ("value".into(), data.to_string().into()),
+                                    ("column".into(), column_definition.description()),
+                                    ("maximum".into(), max.to_string().into()),
+                                ]
+                                .into_iter()
+                                .collect(),
+                                Some(parameter_source.clone()),
+                                Some(SpanSet::from_span(parameter_span)),
+                            ));
                         }
                     }
                     NumberConstraintEnum::None => {}
@@ -1989,21 +2334,27 @@ fn evaluate_table_with_units_expression(
             let Some(number_definition) = definition.get_by_index(i) else {
                 let cell_source = ShareableString::from(basic_data.as_str().to_string());
                 let cell_span = Span::new(0, basic_data.as_str().chars().count());
-                return Err(vec![ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("No column definition exists for table cell at index {i}."),
-                    cell_source,
-                    SpanSet::from_span(cell_span),
+                return Err(vec![create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_cell_missing_column_definition".into(),
+                    [("index".into(), i.to_string().into())]
+                        .into_iter()
+                        .collect(),
+                    Some(cell_source),
+                    Some(SpanSet::from_span(cell_span)),
                 )]);
             };
             let Some(unit) = units.get(i) else {
                 let cell_source = ShareableString::from(basic_data.as_str().to_string());
                 let cell_span = Span::new(0, basic_data.as_str().chars().count());
-                return Err(vec![ExpressionError::new_complex(
-                    ExpressionCategory::Evaluation,
-                    format!("No unit exists for table cell at index {i}."),
-                    cell_source,
-                    SpanSet::from_span(cell_span),
+                return Err(vec![create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_cell_missing_unit".into(),
+                    [("index".into(), i.to_string().into())]
+                        .into_iter()
+                        .collect(),
+                    Some(cell_source),
+                    Some(SpanSet::from_span(cell_span)),
                 )]);
             };
 
@@ -2021,11 +2372,14 @@ fn evaluate_table_with_units_expression(
                 Ok(other) => {
                     let cell_source = ShareableString::from(basic_data.as_str().to_string());
                     let cell_span = Span::new(0, basic_data.as_str().chars().count());
-                    return Err(vec![ExpressionError::new_complex(
-                        ExpressionCategory::Evaluation,
-                        format!("Expected a numeric value for table cell, but got {other:?}."),
-                        cell_source,
-                        SpanSet::from_span(cell_span),
+                    return Err(vec![create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_expected_table_cell_number".into(),
+                        [("actual".into(), format!("{other:?}").into())]
+                            .into_iter()
+                            .collect(),
+                        Some(cell_source),
+                        Some(SpanSet::from_span(cell_span)),
                     )]);
                 }
                 Err(e) => {
@@ -2045,10 +2399,7 @@ pub(crate) fn evaluator(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
     input_data: &BTreeMap<ShareableString, ObjectItemInputData>,
-) -> (
-    BTreeMap<ShareableString, ComputedItem>,
-    Vec<ExpressionError>,
-) {
+) -> (BTreeMap<ShareableString, ComputedItem>, Vec<Message>) {
     let mut result = BTreeMap::new();
     let mut errors = Vec::new();
 
@@ -2140,13 +2491,18 @@ mod tests {
     use datastore::prelude::*;
     use std::ops::AddAssign;
 
+    fn message_key(message: &Message) -> &str {
+        message.translate_data().message_key().as_str()
+    }
+
     fn assert_non_finite_expression_is_rejected(expression: &str, functions: &FunctionDefinitions) {
         let source = ShareableString::from(expression);
         let expression = string_to_expression(&source).expect("expression should parse");
         let result = evaluate_expression(&BTreeMap::new(), functions, &source, expression);
 
         assert!(
-            result.is_err_and(|error| error.to_string().contains("must be finite")),
+            result.is_err_and(|error| message_key(&error)
+                == "expression_engine_evaluation_floating_point_not_finite"),
             "{source} should reject a non-finite result"
         );
     }
@@ -2428,7 +2784,10 @@ mod tests {
 
         assert!(result.is_empty());
         assert_eq!(errors.len(), 1);
-        assert!(errors[0].to_string().contains("Integer overflow."));
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_integer_overflow"
+        );
     }
 
     #[test]
@@ -2544,10 +2903,9 @@ mod tests {
 
         assert!(result.is_empty());
         assert_eq!(errors.len(), 1);
-        assert!(
-            errors[0]
-                .to_string()
-                .contains("Cannot convert a unitless value to a unit")
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_unit_conversion_failed"
         );
     }
 
@@ -2820,16 +3178,21 @@ mod tests {
     }
 
     /// A helper that sums numeric arguments (Integer or Float) into a Float.
-    fn sum_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+    fn sum_function(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
         let mut total = 0.0;
         for arg in args {
             match arg {
                 ComputedItem::Float(v) => total.add_assign(v),
                 ComputedItem::Integer(v) => total.add_assign(*v as f64),
                 other => {
-                    return Err(ExpressionError::new(
-                        ExpressionCategory::Evaluation,
-                        format!("sum() expects numeric arguments, got {other:?}"),
+                    return Err(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_sum_requires_numeric_arguments".into(),
+                        [("actual".into(), format!("{other:?}").into())]
+                            .into_iter()
+                            .collect(),
+                        None,
+                        None,
                     ));
                 }
             }
@@ -2838,7 +3201,7 @@ mod tests {
     }
 
     /// A function with no arguments that always returns the float value of `42.0`.
-    fn constant_function(_args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+    fn constant_function(_args: &[ComputedItem]) -> Result<ComputedItem, Message> {
         Ok(ComputedItem::Float(42.0))
     }
 
@@ -2941,9 +3304,18 @@ mod tests {
         let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
         assert!(result.is_empty());
         assert_eq!(errors.len(), 1);
-        let message = errors[0].to_string();
-        assert!(message.contains("[Evaluation]"));
-        assert!(message.contains("Function 'undefined' is not defined."));
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_function_not_defined"
+        );
+        assert_eq!(
+            errors[0]
+                .translate_data()
+                .message_params()
+                .get("function")
+                .map(ShareableString::as_str),
+            Some("undefined")
+        );
     }
 
     use datastore::definition::TableDefinition;
@@ -3096,7 +3468,18 @@ mod tests {
         let (_result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 1);
-        assert!(errors[0].to_string().contains("missing"));
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_variable_not_found"
+        );
+        assert_eq!(
+            errors[0]
+                .translate_data()
+                .message_params()
+                .get("variable")
+                .map(ShareableString::as_str),
+            Some("missing")
+        );
     }
 
     #[test]
@@ -3116,7 +3499,18 @@ mod tests {
         let input_data = BTreeMap::from([("t".into(), table_input_data)]);
         let (_result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 1);
-        assert!(errors[0].to_string().contains("not_a_table"));
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_expected_table_parameter"
+        );
+        assert_eq!(
+            errors[0]
+                .translate_data()
+                .message_params()
+                .get("parameter")
+                .map(ShareableString::as_str),
+            Some("not_a_table")
+        );
     }
 
     #[test]
@@ -3150,7 +3544,10 @@ mod tests {
 
         let (_, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 1);
-        assert!(errors[0].to_string().contains("Parameter 'table' references a table with 3 columns, but the current table expects 2 columns."));
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_table_column_count_mismatch"
+        );
     }
 
     #[test]
@@ -3196,14 +3593,17 @@ mod tests {
 
         let (_, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert_eq!(errors.len(), 3);
-        assert!(errors[0].to_string().contains(
-            "Value 6.1 in column 'column 2' is less than the minimum allowed value of 10."
-        ));
-        assert!(errors[1].to_string().contains(
-            "Value 8.2 in column 'column 1' is greater than the maximum allowed value of 5."
-        ));
-        assert!(errors[2].to_string().contains(
-            "Value 9 in column 'column 2' is less than the minimum allowed value of 10."
-        ));
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_table_value_below_minimum"
+        );
+        assert_eq!(
+            message_key(&errors[1]),
+            "expression_engine_evaluation_table_value_above_maximum"
+        );
+        assert_eq!(
+            message_key(&errors[2]),
+            "expression_engine_evaluation_table_value_below_minimum"
+        );
     }
 }

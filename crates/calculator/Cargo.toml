@@ -13,6 +13,7 @@ egui = "0.36.1"
 
 datastore.workspace = true
 expression_engine.workspace = true
+translation.workspace = true
 
 [lints]
 workspace = true

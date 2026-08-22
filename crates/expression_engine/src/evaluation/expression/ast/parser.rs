@@ -1,5 +1,6 @@
+use crate::evaluation::create_error_message;
 use crate::evaluation::expression::ast::lexer::{Lexer, LexerToken};
-use crate::{ExpressionCategory, ExpressionError};
+use message::message::{Message, MessageCategory};
 use message::span::{Span, SpanSet};
 use shareable_string::ShareableString;
 use std::fmt;
@@ -49,7 +50,7 @@ pub(crate) struct Parser {
 impl Parser {
     /// Creates a new `Parser` by parsing the expression from the given `Lexer`.
     #[hotpath::measure]
-    pub(crate) fn new(lexer: &Lexer) -> Result<Parser, ExpressionError> {
+    pub(crate) fn new(lexer: &Lexer) -> Result<Parser, Message> {
         let mut lexer = lexer.clone();
         let source = lexer.source().clone();
         let result = Self::expr_bp(&mut lexer, 0)?;
@@ -65,14 +66,14 @@ impl Parser {
             | LexerToken::Text(..)) => {
                 let index_set = Self::token_index_set(&t);
 
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    format!(
-                        "Invalid expression: expected end of input, found {}",
-                        Self::describe_token(&t),
-                    ),
-                    source,
-                    index_set,
+                Err(create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_parser_expected_end_of_input".into(),
+                    [("token".into(), Self::describe_token(&t).into())]
+                        .into_iter()
+                        .collect(),
+                    Some(source),
+                    Some(index_set),
                 ))
             }
         }
@@ -97,7 +98,7 @@ impl Parser {
     ///
     /// Returns an error on unexpected tokens or empty input.
     #[hotpath::measure]
-    fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, ExpressionError> {
+    fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, Message> {
         let mut lhs = match lexer.next() {
             LexerToken::Identifier(index, value) => ParserToken::Identifier(index, value),
             LexerToken::Text(index, value) => ParserToken::Text(index, value),
@@ -114,14 +115,17 @@ impl Parser {
             }
             LexerToken::EndOfInput => {
                 let index = Span::new(lexer.source().as_str().len(), 0);
-                return Err(ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    format!(
-                        "Invalid expression: expected an identifier, a number, or a prefix operator, found {}",
-                        Self::describe_token(&LexerToken::EndOfInput)
-                    ),
-                    lexer.source(),
-                    SpanSet::from_span(index),
+                return Err(create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_parser_expected_expression".into(),
+                    [(
+                        "token".into(),
+                        Self::describe_token(&LexerToken::EndOfInput).into(),
+                    )]
+                    .into_iter()
+                    .collect(),
+                    Some(lexer.source().clone()),
+                    Some(SpanSet::from_span(index)),
                 ));
             }
         };
@@ -131,36 +135,45 @@ impl Parser {
                 LexerToken::EndOfInput => break,
                 LexerToken::Operator(index, value) => (index, value),
                 LexerToken::Identifier(index, value) => {
-                    return Err(ExpressionError::new_complex(
-                        ExpressionCategory::Parse,
-                        format!(
-                            "Invalid expression: expected an operator, found {}",
-                            Self::describe_token(&LexerToken::Identifier(index, value))
-                        ),
-                        lexer.source(),
-                        SpanSet::from_span(index),
+                    return Err(create_error_message(
+                        MessageCategory::ExpressionParsing,
+                        "expression_engine_parser_expected_operator".into(),
+                        [(
+                            "token".into(),
+                            Self::describe_token(&LexerToken::Identifier(index, value)).into(),
+                        )]
+                        .into_iter()
+                        .collect(),
+                        Some(lexer.source().clone()),
+                        Some(SpanSet::from_span(index)),
                     ));
                 }
                 LexerToken::Numeric(index, value) => {
-                    return Err(ExpressionError::new_complex(
-                        ExpressionCategory::Parse,
-                        format!(
-                            "Invalid expression: expected an operator, found {}",
-                            Self::describe_token(&LexerToken::Numeric(index, value))
-                        ),
-                        lexer.source(),
-                        SpanSet::from_span(index),
+                    return Err(create_error_message(
+                        MessageCategory::ExpressionParsing,
+                        "expression_engine_parser_expected_operator".into(),
+                        [(
+                            "token".into(),
+                            Self::describe_token(&LexerToken::Numeric(index, value)).into(),
+                        )]
+                        .into_iter()
+                        .collect(),
+                        Some(lexer.source().clone()),
+                        Some(SpanSet::from_span(index)),
                     ));
                 }
                 LexerToken::Text(index, value) => {
-                    return Err(ExpressionError::new_complex(
-                        ExpressionCategory::Parse,
-                        format!(
-                            "Invalid expression: expected an operator, found {}",
-                            Self::describe_token(&LexerToken::Text(index, value))
-                        ),
-                        lexer.source(),
-                        SpanSet::from_span(index),
+                    return Err(create_error_message(
+                        MessageCategory::ExpressionParsing,
+                        "expression_engine_parser_expected_operator".into(),
+                        [(
+                            "token".into(),
+                            Self::describe_token(&LexerToken::Text(index, value)).into(),
+                        )]
+                        .into_iter()
+                        .collect(),
+                        Some(lexer.source().clone()),
+                        Some(SpanSet::from_span(index)),
                     ));
                 }
             };
@@ -179,33 +192,30 @@ impl Parser {
                     let (name_index, name) = match lhs {
                         ParserToken::Identifier(index, name) => (index, name),
                         ParserToken::Numeric(_, name) => {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Parse,
-                                format!(
-                                    "Invalid expression: function calls require a function name, found number {name}"
-                                ),
-                                lexer.source(),
-                                SpanSet::from_span(op_index),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionParsing,
+                                "expression_engine_parser_function_name_required_number".into(),
+                                [("value".into(), name.into())].into_iter().collect(),
+                                Some(lexer.source().clone()),
+                                Some(SpanSet::from_span(op_index)),
                             ));
                         }
                         ParserToken::Text(index, name) => {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Parse,
-                                format!(
-                                    "Invalid expression: function calls require a function name, found \"{name}\""
-                                ),
-                                lexer.source(),
-                                SpanSet::from_span(index),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionParsing,
+                                "expression_engine_parser_function_name_required_text".into(),
+                                [("value".into(), name.into())].into_iter().collect(),
+                                Some(lexer.source().clone()),
+                                Some(SpanSet::from_span(index)),
                             ));
                         }
                         ParserToken::Operator(_, name, ..) => {
-                            return Err(ExpressionError::new_complex(
-                                ExpressionCategory::Parse,
-                                format!(
-                                    "Invalid expression: function calls require a function name, found expression starting with operator {name}"
-                                ),
-                                lexer.source(),
-                                SpanSet::from_span(op_index),
+                            return Err(create_error_message(
+                                MessageCategory::ExpressionParsing,
+                                "expression_engine_parser_function_name_required_expression".into(),
+                                [("operator".into(), name.into())].into_iter().collect(),
+                                Some(lexer.source().clone()),
+                                Some(SpanSet::from_span(op_index)),
                             ));
                         }
                     };
@@ -236,7 +246,7 @@ impl Parser {
 
     /// Parses a comma-separated list of call arguments, up to (but not including) the closing `)`.
     #[hotpath::measure]
-    fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, ExpressionError> {
+    fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Message> {
         let mut arguments = Vec::new();
         if let LexerToken::Operator(_index, value) = lexer.peek() {
             if value == ")" {
@@ -265,7 +275,7 @@ impl Parser {
 
     /// Consumes the next token from `lexer`, returning an error if it isn't the expected operator.
     #[hotpath::measure]
-    fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), ExpressionError> {
+    fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), Message> {
         match lexer.next() {
             LexerToken::Operator(_index, value) if value == expected => Ok(()),
             t @ (LexerToken::Identifier(..)
@@ -274,15 +284,17 @@ impl Parser {
             | LexerToken::Text(..)
             | LexerToken::EndOfInput) => {
                 let index_set = Self::token_index_set(&t);
-                Err(ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    format!(
-                        "Invalid expression: expected operator '{}', found {}",
-                        expected,
-                        Self::describe_token(&t)
-                    ),
-                    lexer.source(),
-                    index_set,
+                Err(create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_parser_expected_specific_operator".into(),
+                    [
+                        ("expected".into(), expected.into()),
+                        ("token".into(), Self::describe_token(&t).into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(lexer.source().clone()),
+                    Some(index_set),
                 ))
             }
         }
@@ -324,14 +336,15 @@ impl Parser {
         op: &str,
         index: Span,
         source: &ShareableString,
-    ) -> Result<((), u8), ExpressionError> {
+    ) -> Result<((), u8), Message> {
         match op {
             "+" | "-" | "!" => Ok(((), 19)),
-            _ => Err(ExpressionError::new_complex(
-                ExpressionCategory::Parse,
-                format!("Invalid prefix operator in expression: '{op}'"),
-                source,
-                SpanSet::from_span(index),
+            _ => Err(create_error_message(
+                MessageCategory::ExpressionParsing,
+                "expression_engine_parser_invalid_prefix_operator".into(),
+                [("operator".into(), op.into())].into_iter().collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(index)),
             )),
         }
     }
@@ -369,8 +382,9 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use message::message::MessageLevel;
 
-    fn expr(s: &str) -> Result<Parser, ExpressionError> {
+    fn expr(s: &str) -> Result<Parser, Message> {
         let lexer = Lexer::new(s)?;
         Parser::new(&lexer)
     }
@@ -570,27 +584,33 @@ mod tests {
         );
     }
 
-    /// Asserts that parsing `s` fails with an `ExpressionCategory::Parse` error whose message
-    /// contains `expected_message`.
-    fn assert_parse_error(s: &str, expected_message: &str) {
-        let err = expr(s).unwrap_err();
-        let err = err.to_string();
-        assert!(
-            err.starts_with("[Parse]"),
-            "expected a Parse error for input {s:?}, got: {err}"
+    /// Asserts that the given `message` is a parse error with the expected message ID and parameters.
+    fn assert_parse_error(
+        message: &Message,
+        expected_message_id: &str,
+        parameters: Vec<(&str, &str)>,
+    ) {
+        assert_eq!(message.category(), MessageCategory::ExpressionParsing);
+        assert_eq!(message.level(), MessageLevel::Error);
+        assert_eq!(
+            message.translate_data().message_key().as_str(),
+            expected_message_id
         );
-        assert!(
-            err.contains(expected_message),
-            "expected error message for input {s:?} to contain {expected_message:?}, got: {err}"
-        );
+        let message_params = message.translate_data().message_params();
+        assert_eq!(message_params.len(), parameters.len());
+        for (key, value) in parameters {
+            let shared_value = ShareableString::from(value);
+            assert_eq!(message_params.get(key), Some(&shared_value));
+        }
     }
 
     #[test]
     fn missing_operand_at_start_of_expression() {
         // Empty input: an operand is expected but only EndOfInput is available.
         assert_parse_error(
-            "",
-            "expected an identifier, a number, or a prefix operator, found end of input",
+            &expr("").unwrap_err(),
+            "expression_engine_parser_expected_expression",
+            vec![("token", "end of input")],
         );
     }
 
@@ -598,35 +618,60 @@ mod tests {
     fn missing_operand_after_infix_operator() {
         // After consuming `1` and `+`, the right-hand side is missing.
         assert_parse_error(
-            "1+",
-            "expected an identifier, a number, or a prefix operator, found end of input",
+            &expr("1+").unwrap_err(),
+            "expression_engine_parser_expected_expression",
+            vec![("token", "end of input")],
         );
     }
 
     #[test]
     fn missing_operator_between_atoms() {
         // Two atoms in a row with no operator between them.
-        assert_parse_error("1 2", "expected an operator, found number '2'");
+        assert_parse_error(
+            &expr("1 2").unwrap_err(),
+            "expression_engine_parser_expected_operator",
+            vec![("token", "number '2'")],
+        );
     }
 
     #[test]
     fn unclosed_parenthesis() {
         // Missing closing `)`, so `expect_operator` finds EndOfInput instead.
-        assert_parse_error("(1", "expected operator ')', found end of input");
+        assert_parse_error(
+            &expr("(1").unwrap_err(),
+            "expression_engine_parser_expected_specific_operator",
+            vec![("expected", ")"), ("token", "end of input")],
+        );
     }
 
     #[test]
     fn mismatched_closing_bracket() {
         // Closing token doesn't match the expected `)`.
-        assert_parse_error("(1]", "expected operator ')', found operator ']'");
+        assert_parse_error(
+            &expr("(1]").unwrap_err(),
+            "expression_engine_parser_expected_specific_operator",
+            vec![("expected", ")"), ("token", "operator ']'")],
+        );
     }
 
     #[test]
     fn bad_prefix_operator() {
         // `*`, `/`, and `^` are not valid prefix operators.
-        assert_parse_error("*2", "Invalid prefix operator in expression: '*'");
-        assert_parse_error("/2", "Invalid prefix operator in expression: '/'");
-        assert_parse_error("^2", "Invalid prefix operator in expression: '^'");
+        assert_parse_error(
+            &expr("*2").unwrap_err(),
+            "expression_engine_parser_invalid_prefix_operator",
+            vec![("operator", "*")],
+        );
+        assert_parse_error(
+            &expr("/2").unwrap_err(),
+            "expression_engine_parser_invalid_prefix_operator",
+            vec![("operator", "/")],
+        );
+        assert_parse_error(
+            &expr("^2").unwrap_err(),
+            "expression_engine_parser_invalid_prefix_operator",
+            vec![("operator", "^")],
+        );
     }
 
     #[test]
@@ -637,12 +682,14 @@ mod tests {
 
         // `!` is not a valid postfix operator, so trailing `!` is leftover, invalid input.
         assert_parse_error(
-            "a!",
-            "Invalid expression: expected end of input, found operator '!'",
+            &expr("a!").unwrap_err(),
+            "expression_engine_parser_expected_end_of_input",
+            vec![("token", "operator '!'")],
         );
         assert_parse_error(
-            "9!",
-            "Invalid expression: expected end of input, found operator '!'",
+            &expr("9!").unwrap_err(),
+            "expression_engine_parser_expected_end_of_input",
+            vec![("token", "operator '!'")],
         );
     }
 }

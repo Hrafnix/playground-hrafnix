@@ -1,6 +1,30 @@
 use datastore::prelude::*;
 use expression_engine::prelude::*;
+use message::message::Message;
 use shareable_string::ShareableString;
+
+fn assert_message_parameter(message: &Message, key: &str, parameter: &str, value: &str) {
+    assert_eq!(message.translate_data().message_key().as_str(), key);
+    assert_eq!(
+        message
+            .translate_data()
+            .message_params()
+            .get(parameter)
+            .map(ShareableString::as_str),
+        Some(value)
+    );
+}
+
+fn has_message_parameter(messages: &[Message], key: &str, parameter: &str, value: &str) -> bool {
+    messages.iter().any(|message| {
+        message.translate_data().message_key() == key
+            && message
+                .translate_data()
+                .message_params()
+                .get(parameter)
+                .is_some_and(|actual| actual == value)
+    })
+}
 
 #[test]
 fn no_missing_requirements_when_everything_is_present() {
@@ -49,12 +73,11 @@ fn reports_missing_global() {
         .expect_err("missing global should be reported");
 
     assert_eq!(errors.len(), 1);
-    assert!(
-        errors[0]
-            .to_string()
-            .contains("Missing required global: g_missing"),
-        "unexpected error message: {}",
-        errors[0]
+    assert_message_parameter(
+        &errors[0],
+        "expression_engine_evaluation_missing_required_global",
+        "global",
+        "g_missing",
     );
 }
 
@@ -69,12 +92,11 @@ fn reports_missing_parameter_when_none_supplied() {
         .expect_err("missing parameter should be reported");
 
     assert_eq!(errors.len(), 1);
-    assert!(
-        errors[0]
-            .to_string()
-            .contains("Missing required parameter: p_missing"),
-        "unexpected error message: {}",
-        errors[0]
+    assert_message_parameter(
+        &errors[0],
+        "expression_engine_evaluation_missing_required_parameter",
+        "parameter",
+        "p_missing",
     );
 }
 
@@ -89,12 +111,11 @@ fn reports_missing_variable_when_none_supplied() {
         .expect_err("missing variable should be reported");
 
     assert_eq!(errors.len(), 1);
-    assert!(
-        errors[0]
-            .to_string()
-            .contains("Missing required variable: v_missing"),
-        "unexpected error message: {}",
-        errors[0]
+    assert_message_parameter(
+        &errors[0],
+        "expression_engine_evaluation_missing_required_variable",
+        "variable",
+        "v_missing",
     );
 }
 
@@ -109,12 +130,11 @@ fn reports_missing_function() {
         .expect_err("missing function should be reported");
 
     assert_eq!(errors.len(), 1);
-    assert!(
-        errors[0]
-            .to_string()
-            .contains("Missing required function: not_a_real_function"),
-        "unexpected error message: {}",
-        errors[0]
+    assert_message_parameter(
+        &errors[0],
+        "expression_engine_evaluation_missing_required_function",
+        "function",
+        "not_a_real_function",
     );
 }
 
@@ -129,27 +149,30 @@ fn reports_all_missing_requirement_kinds_at_once() {
         .check_missing_requirements(&None, &None, &None, &expression)
         .expect_err("all missing requirement kinds should be reported");
 
-    let messages: Vec<String> = errors.iter().map(ToString::to_string).collect();
-    assert!(
-        messages
-            .iter()
-            .any(|m| m.contains("Missing required global: g_missing"))
-    );
-    assert!(
-        messages
-            .iter()
-            .any(|m| m.contains("Missing required parameter: p_missing"))
-    );
-    assert!(
-        messages
-            .iter()
-            .any(|m| m.contains("Missing required variable: v_missing"))
-    );
-    assert!(
-        messages
-            .iter()
-            .any(|m| m.contains("Missing required function: not_a_real_function"))
-    );
+    assert!(has_message_parameter(
+        &errors,
+        "expression_engine_evaluation_missing_required_global",
+        "global",
+        "g_missing"
+    ));
+    assert!(has_message_parameter(
+        &errors,
+        "expression_engine_evaluation_missing_required_parameter",
+        "parameter",
+        "p_missing"
+    ));
+    assert!(has_message_parameter(
+        &errors,
+        "expression_engine_evaluation_missing_required_variable",
+        "variable",
+        "v_missing"
+    ));
+    assert!(has_message_parameter(
+        &errors,
+        "expression_engine_evaluation_missing_required_function",
+        "function",
+        "not_a_real_function"
+    ));
 }
 
 #[test]

@@ -10,7 +10,11 @@ use expression_engine::ParameterObjectInputData;
 use expression_engine::evaluation::engine::ExpressionEngine;
 
 /// Evaluates the given `expression` string using `engine` and returns the result as a displayable string.
-fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
+fn evaluate_expression(
+    engine: &ExpressionEngine,
+    translations: &SharedStringTranslationMap,
+    expression: &str,
+) -> String {
     let definition = ParameterObjectDefinition::builder("Calculator Input")
         .with(
             parameter_key!("p_expression"),
@@ -22,9 +26,15 @@ fn evaluate_expression(engine: &ExpressionEngine, expression: &str) -> String {
 
     engine.evaluate_parameters(&input_data).map_or_else(
         |err| {
-            let err_str = err
-                .first()
-                .map_or_else(|| "Unknown error".to_string(), ToString::to_string);
+            let err_str = err.first().map_or_else(
+                || "Unknown error".to_string(),
+                |message| {
+                    message
+                        .translated_message(translations, "en")
+                        .unwrap_or_else(|| message.translate_data().message_key().clone())
+                        .to_string()
+                },
+            );
 
             format!("Error: {err_str}")
         },
@@ -46,6 +56,8 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
 
+    let store = SharedStringStore::new();
+    let translations = translation::generate_translation_map(&store);
     let engine = ExpressionEngine::new();
 
     // Our application state:
@@ -62,7 +74,7 @@ fn main() -> eframe::Result {
             });
 
             if ui.button("Evaluate").clicked() || ui.input(|i| i.key_released(egui::Key::Enter)) {
-                result = evaluate_expression(&engine, &expression);
+                result = evaluate_expression(&engine, &translations, &expression);
             }
 
             ui.label(egui::RichText::new(&result).monospace());
