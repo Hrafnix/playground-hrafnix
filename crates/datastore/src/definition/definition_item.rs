@@ -42,91 +42,91 @@ pub enum ItemDefinitionType {
 }
 
 impl From<StringDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: StringDefinition) -> Self {
         ItemDefinitionType::String(definition)
     }
 }
 
 impl From<BooleanDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: BooleanDefinition) -> Self {
         ItemDefinitionType::Boolean(definition)
     }
 }
 
 impl From<ChoiceDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: ChoiceDefinition) -> Self {
         ItemDefinitionType::Choice(definition)
     }
 }
 
 impl From<FileDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: FileDefinition) -> Self {
         ItemDefinitionType::File(definition)
     }
 }
 
 impl From<IntegerDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: IntegerDefinition) -> Self {
         ItemDefinitionType::Integer(definition)
     }
 }
 
 impl From<MapDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: MapDefinition) -> Self {
         ItemDefinitionType::Map(definition)
     }
 }
 
 impl From<NumberDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: NumberDefinition) -> Self {
         ItemDefinitionType::Number(definition)
     }
 }
 
 impl From<NumberWithUnitsDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: NumberWithUnitsDefinition) -> Self {
         ItemDefinitionType::NumberWithUnits(definition)
     }
 }
 
 impl From<TableDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: TableDefinition) -> Self {
         ItemDefinitionType::Table(definition)
     }
 }
 
 impl From<TableWithUnitsDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: TableWithUnitsDefinition) -> Self {
         ItemDefinitionType::TableWithUnits(definition)
     }
 }
 
 impl From<UnitDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: UnitDefinition) -> Self {
         ItemDefinitionType::Unit(definition)
     }
 }
 
 impl From<TabDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: TabDefinition) -> Self {
         ItemDefinitionType::Tab(definition)
     }
 }
 
 impl From<SeparatorDefinition> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: SeparatorDefinition) -> Self {
         ItemDefinitionType::Separator(definition)
     }
@@ -135,7 +135,7 @@ impl From<SeparatorDefinition> for ItemDefinitionType {
 impl ItemDefinitionType {
     /// Returns a new `ItemDefinitionType` with strings laundered through the provided store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             Self::Boolean(def) => Self::Boolean(def.launder(store)),
@@ -157,21 +157,21 @@ impl ItemDefinitionType {
 }
 
 impl PartialEq<&ItemDefinitionType> for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&ItemDefinitionType) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<ItemDefinitionType> for &ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &ItemDefinitionType) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for ItemDefinitionType {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

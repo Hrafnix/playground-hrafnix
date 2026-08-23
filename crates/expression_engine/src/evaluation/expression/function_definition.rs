@@ -55,7 +55,7 @@ pub struct FunctionDefinition {
 
 impl FunctionDefinition {
     /// Creates a new `FunctionDefinition` wrapping the provided callable.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new<F>(
         name: impl Into<StoreKey>,
         description: impl Into<ShareableString>,
@@ -92,14 +92,14 @@ impl FunctionDefinition {
     }
 
     /// Invokes the function with the provided pre-evaluated arguments.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn call(&self, arguments: &[ComputedItem]) -> Result<ComputedItem, Message> {
         (self.function)(arguments)
     }
 }
 
 impl std::fmt::Debug for FunctionDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FunctionDefinition")
             .field("name", &self.name)
@@ -111,7 +111,7 @@ impl std::fmt::Debug for FunctionDefinition {
 }
 
 impl Clone for FunctionDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
@@ -123,7 +123,7 @@ impl Clone for FunctionDefinition {
 }
 
 impl PartialEq for FunctionDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &Self) -> bool {
         // The closure itself is opaque, so identity is established by the
         // function's name and description.
@@ -148,7 +148,7 @@ impl FunctionDefinitions {
 
     /// Registers a function definition, replacing any existing definition with
     /// the same name.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn insert(&mut self, definition: FunctionDefinition) {
         self.definitions.insert(definition.name.clone(), definition);
     }
@@ -158,20 +158,20 @@ impl FunctionDefinitions {
     /// `ShareableString` implements `Borrow<str>`, so a `&str` lookup avoids
     /// constructing a temporary `ShareableString` for the key.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get(&self, name: &str) -> Option<&FunctionDefinition> {
         self.definitions.get(name)
     }
 
     /// Returns a new `FunctionDefinitions` with the provided function definition added.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn with(mut self, definition: FunctionDefinition) -> Self {
         self.insert(definition);
         self
     }
 
     /// Returns an iterator over the names of all registered functions.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn keys(&self) -> impl Iterator<Item = &ShareableString> {
         self.definitions.keys()
     }

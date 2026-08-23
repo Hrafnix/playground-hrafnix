@@ -21,7 +21,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use units::{UnitId, conversion::convert};
 
 /// Rejects floating-point values that cannot be safely represented in computed output.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn finite_float(value: f64, source: &ShareableString, span: Span) -> Result<f64, Message> {
     if value.is_finite() {
         Ok(value)
@@ -37,7 +37,7 @@ fn finite_float(value: f64, source: &ShareableString, span: Span) -> Result<f64,
 }
 
 /// Rejects computed values containing non-finite floating-point data.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn ensure_finite_computed_item(
     item: ComputedItem,
     source: &ShareableString,
@@ -73,7 +73,7 @@ fn ensure_finite_computed_item(
 }
 
 /// Looks up `variable_name` in `computed_data`, returning its value or an evaluation error.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn lookup_variable(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     variable_name: &str,
@@ -96,7 +96,7 @@ fn lookup_variable(
 }
 
 /// Creates a computed float with unit metadata only when the unit is concrete.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
     if unit == UnitId::None {
         ComputedItem::Float(value)
@@ -106,7 +106,7 @@ fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
 }
 
 /// Returns whether an expression is a float literal, optionally prefixed with a single negation.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn is_signed_float_literal(expression: &Expression) -> bool {
     match expression {
         Expression::Literal(_, Literal::Float(_)) => true,
@@ -124,7 +124,7 @@ fn is_signed_float_literal(expression: &Expression) -> bool {
 }
 
 /// Applies a unary `operator` to `operand_value`, returning the result or an error.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_unary_operation(
     operator: Operators,
     operand_value: ComputedItem,
@@ -163,7 +163,7 @@ fn evaluate_unary_operation(
 }
 
 /// Applies a binary `operator` to two boolean operands.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_boolean_binary_operation(
     operator: &Operators,
     left_value: bool,
@@ -203,7 +203,7 @@ fn evaluate_boolean_binary_operation(
 }
 
 /// Applies a binary `operator` to two `f64` operands.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_float_binary_operation(
     operator: &Operators,
     left_value: f64,
@@ -291,7 +291,7 @@ fn evaluate_float_binary_operation(
 }
 
 /// Applies a binary `operator` to two `i64` operands, using checked arithmetic to detect overflow.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_integer_binary_operation(
     operator: &Operators,
     left_value: i64,
@@ -437,7 +437,7 @@ fn evaluate_integer_binary_operation(
 }
 
 /// Applies a binary `operator` to two string operands (equality and inequality only).
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_string_binary_operation(
     operator: &Operators,
     left_value: &ShareableString,
@@ -478,7 +478,7 @@ fn evaluate_string_binary_operation(
 
 /// Looks up `function_name` in `functions`, evaluates each argument, validates the argument count,
 /// and calls the function, returning its result.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_function_call_operation(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     function_name: &str,
@@ -598,7 +598,7 @@ fn evaluate_function_call_operation(
 }
 
 /// Evaluates a subscript-index expression (e.g. `table[0][col]`), returning the referenced cell value.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_index_operation(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     name: &str,
@@ -829,7 +829,7 @@ fn evaluate_index_operation(
 }
 
 /// Recursively evaluates an [`Expression`] node against `computed_data` and returns the result.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -1096,7 +1096,7 @@ fn evaluate_expression(
 
 /// Validates a bare-identifier choice value (e.g. `option_1`) directly against the choice
 /// definition's list of valid choices, without treating it as a variable reference.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_bare_identifier_choice(
     choice_definition: &datastore::definition::ChoiceDefinition,
     name: &str,
@@ -1120,7 +1120,7 @@ fn evaluate_bare_identifier_choice(
 }
 
 /// Validates that a computed unit value belongs to a unit definition's family.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn validate_unit_value(
     unit_definition: &datastore::definition::UnitDefinition,
     computed: &ComputedItem,
@@ -1188,7 +1188,7 @@ fn validate_unit_value(
 
 /// Evaluates the expression stored in a single [`BasicInputData`] item.
 #[allow(clippy::too_many_lines)]
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_basic_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -1763,7 +1763,7 @@ fn evaluate_basic_expression(
 }
 
 /// Evaluates a number expression and converts float results to the definition's preferred units.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_number_with_units_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -1849,7 +1849,7 @@ fn evaluate_number_with_units_expression(
 }
 
 /// Evaluates all cells in a [`TableInputData`] and returns the resulting rows of `f64` values.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_table_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -2093,7 +2093,7 @@ fn evaluate_table_expression(
 }
 
 /// Evaluates all cells in a [`TableWithUnitsInputData`] and returns the resulting rows of `f64` values.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_table_with_units_expression(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,
@@ -2394,7 +2394,7 @@ fn evaluate_table_with_units_expression(
 
 /// Evaluates the given input data against the provided computed data, returning a new set of computed data
 /// along with any errors encountered during evaluation.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 pub(crate) fn evaluator(
     computed_data: &BTreeMap<ShareableString, ComputedItem>,
     functions: &FunctionDefinitions,

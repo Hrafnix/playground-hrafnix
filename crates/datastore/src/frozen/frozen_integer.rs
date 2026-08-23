@@ -18,7 +18,7 @@ pub struct IntegerFrozen {
 impl IntegerFrozen {
     /// Creates a new `IntegerFrozen` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: IntegerDefinition) -> Self {
         let value = definition.default_value();
 
@@ -33,7 +33,7 @@ impl IntegerFrozen {
 
     /// Creates a new `IntegerFrozen` instance with a specified value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_value(definition: IntegerDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -46,7 +46,7 @@ impl IntegerFrozen {
 
     /// Creates a new `IntegerFrozen` instance from a given `IntegerEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(basic: &IntegerEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value();
@@ -61,13 +61,13 @@ impl IntegerFrozen {
 
     /// Converts the current `IntegerFrozen` instance into an `IntegerEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> IntegerEditable {
         IntegerEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -83,7 +83,7 @@ impl IntegerFrozen {
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -102,21 +102,21 @@ impl IntegerFrozen {
 }
 
 impl PartialEq<&IntegerFrozen> for IntegerFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&IntegerFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<IntegerFrozen> for &IntegerFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &IntegerFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for IntegerFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

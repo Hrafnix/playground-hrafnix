@@ -18,7 +18,7 @@ pub struct BooleanFrozen {
 impl BooleanFrozen {
     /// Creates a new `BooleanFrozen` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: BooleanDefinition) -> Self {
         let value = definition.default_value();
 
@@ -33,7 +33,7 @@ impl BooleanFrozen {
 
     /// Creates a new `BooleanFrozen` instance with a specified value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_value(definition: BooleanDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -46,7 +46,7 @@ impl BooleanFrozen {
 
     /// Creates a new `BooleanFrozen` instance from a given `BooleanEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(basic: &BooleanEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value();
@@ -61,13 +61,13 @@ impl BooleanFrozen {
 
     /// Converts the current `BooleanFrozen` instance into a `BooleanEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> BooleanEditable {
         BooleanEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -83,7 +83,7 @@ impl BooleanFrozen {
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -102,21 +102,21 @@ impl BooleanFrozen {
 }
 
 impl PartialEq<&BooleanFrozen> for BooleanFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&BooleanFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<BooleanFrozen> for &BooleanFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &BooleanFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for BooleanFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

@@ -17,7 +17,7 @@ pub struct SharedStringTranslationMap {
 
 impl SharedStringTranslationMap {
     /// Creates a new `SharedStringTranslationMap` with the given fallback language being "en".
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     #[must_use]
     pub fn new() -> Self {
         let store = SharedStringStore::new();
@@ -31,7 +31,7 @@ impl SharedStringTranslationMap {
     }
 
     /// Creates a new `SharedStringTranslationMap` with the given `SharedStringStore`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_data<L>(store: SharedStringStore, fallback_language: L) -> Self
     where
         L: Into<ShareableString> + AsRef<str>,
@@ -48,7 +48,7 @@ impl SharedStringTranslationMap {
     /// Returns the translation for the given key and language if it exists.
     /// Will use the fallback language if the specified language is not found.
     /// If parameters are provided, they will be used to replace placeholders in the translation.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_translation<K, L>(
         &self,
         key: K,
@@ -90,7 +90,7 @@ impl SharedStringTranslationMap {
     /// Sets the translation for the given key and language.
     ///
     /// The key, language, and translation are automatically laundered into the map's store.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set_translation<K, L, T>(&self, key: K, language: L, translation: T)
     where
         K: Into<ShareableString> + AsRef<str>,
@@ -110,7 +110,7 @@ impl SharedStringTranslationMap {
     /// Sets all translations for a given key.
     ///
     /// The key and all languages/translations in the data map are automatically laundered into the map's store.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set_translation_key<K, K2, V2>(&self, key: K, data: HashMap<K2, V2>)
     where
         K: Into<ShareableString> + AsRef<str>,
@@ -134,7 +134,7 @@ impl SharedStringTranslationMap {
     /// For each key-value pair in the provided map's data, it sets the key and its
     /// respective translations into the current map. The operation launders all keys
     /// and translations into the current map's store.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn insert_translation_map(&mut self, translation_map: &Self) {
         let read_lock = translation_map.data.read();
         for (key, translations) in read_lock.iter() {
@@ -185,7 +185,7 @@ impl TranslateMessage {
 
     /// Translates the message using the given translation map and language.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn translate<L>(
         &self,
         translation_map: &SharedStringTranslationMap,
@@ -199,7 +199,7 @@ impl TranslateMessage {
 
     /// Launders the message key and parameters using the provided `SharedStringStore`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         TranslateMessage {
             message_key: store.launder(&self.message_key),

@@ -17,7 +17,7 @@ pub struct UnitDefinition {
 
 impl UnitDefinition {
     /// Creates a new `UnitDefinition` with the specified choices.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new<S: Into<ShareableString>>(description: S, unit_family: UnitFamilyId) -> Self {
         Self {
             description: description.into(),
@@ -27,7 +27,7 @@ impl UnitDefinition {
     }
 
     /// Creates a new `UnitDefinition` with the specified choices and default value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_default<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
         unit_family: UnitFamilyId,
@@ -47,7 +47,7 @@ impl UnitDefinition {
     }
 
     /// Returns true if the given value is a valid units.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains<S: Into<ShareableString>>(&self, value: S) -> bool {
         let value = value.into();
         self.unit_family
@@ -58,7 +58,7 @@ impl UnitDefinition {
 
     /// Returns a vector of keys `UnitKey` for the units.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn keys(&self) -> Vec<UnitKey> {
         self.unit_family
             .unit_ids()
@@ -69,14 +69,14 @@ impl UnitDefinition {
 
     /// Returns a vector of Unit IDs for the units.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn ids(&self) -> Vec<UnitId> {
         self.unit_family.unit_ids().to_vec()
     }
 
     /// Returns a vector of descriptions for the units.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn descriptions(&self) -> Vec<ShareableString> {
         self.unit_family
             .unit_ids()
@@ -87,7 +87,7 @@ impl UnitDefinition {
 
     /// Returns a new `UnitDefinition` with strings laundered through the provided store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -98,7 +98,7 @@ impl UnitDefinition {
 
     /// Returns the description of the parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -111,7 +111,7 @@ impl UnitDefinition {
 
     /// Returns the default value of the parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
@@ -124,21 +124,21 @@ impl UnitDefinition {
 }
 
 impl PartialEq<&UnitDefinition> for UnitDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&UnitDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<UnitDefinition> for &UnitDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &UnitDefinition) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for UnitDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

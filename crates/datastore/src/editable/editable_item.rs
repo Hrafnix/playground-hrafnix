@@ -44,7 +44,7 @@ pub enum ItemEditable {
 impl ItemEditable {
     /// Creates a new `ItemEditable` instance from a given `ItemFrozen` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_frozen(static_item: &ItemFrozen) -> Self {
         match static_item {
             ItemFrozen::Boolean(boolean) => ItemEditable::Boolean(BooleanEditable::new(boolean)),
@@ -72,7 +72,7 @@ impl ItemEditable {
 
     /// Converts the current `ItemEditable` instance into an `ItemFrozen` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn freeze(&self) -> ItemFrozen {
         match self {
             ItemEditable::Boolean(boolean) => ItemFrozen::Boolean(boolean.freeze()),
@@ -98,7 +98,7 @@ impl ItemEditable {
 
     /// Returns the parameter definition.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn definition(&self) -> ItemDefinitionType {
         match self {
             ItemEditable::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
@@ -166,7 +166,7 @@ impl ItemEditable {
 
     /// Returns the choice value if this parameter is a choice parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_choice(&self) -> Option<ChoiceEditable> {
         match self {
             Self::Choice(c) => Some(c.clone()),
@@ -503,7 +503,7 @@ impl ItemEditable {
 }
 
 impl TreePrint for ItemEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

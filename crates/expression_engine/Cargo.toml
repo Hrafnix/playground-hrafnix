@@ -8,11 +8,11 @@ publish.workspace = true
 
 [features]
 default = []
-hotpath = ["hotpath/hotpath"]
-hotpath-alloc = ["hotpath/hotpath-alloc"]
+hotpath = ["dep:hotpath", "hotpath/hotpath"]
+hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
 
 [dependencies]
-hotpath.workspace = true
+hotpath = { workspace = true, optional = true }
 
 datastore.workspace = true
 keys.workspace = true

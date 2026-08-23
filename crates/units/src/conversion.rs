@@ -87,7 +87,7 @@ const fn convert_to_base(unit: UnitId) -> f64 {
 /// # Errors
 ///
 /// Returns an error if the units are not compatible for conversion (i.e., they belong to different unit families).
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, String> {
     if !value.is_finite() {
         return Err("Unit conversion input must be finite".into());

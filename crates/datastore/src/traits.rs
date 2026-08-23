@@ -19,14 +19,14 @@ pub trait TreePrint {
 
     /// Helper to get the correct prefix for the next level.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn child_prefix(prefix: &str, last: bool) -> String {
         format!("{}{}", prefix, if last { "    " } else { "│   " })
     }
 
     /// Helper to get the branch character.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn branch_char(last: bool) -> &'static str {
         if last { "└── " } else { "├── " }
     }

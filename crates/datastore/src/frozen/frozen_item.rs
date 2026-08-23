@@ -43,7 +43,7 @@ pub enum ItemFrozen {
 impl ItemFrozen {
     /// Returns the parameter definition.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn definition(&self) -> ItemDefinitionType {
         match self {
             ItemFrozen::Boolean(b) => ItemDefinitionType::Boolean(b.definition().clone()),
@@ -90,7 +90,7 @@ impl ItemFrozen {
 
     /// Returns the choice value if this parameter is a choice parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_choice(&self) -> Option<ChoiceFrozen> {
         match self {
             Self::Choice(c) => Some(c.clone()),
@@ -112,7 +112,7 @@ impl ItemFrozen {
 
     /// Returns the unit value if this parameter is a unit parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_unit(&self) -> Option<UnitFrozen> {
         match self {
             Self::Unit(unit) => Some(unit.clone()),
@@ -239,7 +239,7 @@ impl ItemFrozen {
 }
 
 impl TreePrint for ItemFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

@@ -19,7 +19,7 @@ pub struct ParameterObjectEditable {
 impl ParameterObjectEditable {
     /// Creates a new `ParameterObjectEditable` from a `ParameterObjectFrozen`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_frozen(frozen_object: &ParameterObjectFrozen) -> Self {
         Self {
             definition: frozen_object.definition().clone(),
@@ -32,25 +32,25 @@ impl ParameterObjectEditable {
 
     /// Creates a new `ParameterObjectFrozen` from this `ParameterObjectEditable`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn freeze(&self) -> ParameterObjectFrozen {
         ParameterObjectFrozen::new_from_editable(self)
     }
 
     /// Returns a reference to the parameter with the specified key if it exists.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemEditable> {
         self.items.get(&key.into())
     }
 
     /// Returns a mutable reference to the parameter with the specified key if it exists.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut ItemEditable> {
         self.items.get_mut(key.as_ref())
     }
 
     /// Returns an iterator over the key-parameter pairs in the object.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemEditable)> {
         self.items.iter()
     }
@@ -64,34 +64,34 @@ impl ParameterObjectEditable {
 
 impl ObjectEditable for ParameterObjectEditable {
     /// Returns a reference to the parameter with the specified key if it exists.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&ItemEditable> {
         self.get(key)
     }
 
     /// Returns a mutable reference to the parameter with the specified key if it exists.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn get_mut<S: AsRef<str>>(&mut self, key: S) -> Option<&mut ItemEditable> {
         self.get_mut(key)
     }
 }
 
 impl PartialEq<&ParameterObjectEditable> for ParameterObjectEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&ParameterObjectEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<ParameterObjectEditable> for &ParameterObjectEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &ParameterObjectEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for ParameterObjectEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -119,7 +119,7 @@ impl TreePrint for ParameterObjectEditable {
 }
 
 impl std::fmt::Display for ParameterObjectEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.tree_print(f, "", "", true)
     }
