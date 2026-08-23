@@ -31,6 +31,8 @@ impl fmt::Display for MessageLevel {
 /// A message that is associated with a specific category.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageCategory {
+    /// A message related to the datastore.
+    Datastore,
     /// A message related to expression parsing.
     ExpressionParsing,
     /// A message related to expression evaluation.
@@ -40,6 +42,7 @@ pub enum MessageCategory {
 impl fmt::Display for MessageCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
+            MessageCategory::Datastore => "Datastore",
             MessageCategory::ExpressionParsing => "Expression Parsing",
             MessageCategory::ExpressionEvaluation => "Expression Evaluation",
         };
@@ -65,6 +68,37 @@ pub struct Message {
 }
 
 impl Message {
+    /// Creates an error message without parameters.
+    #[hotpath::measure]
+    #[must_use]
+    pub fn error(category: MessageCategory, message_key: impl Into<ShareableString>) -> Self {
+        Self::new_with_params(
+            MessageLevel::Error,
+            category,
+            message_key.into(),
+            HashMap::new(),
+            None,
+        )
+    }
+
+    /// Creates an error message with one named parameter.
+    #[hotpath::measure]
+    #[must_use]
+    pub fn error_with_param(
+        category: MessageCategory,
+        message_key: impl Into<ShareableString>,
+        parameter: impl Into<ShareableString>,
+        value: impl Into<ShareableString>,
+    ) -> Self {
+        Self::new_with_params(
+            MessageLevel::Error,
+            category,
+            message_key.into(),
+            HashMap::from([(parameter.into(), value.into())]),
+            None,
+        )
+    }
+
     /// Creates a new `Message` with the specified details.
     #[hotpath::measure]
     #[must_use]

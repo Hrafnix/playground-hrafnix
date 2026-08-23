@@ -16,7 +16,7 @@ serde.workspace = true
 
 hotpath.workspace = true
 
-errors.workspace = true
+message.workspace = true
 shareable_string.workspace = true
 
 [lints]

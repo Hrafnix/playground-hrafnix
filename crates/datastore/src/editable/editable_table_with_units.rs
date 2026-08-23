@@ -1,7 +1,7 @@
 use crate::definition::TableWithUnitsDefinition;
 use crate::frozen::TableWithUnitsFrozen;
 use crate::traits::TreePrint;
-use errors::StoreError;
+use message::message::{Message, MessageCategory};
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
@@ -125,9 +125,8 @@ impl TableWithUnitsEditable {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyNotFound` if `column_name` does not match a column
-    /// in the table's definition, or `StoreError::IndexNotFound` if `row` or the
-    /// resolved column index is not present in the row data.
+    /// Returns an error message if `column_name` does not match a column in the
+    /// table's definition or if the row is out of bounds.
     ///
     /// [`set_column_unit`]: Self::set_column_unit
     #[hotpath::measure]
@@ -136,10 +135,13 @@ impl TableWithUnitsEditable {
         row: usize,
         column_name: S,
         value: V,
-    ) -> Result<(), StoreError> {
+    ) -> Result<(), Message> {
         let col_name = column_name.into();
         let Some(column_index) = self.definition.get_column_index_by_name(col_name) else {
-            return Err(StoreError::KeyNotFound);
+            return Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_key_not_found",
+            ));
         };
 
         if let Some(row_data) = self.rows.get_mut(row) {
@@ -147,10 +149,16 @@ impl TableWithUnitsEditable {
                 *column_data = value.into();
                 Ok(())
             } else {
-                Err(StoreError::IndexNotFound)
+                Err(Message::error(
+                    MessageCategory::Datastore,
+                    "datastore_index_not_found",
+                ))
             }
         } else {
-            Err(StoreError::IndexNotFound)
+            Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_index_not_found",
+            ))
         }
     }
 
@@ -158,15 +166,18 @@ impl TableWithUnitsEditable {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::IndexNotFound` if `column` does not identify a unit.
+    /// Returns an error message if `column` does not identify a unit.
     #[hotpath::measure]
     pub fn set_unit_by_index<U: Into<ShareableString>>(
         &mut self,
         column: usize,
         unit: U,
-    ) -> Result<(), StoreError> {
+    ) -> Result<(), Message> {
         let Some(column_unit) = self.units.get_mut(column) else {
-            return Err(StoreError::IndexNotFound);
+            return Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_index_not_found",
+            ));
         };
         *column_unit = unit.into();
         Ok(())
@@ -176,19 +187,19 @@ impl TableWithUnitsEditable {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyNotFound` if `column_name` does not match a column
-    /// in the table's definition.
+    /// Returns an error message if `column_name` does not match a column in the
+    /// table's definition.
     #[hotpath::measure]
     pub fn set_unit_by_name<S: Into<ShareableString>, U: Into<ShareableString>>(
         &mut self,
         column_name: S,
         unit: U,
-    ) -> Result<(), StoreError> {
+    ) -> Result<(), Message> {
         let col_name = column_name.into();
         let column_index = self
             .definition
             .get_column_index_by_name(col_name)
-            .ok_or(StoreError::KeyNotFound)?;
+            .ok_or_else(|| Message::error(MessageCategory::Datastore, "datastore_key_not_found"))?;
         self.set_unit_by_index(column_index, unit)
     }
 
@@ -196,14 +207,14 @@ impl TableWithUnitsEditable {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyNotFound` if `column_name` does not match a column
-    /// in the table's definition.
+    /// Returns an error message if `column_name` does not match a column in the
+    /// table's definition.
     #[hotpath::measure]
     pub fn set_column_unit<S: Into<ShareableString>, U: Into<ShareableString>>(
         &mut self,
         column_name: S,
         unit: U,
-    ) -> Result<(), StoreError> {
+    ) -> Result<(), Message> {
         self.set_unit_by_name(column_name, unit)
     }
 

@@ -1,13 +1,13 @@
 use crate::editable::{ItemEditable, MapEntryEditable, MapItemEditable};
 use crate::traits::ObjectEditable;
-use errors::StoreError;
+use message::message::{Message, MessageCategory};
 use shareable_string::ShareableString;
 
 /// Helper function to set the value of an editable object by key.
 ///
 /// # Errors
 ///
-/// Returns a `StoreError` if the key does not exist or if the value type does not match the expected type.
+/// Returns a `Message` if the key does not exist or if the value type does not match the expected type.
 #[hotpath::measure]
 pub fn editable_set_value<
     T: ObjectEditable,
@@ -17,11 +17,13 @@ pub fn editable_set_value<
     obj: &mut T,
     key: S1,
     value: S2,
-) -> Result<(), StoreError> {
+) -> Result<(), Message> {
     let key = key.into();
     let value = value.into();
 
-    let item = obj.get_mut(&key).ok_or(StoreError::KeyNotFound)?;
+    let item = obj
+        .get_mut(&key)
+        .ok_or_else(|| Message::error(MessageCategory::Datastore, "datastore_key_not_found"))?;
 
     match item {
         ItemEditable::Boolean(boolean) => {
@@ -40,7 +42,10 @@ pub fn editable_set_value<
             integer.set(value);
         }
         ItemEditable::Map(_) => {
-            return Err(StoreError::InvalidType("Cannot set a value for a Map item directly. Use the appropriate methods to modify the map.".to_string()));
+            return Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_map_value_set_not_supported",
+            ));
         }
         ItemEditable::Number(number) => {
             number.set(value);
@@ -61,8 +66,9 @@ pub fn editable_set_value<
             unit.set(value);
         }
         ItemEditable::Tab(_) | ItemEditable::Separator(_) => {
-            return Err(StoreError::InvalidType(
-                "Cannot set a value for a Tab or Separator item.".to_string(),
+            return Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_tab_or_separator_value_set_not_supported",
             ));
         }
     }
@@ -74,16 +80,18 @@ pub fn editable_set_value<
 ///
 /// # Errors
 ///
-/// Returns a `StoreError` if the key or item key does not exist.
+/// Returns a `Message` if the key or item key does not exist.
 #[hotpath::measure]
 pub fn editable_set_map_value<S1: Into<ShareableString>, S2: Into<ShareableString>>(
     entry: &mut MapEntryEditable,
     key: S1,
     value: S2,
-) -> Result<(), StoreError> {
+) -> Result<(), Message> {
     let key = key.into();
 
-    let item = entry.get_mut(&key).ok_or(StoreError::KeyNotFound)?;
+    let item = entry
+        .get_mut(&key)
+        .ok_or_else(|| Message::error(MessageCategory::Datastore, "datastore_key_not_found"))?;
 
     match item {
         MapItemEditable::Boolean(boolean) => {

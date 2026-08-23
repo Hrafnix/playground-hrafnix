@@ -22,7 +22,6 @@ rustc-hash = "2.1.3"
 hotpath = { version = "0.24.0", default-features = false }
 
 datastore = { path = "crates/datastore" }
-errors = { path = "crates/errors" }
 expression_engine = { path = "crates/expression_engine" }
 keys = { path = "crates/keys" }
 message = { path = "crates/message" }

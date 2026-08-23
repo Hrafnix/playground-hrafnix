@@ -1,7 +1,7 @@
 use crate::definition::TableDefinition;
 use crate::frozen::TableFrozen;
 use crate::traits::TreePrint;
-use errors::StoreError;
+use message::message::{Message, MessageCategory};
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
@@ -93,18 +93,21 @@ impl TableEditable {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyNotFound` if `column_name` does not match a column
-    /// in the table's definition.
+    /// Returns an error message if `column_name` does not match a column in the
+    /// table's definition or if the row is out of bounds.
     #[hotpath::measure]
     pub fn set_cell<S: Into<ShareableString>, V: Into<ShareableString>>(
         &mut self,
         row: usize,
         column_name: S,
         value: V,
-    ) -> Result<(), StoreError> {
+    ) -> Result<(), Message> {
         let col_name = column_name.into();
         let Some(column_index) = self.definition.get_column_index_by_name(col_name) else {
-            return Err(StoreError::KeyNotFound);
+            return Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_key_not_found",
+            ));
         };
 
         if let Some(row_data) = self.rows.get_mut(row) {
@@ -112,10 +115,16 @@ impl TableEditable {
                 *column_data = value.into();
                 Ok(())
             } else {
-                Err(StoreError::IndexNotFound)
+                Err(Message::error(
+                    MessageCategory::Datastore,
+                    "datastore_index_not_found",
+                ))
             }
         } else {
-            Err(StoreError::IndexNotFound)
+            Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_index_not_found",
+            ))
         }
     }
 

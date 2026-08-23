@@ -130,20 +130,40 @@ fn test_editable_table_with_units_cell_mutation_errors() {
     );
 
     assert_eq!(
-        editable.set_cell(0, "unknown", "5"),
-        Err(StoreError::KeyNotFound)
+        editable
+            .set_cell(0, "unknown", "5")
+            .expect_err("unknown column should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_not_found"
     );
     assert_eq!(
-        editable.set_cell(1, "duration", "5"),
-        Err(StoreError::IndexNotFound)
+        editable
+            .set_cell(1, "duration", "5")
+            .expect_err("unknown row should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_index_not_found"
     );
     assert_eq!(
-        editable.set_unit_by_index(8, UnitId::Time_Second.string_id()),
-        Err(StoreError::IndexNotFound)
+        editable
+            .set_unit_by_index(8, UnitId::Time_Second.string_id())
+            .expect_err("unknown unit column should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_index_not_found"
     );
     assert_eq!(
-        editable.set_unit_by_name("unknown", UnitId::Time_Second.string_id()),
-        Err(StoreError::KeyNotFound)
+        editable
+            .set_unit_by_name("unknown", UnitId::Time_Second.string_id())
+            .expect_err("unknown column should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_not_found"
     );
 }
 

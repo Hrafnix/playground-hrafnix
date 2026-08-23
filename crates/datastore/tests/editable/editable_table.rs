@@ -52,5 +52,12 @@ fn test_editable_table_set_cell_invalid_column() {
     editable.add_row(0);
 
     let result = editable.set_cell(0, "unknown", "5");
-    assert_eq!(result, Err(StoreError::KeyNotFound));
+    assert_eq!(
+        result
+            .expect_err("unknown column should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_not_found"
+    );
 }
