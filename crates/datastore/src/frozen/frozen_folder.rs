@@ -18,7 +18,7 @@ pub struct FolderFrozen {
 impl FolderFrozen {
     /// Creates a new `FolderFrozen` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: FolderDefinition) -> Self {
         let value = definition.default_value();
 
@@ -33,7 +33,7 @@ impl FolderFrozen {
 
     /// Creates a new `FolderFrozen` instance with a specified value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_value(definition: FolderDefinition, value: ShareableString) -> Self {
         let mut s = Self {
             definition,
@@ -46,7 +46,7 @@ impl FolderFrozen {
 
     /// Creates a new `FolderFrozen` instance from a given `FolderEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(basic: &FolderEditable) -> Self {
         let definition = basic.definition().clone();
         let value = basic.value();
@@ -61,13 +61,13 @@ impl FolderFrozen {
 
     /// Converts the current `FolderFrozen` instance into a `FolderEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> FolderEditable {
         FolderEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -83,7 +83,7 @@ impl FolderFrozen {
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
@@ -102,21 +102,21 @@ impl FolderFrozen {
 }
 
 impl PartialEq<&FolderFrozen> for FolderFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&FolderFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<FolderFrozen> for &FolderFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &FolderFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for FolderFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

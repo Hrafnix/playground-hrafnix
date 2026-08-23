@@ -20,7 +20,7 @@ pub struct TableFrozen {
 impl TableFrozen {
     /// Creates a new `TableFrozen` with a definition.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: TableDefinition) -> Self {
         let mut s = Self {
             definition,
@@ -34,7 +34,7 @@ impl TableFrozen {
 
     /// Creates a new `TableFrozen` with a definition and rows.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_rows(definition: TableDefinition, rows: Vec<Vec<ShareableString>>) -> Self {
         let mut s = Self {
             definition,
@@ -48,7 +48,7 @@ impl TableFrozen {
 
     /// Creates a new `TableFrozen` from a `TableEditable`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(editable_table: &TableEditable) -> Self {
         let mut s = Self {
             definition: editable_table.definition().clone(),
@@ -62,13 +62,13 @@ impl TableFrozen {
 
     /// Converts the current `TableFrozen` instance into a `TableEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> TableEditable {
         TableEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all rows.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -95,13 +95,13 @@ impl TableFrozen {
 
     /// Returns the value of a cell by row and column index.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn cell_by_index(&self, row: usize, column: usize) -> Option<&ShareableString> {
         self.rows.get(row)?.get(column)
     }
 
     /// Returns the value of a cell by row index and column name.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn cell_by_name<S: Into<ShareableString>>(
         &self,
         row: usize,
@@ -115,7 +115,7 @@ impl TableFrozen {
 
     /// Returns the row at the specified index.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn row(&self, row: usize) -> Option<&Vec<ShareableString>> {
         self.rows.get(row)
     }
@@ -128,7 +128,7 @@ impl TableFrozen {
 
     /// Returns a reference to all rows in the table.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn rows(&self) -> &[Vec<ShareableString>] {
         &self.rows
     }
@@ -141,14 +141,14 @@ impl TableFrozen {
 
     /// Returns the number of rows in the table.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn row_count(&self) -> usize {
         self.rows.len()
     }
 
     /// Returns the number of columns in the table.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn column_count(&self) -> usize {
         self.definition.count()
     }
@@ -161,21 +161,21 @@ impl TableFrozen {
 }
 
 impl PartialEq<&TableFrozen> for TableFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&TableFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<TableFrozen> for &TableFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &TableFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for TableFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

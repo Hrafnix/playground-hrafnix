@@ -69,7 +69,7 @@ pub struct Message {
 
 impl Message {
     /// Creates an error message without parameters.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     #[must_use]
     pub fn error(category: MessageCategory, message_key: impl Into<ShareableString>) -> Self {
         Self::new_with_params(
@@ -82,7 +82,7 @@ impl Message {
     }
 
     /// Creates an error message with one named parameter.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     #[must_use]
     pub fn error_with_param(
         category: MessageCategory,
@@ -100,7 +100,7 @@ impl Message {
     }
 
     /// Creates a new `Message` with the specified details.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     #[must_use]
     pub fn new(
         level: MessageLevel,
@@ -119,7 +119,7 @@ impl Message {
     }
 
     /// Creates a new `Message` with the specified details, using a message key and parameters.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     #[must_use]
     pub fn new_with_params(
         level: MessageLevel,

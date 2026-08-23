@@ -9,7 +9,7 @@ use shareable_string::ShareableString;
 /// This function takes a `ShareableString` as input, tokenizes it using the `Lexer`,
 /// parses the tokens into an AST using the `Parser`, and then translates the AST into
 /// an `Expression` using the `Translator`.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 pub(crate) fn string_to_expression(input: &ShareableString) -> Result<Expression, Message> {
     let lexer = Lexer::new(input)?;
     let parser = Parser::new(&lexer)?;

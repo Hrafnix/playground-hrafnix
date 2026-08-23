@@ -24,7 +24,7 @@ pub struct ExpressionEngine {
 }
 
 impl Default for ExpressionEngine {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn default() -> Self {
         Self::new()
     }
@@ -33,7 +33,7 @@ impl Default for ExpressionEngine {
 impl ExpressionEngine {
     /// Creates a new instance of the `Engine`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new() -> Self {
         Self {
             globals: default_globals(),
@@ -50,7 +50,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns an error if `func`'s name is empty or only whitespace.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn register_function(&mut self, func: FunctionDefinition) -> Result<(), Message> {
         if func.name().as_str().trim().is_empty() {
             return Err(create_error_message(
@@ -71,7 +71,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns the list of evaluation errors encountered while evaluating `globals`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn evaluate_globals(
         &mut self,
         globals: &GlobalObjectInputData,
@@ -95,7 +95,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns the list of evaluation errors encountered while evaluating `parameters`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn evaluate_parameters(
         &self,
         parameters: &ParameterObjectInputData,
@@ -115,7 +115,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns the list of evaluation errors encountered while evaluating `variables`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn evaluate_variables(
         &self,
         parameters: &ParameterObjectComputedData,
@@ -139,7 +139,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns the list of evaluation errors encountered while evaluating `globals`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn extend_globals(
         &mut self,
         parameters: &ParameterObjectComputedData,
@@ -167,7 +167,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns the list of evaluation errors encountered while evaluating `child_parameters`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn evaluate_child_parameters(
         &self,
         parameters: &ParameterObjectComputedData,
@@ -193,7 +193,7 @@ impl ExpressionEngine {
     /// # Errors
     ///
     /// Returns an error if any required global, parameter, variable, or function is missing.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn check_missing_requirements(
         &self,
         parameters: &Option<ParameterObjectInputData>,

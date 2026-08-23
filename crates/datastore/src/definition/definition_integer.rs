@@ -75,7 +75,7 @@ impl IntegerConstraint {
     /// both ends (regardless of the passed inclusivity flags), so it always represents
     /// exactly that single value rather than a contradictory, unsatisfiable range.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn range(
         value_1: i64,
         value_2: i64,
@@ -100,7 +100,7 @@ impl IntegerConstraint {
 }
 
 impl<'de> Deserialize<'de> for IntegerConstraint {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -151,7 +151,7 @@ pub struct IntegerDefinition {
 
 impl IntegerDefinition {
     /// Creates a new integer-based `IntegerDefinition`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new<S1: Into<ShareableString>>(description: S1) -> Self {
         Self {
             description: description.into(),
@@ -161,7 +161,7 @@ impl IntegerDefinition {
     }
 
     /// Creates a new integer-based `IntegerDefinition` with a default value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_default<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
         default_value: S2,
@@ -174,7 +174,7 @@ impl IntegerDefinition {
     }
 
     /// Creates a new integer-based `IntegerDefinition`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_constraint<S: Into<ShareableString>>(
         description: S,
         constraint: IntegerConstraint,
@@ -187,7 +187,7 @@ impl IntegerDefinition {
     }
 
     /// Creates a new integer-based `IntegerDefinition` with a default value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_with_constraint_and_default<S1: Into<ShareableString>, S2: Into<ShareableString>>(
         description: S1,
         constraint: IntegerConstraint,
@@ -202,7 +202,7 @@ impl IntegerDefinition {
 
     /// Returns the constraint.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn constraint(&self) -> IntegerConstraintEnum {
         self.constraint.constraint_enum.clone()
     }
@@ -215,7 +215,7 @@ impl IntegerDefinition {
 
     /// Returns a new `IntegerDefinition` with strings laundered through the provided store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -226,7 +226,7 @@ impl IntegerDefinition {
 
     /// Returns the description of the parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -239,7 +239,7 @@ impl IntegerDefinition {
 
     /// Returns the default value of the parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn default_value(&self) -> ShareableString {
         self.default_value.clone()
     }
@@ -252,21 +252,21 @@ impl IntegerDefinition {
 }
 
 impl PartialEq<&IntegerDefinition> for IntegerDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&IntegerDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<IntegerDefinition> for &IntegerDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &IntegerDefinition) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for IntegerDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

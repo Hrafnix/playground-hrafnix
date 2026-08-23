@@ -8,14 +8,14 @@ publish.workspace = true
 
 [features]
 default = []
-hotpath = ["hotpath/hotpath"]
-hotpath-alloc = ["hotpath/hotpath-alloc"]
+hotpath = ["dep:hotpath", "hotpath/hotpath"]
+hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
 
 [dependencies]
 blake3.workspace = true
 serde.workspace = true
 
-hotpath.workspace = true
+hotpath = { workspace = true, optional = true }
 
 shareable_string.workspace = true
 keys.workspace = true

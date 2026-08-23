@@ -12,7 +12,7 @@ pub struct SharedStringStore {
 }
 
 impl Default for SharedStringStore {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn default() -> Self {
         Self::new()
     }
@@ -21,7 +21,7 @@ impl Default for SharedStringStore {
 impl SharedStringStore {
     /// Creates a new, empty `SharedStringStore`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new() -> Self {
         Self {
             string_store: Arc::new(RwLock::new(FxHashSet::default())),
@@ -29,7 +29,7 @@ impl SharedStringStore {
     }
 
     /// Returns a `ShareableString` for the given key, interning it if it's not already in the store.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S>(&self, key: S) -> ShareableString
     where
         S: Into<ShareableString> + AsRef<str>,
@@ -39,27 +39,27 @@ impl SharedStringStore {
 
     /// Returns the number of unique strings in the store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn len(&self) -> usize {
         self.string_store.read().len()
     }
 
     /// Checks if the internal string store is empty.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn is_empty(&self) -> bool {
         self.string_store.read().is_empty()
     }
 
     /// Returns true if the store contains the specified string.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains(&self, key: &str) -> bool {
         self.string_store.read().contains(key)
     }
 
     /// Copies all strings from another store into this one.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn copy_from(&self, other: &SharedStringStore) {
         let other_store = other.string_store.read();
         let mut self_store = self.string_store.write();
@@ -73,7 +73,7 @@ impl SharedStringStore {
     }
 
     /// Adds a `ShareableString` to the store if it's not already present.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn add(&self, string: &ShareableString) {
         // If the string is already in the store, we don't need to do anything.
         // If not, we add it to enable interning for this string in the future.
@@ -86,7 +86,7 @@ impl SharedStringStore {
     }
 
     /// Interns the given key and returns the shared instance.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder<S>(&self, key: S) -> ShareableString
     where
         S: Into<ShareableString> + AsRef<str>,

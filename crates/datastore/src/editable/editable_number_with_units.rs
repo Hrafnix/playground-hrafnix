@@ -18,7 +18,7 @@ pub struct NumberWithUnitsEditable {
 impl NumberWithUnitsEditable {
     /// Creates a new `NumberWithUnitsEditable` instance from a given `NumberWithUnitsFrozen` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(frozen_number: &NumberWithUnitsFrozen) -> Self {
         Self {
             definition: frozen_number.definition().clone(),
@@ -29,21 +29,21 @@ impl NumberWithUnitsEditable {
 
     /// Converts the current `NumberWithUnitsEditable` instance into a `NumberWithUnitsFrozen` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn freeze(&self) -> NumberWithUnitsFrozen {
         NumberWithUnitsFrozen::new_from_editable(self)
     }
 
     /// Returns the value as a `ShareableString`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
         self.value.clone()
     }
 
     /// Returns the units as a `ShareableString`.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn units(&self) -> ShareableString {
         self.units.clone()
     }
@@ -55,34 +55,34 @@ impl NumberWithUnitsEditable {
     }
 
     /// Sets the value and updates the hash.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set<S: Into<ShareableString>>(&mut self, value: S) {
         self.value = value.into();
     }
 
     /// Sets the units and updates the hash.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set_units<S: Into<ShareableString>>(&mut self, units: S) {
         self.units = units.into();
     }
 }
 
 impl PartialEq<&NumberWithUnitsEditable> for NumberWithUnitsEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&NumberWithUnitsEditable) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<NumberWithUnitsEditable> for &NumberWithUnitsEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &NumberWithUnitsEditable) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for NumberWithUnitsEditable {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

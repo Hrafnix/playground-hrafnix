@@ -74,7 +74,7 @@ impl NumberConstraint {
     /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`
     /// so `min` and `max` never end up equal.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn range(
         value_1: f64,
         value_2: f64,
@@ -107,7 +107,7 @@ impl NumberConstraint {
 }
 
 impl<'de> Deserialize<'de> for NumberConstraint {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,

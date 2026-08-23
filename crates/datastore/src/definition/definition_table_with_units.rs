@@ -22,7 +22,7 @@ impl TableWithUnitsDefinition {
     ///
     /// If duplicate keys are provided, the last occurrence will be used, and the order of the keys will
     /// reflect the order of their last occurrence.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new<S1: Into<ShareableString>, K: Into<StoreKey>>(
         description: S1,
         columns: Vec<(K, NumberWithUnitsDefinition)>,
@@ -44,20 +44,20 @@ impl TableWithUnitsDefinition {
 
     /// Returns the description of the table.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
 
     /// Returns true if the table contains a column with the specified key.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
         let key = key.into();
         self.columns.keys().any(|column_key| column_key == &key)
     }
 
     /// Returns a reference to the column definition for the specified key.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&NumberWithUnitsDefinition> {
         let key = key.into();
         self.columns
@@ -67,7 +67,7 @@ impl TableWithUnitsDefinition {
 
     /// Returns a reference to the column definition for the specified index.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_by_index(&self, index: usize) -> Option<&NumberWithUnitsDefinition> {
         self.ordered_keys
             .get(index)
@@ -75,7 +75,7 @@ impl TableWithUnitsDefinition {
     }
 
     /// Returns the index of the column with the specified key.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_column_index_by_name<S: Into<ShareableString>>(&self, key: S) -> Option<usize> {
         let key = key.into();
         self.ordered_keys
@@ -85,26 +85,26 @@ impl TableWithUnitsDefinition {
 
     /// Returns true if the table contains a column with the specified key string.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains_key_str(&self, key: &str) -> bool {
         self.columns.contains_key(key)
     }
 
     /// Returns a reference to the column definition for the specified key string.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_str(&self, key: &str) -> Option<&NumberWithUnitsDefinition> {
         self.columns.get(key)
     }
 
     /// Returns an iterator over the keys of the columns.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
         self.ordered_keys.iter()
     }
 
     /// Returns an iterator over the column definitions.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &NumberWithUnitsDefinition)> {
         self.ordered_keys
             .iter()
@@ -113,7 +113,7 @@ impl TableWithUnitsDefinition {
 
     /// Returns the number of columns in the table.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn count(&self) -> usize {
         self.columns.len()
     }
@@ -126,7 +126,7 @@ impl TableWithUnitsDefinition {
 
     /// Returns a new `TableWithUnitsDefinition` with strings laundered through the provided store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -142,21 +142,21 @@ impl TableWithUnitsDefinition {
 }
 
 impl PartialEq<&TableWithUnitsDefinition> for TableWithUnitsDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&TableWithUnitsDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<TableWithUnitsDefinition> for &TableWithUnitsDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &TableWithUnitsDefinition) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for TableWithUnitsDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

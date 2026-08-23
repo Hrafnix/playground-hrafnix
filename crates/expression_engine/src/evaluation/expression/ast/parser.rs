@@ -20,7 +20,7 @@ pub(crate) enum ParserToken {
 }
 
 impl fmt::Display for ParserToken {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ParserToken::Identifier(i, value) | ParserToken::Numeric(i, value) => {
@@ -49,7 +49,7 @@ pub(crate) struct Parser {
 
 impl Parser {
     /// Creates a new `Parser` by parsing the expression from the given `Lexer`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn new(lexer: &Lexer) -> Result<Parser, Message> {
         let mut lexer = lexer.clone();
         let source = lexer.source().clone();
@@ -97,7 +97,7 @@ impl Parser {
     /// # Errors
     ///
     /// Returns an error on unexpected tokens or empty input.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn expr_bp(lexer: &mut Lexer, min_bp: u8) -> Result<ParserToken, Message> {
         let mut lhs = match lexer.next() {
             LexerToken::Identifier(index, value) => ParserToken::Identifier(index, value),
@@ -245,7 +245,7 @@ impl Parser {
     }
 
     /// Parses a comma-separated list of call arguments, up to (but not including) the closing `)`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Message> {
         let mut arguments = Vec::new();
         if let LexerToken::Operator(_index, value) = lexer.peek() {
@@ -274,7 +274,7 @@ impl Parser {
     }
 
     /// Consumes the next token from `lexer`, returning an error if it isn't the expected operator.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn expect_operator(lexer: &mut Lexer, expected: &str) -> Result<(), Message> {
         match lexer.next() {
             LexerToken::Operator(_index, value) if value == expected => Ok(()),
@@ -302,7 +302,7 @@ impl Parser {
 
     /// Returns the set of source indices covered by `lexer_token`, or an empty set for
     /// `LexerToken::EndOfInput`, which doesn't correspond to any position in the source.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn token_index_set(lexer_token: &LexerToken) -> SpanSet {
         match lexer_token {
             LexerToken::Identifier(index, _)
@@ -314,7 +314,7 @@ impl Parser {
     }
 
     /// Returns a human-readable description of `token`, suitable for use in error messages.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn describe_token(token: &LexerToken) -> String {
         match token {
             LexerToken::Identifier(_index, value) => format!("identifier '{value}'"),
@@ -331,7 +331,7 @@ impl Parser {
     /// # Errors
     ///
     /// Returns an error if `op` is not a valid prefix operator.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn prefix_binding_power(
         op: &str,
         index: Span,
@@ -351,7 +351,7 @@ impl Parser {
 
     /// Returns the postfix binding power for the given operator, or `None` if the operator
     /// is not a valid postfix operator.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn postfix_binding_power(op: &str) -> Option<(u8, ())> {
         let res = match op {
             "[" | "(" => (21, ()),
@@ -362,7 +362,7 @@ impl Parser {
 
     /// Returns the left and right binding powers for the given infix operator, or `None` if
     /// the operator is not a valid infix operator.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
         let res = match op {
             "=" => (2, 1),

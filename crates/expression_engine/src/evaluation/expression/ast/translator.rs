@@ -24,7 +24,7 @@ pub(crate) enum Literal {
 }
 
 impl fmt::Display for Literal {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Literal::Integer(value) => write!(f, "{value}"),
@@ -74,7 +74,7 @@ pub(crate) enum Operators {
 }
 
 impl fmt::Display for Operators {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let symbol = match self {
             Operators::Add => "+",
@@ -145,7 +145,7 @@ pub(crate) enum Expression {
 }
 
 impl fmt::Display for Expression {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expression::Literal(_, literal) => write!(f, "{literal}"),
@@ -210,7 +210,7 @@ pub(crate) struct Translator {
 
 impl Translator {
     /// Translates the given `Parser`'s token tree into an `Expression` tree.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn new(parser: &Parser) -> Result<Self, Message> {
         let parser_token = parser.get_token().clone();
         let source = parser.get_source().clone();
@@ -224,7 +224,7 @@ impl Translator {
     }
 
     /// Translates a binary `ParserToken::Operator` into a `BinaryOperation` expression.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_binary(
         span: Span,
         operands: &[ParserToken],
@@ -270,7 +270,7 @@ impl Translator {
     }
 
     /// Translates a unary `ParserToken::Operator` into a `UnaryOperation` expression.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_unary(
         span: Span,
         operands: &[ParserToken],
@@ -303,7 +303,7 @@ impl Translator {
     /// When the collection being indexed is itself an `Index` expression (i.e., this is a
     /// chained index such as `arr[0][1]`), the new index is appended to the existing `Index`'s
     /// vector of indices rather than wrapping it in another `Index` expression.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_index(
         span: Span,
         operands: &[ParserToken],
@@ -363,7 +363,7 @@ impl Translator {
 
     /// Translates a `ParserToken::Operator` whose head is a function name (rather than a known
     /// operator symbol) into a `FunctionCall` expression.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_call(
         span: Span,
         name: String,
@@ -390,7 +390,7 @@ impl Translator {
 
     /// Returns whether `name` looks like a function/variable name (i.e., what the lexer would
     /// have produced as an `Atom`), as opposed to an operator symbol such as `+` or `!`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn is_function_name(name: &str) -> bool {
         name.chars()
             .next()
@@ -398,7 +398,7 @@ impl Translator {
     }
 
     /// Translates a `ParserToken::Atom` into a `Literal` expression.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_atom(span: Span, value: String) -> Expression {
         if let Ok(boolean) = value.parse::<bool>() {
             return Expression::Literal(span, Literal::Boolean(boolean));
@@ -409,7 +409,7 @@ impl Translator {
 
     /// Translates a `ParserToken::Numeric` into either an integer or floating-point `Literal`
     /// expression, depending on whether the numeric value can be parsed as an integer or a float.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_numeric(span: Span, value: &str) -> Result<Expression, Message> {
         if let Ok(integer) = value.parse::<i64>() {
             return Ok(Expression::Literal(span, Literal::Integer(integer)));
@@ -434,7 +434,7 @@ impl Translator {
     ///
     /// Returns an error if the token tree cannot be mapped to a valid expression
     /// (e.g., an unsupported operator arity or an invalid numeric literal).
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn translate_token(
         parser_token: ParserToken,
         source: &ShareableString,

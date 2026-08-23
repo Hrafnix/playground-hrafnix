@@ -11,7 +11,7 @@ pub struct TabDefinition {
 
 impl TabDefinition {
     /// Creates a new tab-based `TabDefinition`.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new<S: Into<ShareableString>>(description: S) -> Self {
         Self {
             description: description.into(),
@@ -20,7 +20,7 @@ impl TabDefinition {
 
     /// Returns a new `TabDefinition` with strings laundered through the provided store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         Self {
             description: store.launder(&self.description),
@@ -29,7 +29,7 @@ impl TabDefinition {
 
     /// Returns the description of the parameter.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn description(&self) -> ShareableString {
         self.description.clone()
     }
@@ -42,21 +42,21 @@ impl TabDefinition {
 }
 
 impl PartialEq<&TabDefinition> for TabDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&TabDefinition) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<TabDefinition> for &TabDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &TabDefinition) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for TabDefinition {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

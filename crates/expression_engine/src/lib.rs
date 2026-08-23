@@ -69,7 +69,7 @@ pub enum BasicDefinition {
 impl BasicDefinition {
     /// Returns a new `BasicDefinition` with strings laundered through the provided store.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
         match self {
             BasicDefinition::Boolean(boolean) => BasicDefinition::Boolean(boolean.launder(store)),

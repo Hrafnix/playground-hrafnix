@@ -90,7 +90,7 @@ impl MapItemFrozen {
 
     /// Returns the map item definition.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn definition(&self) -> MapItemDefinition {
         match self {
             MapItemFrozen::Boolean(boolean) => {
@@ -133,7 +133,7 @@ impl MapItemFrozen {
 
     /// Creates a new `MapItemFrozen` instance from a given `MapItemEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(item: &MapItemEditable) -> Self {
         match item {
             MapItemEditable::Boolean(boolean) => {
@@ -167,28 +167,28 @@ impl MapItemFrozen {
 
     /// Converts the current `MapItemFrozen` instance into a `MapItemEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> MapItemEditable {
         MapItemEditable::new(self)
     }
 }
 
 impl PartialEq<&MapItemFrozen> for MapItemFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&MapItemFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<MapItemFrozen> for &MapItemFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &MapItemFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for MapItemFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -227,7 +227,7 @@ pub struct MapEntryFrozen {
 impl MapEntryFrozen {
     /// Creates a new `MapEntryFrozen` from the map's entry schema.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(item_type: &BTreeMap<StoreKey, MapItemDefinition>) -> Self {
         let mut items = BTreeMap::new();
         for (key, item_definition) in item_type {
@@ -309,7 +309,7 @@ impl MapEntryFrozen {
 
     /// Creates a new `MapEntryFrozen` from a set of items.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_items(items: BTreeMap<StoreKey, MapItemFrozen>) -> Self {
         let mut s = Self {
             items,
@@ -321,7 +321,7 @@ impl MapEntryFrozen {
 
     /// Creates a new `MapEntryFrozen` from a given `MapEntryEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(editable_entry: &MapEntryEditable) -> Self {
         let items = editable_entry
             .iter()
@@ -332,13 +332,13 @@ impl MapEntryFrozen {
 
     /// Converts the current `MapEntryFrozen` instance into a `MapEntryEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> MapEntryEditable {
         MapEntryEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all items in this map entry.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -367,13 +367,13 @@ impl MapEntryFrozen {
     }
 
     /// Returns a reference to the item with the specified key if it exists.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemFrozen> {
         self.items.get(&key.into())
     }
 
     /// Return the string value if this item is a string value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_string<S: Into<ShareableString>>(&self, key: S) -> Option<&StringFrozen> {
         if let Some(item) = self.get(key) {
             item.get_string()
@@ -383,7 +383,7 @@ impl MapEntryFrozen {
     }
 
     /// Return the table value if this item is a table value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_table<S: Into<ShareableString>>(&self, key: S) -> Option<&TableFrozen> {
         if let Some(item) = self.get(key) {
             item.get_table()
@@ -393,20 +393,20 @@ impl MapEntryFrozen {
     }
 
     /// Return the unit value if this item is a unit value.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_unit<S: Into<ShareableString>>(&self, key: S) -> Option<&UnitFrozen> {
         self.get(key).and_then(MapItemFrozen::get_unit)
     }
 
     /// Returns an iterator over the key-item pairs in the entry.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapItemFrozen)> {
         self.items.iter()
     }
 
     /// Returns the schema of this entry, derived from its current items.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn definition(&self) -> BTreeMap<StoreKey, MapItemDefinition> {
         self.items
             .iter()
@@ -416,21 +416,21 @@ impl MapEntryFrozen {
 }
 
 impl PartialEq<&MapEntryFrozen> for MapEntryFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&MapEntryFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<MapEntryFrozen> for &MapEntryFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &MapEntryFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for MapEntryFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,
@@ -467,7 +467,7 @@ pub struct MapFrozen {
 impl MapFrozen {
     /// Creates a new `MapFrozen` with a definition.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: MapDefinition) -> Self {
         let mut s = Self {
             definition,
@@ -484,7 +484,7 @@ impl MapFrozen {
     ///
     /// Returns an error message if the items do not all share the same entry schema
     /// or if `items` is empty.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<StoreKey, MapEntryFrozen>,
@@ -520,7 +520,7 @@ impl MapFrozen {
 
     /// Creates a new `MapFrozen` from a given `MapEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(editable_map: &MapEditable) -> Self {
         let definition = editable_map.definition().clone();
         let items = editable_map
@@ -538,13 +538,13 @@ impl MapFrozen {
 
     /// Converts the current `MapFrozen` instance into a `MapEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> MapEditable {
         MapEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash of all entries in this map.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -573,13 +573,13 @@ impl MapFrozen {
     }
 
     /// Returns a reference to the item with the specified key if it exists.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapEntryFrozen> {
         self.items.get(&key.into())
     }
 
     /// Returns an iterator over the key-item pairs in the map.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapEntryFrozen)> {
         self.items.iter()
     }
@@ -592,28 +592,28 @@ impl MapFrozen {
 
     /// Returns the number of items in the map.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn count(&self) -> usize {
         self.items.len()
     }
 }
 
 impl PartialEq<&MapFrozen> for MapFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&MapFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<MapFrozen> for &MapFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &MapFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for MapFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

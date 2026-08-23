@@ -15,7 +15,7 @@ pub struct TabFrozen {
 impl TabFrozen {
     /// Creates a new `TabFrozen` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: TabDefinition) -> Self {
         let mut s = Self {
             definition,
@@ -27,7 +27,7 @@ impl TabFrozen {
 
     /// Creates a new `TabFrozen` instance from a given `TabEditable` value.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_editable(tab: &TabEditable) -> Self {
         let definition = tab.definition().clone();
         let mut s = Self {
@@ -40,13 +40,13 @@ impl TabFrozen {
 
     /// Converts the current `TabFrozen` instance into a `TabEditable` instance.
     #[must_use]
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> TabEditable {
         TabEditable::new(self)
     }
 
     /// Recomputes and stores the BLAKE3 hash.
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn update_hash(&mut self) {
         let mut h = blake3::Hasher::new();
 
@@ -74,21 +74,21 @@ impl TabFrozen {
 }
 
 impl PartialEq<&TabFrozen> for TabFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&TabFrozen) -> bool {
         self == *other
     }
 }
 
 impl PartialEq<TabFrozen> for &TabFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &TabFrozen) -> bool {
         *self == other
     }
 }
 
 impl TreePrint for TabFrozen {
-    #[hotpath::measure]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn tree_print(
         &self,
         f: &mut std::fmt::Formatter<'_>,

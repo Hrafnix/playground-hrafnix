@@ -21,7 +21,7 @@ use std::collections::HashMap;
 
 /// Creates a new error message with the given parameters. If a source string and marks are provided,
 /// the source string will be underlined according to the marks and included in the message.
-#[hotpath::measure]
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
 pub(crate) fn create_error_message(
     category: MessageCategory,
     key: ShareableString,
