@@ -1,18 +1,28 @@
 use datastore::prelude::*;
 use expression_engine::prelude::*;
+use message::message::{Message, MessageCategory, MessageLevel};
 use std::ops::{Mul, Sub};
 
+fn evaluation_message(actual: impl Into<ShareableString>) -> Message {
+    Message::new_with_params(
+        MessageLevel::Error,
+        MessageCategory::ExpressionEvaluation,
+        "expression_engine_evaluation_custom_function_failed".into(),
+        [("actual".into(), actual.into())].into_iter().collect(),
+        None,
+    )
+}
+
 /// A function that sums its integer arguments.
-fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let mut total: i64 = 0;
     for arg in args {
         match arg {
             ComputedItem::Integer(value) => total += value,
             other => {
-                return Err(ExpressionError::new(
-                    ExpressionCategory::Evaluation,
-                    format!("add() expects integer arguments, got {other:?}"),
-                ));
+                return Err(evaluation_message(format!(
+                    "add() expects integer arguments, got {other:?}"
+                )));
             }
         }
     }
@@ -20,12 +30,11 @@ fn add_integers(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> 
 }
 
 /// A function that multiplies two float arguments.
-fn multiply_floats(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn multiply_floats(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match args {
         [ComputedItem::Float(a), ComputedItem::Float(b)] => Ok(ComputedItem::Float(a.mul(b))),
-        _ => Err(ExpressionError::new(
-            ExpressionCategory::Evaluation,
-            "multiply() expects exactly two float arguments".to_string(),
+        _ => Err(evaluation_message(
+            "multiply() expects exactly two float arguments",
         )),
     }
 }
@@ -236,8 +245,40 @@ fn calling_an_unregistered_function_returns_an_error() {
 
     let message = error
         .first()
-        .expect("at least one error should be reported")
-        .to_string();
-    assert!(message.contains("[Evaluation]"));
-    assert!(message.contains("Function 'missing' is not defined."));
+        .expect("at least one error should be reported");
+    assert_eq!(
+        message.translate_data().message_key().as_str(),
+        "expression_engine_evaluation_function_not_defined"
+    );
+    assert_eq!(
+        message
+            .translate_data()
+            .message_params()
+            .get("function")
+            .map(ShareableString::as_str),
+        Some("missing")
+    );
+}
+
+#[test]
+fn calling_an_expression_as_a_function_returns_a_translatable_error() {
+    let frozen = ParameterObjectDefinition::builder("Test Object")
+        .with(
+            parameter_key!("p_result"),
+            IntegerDefinition::new_with_default("a number parameter", "(1 + 2)(3)"),
+        )
+        .finish();
+
+    let data = build_parameter(frozen);
+    let error = ExpressionEngine::new()
+        .evaluate_parameters(&data)
+        .expect_err("evaluation should fail when an expression is used as a function name");
+
+    let message = error
+        .first()
+        .expect("at least one error should be reported");
+    assert_eq!(
+        message.translate_data().message_key().as_str(),
+        "expression_engine_parser_function_name_required_expression"
+    );
 }

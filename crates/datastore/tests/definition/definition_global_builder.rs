@@ -53,13 +53,24 @@ fn test_object_inheritance() {
 fn test_invalid_keys() {
     // Why: Test that invalid keys are correctly rejected.
     let res = StoreKey::new("".into());
-    assert!(matches!(res, Err(StoreError::KeyEmpty)));
+    assert_eq!(
+        res.expect_err("empty key should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_empty"
+    );
 
     let res = StoreKey::new("Invalid Key!".into());
-    assert!(matches!(res, Err(StoreError::KeyInvalidCharacter(_))));
-    if let Err(StoreError::KeyInvalidCharacter(s)) = res {
-        assert_eq!(s, "Invalid Key!");
-    }
+    let error = res.expect_err("invalid key should fail");
+    assert_eq!(
+        error.translate_data().message_key().as_str(),
+        "datastore_key_invalid_character"
+    );
+    assert_eq!(
+        error.translate_data().message_params()["key"].as_str(),
+        "Invalid Key!"
+    );
 }
 
 #[test]
@@ -243,7 +254,14 @@ fn test_object_definition_inherit_with_check_error() {
         )
         .inherit_with_check(&parent_def);
 
-    assert!(matches!(result, Err(StoreError::KeyConflict(_))));
+    assert_eq!(
+        result
+            .expect_err("duplicate key should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_conflict"
+    );
 }
 
 #[test]
@@ -295,7 +313,14 @@ fn test_object_definition_inherit_from_builder_with_check_error() {
         )
         .inherit_from_builder_with_check(b1);
 
-    assert!(matches!(result, Err(StoreError::KeyConflict(_))));
+    assert_eq!(
+        result
+            .expect_err("duplicate key should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_conflict"
+    );
 }
 
 #[test]

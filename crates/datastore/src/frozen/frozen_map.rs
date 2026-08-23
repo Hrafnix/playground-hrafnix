@@ -5,8 +5,8 @@ use crate::frozen::{
     StringFrozen, TableFrozen, TableWithUnitsFrozen, UnitFrozen,
 };
 use crate::traits::TreePrint;
-use errors::StoreError;
 use keys::store_key::StoreKey;
+use message::message::{Message, MessageCategory};
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -482,27 +482,29 @@ impl MapFrozen {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::SchemaMismatch` if the items do not all share the same
-    /// entry schema, or `StoreError::MissingSchema` if `items` is empty.
+    /// Returns an error message if the items do not all share the same entry schema
+    /// or if `items` is empty.
     #[hotpath::measure]
     pub fn new_from_items<S: Into<ShareableString>>(
         description: S,
         items: BTreeMap<StoreKey, MapEntryFrozen>,
-    ) -> Result<Self, StoreError> {
+    ) -> Result<Self, Message> {
         let item_schema = if let Some(first_item) = items.values().next() {
             let first_schema = first_item.definition();
             for item in items.values().skip(1) {
                 let schema = item.definition();
                 if first_schema != schema {
-                    return Err(StoreError::SchemaMismatch(format!(
-                        "FrozenMap items must have the same entry schema. Expected: {first_schema:?}, Found: {schema:?}"
-                    )));
+                    return Err(Message::error(
+                        MessageCategory::Datastore,
+                        "datastore_schema_mismatch",
+                    ));
                 }
             }
             first_schema
         } else {
-            return Err(StoreError::MissingSchema(
-                "FrozenMap cannot be empty as item type cannot be inferred".into(),
+            return Err(Message::error(
+                MessageCategory::Datastore,
+                "datastore_missing_schema",
             ));
         };
 

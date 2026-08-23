@@ -18,8 +18,8 @@ serde.workspace = true
 hotpath.workspace = true
 
 shareable_string.workspace = true
-errors.workspace = true
 keys.workspace = true
+message.workspace = true
 units.workspace = true
 
 [dev-dependencies]

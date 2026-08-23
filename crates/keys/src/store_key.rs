@@ -1,5 +1,5 @@
 use crate::common::{KEY_WORDS, is_valid_key_with_prefix};
-use errors::StoreError;
+use message::message::{Message, MessageCategory};
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::fmt::Display;
@@ -23,27 +23,45 @@ pub const fn is_valid_key(s: &str) -> bool {
 /// The first character must be lowercase a-z.
 /// The remaining characters may be lowercase a-z, digits 0-9, and underscores.
 #[hotpath::measure]
-fn validate_key(key: &ShareableString) -> Result<(), StoreError> {
+fn validate_key(key: &ShareableString) -> Result<(), Message> {
     let s = key.as_str();
 
     for keyword in KEY_WORDS {
         if s == keyword {
-            return Err(StoreError::KeyReserved(s.to_string()));
+            return Err(Message::error_with_param(
+                MessageCategory::Datastore,
+                "datastore_key_reserved",
+                "key",
+                s,
+            ));
         }
     }
 
     for c in 'a'..='z' {
         if s.starts_with(&format!("{c}_")) {
-            return Err(StoreError::KeyInvalidPrefix(s.to_string()));
+            return Err(Message::error_with_param(
+                MessageCategory::Datastore,
+                "datastore_key_invalid_prefix",
+                "key",
+                s,
+            ));
         }
     }
 
     if s.is_empty() {
-        Err(StoreError::KeyEmpty)
+        Err(Message::error(
+            MessageCategory::Datastore,
+            "datastore_key_empty",
+        ))
     } else if is_valid_key(s) {
         Ok(())
     } else {
-        Err(StoreError::KeyInvalidCharacter(s.to_string()))
+        Err(Message::error_with_param(
+            MessageCategory::Datastore,
+            "datastore_key_invalid_character",
+            "key",
+            s,
+        ))
     }
 }
 
@@ -237,9 +255,9 @@ impl StoreKey {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyEmpty` or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    /// Returns an error message if the key is invalid.
     #[hotpath::measure]
-    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
+    pub fn new(key: ShareableString) -> Result<Self, Message> {
         validate_key(&key)?;
         Ok(Self { key })
     }
@@ -311,7 +329,9 @@ impl<'de> Deserialize<'de> for StoreKey {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        StoreKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
+        StoreKey::new(ShareableString::from(s)).map_err(|message| {
+            serde::de::Error::custom(message.translate_data().message_key().as_str())
+        })
     }
 }
 

@@ -16,8 +16,12 @@ hotpath.workspace = true
 
 datastore.workspace = true
 keys.workspace = true
+message.workspace = true
 shareable_string.workspace = true
 units.workspace = true
+
+[dev-dependencies]
+translation.workspace = true
 
 [lints]
 workspace = true

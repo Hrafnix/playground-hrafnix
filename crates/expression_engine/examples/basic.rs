@@ -7,6 +7,8 @@ use expression_engine::prelude::*;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
+    let store = SharedStringStore::new();
+    let translations = translation::generate_translation_map(&store);
     let definition = ParameterObjectDefinition::builder("Example Parameters")
         .with(
             parameter_key!("p_answer"),
@@ -28,7 +30,10 @@ fn main() -> ExitCode {
         }
         Err(errors) => {
             for error in errors {
-                eprintln!("{error}");
+                let rendered = error
+                    .translated_message(&translations, "en")
+                    .unwrap_or_else(|| error.translate_data().message_key().clone());
+                eprintln!("{rendered}");
             }
             ExitCode::FAILURE
         }

@@ -616,6 +616,7 @@ dependencies = [
  "egui",
  "env_logger",
  "expression_engine",
+ "translation",
 ]
 
 [[package]]
@@ -858,9 +859,9 @@ name = "datastore"
 version = "0.1.0"
 dependencies = [
  "blake3",
- "errors",
  "hotpath",
  "keys",
+ "message",
  "serde",
  "serde_json",
  "shareable_string",
@@ -1222,10 +1223,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dea2df4cf52843e0452895c455a1a2cfbb842a1e7329671acf418fdc53ed4c59"
 
 [[package]]
-name = "errors"
-version = "0.1.0"
-
-[[package]]
 name = "euclid"
 version = "0.22.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1261,7 +1258,9 @@ dependencies = [
  "datastore",
  "hotpath",
  "keys",
+ "message",
  "shareable_string",
+ "translation",
  "units",
 ]
 
@@ -1992,8 +1991,8 @@ dependencies = [
 name = "keys"
 version = "0.1.0"
 dependencies = [
- "errors",
  "hotpath",
+ "message",
  "serde",
  "shareable_string",
 ]
@@ -2134,6 +2133,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "message"
+version = "0.1.0"
+dependencies = [
+ "hotpath",
+ "shareable_string",
 ]
 
 [[package]]
@@ -3630,6 +3637,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a"
 dependencies = [
  "once_cell",
+]
+
+[[package]]
+name = "translation"
+version = "0.1.0"
+dependencies = [
+ "shareable_string",
 ]
 
 [[package]]

@@ -1,6 +1,7 @@
+use crate::evaluation::create_error_message;
 use crate::evaluation::expression::ast::parser::{Parser, ParserToken};
-use crate::evaluation::expression::ast::span::{Span, SpanSet};
-use crate::{ExpressionCategory, ExpressionError};
+use message::message::{Message, MessageCategory};
+use message::span::{Span, SpanSet};
 use shareable_string::ShareableString;
 use std::fmt;
 
@@ -210,7 +211,7 @@ pub(crate) struct Translator {
 impl Translator {
     /// Translates the given `Parser`'s token tree into an `Expression` tree.
     #[hotpath::measure]
-    pub(crate) fn new(parser: &Parser) -> Result<Self, ExpressionError> {
+    pub(crate) fn new(parser: &Parser) -> Result<Self, Message> {
         let parser_token = parser.get_token().clone();
         let source = parser.get_source().clone();
 
@@ -229,25 +230,27 @@ impl Translator {
         operands: &[ParserToken],
         operator: Operators,
         source: &ShareableString,
-    ) -> Result<Expression, ExpressionError> {
+    ) -> Result<Expression, Message> {
         let left = Self::translate_token(
             operands.first().cloned().ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    "Binary operator is missing its left operand.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_translator_binary_missing_left_operand".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?,
             source,
         )?;
         let right = Self::translate_token(
             operands.get(1).cloned().ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    "Binary operator is missing its right operand.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_translator_binary_missing_right_operand".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?,
             source,
@@ -273,14 +276,15 @@ impl Translator {
         operands: &[ParserToken],
         operator: Operators,
         source: &ShareableString,
-    ) -> Result<Expression, ExpressionError> {
+    ) -> Result<Expression, Message> {
         let operand = Self::translate_token(
             operands.first().cloned().ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    "Unary operator is missing its operand.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_translator_unary_missing_operand".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?,
             source,
@@ -304,25 +308,27 @@ impl Translator {
         span: Span,
         operands: &[ParserToken],
         source: &ShareableString,
-    ) -> Result<Expression, ExpressionError> {
+    ) -> Result<Expression, Message> {
         let target = Self::translate_token(
             operands.first().cloned().ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    "Index operator is missing its target.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_translator_index_missing_target".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?,
             source,
         )?;
         let new_index = Self::translate_token(
             operands.get(1).cloned().ok_or_else(|| {
-                ExpressionError::new_complex(
-                    ExpressionCategory::Parse,
-                    "Index operator is missing its index.".to_string(),
-                    source.clone(),
-                    SpanSet::from_span(span),
+                create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_translator_index_missing_index".into(),
+                    [].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )
             })?,
             source,
@@ -363,7 +369,7 @@ impl Translator {
         name: String,
         arguments: Vec<ParserToken>,
         source: &ShareableString,
-    ) -> Result<Expression, ExpressionError> {
+    ) -> Result<Expression, Message> {
         let arguments = arguments
             .into_iter()
             .map(|argument| Self::translate_token(argument, source))
@@ -404,7 +410,7 @@ impl Translator {
     /// Translates a `ParserToken::Numeric` into either an integer or floating-point `Literal`
     /// expression, depending on whether the numeric value can be parsed as an integer or a float.
     #[hotpath::measure]
-    fn translate_numeric(span: Span, value: &str) -> Result<Expression, ExpressionError> {
+    fn translate_numeric(span: Span, value: &str) -> Result<Expression, Message> {
         if let Ok(integer) = value.parse::<i64>() {
             return Ok(Expression::Literal(span, Literal::Integer(integer)));
         }
@@ -413,9 +419,12 @@ impl Translator {
             return Ok(Expression::Literal(span, Literal::Float(float)));
         }
 
-        Err(ExpressionError::new(
-            ExpressionCategory::Parse,
-            format!("Invalid numeric literal: {value}"),
+        Err(create_error_message(
+            MessageCategory::ExpressionParsing,
+            "expression_engine_translator_invalid_numeric_literal".into(),
+            [("value".into(), value.into())].into_iter().collect(),
+            None,
+            None,
         ))
     }
 
@@ -429,7 +438,7 @@ impl Translator {
     fn translate_token(
         parser_token: ParserToken,
         source: &ShareableString,
-    ) -> Result<Expression, ExpressionError> {
+    ) -> Result<Expression, Message> {
         match parser_token {
             ParserToken::Identifier(span, value) => Ok(Self::translate_atom(span, value)),
             ParserToken::Numeric(span, value) => Self::translate_numeric(span, value.as_str()),
@@ -437,11 +446,12 @@ impl Translator {
             ParserToken::Operator(span, op, operands) => match (op.as_str(), operands.len()) {
                 ("+", 1) => Self::translate_token(
                     operands.first().cloned().ok_or_else(|| {
-                        ExpressionError::new_complex(
-                            ExpressionCategory::Parse,
-                            "Unary '+' operator is missing its operand.".to_string(),
-                            source.clone(),
-                            SpanSet::from_span(span),
+                        create_error_message(
+                            MessageCategory::ExpressionParsing,
+                            "expression_engine_translator_unary_plus_missing_operand".into(),
+                            [].into_iter().collect(),
+                            Some(source.clone()),
+                            Some(SpanSet::from_span(span)),
                         )
                     })?,
                     source,
@@ -470,9 +480,12 @@ impl Translator {
                 _ if Self::is_function_name(op.as_str()) => {
                     Self::translate_call(span, op, operands, source)
                 }
-                _ => Err(ExpressionError::new(
-                    ExpressionCategory::Parse,
-                    format!("Unsupported operator: {op}"),
+                _ => Err(create_error_message(
+                    MessageCategory::ExpressionParsing,
+                    "expression_engine_translator_unsupported_operator".into(),
+                    [("operator".into(), op.into())].into_iter().collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
                 )),
             },
         }
@@ -484,12 +497,32 @@ mod tests {
     use super::*;
     use crate::evaluation::expression::ast::lexer::Lexer;
     use crate::evaluation::expression::ast::parser::Parser;
-    use crate::evaluation::expression::ast::span::Span;
+    use message::message::MessageLevel;
 
-    fn translate_str(s: &str) -> Result<Expression, ExpressionError> {
+    fn translate_str(s: &str) -> Result<Expression, Message> {
         let lexer = Lexer::new(s)?;
         let parser = Parser::new(&lexer)?;
         Translator::new(&parser).map(|translator| translator.expression().clone())
+    }
+
+    /// Asserts that the given `message` is a parse error with the expected message ID and parameters.
+    fn assert_parse_error(
+        message: &Message,
+        expected_message_id: &str,
+        parameters: Vec<(&str, &str)>,
+    ) {
+        assert_eq!(message.category(), MessageCategory::ExpressionParsing);
+        assert_eq!(message.level(), MessageLevel::Error);
+        assert_eq!(
+            message.translate_data().message_key().as_str(),
+            expected_message_id
+        );
+        let message_params = message.translate_data().message_params();
+        assert_eq!(message_params.len(), parameters.len());
+        for (key, value) in parameters {
+            let shared_value = ShareableString::from(value);
+            assert_eq!(message_params.get(key), Some(&shared_value));
+        }
     }
 
     #[test]
@@ -547,11 +580,12 @@ mod tests {
                     ParserToken::Identifier(Span::new(0, 0), "b".to_string()),
                 ],
             );
-            let err = Translator::translate_token(token, &ShareableString::from(""))
-                .unwrap_err()
-                .to_string();
-            assert!(err.starts_with("[Parse]"));
-            assert!(err.contains(&format!("Unsupported operator: {op}")));
+            let err = Translator::translate_token(token, &ShareableString::from("")).unwrap_err();
+            assert_parse_error(
+                &err,
+                "expression_engine_translator_unsupported_operator",
+                vec![("operator", *op)],
+            );
         }
     }
 
@@ -593,9 +627,12 @@ mod tests {
     fn dot_operator_is_no_longer_supported() {
         // the `.` operator has been removed; field access must now go through bracket
         // indexing (e.g. `p_map[key1][item1]`) instead of `p_map[key1].item1`.
-        let err = translate_str("a . b").unwrap_err().to_string();
-        assert!(err.starts_with("[Lexer]"));
-        assert!(err.contains("Invalid operator in expression: '.'"));
+        let err = translate_str("a . b").unwrap_err();
+        assert_parse_error(
+            &err,
+            "expression_engine_lexer_invalid_operator",
+            vec![("operator", ".")],
+        );
     }
 
     #[test]

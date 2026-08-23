@@ -1,13 +1,15 @@
-use crate::{ComputedItem, ExpressionError};
+use crate::ComputedItem;
 use keys::store_key::StoreKey;
+use message::message::Message;
+#[cfg(test)]
+use message::message::MessageCategory;
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// The callable body of a [`FunctionDefinition`], stored behind an `Arc` so that
 /// definitions can be cheaply cloned (the owning `ExpressionEngine` is itself `Clone`).
-type FunctionBody =
-    Arc<dyn Fn(&[ComputedItem]) -> Result<ComputedItem, ExpressionError> + Send + Sync>;
+type FunctionBody = Arc<dyn Fn(&[ComputedItem]) -> Result<ComputedItem, Message> + Send + Sync>;
 
 /// Represents the number of arguments a function expects.
 #[derive(Debug, Clone, PartialEq)]
@@ -61,7 +63,7 @@ impl FunctionDefinition {
         function: F,
     ) -> Self
     where
-        F: Fn(&[ComputedItem]) -> Result<ComputedItem, ExpressionError> + Send + Sync + 'static,
+        F: Fn(&[ComputedItem]) -> Result<ComputedItem, Message> + Send + Sync + 'static,
     {
         Self {
             name: name.into().into(),
@@ -91,7 +93,7 @@ impl FunctionDefinition {
 
     /// Invokes the function with the provided pre-evaluated arguments.
     #[hotpath::measure]
-    pub(crate) fn call(&self, arguments: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+    pub(crate) fn call(&self, arguments: &[ComputedItem]) -> Result<ComputedItem, Message> {
         (self.function)(arguments)
     }
 }
@@ -178,19 +180,23 @@ impl FunctionDefinitions {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::evaluation::create_error_message;
     use datastore::prelude::*;
     use std::ops::AddAssign;
 
-    fn add(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+    fn add(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
         let mut sum = 0.0;
         for arg in args {
             match arg {
                 ComputedItem::Float(v) => sum.add_assign(v),
                 ComputedItem::Integer(v) => sum.add_assign(*v as f64),
                 _ => {
-                    return Err(ExpressionError::new(
-                        crate::ExpressionCategory::Evaluation,
-                        "add expects numeric arguments".to_string(),
+                    return Err(create_error_message(
+                        MessageCategory::ExpressionEvaluation,
+                        "expression_engine_evaluation_add_requires_numeric_arguments".into(),
+                        [].into_iter().collect(),
+                        None,
+                        None,
                     ));
                 }
             }
@@ -239,6 +245,30 @@ mod tests {
             ComputedItem::Float(v) => assert_eq!(v, 3.5),
             other => panic!("expected float, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn calling_add_with_non_numeric_arguments_returns_a_translated_error() {
+        let mut definitions = FunctionDefinitions::new();
+        definitions.insert(FunctionDefinition::new(
+            store_key!("add"),
+            "sums its arguments",
+            ArgumentCount::Unbounded,
+            add,
+        ));
+
+        let error = definitions
+            .get("add")
+            .expect("add should be registered")
+            .call(&[ComputedItem::String("not a number".into())])
+            .expect_err("add should reject non-numeric arguments");
+
+        assert_eq!(error.category(), MessageCategory::ExpressionEvaluation);
+        assert_eq!(
+            error.translate_data().message_key().as_str(),
+            "expression_engine_evaluation_add_requires_numeric_arguments"
+        );
+        assert!(error.translate_data().message_params().is_empty());
     }
 
     #[test]

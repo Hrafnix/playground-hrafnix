@@ -229,7 +229,14 @@ fn test_variable_object_definition_inherit_with_check_error() {
         )
         .inherit_with_check(&parent_def);
 
-    assert!(matches!(result, Err(StoreError::KeyConflict(_))));
+    assert_eq!(
+        result
+            .expect_err("duplicate key should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_conflict"
+    );
 }
 
 #[test]
@@ -281,7 +288,14 @@ fn test_variable_object_definition_inherit_from_builder_with_check_error() {
         )
         .inherit_from_builder_with_check(b1);
 
-    assert!(matches!(result, Err(StoreError::KeyConflict(_))));
+    assert_eq!(
+        result
+            .expect_err("duplicate key should fail")
+            .translate_data()
+            .message_key()
+            .as_str(),
+        "datastore_key_conflict"
+    );
 }
 
 #[test]

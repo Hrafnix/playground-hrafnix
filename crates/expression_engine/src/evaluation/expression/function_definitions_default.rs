@@ -1,8 +1,31 @@
+use crate::ComputedItem;
 use crate::evaluation::expression::function_definition::{
     ArgumentCount, FunctionDefinition, FunctionDefinitions,
 };
-use crate::{ComputedItem, ExpressionError};
 use keys::store_key;
+use message::message::{Message, MessageCategory};
+use shareable_string::ShareableString;
+
+/// Creates a translated error for a failed built-in function.
+#[hotpath::measure]
+fn function_error(
+    key: impl Into<ShareableString>,
+    params: impl IntoIterator<Item = (ShareableString, ShareableString)>,
+) -> Message {
+    crate::evaluation::create_error_message(
+        MessageCategory::ExpressionEvaluation,
+        key.into(),
+        params.into_iter().collect(),
+        None,
+        None,
+    )
+}
+
+/// Creates a translated error that identifies the built-in function that failed.
+#[hotpath::measure]
+fn function_argument_error(key: impl Into<ShareableString>, function_name: &str) -> Message {
+    function_error(key, [("function".into(), function_name.into())])
+}
 
 /// The largest integer that can be represented exactly as an `f64` (2^53).
 const MAX_EXACT_INTEGER_IN_F64: i64 = 9_007_199_254_740_992;
@@ -14,26 +37,26 @@ const I64_MAX_F64: f64 = 9_223_372_036_854_775_807.0;
 /// Truncates `value` to an `i64` via `trunc()`, returning an error if `value` is non-finite
 /// or outside the representable `i64` range.
 #[hotpath::measure]
-fn truncated_f64_to_i64(value: f64, function_name: &str) -> Result<i64, ExpressionError> {
+fn truncated_f64_to_i64(value: f64, function_name: &str) -> Result<i64, Message> {
     if !value.is_finite() {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!("{function_name} function argument must be finite"),
+        return Err(function_argument_error(
+            "expression_engine_function_argument_must_be_finite",
+            function_name,
         ));
     }
 
     let truncated = value.trunc();
     if !(I64_MIN_F64..=I64_MAX_F64).contains(&truncated) {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!("{function_name} function argument is out of range for an integer"),
+        return Err(function_argument_error(
+            "expression_engine_function_argument_out_of_integer_range",
+            function_name,
         ));
     }
 
     format!("{truncated:.0}").parse::<i64>().map_err(|_| {
-        ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!("{function_name} function argument could not be converted to an integer"),
+        function_argument_error(
+            "expression_engine_function_argument_integer_conversion_failed",
+            function_name,
         )
     })
 }
@@ -41,20 +64,18 @@ fn truncated_f64_to_i64(value: f64, function_name: &str) -> Result<i64, Expressi
 /// Converts `value` to an `f64`, returning an error if it is outside the range that
 /// can be represented exactly (i.e., beyond `±MAX_EXACT_INTEGER_IN_F64`).
 #[hotpath::measure]
-fn i64_to_f64(value: i64, function_name: &str) -> Result<f64, ExpressionError> {
+fn i64_to_f64(value: i64, function_name: &str) -> Result<f64, Message> {
     if !(-MAX_EXACT_INTEGER_IN_F64..=MAX_EXACT_INTEGER_IN_F64).contains(&value) {
-        return Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!(
-                "{function_name} function argument is too large to convert to a float without losing precision"
-            ),
+        return Err(function_argument_error(
+            "expression_engine_function_argument_float_precision_loss",
+            function_name,
         ));
     }
 
     value.to_string().parse::<f64>().map_err(|_| {
-        ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!("{function_name} function argument could not be converted to a float"),
+        function_argument_error(
+            "expression_engine_function_argument_float_conversion_failed",
+            function_name,
         )
     })
 }
@@ -68,18 +89,18 @@ fn arg<'a>(
     args: &'a [ComputedItem],
     index: usize,
     function_name: &str,
-) -> Result<&'a ComputedItem, ExpressionError> {
+) -> Result<&'a ComputedItem, Message> {
     args.get(index).ok_or_else(|| {
-        ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!("{function_name} function is missing an expected argument"),
+        function_argument_error(
+            "expression_engine_function_missing_expected_argument",
+            function_name,
         )
     })
 }
 
 /// Computes the sine of a float argument (radians).
 #[hotpath::measure]
-fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn sin(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "sin")?;
 
     Ok(ComputedItem::Float(as_float(arg, "sin")?.sin()))
@@ -87,7 +108,7 @@ fn sin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the cosine of a float argument (radians).
 #[hotpath::measure]
-fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn cos(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "cos")?;
 
     Ok(ComputedItem::Float(as_float(arg, "cos")?.cos()))
@@ -95,7 +116,7 @@ fn cos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the tangent of a float argument (radians).
 #[hotpath::measure]
-fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn tan(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "tan")?;
 
     Ok(ComputedItem::Float(as_float(arg, "tan")?.tan()))
@@ -103,7 +124,7 @@ fn tan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the arcsine of a float argument, returning a value in radians.
 #[hotpath::measure]
-fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "arcsin")?;
 
     Ok(ComputedItem::Float(as_float(arg, "arcsin")?.asin()))
@@ -111,7 +132,7 @@ fn arcsin(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the arccosine of a float argument, returning a value in radians.
 #[hotpath::measure]
-fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "arccos")?;
 
     Ok(ComputedItem::Float(as_float(arg, "arccos")?.acos()))
@@ -119,7 +140,7 @@ fn arccos(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the arctangent of a float argument, returning a value in radians.
 #[hotpath::measure]
-fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "arctan")?;
 
     Ok(ComputedItem::Float(as_float(arg, "arctan")?.atan()))
@@ -130,7 +151,7 @@ fn arctan(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 /// that integer and floating-point values are never silently converted into
 /// one another.
 #[hotpath::measure]
-fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, ExpressionError> {
+fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, Message> {
     match item {
         ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => Ok(*value),
         ComputedItem::Boolean(_)
@@ -140,9 +161,9 @@ fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, ExpressionE
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            format!("{function_name} function argument must be a float"),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_float",
+            function_name,
         )),
     }
 }
@@ -151,16 +172,16 @@ fn as_float(item: &ComputedItem, function_name: &str) -> Result<f64, ExpressionE
 /// numeric arguments to share the same type (`Integer` or `Float`) is called
 /// with a mix of the two.
 #[hotpath::measure]
-fn mixed_numeric_types_error(function_name: &str) -> ExpressionError {
-    ExpressionError::new(
-        crate::ExpressionCategory::Evaluation,
-        format!("{function_name} function arguments must all be the same numeric type"),
+fn mixed_numeric_types_error(function_name: &str) -> Message {
+    function_argument_error(
+        "expression_engine_function_arguments_mixed_numeric_types",
+        function_name,
     )
 }
 
 /// Returns the absolute value of a numeric argument (float or integer).
 #[hotpath::measure]
-fn abs(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn abs(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "abs")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.abs())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(value.abs())),
@@ -171,23 +192,23 @@ fn abs(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "abs function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "abs",
         )),
     }
 }
 
 /// Computes the square root of a float argument.
 #[hotpath::measure]
-fn sqrt(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn sqrt(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "sqrt")?, "sqrt")?;
     Ok(ComputedItem::Float(value.sqrt()))
 }
 
 /// Returns the smallest integer greater than or equal to the argument.
 #[hotpath::measure]
-fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "ceil")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.ceil())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
@@ -198,16 +219,16 @@ fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "ceil function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "ceil",
         )),
     }
 }
 
 /// Returns the largest integer less than or equal to the argument.
 #[hotpath::measure]
-fn floor(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn floor(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "floor")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.floor())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
@@ -218,16 +239,16 @@ fn floor(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "floor function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "floor",
         )),
     }
 }
 
 /// Rounds the argument to the nearest integer (ties round away from zero).
 #[hotpath::measure]
-fn round(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn round(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "round")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(value.round())),
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
@@ -238,16 +259,16 @@ fn round(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "round function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "round",
         )),
     }
 }
 
 /// Returns the minimum value among one or more numeric arguments of the same type.
 #[hotpath::measure]
-fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn min(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "min")? {
         ComputedItem::Float(first) => {
             let mut result = *first;
@@ -292,16 +313,16 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "min function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "min",
         )),
     }
 }
 
 /// Returns the maximum value among one or more numeric arguments of the same type.
 #[hotpath::measure]
-fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn max(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "max")? {
         ComputedItem::Float(first) => {
             let mut result = *first;
@@ -346,16 +367,16 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "max function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "max",
         )),
     }
 }
 
 /// Clamps the first argument to the inclusive range `[min, max]`.
 #[hotpath::measure]
-fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match (
         arg(args, 0, "clamp")?,
         arg(args, 1, "clamp")?,
@@ -367,9 +388,9 @@ fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             ComputedItem::Float(max_value),
         ) => {
             if min_value > max_value {
-                return Err(ExpressionError::new(
-                    crate::ExpressionCategory::Evaluation,
-                    "clamp function min argument must not be greater than max argument".to_string(),
+                return Err(function_error(
+                    "expression_engine_function_clamp_minimum_exceeds_maximum",
+                    [],
                 ));
             }
             Ok(ComputedItem::Float(value.clamp(*min_value, *max_value)))
@@ -380,9 +401,9 @@ fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
             ComputedItem::Integer(max_value),
         ) => {
             if min_value > max_value {
-                return Err(ExpressionError::new(
-                    crate::ExpressionCategory::Evaluation,
-                    "clamp function min argument must not be greater than max argument".to_string(),
+                return Err(function_error(
+                    "expression_engine_function_clamp_minimum_exceeds_maximum",
+                    [],
                 ));
             }
             Ok(ComputedItem::Integer(
@@ -395,35 +416,35 @@ fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the natural logarithm of a float argument.
 #[hotpath::measure]
-fn log(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn log(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "log")?, "log")?;
     Ok(ComputedItem::Float(value.ln()))
 }
 
 /// Computes the base-2 logarithm of a float argument.
 #[hotpath::measure]
-fn log2(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn log2(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "log2")?, "log2")?;
     Ok(ComputedItem::Float(value.log2()))
 }
 
 /// Computes the base-10 logarithm of a float argument.
 #[hotpath::measure]
-fn log10(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn log10(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "log10")?, "log10")?;
     Ok(ComputedItem::Float(value.log10()))
 }
 
 /// Computes `e^x` for a float argument.
 #[hotpath::measure]
-fn exp(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn exp(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "exp")?, "exp")?;
     Ok(ComputedItem::Float(value.exp()))
 }
 
 /// Computes `atan2(y, x)` for two float arguments, returning the angle in radians.
 #[hotpath::measure]
-fn arctan2(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn arctan2(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let y = as_float(arg(args, 0, "arctan2")?, "arctan2")?;
     let x = as_float(arg(args, 1, "arctan2")?, "arctan2")?;
     Ok(ComputedItem::Float(y.atan2(x)))
@@ -431,51 +452,48 @@ fn arctan2(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 
 /// Computes the hyperbolic sine of a float argument.
 #[hotpath::measure]
-fn sinh(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn sinh(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "sinh")?, "sinh")?;
     Ok(ComputedItem::Float(value.sinh()))
 }
 
 /// Computes the hyperbolic cosine of a float argument.
 #[hotpath::measure]
-fn cosh(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn cosh(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "cosh")?, "cosh")?;
     Ok(ComputedItem::Float(value.cosh()))
 }
 
 /// Computes the hyperbolic tangent of a float argument.
 #[hotpath::measure]
-fn tanh(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn tanh(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "tanh")?, "tanh")?;
     Ok(ComputedItem::Float(value.tanh()))
 }
 
 /// Converts a float argument from degrees to radians.
 #[hotpath::measure]
-fn to_radians(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn to_radians(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "to_radians")?, "to_radians")?;
     Ok(ComputedItem::Float(value.to_radians()))
 }
 
 /// Converts a float argument from radians to degrees.
 #[hotpath::measure]
-fn to_degrees(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn to_degrees(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let value = as_float(arg(args, 0, "to_degrees")?, "to_degrees")?;
     Ok(ComputedItem::Float(value.to_degrees()))
 }
 
 /// Returns the number of characters in a string argument as an integer.
 #[hotpath::measure]
-fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn len(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let arg = arg(args, 0, "len")?;
 
     match arg {
         ComputedItem::String(value) => {
             let len = i64::try_from(value.as_str().len()).map_err(|_| {
-                ExpressionError::new(
-                    crate::ExpressionCategory::Evaluation,
-                    "len function result is too large to fit in an integer",
-                )
+                function_error("expression_engine_function_length_result_too_large", [])
             })?;
             Ok(ComputedItem::Integer(len))
         }
@@ -487,16 +505,16 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "len function argument must be a string".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_string",
+            "len",
         )),
     }
 }
 
 /// Converts a numeric argument to an integer, truncating towards zero for floats.
 #[hotpath::measure]
-fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "to_int")? {
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
         ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
@@ -509,9 +527,9 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "to_int function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "to_int",
         )),
     }
 }
@@ -519,7 +537,7 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
 /// Converts a numeric argument to a float, returning an error for integers outside the
 /// exactly representable range.
 #[hotpath::measure]
-fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "to_float")? {
         ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
             Ok(ComputedItem::Float(*value))
@@ -534,16 +552,16 @@ fn to_float(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "to_float function argument must be a number".to_string(),
+        | ComputedItem::Unit(_) => Err(function_argument_error(
+            "expression_engine_function_argument_must_be_number",
+            "to_float",
         )),
     }
 }
 
 /// Returns `true_value` if the boolean first argument is `true`, otherwise `false_value`.
 #[hotpath::measure]
-fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
+fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     let condition = arg(args, 0, "if")?;
     let true_value = arg(args, 1, "if")?;
     let false_value = arg(args, 2, "if")?;
@@ -564,9 +582,9 @@ fn if_function(args: &[ComputedItem]) -> Result<ComputedItem, ExpressionError> {
         | ComputedItem::Path(_)
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
-        | ComputedItem::Unit(_) => Err(ExpressionError::new(
-            crate::ExpressionCategory::Evaluation,
-            "if function first argument must be a boolean".to_string(),
+        | ComputedItem::Unit(_) => Err(function_error(
+            "expression_engine_function_if_condition_must_be_boolean",
+            [],
         )),
     }
 }
@@ -748,7 +766,6 @@ pub(crate) fn default_function_definitions() -> FunctionDefinitions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shareable_string::prelude::*;
     use std::ops::Sub;
 
     fn call(name: &str, args: &[ComputedItem]) -> ComputedItem {
@@ -775,12 +792,35 @@ mod tests {
         );
     }
 
-    fn assert_errors(name: &str, args: &[ComputedItem]) {
+    fn assert_error(
+        name: &str,
+        args: &[ComputedItem],
+        expected_key: &str,
+        expected_function: Option<&str>,
+    ) {
         let definitions = default_function_definitions();
         let definition = definitions
             .get(name)
             .expect("function should be registered");
-        assert!(definition.call(args).is_err(), "{name} should have errored");
+        let error = definition
+            .call(args)
+            .expect_err("{name} should have errored");
+
+        assert_eq!(error.category(), MessageCategory::ExpressionEvaluation);
+        assert_eq!(
+            error.translate_data().message_key().as_str(),
+            expected_key,
+            "{name} returned an unexpected error key"
+        );
+
+        let params = error.translate_data().message_params();
+        match expected_function {
+            Some(function) => assert_eq!(
+                params.get("function").map(ShareableString::as_str),
+                Some(function)
+            ),
+            None => assert!(params.is_empty(), "{name} error should have no parameters"),
+        }
     }
 
     #[test]
@@ -796,7 +836,12 @@ mod tests {
 
     #[test]
     fn sqrt_errors_for_integer_argument() {
-        assert_errors("sqrt", &[ComputedItem::Integer(9)]);
+        assert_error(
+            "sqrt",
+            &[ComputedItem::Integer(9)],
+            "expression_engine_function_argument_must_be_float",
+            Some("sqrt"),
+        );
     }
 
     #[test]
@@ -855,8 +900,31 @@ mod tests {
 
     #[test]
     fn min_and_max_error_on_mixed_argument_types() {
-        assert_errors("min", &[ComputedItem::Float(3.0), ComputedItem::Integer(1)]);
-        assert_errors("max", &[ComputedItem::Float(3.0), ComputedItem::Integer(1)]);
+        assert_error(
+            "min",
+            &[ComputedItem::Float(3.0), ComputedItem::Integer(1)],
+            "expression_engine_function_arguments_mixed_numeric_types",
+            Some("min"),
+        );
+        assert_error(
+            "max",
+            &[ComputedItem::Float(3.0), ComputedItem::Integer(1)],
+            "expression_engine_function_arguments_mixed_numeric_types",
+            Some("max"),
+        );
+    }
+
+    #[test]
+    fn numeric_functions_report_structured_non_numeric_argument_errors() {
+        let args = [ComputedItem::Boolean(false)];
+        for name in ["abs", "ceil", "floor", "round", "min", "max"] {
+            assert_error(
+                name,
+                &args,
+                "expression_engine_function_argument_must_be_number",
+                Some(name),
+            );
+        }
     }
 
     #[test]
@@ -901,25 +969,29 @@ mod tests {
 
     #[test]
     fn clamp_errors_when_min_greater_than_max() {
-        assert_errors(
+        assert_error(
             "clamp",
             &[
                 ComputedItem::Float(1.0),
                 ComputedItem::Float(3.0),
                 ComputedItem::Float(0.0),
             ],
+            "expression_engine_function_clamp_minimum_exceeds_maximum",
+            None,
         );
     }
 
     #[test]
     fn clamp_errors_on_mixed_argument_types() {
-        assert_errors(
+        assert_error(
             "clamp",
             &[
                 ComputedItem::Float(1.0),
                 ComputedItem::Integer(0),
                 ComputedItem::Float(3.0),
             ],
+            "expression_engine_function_arguments_mixed_numeric_types",
+            Some("clamp"),
         );
     }
 
@@ -932,9 +1004,24 @@ mod tests {
 
     #[test]
     fn log_functions_error_for_integer_argument() {
-        assert_errors("log", &[ComputedItem::Integer(1)]);
-        assert_errors("log2", &[ComputedItem::Integer(8)]);
-        assert_errors("log10", &[ComputedItem::Integer(1000)]);
+        assert_error(
+            "log",
+            &[ComputedItem::Integer(1)],
+            "expression_engine_function_argument_must_be_float",
+            Some("log"),
+        );
+        assert_error(
+            "log2",
+            &[ComputedItem::Integer(8)],
+            "expression_engine_function_argument_must_be_float",
+            Some("log2"),
+        );
+        assert_error(
+            "log10",
+            &[ComputedItem::Integer(1000)],
+            "expression_engine_function_argument_must_be_float",
+            Some("log10"),
+        );
     }
 
     #[test]
@@ -944,7 +1031,12 @@ mod tests {
 
     #[test]
     fn exp_errors_for_integer_argument() {
-        assert_errors("exp", &[ComputedItem::Integer(1)]);
+        assert_error(
+            "exp",
+            &[ComputedItem::Integer(1)],
+            "expression_engine_function_argument_must_be_float",
+            Some("exp"),
+        );
     }
 
     #[test]
@@ -958,13 +1050,17 @@ mod tests {
 
     #[test]
     fn arctan2_errors_for_integer_argument() {
-        assert_errors(
+        assert_error(
             "arctan2",
             &[ComputedItem::Integer(1), ComputedItem::Float(1.0)],
+            "expression_engine_function_argument_must_be_float",
+            Some("arctan2"),
         );
-        assert_errors(
+        assert_error(
             "arctan2",
             &[ComputedItem::Float(1.0), ComputedItem::Integer(1)],
+            "expression_engine_function_argument_must_be_float",
+            Some("arctan2"),
         );
     }
 
@@ -977,9 +1073,24 @@ mod tests {
 
     #[test]
     fn hyperbolic_functions_error_for_integer_argument() {
-        assert_errors("sinh", &[ComputedItem::Integer(0)]);
-        assert_errors("cosh", &[ComputedItem::Integer(0)]);
-        assert_errors("tanh", &[ComputedItem::Integer(0)]);
+        assert_error(
+            "sinh",
+            &[ComputedItem::Integer(0)],
+            "expression_engine_function_argument_must_be_float",
+            Some("sinh"),
+        );
+        assert_error(
+            "cosh",
+            &[ComputedItem::Integer(0)],
+            "expression_engine_function_argument_must_be_float",
+            Some("cosh"),
+        );
+        assert_error(
+            "tanh",
+            &[ComputedItem::Integer(0)],
+            "expression_engine_function_argument_must_be_float",
+            Some("tanh"),
+        );
     }
 
     #[test]
@@ -998,8 +1109,18 @@ mod tests {
 
     #[test]
     fn angle_conversion_functions_error_for_integer_argument() {
-        assert_errors("to_radians", &[ComputedItem::Integer(180)]);
-        assert_errors("to_degrees", &[ComputedItem::Integer(180)]);
+        assert_error(
+            "to_radians",
+            &[ComputedItem::Integer(180)],
+            "expression_engine_function_argument_must_be_float",
+            Some("to_radians"),
+        );
+        assert_error(
+            "to_degrees",
+            &[ComputedItem::Integer(180)],
+            "expression_engine_function_argument_must_be_float",
+            Some("to_degrees"),
+        );
     }
 
     #[test]
@@ -1016,12 +1137,12 @@ mod tests {
 
     #[test]
     fn len_errors_for_non_string_argument() {
-        let definitions = default_function_definitions();
-        let definition = definitions
-            .get("len")
-            .expect("function should be registered");
-        let result = definition.call(&[ComputedItem::Float(1.0)]);
-        assert!(result.is_err());
+        assert_error(
+            "len",
+            &[ComputedItem::Float(1.0)],
+            "expression_engine_function_argument_must_be_string",
+            Some("len"),
+        );
     }
 
     #[test]
@@ -1033,9 +1154,33 @@ mod tests {
 
     #[test]
     fn to_int_errors_for_non_numeric_argument() {
-        assert_errors(
+        assert_error(
             "to_int",
             &[ComputedItem::String(ShareableString::new("abc"))],
+            "expression_engine_function_argument_must_be_number",
+            Some("to_int"),
+        );
+    }
+
+    #[test]
+    fn to_int_reports_structured_conversion_errors() {
+        assert_error(
+            "to_int",
+            &[ComputedItem::Float(f64::INFINITY)],
+            "expression_engine_function_argument_must_be_finite",
+            Some("to_int"),
+        );
+        assert_error(
+            "to_int",
+            &[ComputedItem::Float(I64_MAX_F64 * 2.0)],
+            "expression_engine_function_argument_out_of_integer_range",
+            Some("to_int"),
+        );
+        assert_error(
+            "to_int",
+            &[ComputedItem::Float(I64_MAX_F64)],
+            "expression_engine_function_argument_integer_conversion_failed",
+            Some("to_int"),
         );
     }
 
@@ -1047,9 +1192,45 @@ mod tests {
 
     #[test]
     fn to_float_errors_for_non_numeric_argument() {
-        assert_errors(
+        assert_error(
             "to_float",
             &[ComputedItem::String(ShareableString::new("abc"))],
+            "expression_engine_function_argument_must_be_number",
+            Some("to_float"),
+        );
+    }
+
+    #[test]
+    fn to_float_reports_precision_loss_with_function_parameter() {
+        assert_error(
+            "to_float",
+            &[ComputedItem::Integer(i64::MAX)],
+            "expression_engine_function_argument_float_precision_loss",
+            Some("to_float"),
+        );
+    }
+
+    #[test]
+    fn missing_arguments_report_the_function_name() {
+        assert_error(
+            "sqrt",
+            &[],
+            "expression_engine_function_missing_expected_argument",
+            Some("sqrt"),
+        );
+    }
+
+    #[test]
+    fn if_requires_a_boolean_condition() {
+        assert_error(
+            "if",
+            &[
+                ComputedItem::Integer(1),
+                ComputedItem::Integer(2),
+                ComputedItem::Integer(3),
+            ],
+            "expression_engine_function_if_condition_must_be_boolean",
+            None,
         );
     }
 

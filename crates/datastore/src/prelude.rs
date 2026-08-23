@@ -10,7 +10,6 @@
 pub use keys::{global_key, parameter_key, store_key, unit_key, variable_key};
 
 // Core types
-pub use errors::StoreError;
 pub use keys::{
     global_key::{ConstGlobalKey, GlobalKey},
     parameter_key::{ConstParameterKey, ParameterKey},
@@ -18,6 +17,7 @@ pub use keys::{
     unit_key::{ConstUnitKey, UnitKey},
     variable_key::{ConstVariableKey, VariableKey},
 };
+pub use message::message::{Message, MessageCategory};
 
 // Definitions
 pub use crate::definition::{

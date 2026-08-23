@@ -1,7 +1,7 @@
 use crate::definition::ItemDefinitionType;
 use crate::traits::TreePrint;
-use errors::StoreError;
 use keys::variable_key::VariableKey;
+use message::message::{Message, MessageCategory};
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
@@ -56,15 +56,20 @@ impl VariableObjectDefinitionBuilder {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyConflict` if any key already exists in the builder.
+    /// Returns an error message if any key already exists in the builder.
     #[hotpath::measure]
     pub fn inherit_with_check(
         mut self,
         definition: &VariableObjectDefinition,
-    ) -> Result<Self, StoreError> {
+    ) -> Result<Self, Message> {
         for key in definition.items.keys() {
             if self.items.contains_key(key) {
-                return Err(StoreError::KeyConflict(key.key.to_string()));
+                return Err(Message::error_with_param(
+                    MessageCategory::Datastore,
+                    "datastore_key_conflict",
+                    "key",
+                    key.key.to_string(),
+                ));
             }
         }
 
@@ -105,15 +110,20 @@ impl VariableObjectDefinitionBuilder {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyConflict` if any key already exists in the builder.
+    /// Returns an error message if any key already exists in the builder.
     #[hotpath::measure]
     pub fn inherit_from_builder_with_check(
         mut self,
         builder: VariableObjectDefinitionBuilder,
-    ) -> Result<Self, StoreError> {
+    ) -> Result<Self, Message> {
         for key in builder.items.keys() {
             if self.items.contains_key(key) {
-                return Err(StoreError::KeyConflict(key.key.to_string()));
+                return Err(Message::error_with_param(
+                    MessageCategory::Datastore,
+                    "datastore_key_conflict",
+                    "key",
+                    key.key.to_string(),
+                ));
             }
         }
 

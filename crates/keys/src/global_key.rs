@@ -1,5 +1,5 @@
 use crate::common::is_valid_key_with_prefix;
-use errors::StoreError;
+use message::message::{Message, MessageCategory};
 use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::fmt::Display;
@@ -19,16 +19,29 @@ pub const fn is_valid_global_key(s: &str) -> bool {
 
 /// Validates that a global key starts with `g_` and has valid remaining characters.
 #[hotpath::measure]
-fn validate_global_key(key: &ShareableString) -> Result<(), StoreError> {
+fn validate_global_key(key: &ShareableString) -> Result<(), Message> {
     let s = key.as_str();
     if !s.starts_with("g_") {
-        Err(StoreError::KeyInvalidPrefix(s.to_string()))
+        Err(Message::error_with_param(
+            MessageCategory::Datastore,
+            "datastore_key_invalid_prefix",
+            "key",
+            s,
+        ))
     } else if s.is_empty() {
-        Err(StoreError::KeyEmpty)
+        Err(Message::error(
+            MessageCategory::Datastore,
+            "datastore_key_empty",
+        ))
     } else if is_valid_global_key(s) {
         Ok(())
     } else {
-        Err(StoreError::KeyInvalidCharacter(s.to_string()))
+        Err(Message::error_with_param(
+            MessageCategory::Datastore,
+            "datastore_key_invalid_character",
+            "key",
+            s,
+        ))
     }
 }
 
@@ -109,9 +122,9 @@ impl GlobalKey {
     ///
     /// # Errors
     ///
-    /// Returns `StoreError::KeyEmpty`, `StoreError::KeyInvalidPrefix`, or `StoreError::KeyInvalidCharacter` if the key is invalid.
+    /// Returns an error message if the key is invalid.
     #[hotpath::measure]
-    pub fn new(key: ShareableString) -> Result<Self, StoreError> {
+    pub fn new(key: ShareableString) -> Result<Self, Message> {
         validate_global_key(&key)?;
         Ok(Self { key })
     }
@@ -176,7 +189,9 @@ impl<'de> Deserialize<'de> for GlobalKey {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        GlobalKey::new(ShareableString::from(s)).map_err(serde::de::Error::custom)
+        GlobalKey::new(ShareableString::from(s)).map_err(|message| {
+            serde::de::Error::custom(message.translate_data().message_key().as_str())
+        })
     }
 }
 
