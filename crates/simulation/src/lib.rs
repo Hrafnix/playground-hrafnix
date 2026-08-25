@@ -23,8 +23,10 @@
     )
 )]
 
+pub mod benchmark_models;
 /// Executable signal/control primitive definitions and behaviors.
 pub mod builtins;
+pub mod catalog_docs;
 /// Component metadata and public interface contracts.
 pub mod component;
 /// Headless execution of persisted custom-component test cases.

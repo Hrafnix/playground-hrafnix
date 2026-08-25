@@ -75,6 +75,22 @@ enum BuiltinKind {
     UnitConversion,
     /// Compiled scalar expression over input and simulation time.
     Expression,
+    /// Two-input scalar subtraction.
+    Subtract,
+    /// Two-input scalar division.
+    Divide,
+    /// Inclusive scalar range limiter.
+    Clamp,
+    /// Boolean-selected scalar routing.
+    Switch,
+    /// Scalar greater-than comparison.
+    GreaterThan,
+    /// Boolean inversion.
+    BooleanNot,
+    /// Clamped two-point linear lookup.
+    Lookup,
+    /// Inclusive scalar range assertion.
+    Assertion,
 }
 
 /// Factory for one built-in algorithm kind.
@@ -143,9 +159,18 @@ impl ComponentBehavior for BuiltinBehavior {
             BuiltinKind::Gain
             | BuiltinKind::Add
             | BuiltinKind::Multiply
+            | BuiltinKind::Subtract
+            | BuiltinKind::Divide
+            | BuiltinKind::Clamp
+            | BuiltinKind::Switch
+            | BuiltinKind::Lookup
+            | BuiltinKind::Assertion
             | BuiltinKind::UnitConversion
             | BuiltinKind::Expression
             | BuiltinKind::Probe => Ok(output(RuntimeValue::Scalar(0.0))),
+            BuiltinKind::GreaterThan | BuiltinKind::BooleanNot => {
+                Ok(output(RuntimeValue::Boolean(false)))
+            }
         }
     }
 
@@ -203,6 +228,127 @@ impl ComponentBehavior for BuiltinBehavior {
                     "b",
                 )?;
                 finite_output(left * right, self.component_id)
+            }
+            BuiltinKind::Subtract => {
+                let left = scalar(
+                    input(inputs, "a", self.component_id)?,
+                    self.component_id,
+                    "a",
+                )?;
+                let right = scalar(
+                    input(inputs, "b", self.component_id)?,
+                    self.component_id,
+                    "b",
+                )?;
+                finite_output(left - right, self.component_id)
+            }
+            BuiltinKind::Divide => {
+                let numerator = scalar(
+                    input(inputs, "a", self.component_id)?,
+                    self.component_id,
+                    "a",
+                )?;
+                let denominator = scalar(
+                    input(inputs, "b", self.component_id)?,
+                    self.component_id,
+                    "b",
+                )?;
+                if denominator == 0.0 {
+                    return Err(runtime_diagnostic(
+                        self.component_id,
+                        "b",
+                        "simulation_runtime_division_by_zero",
+                    ));
+                }
+                finite_output(numerator / denominator, self.component_id)
+            }
+            BuiltinKind::Clamp => {
+                let value = scalar(
+                    input(inputs, "in", self.component_id)?,
+                    self.component_id,
+                    "in",
+                )?;
+                let minimum = scalar(
+                    parameter(parameters, "minimum", self.component_id)?,
+                    self.component_id,
+                    "minimum",
+                )?;
+                let maximum = scalar(
+                    parameter(parameters, "maximum", self.component_id)?,
+                    self.component_id,
+                    "maximum",
+                )?;
+                if minimum > maximum {
+                    return Err(runtime_diagnostic(
+                        self.component_id,
+                        "minimum",
+                        "simulation_runtime_invalid_range",
+                    ));
+                }
+                finite_output(value.clamp(minimum, maximum), self.component_id)
+            }
+            BuiltinKind::Switch => {
+                let select = boolean(
+                    input(inputs, "select", self.component_id)?,
+                    self.component_id,
+                    "select",
+                )?;
+                let key = if select { "true" } else { "false" };
+                Ok(output(input(inputs, key, self.component_id)?.clone()))
+            }
+            BuiltinKind::GreaterThan => {
+                let left = scalar(
+                    input(inputs, "a", self.component_id)?,
+                    self.component_id,
+                    "a",
+                )?;
+                let right = scalar(
+                    input(inputs, "b", self.component_id)?,
+                    self.component_id,
+                    "b",
+                )?;
+                Ok(output(RuntimeValue::Boolean(left > right)))
+            }
+            BuiltinKind::BooleanNot => {
+                let value = boolean(
+                    input(inputs, "in", self.component_id)?,
+                    self.component_id,
+                    "in",
+                )?;
+                Ok(output(RuntimeValue::Boolean(!value)))
+            }
+            BuiltinKind::Lookup => self.lookup(inputs, parameters),
+            BuiltinKind::Assertion => {
+                let value = scalar(
+                    input(inputs, "in", self.component_id)?,
+                    self.component_id,
+                    "in",
+                )?;
+                let minimum = scalar(
+                    parameter(parameters, "minimum", self.component_id)?,
+                    self.component_id,
+                    "minimum",
+                )?;
+                let maximum = scalar(
+                    parameter(parameters, "maximum", self.component_id)?,
+                    self.component_id,
+                    "maximum",
+                )?;
+                if minimum > maximum {
+                    return Err(runtime_diagnostic(
+                        self.component_id,
+                        "minimum",
+                        "simulation_runtime_invalid_range",
+                    ));
+                }
+                if value < minimum || value > maximum {
+                    return Err(runtime_diagnostic(
+                        self.component_id,
+                        "in",
+                        "simulation_runtime_assertion_failed",
+                    ));
+                }
+                finite_output(value, self.component_id)
             }
             BuiltinKind::Integrator => {
                 let input_value = scalar(
@@ -317,6 +463,52 @@ impl ComponentBehavior for BuiltinBehavior {
 }
 
 impl BuiltinBehavior {
+    /// Interpolates one clamped two-point lookup table.
+    #[allow(
+        clippy::float_arithmetic,
+        reason = "Linear interpolation performs validated finite scalar arithmetic."
+    )]
+    fn lookup(
+        &self,
+        inputs: &RuntimeValues,
+        parameters: &RuntimeValues,
+    ) -> Result<ComponentUpdate, Diagnostic> {
+        let input_value = scalar(
+            input(inputs, "in", self.component_id)?,
+            self.component_id,
+            "in",
+        )?;
+        let x0 = scalar(
+            parameter(parameters, "x0", self.component_id)?,
+            self.component_id,
+            "x0",
+        )?;
+        let x1 = scalar(
+            parameter(parameters, "x1", self.component_id)?,
+            self.component_id,
+            "x1",
+        )?;
+        let y0 = scalar(
+            parameter(parameters, "y0", self.component_id)?,
+            self.component_id,
+            "y0",
+        )?;
+        let y1 = scalar(
+            parameter(parameters, "y1", self.component_id)?,
+            self.component_id,
+            "y1",
+        )?;
+        if x0 >= x1 {
+            return Err(runtime_diagnostic(
+                self.component_id,
+                "x0",
+                "simulation_runtime_invalid_lookup_domain",
+            ));
+        }
+        let fraction = ((input_value - x0) / (x1 - x0)).clamp(0.0, 1.0);
+        finite_output(y0 + fraction * (y1 - y0), self.component_id)
+    }
+
     /// Computes the Step source at the current grid time.
     fn step_source(
         &self,
@@ -546,7 +738,111 @@ fn definitions() -> Result<Vec<(ComponentDefinition, BuiltinKind)>, InvalidCompo
             )?,
             BuiltinKind::Expression,
         ),
+        (
+            definition(
+                "signal.subtract",
+                "Subtract",
+                vec![],
+                vec![input_port("a"), input_port("b"), output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::Subtract,
+        ),
+        (
+            definition(
+                "signal.divide",
+                "Divide",
+                vec![],
+                vec![input_port("a"), input_port("b"), output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::Divide,
+        ),
+        (
+            definition(
+                "signal.clamp",
+                "Clamp",
+                vec![
+                    parameter_definition("minimum", "0.0"),
+                    parameter_definition("maximum", "1.0"),
+                ],
+                vec![input_port("in"), output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::Clamp,
+        ),
+        (
+            definition(
+                "signal.switch",
+                "Switch",
+                vec![],
+                vec![
+                    boolean_input_port("select"),
+                    input_port("false"),
+                    input_port("true"),
+                    output_port("out"),
+                ],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::Switch,
+        ),
+        (
+            definition(
+                "signal.greater_than",
+                "Greater Than",
+                vec![],
+                vec![input_port("a"), input_port("b"), boolean_output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::GreaterThan,
+        ),
+        (
+            definition(
+                "signal.boolean_not",
+                "Boolean Not",
+                vec![],
+                vec![boolean_input_port("in"), boolean_output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::BooleanNot,
+        ),
+        (
+            definition(
+                "signal.lookup",
+                "Lookup",
+                vec![
+                    parameter_definition("x0", "0.0"),
+                    parameter_definition("y0", "0.0"),
+                    parameter_definition("x1", "1.0"),
+                    parameter_definition("y1", "1.0"),
+                ],
+                vec![input_port("in"), output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::Lookup,
+        ),
+        (
+            definition(
+                "signal.assertion",
+                "Assertion",
+                vec![
+                    parameter_definition("minimum", "-1.0e300"),
+                    parameter_definition("maximum", "1.0e300"),
+                ],
+                vec![input_port("in"), output_port("out")],
+                direct_feedthrough(),
+            )?,
+            BuiltinKind::Assertion,
+        ),
     ])
+}
+
+/// Returns the standard deterministic direct-feedthrough capabilities.
+const fn direct_feedthrough() -> [ComponentCapability; 2] {
+    [
+        ComponentCapability::DirectFeedthrough,
+        ComponentCapability::Deterministic,
+    ]
 }
 
 /// Creates shared metadata for one signal primitive.
@@ -565,10 +861,10 @@ fn definition<const N: usize>(
             patch: 0,
         },
         display_name: display_name.into(),
-        category: "Signal".into(),
+        category: category(type_id).into(),
         aliases: vec![],
         tags: vec!["deterministic".into()],
-        documentation: "".into(),
+        documentation: documentation(type_id).into(),
         parameters,
         ports,
         capabilities: ComponentCapabilities::new(capabilities),
@@ -581,7 +877,7 @@ fn parameter_definition(key: &str, default_expression: &str) -> ParameterDefinit
     ParameterDefinition {
         key: key.into(),
         display_name: key.into(),
-        description: "".into(),
+        description: format!("Configuration value for `{key}`.").into(),
         value_type: ParameterValueType::Scalar,
         default_expression: default_expression.into(),
     }
@@ -592,7 +888,7 @@ fn unit_parameter_definition(key: &str, default_unit: UnitId) -> ParameterDefini
     ParameterDefinition {
         key: key.into(),
         display_name: key.into(),
-        description: "".into(),
+        description: format!("Unit selected by `{key}`.").into(),
         value_type: ParameterValueType::Unit(UnitFamilyId::Time),
         default_expression: default_unit.string_id().into(),
     }
@@ -603,7 +899,7 @@ fn string_parameter_definition(key: &str, default_value: &str) -> ParameterDefin
     ParameterDefinition {
         key: key.into(),
         display_name: key.into(),
-        description: "".into(),
+        description: format!("Text configuration for `{key}`.").into(),
         value_type: ParameterValueType::String,
         default_expression: default_value.into(),
     }
@@ -619,12 +915,27 @@ fn output_port(key: &str) -> PortDefinition {
     port(key, PortDirection::Output, false)
 }
 
+/// Creates one required Boolean input schema.
+fn boolean_input_port(key: &str) -> PortDefinition {
+    typed_port(key, PortDirection::Input, true, ParameterValueType::Boolean)
+}
+
+/// Creates one Boolean output schema.
+fn boolean_output_port(key: &str) -> PortDefinition {
+    typed_port(
+        key,
+        PortDirection::Output,
+        false,
+        ParameterValueType::Boolean,
+    )
+}
+
 /// Creates one unit-bearing scalar output schema.
 fn unit_output_port(key: &str, unit: UnitId) -> PortDefinition {
     PortDefinition {
         key: key.into(),
         display_name: key.into(),
-        description: "".into(),
+        description: format!("Unit-bearing output `{key}`.").into(),
         direction: PortDirection::Output,
         value_type: ParameterValueType::ScalarWithUnit(unit),
         unit: Some(unit),
@@ -634,14 +945,93 @@ fn unit_output_port(key: &str, unit: UnitId) -> PortDefinition {
 
 /// Creates common scalar port metadata.
 fn port(key: &str, direction: PortDirection, required: bool) -> PortDefinition {
+    typed_port(key, direction, required, ParameterValueType::Scalar)
+}
+
+/// Creates common typed port metadata.
+fn typed_port(
+    key: &str,
+    direction: PortDirection,
+    required: bool,
+    value_type: ParameterValueType,
+) -> PortDefinition {
     PortDefinition {
         key: key.into(),
         display_name: key.into(),
-        description: "".into(),
+        description: format!("{direction:?} signal `{key}`.").into(),
         direction,
-        value_type: ParameterValueType::Scalar,
+        value_type,
         unit: None,
         required,
+    }
+}
+
+/// Returns the catalog category for one stable component type.
+fn category(type_id: &str) -> &'static str {
+    match type_id {
+        "signal.constant" | "signal.step" | "signal.ramp" => "Signal/Sources",
+        "signal.integrator" | "signal.delay" | "signal.first_order_transfer" => "Signal/Control",
+        "signal.switch" => "Signal/Routing",
+        "signal.greater_than" | "signal.boolean_not" => "Signal/Logic",
+        "signal.lookup" => "Signal/Lookup",
+        "signal.assertion" | "signal.probe" => "Signal/Sinks",
+        "signal.unit_conversion" => "Signal/Units",
+        "signal.expression" => "Signal/Expressions",
+        "signal.gain" | "signal.add" | "signal.multiply" | "signal.subtract" | "signal.divide"
+        | "signal.clamp" => "Signal/Math",
+        _ => "Signal",
+    }
+}
+
+/// Returns user-facing behavior documentation for one stable component type.
+fn documentation(type_id: &str) -> &'static str {
+    match type_id {
+        "signal.constant" => "Emits the configured value at every sample.",
+        "signal.step" => "Switches from the initial value to the final value at the step time.",
+        "signal.gain" => "Multiplies the input by a configured scalar gain.",
+        "signal.add" => "Adds two scalar inputs.",
+        "signal.integrator" => "Integrates its input using deterministic forward Euler updates.",
+        "signal.delay" => "Delays its input by one fixed simulation step.",
+        "signal.probe" => "Passes a signal through for explicit graph-level observation.",
+        "signal.ramp" => "Emits a linear ramp after the configured start time.",
+        "signal.multiply" => "Multiplies two scalar inputs.",
+        "signal.first_order_transfer" => {
+            "Applies a first-order transfer function using forward Euler updates."
+        }
+        "signal.unit_conversion" => "Converts a scalar between compatible declared units.",
+        "signal.expression" => "Evaluates a compiled scalar expression over input and time.",
+        "signal.subtract" => "Subtracts input b from input a.",
+        "signal.divide" => "Divides input a by nonzero input b.",
+        "signal.clamp" => "Limits a scalar to an inclusive configured range.",
+        "signal.switch" => "Routes one of two scalar inputs using a Boolean selector.",
+        "signal.greater_than" => "Emits true when input a is greater than input b.",
+        "signal.boolean_not" => "Inverts a Boolean input.",
+        "signal.lookup" => "Interpolates between two points and clamps outside the domain.",
+        "signal.assertion" => "Fails the run when its input leaves an inclusive configured range.",
+        _ => "Deterministic signal component.",
+    }
+}
+
+/// Extracts a Boolean runtime value.
+fn boolean(
+    value: &RuntimeValue,
+    component_id: ComponentId,
+    field: &str,
+) -> Result<bool, Diagnostic> {
+    match value {
+        RuntimeValue::Boolean(value) => Ok(*value),
+        RuntimeValue::Integer(_)
+        | RuntimeValue::Scalar(_)
+        | RuntimeValue::ScalarWithUnit { .. }
+        | RuntimeValue::String(_)
+        | RuntimeValue::Identifier(_)
+        | RuntimeValue::Path(_)
+        | RuntimeValue::Table(_)
+        | RuntimeValue::Unit(_) => Err(runtime_diagnostic(
+            component_id,
+            field,
+            "simulation_runtime_expected_boolean",
+        )),
     }
 }
 
@@ -796,7 +1186,7 @@ mod tests {
         let mut registry = ComponentRegistry::new();
         register_signal_builtins(&mut registry).unwrap();
 
-        assert_eq!(registry.iter().count(), 12);
+        assert_eq!(registry.iter().count(), 20);
         for definition in registry.iter() {
             assert!(registry.factory(&definition.type_id).is_some());
         }
@@ -984,5 +1374,259 @@ mod tests {
             .unwrap();
 
         assert_eq!(update.outputs["out"], RuntimeValue::Scalar(6.5));
+    }
+
+    #[test]
+    fn phase_seven_primitives_initialize_with_declared_output_types() {
+        for kind in [
+            BuiltinKind::Subtract,
+            BuiltinKind::Divide,
+            BuiltinKind::Clamp,
+            BuiltinKind::Switch,
+            BuiltinKind::Lookup,
+            BuiltinKind::Assertion,
+        ] {
+            assert_eq!(
+                behavior(kind)
+                    .initialize(context(0.0), &RuntimeValues::new())
+                    .unwrap()
+                    .outputs["out"],
+                RuntimeValue::Scalar(0.0)
+            );
+        }
+        for kind in [BuiltinKind::GreaterThan, BuiltinKind::BooleanNot] {
+            assert_eq!(
+                behavior(kind)
+                    .initialize(context(0.0), &RuntimeValues::new())
+                    .unwrap()
+                    .outputs["out"],
+                RuntimeValue::Boolean(false)
+            );
+        }
+    }
+
+    #[test]
+    fn phase_seven_math_control_and_routing_behaviors_match_references() {
+        let empty = RuntimeValues::new();
+        assert_output(
+            BuiltinKind::Subtract,
+            &empty,
+            &values([
+                ("a", RuntimeValue::Scalar(7.0)),
+                ("b", RuntimeValue::Scalar(2.0)),
+            ]),
+            RuntimeValue::Scalar(5.0),
+        );
+        assert_output(
+            BuiltinKind::Divide,
+            &empty,
+            &values([
+                ("a", RuntimeValue::Scalar(7.0)),
+                ("b", RuntimeValue::Scalar(2.0)),
+            ]),
+            RuntimeValue::Scalar(3.5),
+        );
+        assert_output(
+            BuiltinKind::Clamp,
+            &values([
+                ("minimum", RuntimeValue::Scalar(-1.0)),
+                ("maximum", RuntimeValue::Scalar(1.0)),
+            ]),
+            &values([("in", RuntimeValue::Scalar(4.0))]),
+            RuntimeValue::Scalar(1.0),
+        );
+        assert_output(
+            BuiltinKind::Switch,
+            &empty,
+            &values([
+                ("select", RuntimeValue::Boolean(true)),
+                ("false", RuntimeValue::Scalar(2.0)),
+                ("true", RuntimeValue::Scalar(9.0)),
+            ]),
+            RuntimeValue::Scalar(9.0),
+        );
+    }
+
+    #[test]
+    fn phase_seven_logic_lookup_and_assertion_behaviors_match_references() {
+        let empty = RuntimeValues::new();
+        assert_output(
+            BuiltinKind::GreaterThan,
+            &empty,
+            &values([
+                ("a", RuntimeValue::Scalar(3.0)),
+                ("b", RuntimeValue::Scalar(2.0)),
+            ]),
+            RuntimeValue::Boolean(true),
+        );
+        assert_output(
+            BuiltinKind::BooleanNot,
+            &empty,
+            &values([("in", RuntimeValue::Boolean(true))]),
+            RuntimeValue::Boolean(false),
+        );
+        let lookup_parameters = values([
+            ("x0", RuntimeValue::Scalar(0.0)),
+            ("y0", RuntimeValue::Scalar(10.0)),
+            ("x1", RuntimeValue::Scalar(2.0)),
+            ("y1", RuntimeValue::Scalar(20.0)),
+        ]);
+        assert_output(
+            BuiltinKind::Lookup,
+            &lookup_parameters,
+            &values([("in", RuntimeValue::Scalar(1.0))]),
+            RuntimeValue::Scalar(15.0),
+        );
+        assert_output(
+            BuiltinKind::Assertion,
+            &values([
+                ("minimum", RuntimeValue::Scalar(0.0)),
+                ("maximum", RuntimeValue::Scalar(2.0)),
+            ]),
+            &values([("in", RuntimeValue::Scalar(2.0))]),
+            RuntimeValue::Scalar(2.0),
+        );
+    }
+
+    #[test]
+    fn phase_seven_boundaries_are_explicit_and_diagnostic() {
+        let divide = behavior(BuiltinKind::Divide)
+            .evaluate(
+                context(0.0),
+                &RuntimeValues::new(),
+                &values([
+                    ("a", RuntimeValue::Scalar(1.0)),
+                    ("b", RuntimeValue::Scalar(0.0)),
+                ]),
+                &RuntimeValues::new(),
+            )
+            .unwrap_err();
+        assert_eq!(divide.message_key(), "simulation_runtime_division_by_zero");
+
+        let invalid_range = values([
+            ("minimum", RuntimeValue::Scalar(2.0)),
+            ("maximum", RuntimeValue::Scalar(1.0)),
+        ]);
+        let clamp = behavior(BuiltinKind::Clamp)
+            .evaluate(
+                context(0.0),
+                &invalid_range,
+                &values([("in", RuntimeValue::Scalar(1.0))]),
+                &RuntimeValues::new(),
+            )
+            .unwrap_err();
+        assert_eq!(clamp.message_key(), "simulation_runtime_invalid_range");
+
+        let assertion = behavior(BuiltinKind::Assertion)
+            .evaluate(
+                context(0.0),
+                &values([
+                    ("minimum", RuntimeValue::Scalar(0.0)),
+                    ("maximum", RuntimeValue::Scalar(1.0)),
+                ]),
+                &values([("in", RuntimeValue::Scalar(2.0))]),
+                &RuntimeValues::new(),
+            )
+            .unwrap_err();
+        assert_eq!(
+            assertion.message_key(),
+            "simulation_runtime_assertion_failed"
+        );
+    }
+
+    #[test]
+    fn phase_seven_lookup_clamps_and_rejects_degenerate_domains() {
+        let parameters = values([
+            ("x0", RuntimeValue::Scalar(0.0)),
+            ("y0", RuntimeValue::Scalar(10.0)),
+            ("x1", RuntimeValue::Scalar(2.0)),
+            ("y1", RuntimeValue::Scalar(20.0)),
+        ]);
+        assert_output(
+            BuiltinKind::Lookup,
+            &parameters,
+            &values([("in", RuntimeValue::Scalar(-4.0))]),
+            RuntimeValue::Scalar(10.0),
+        );
+        let invalid = behavior(BuiltinKind::Lookup)
+            .evaluate(
+                context(0.0),
+                &values([
+                    ("x0", RuntimeValue::Scalar(1.0)),
+                    ("y0", RuntimeValue::Scalar(0.0)),
+                    ("x1", RuntimeValue::Scalar(1.0)),
+                    ("y1", RuntimeValue::Scalar(2.0)),
+                ]),
+                &values([("in", RuntimeValue::Scalar(1.0))]),
+                &RuntimeValues::new(),
+            )
+            .unwrap_err();
+        assert_eq!(
+            invalid.message_key(),
+            "simulation_runtime_invalid_lookup_domain"
+        );
+    }
+
+    #[test]
+    fn phase_seven_definitions_declare_scalar_and_boolean_units() {
+        let mut registry = ComponentRegistry::new();
+        register_signal_builtins(&mut registry).unwrap();
+        for definition in registry.iter().filter(|definition| {
+            matches!(
+                definition.type_id.as_str(),
+                "signal.subtract"
+                    | "signal.divide"
+                    | "signal.clamp"
+                    | "signal.switch"
+                    | "signal.greater_than"
+                    | "signal.boolean_not"
+                    | "signal.lookup"
+                    | "signal.assertion"
+            )
+        }) {
+            assert!(definition.ports.iter().all(|port| port.unit.is_none()));
+        }
+    }
+
+    #[test]
+    fn phase_seven_fresh_instances_reset_to_identical_initial_outputs() {
+        for kind in [
+            BuiltinKind::Subtract,
+            BuiltinKind::Divide,
+            BuiltinKind::Clamp,
+            BuiltinKind::Switch,
+            BuiltinKind::GreaterThan,
+            BuiltinKind::BooleanNot,
+            BuiltinKind::Lookup,
+            BuiltinKind::Assertion,
+        ] {
+            let first = behavior(kind)
+                .initialize(context(0.0), &RuntimeValues::new())
+                .unwrap();
+            let second = behavior(kind)
+                .initialize(context(0.0), &RuntimeValues::new())
+                .unwrap();
+            assert_eq!(first, second);
+        }
+    }
+
+    fn behavior(kind: BuiltinKind) -> BuiltinBehavior {
+        BuiltinBehavior {
+            component_id: ComponentId::from_raw(1),
+            kind,
+            expression: None,
+        }
+    }
+
+    fn assert_output(
+        kind: BuiltinKind,
+        parameters: &RuntimeValues,
+        inputs: &RuntimeValues,
+        expected: RuntimeValue,
+    ) {
+        let mut update = behavior(kind)
+            .evaluate(context(0.0), parameters, inputs, &RuntimeValues::new())
+            .unwrap();
+        assert_eq!(update.outputs.remove("out"), Some(expected));
     }
 }
