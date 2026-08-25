@@ -27,10 +27,14 @@
 pub mod builtins;
 /// Component metadata and public interface contracts.
 pub mod component;
+/// Headless execution of persisted custom-component test cases.
+pub mod custom_tests;
 /// Simulation-owned diagnostics and lower-layer message adaptation.
 pub mod diagnostic;
 /// Persisted model and custom-component document schemas.
 pub mod document;
+/// Deterministic resolved-hierarchy to executable-graph adaptation.
+pub mod flatten;
 /// Stable simulation identity types and injectable ID generation.
 pub mod identity;
 /// Datastore parameter-definition adaptation.

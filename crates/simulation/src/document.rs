@@ -2,6 +2,7 @@ use crate::component::{ComponentTypeId, ParameterDefinition, PortDefinition};
 use crate::identity::{ComponentId, ConnectionId, DocumentId, PortId, ProbeId, SystemId};
 use crate::parameter::ParameterValueType;
 use crate::timing::FixedStepSemantics;
+use crate::value::RuntimeValue;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
@@ -9,7 +10,7 @@ use std::collections::BTreeMap;
 /// Current schema accepted for model documents.
 pub const MODEL_SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 0 };
 /// Current schema accepted for custom-component documents.
-pub const COMPONENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 0 };
+pub const COMPONENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 1 };
 
 /// Version of a persisted document schema.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -244,6 +245,24 @@ pub struct PublicPortMapping {
     pub internal: PortEndpoint,
 }
 
+/// Private component parameter targeted by a public custom-component parameter.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ParameterEndpoint {
+    /// Internal component instance.
+    pub component_id: ComponentId,
+    /// Public parameter key on that internal component.
+    pub parameter_key: ShareableString,
+}
+
+/// Mapping from one public parameter into the private implementation graph.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublicParameterMapping {
+    /// Public parameter key declared by the custom component.
+    pub public_parameter_key: ShareableString,
+    /// Internal component parameter receiving its resolved expression.
+    pub internal: ParameterEndpoint,
+}
+
 /// Private state declaration owned by a custom component.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StateDeclaration {
@@ -256,14 +275,34 @@ pub struct StateDeclaration {
 }
 
 /// Persisted executable example for a custom component.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ComponentTestCase {
     /// User-facing test name.
     pub name: ShareableString,
     /// Public parameter overrides used by the case.
     pub parameter_overrides: BTreeMap<ShareableString, ShareableString>,
+    /// Fixed-step settings for an executable case; absent cases remain descriptive.
+    #[serde(default)]
+    pub simulation: Option<SimulationSettings>,
+    /// Constant input expressions keyed by public input port.
+    #[serde(default)]
+    pub inputs: BTreeMap<ShareableString, ShareableString>,
+    /// Exact output series expected from an executable case.
+    #[serde(default)]
+    pub expected_outputs: Vec<ExpectedOutputSeries>,
     /// Human-readable expected behavior until executable assertions are introduced.
     pub expected_behavior: ShareableString,
+}
+
+/// Exact expected samples for one public custom-component output.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExpectedOutputSeries {
+    /// Public output port key.
+    pub port_key: ShareableString,
+    /// Expected sample times.
+    pub timestamps: Vec<f64>,
+    /// Expected runtime values corresponding one-to-one with timestamps.
+    pub values: Vec<RuntimeValue>,
 }
 
 /// Independently versioned reusable custom-component artifact.
@@ -281,6 +320,9 @@ pub struct CustomComponentDocument {
     pub implementation: Composition,
     /// Public-to-private port mappings.
     pub port_mappings: Vec<PublicPortMapping>,
+    /// Public-to-private parameter mappings.
+    #[serde(default)]
+    pub parameter_mappings: Vec<PublicParameterMapping>,
     /// Private state declarations.
     pub state: Vec<StateDeclaration>,
     /// Persisted component examples/tests.

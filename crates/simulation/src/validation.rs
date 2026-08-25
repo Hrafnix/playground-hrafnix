@@ -1,10 +1,11 @@
 use crate::component::{PortDefinition, PortDirection};
 use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, EntityReference};
-use crate::document::{LoggingPolicy, PortEndpoint, PublicPortMapping};
+use crate::document::{LoggingPolicy, PortEndpoint, PublicParameterMapping, PublicPortMapping};
 use crate::identity::{ComponentId, ConnectionId};
 use crate::parameter::ParameterValueType;
 use crate::resolve::{ResolvedComponent, ResolvedComponentSource, ResolvedModel, ResolvedSystem};
 use crate::timing::FixedStepPlan;
+use shareable_string::ShareableString;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Resource limits enforced before runtime construction.
@@ -33,7 +34,7 @@ impl Default for ValidationLimits {
 pub fn validate_model(model: &ResolvedModel, limits: ValidationLimits) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
     let mut counts = GraphCounts::default();
-    validate_system(&model.root, &mut counts, &mut diagnostics);
+    validate_system(&model.root, &BTreeSet::new(), &mut counts, &mut diagnostics);
 
     if counts.components > limits.maximum_components {
         diagnostics.push(model_diagnostic(
@@ -113,6 +114,7 @@ struct GraphCounts {
 /// Validates one system and recursively visits private custom implementations.
 fn validate_system(
     system: &ResolvedSystem,
+    externally_connected_inputs: &BTreeSet<(ComponentId, ShareableString)>,
     counts: &mut GraphCounts,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
@@ -136,15 +138,22 @@ fn validate_system(
                 "simulation_validation_duplicate_component_name",
             ));
         }
+        if let ResolvedComponentSource::Unresolved { diagnostic, .. } = &component.source {
+            diagnostics.push(diagnostic.clone());
+            continue;
+        }
         validate_component_interface(component, diagnostics);
         if let ResolvedComponentSource::Custom {
             port_mappings,
+            parameter_mappings,
             implementation,
             ..
         } = &component.source
         {
             validate_public_mappings(component, port_mappings, implementation, diagnostics);
-            validate_system(implementation, counts, diagnostics);
+            validate_parameter_mappings(component, parameter_mappings, implementation, diagnostics);
+            let mapped_inputs = mapped_private_inputs(component, port_mappings);
+            validate_system(implementation, &mapped_inputs, counts, diagnostics);
         }
     }
 
@@ -213,6 +222,7 @@ fn validate_system(
             if port.direction == PortDirection::Input
                 && port.required
                 && !connected_inputs.contains_key(&(component.id, port.key.as_str()))
+                && !externally_connected_inputs.contains(&(component.id, port.key.clone()))
             {
                 diagnostics.push(component_diagnostic(
                     component.id,
@@ -220,6 +230,80 @@ fn validate_system(
                     "simulation_validation_required_input",
                 ));
             }
+        }
+    }
+}
+
+/// Returns private input endpoints supplied through mapped public system inputs.
+fn mapped_private_inputs(
+    component: &ResolvedComponent,
+    mappings: &[PublicPortMapping],
+) -> BTreeSet<(ComponentId, ShareableString)> {
+    let input_ids: BTreeSet<_> = component
+        .public_port_ids
+        .iter()
+        .filter_map(|(id, key)| {
+            component
+                .ports
+                .iter()
+                .find(|port| port.key == *key && port.direction == PortDirection::Input)
+                .map(|_| *id)
+        })
+        .collect();
+    mappings
+        .iter()
+        .filter(|mapping| input_ids.contains(&mapping.public_port_id))
+        .map(|mapping| {
+            (
+                mapping.internal.component_id,
+                mapping.internal.port_key.clone(),
+            )
+        })
+        .collect()
+}
+
+/// Checks that every public parameter maps exactly once to an existing private parameter.
+fn validate_parameter_mappings(
+    component: &ResolvedComponent,
+    mappings: &[PublicParameterMapping],
+    implementation: &ResolvedSystem,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let components = component_index(implementation);
+    let public_keys: BTreeSet<&str> = component
+        .parameters
+        .iter()
+        .map(|parameter| parameter.key.as_str())
+        .collect();
+    let mut mapped_public_keys = BTreeSet::new();
+    for mapping in mappings {
+        let valid_internal =
+            components
+                .get(&mapping.internal.component_id)
+                .is_some_and(|internal| {
+                    internal
+                        .parameters
+                        .iter()
+                        .any(|parameter| parameter.key == mapping.internal.parameter_key)
+                });
+        if !public_keys.contains(mapping.public_parameter_key.as_str())
+            || !valid_internal
+            || !mapped_public_keys.insert(mapping.public_parameter_key.as_str())
+        {
+            diagnostics.push(component_diagnostic(
+                component.id,
+                "parameter_mappings",
+                "simulation_validation_invalid_public_parameter_mapping",
+            ));
+        }
+    }
+    for public_key in public_keys {
+        if !mapped_public_keys.contains(public_key) {
+            diagnostics.push(component_diagnostic(
+                component.id,
+                "parameter_mappings",
+                "simulation_validation_missing_public_parameter_mapping",
+            ));
         }
     }
 }

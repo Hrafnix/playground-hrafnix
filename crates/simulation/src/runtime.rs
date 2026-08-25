@@ -2,6 +2,7 @@ use crate::component::{
     ComponentBehavior, ComponentCapability, ComponentUpdate, RuntimeValues, StepContext,
 };
 use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, EntityReference};
+use crate::flatten::flatten_model;
 use crate::identity::{ComponentId, RunId};
 use crate::parameter::ParameterValueType;
 use crate::registry::ComponentRegistry;
@@ -123,7 +124,10 @@ impl SimulationRuntime {
         if !diagnostics.is_empty() {
             return Err(RuntimeBuildFailure { diagnostics });
         }
-        let schedule = build_schedule(model).map_err(|failure| RuntimeBuildFailure {
+        let model = flatten_model(model).map_err(|diagnostic| RuntimeBuildFailure {
+            diagnostics: vec![diagnostic],
+        })?;
+        let schedule = build_schedule(&model).map_err(|failure| RuntimeBuildFailure {
             diagnostics: vec![failure.diagnostic],
         })?;
 
@@ -201,7 +205,7 @@ impl SimulationRuntime {
             .filter(|component| component.stateful)
             .count();
         Ok(Self {
-            model: model.clone(),
+            model,
             schedule,
             components,
             pending_updates: Vec::with_capacity(stateful_count),

@@ -5,6 +5,9 @@ use crate::document::{
 };
 use serde::Deserialize;
 
+/// Last custom-component schema accepted through an explicit migration.
+const COMPONENT_SCHEMA_VERSION_1_0: SchemaVersion = SchemaVersion { major: 1, minor: 0 };
+
 /// Minimal envelope read before deserializing a complete document.
 #[derive(Debug, Deserialize)]
 struct VersionEnvelope {
@@ -35,8 +38,15 @@ pub fn load_model_json(source: &str) -> Result<ModelDocument, Diagnostic> {
 ///
 /// Returns stable diagnostics for malformed JSON and unsupported schemas.
 pub fn load_custom_component_json(source: &str) -> Result<CustomComponentDocument, Diagnostic> {
-    enforce_version(source, COMPONENT_SCHEMA_VERSION)?;
-    serde_json::from_str(source).map_err(malformed_document)
+    let mut value: serde_json::Value = serde_json::from_str(source).map_err(malformed_document)?;
+    let envelope: VersionEnvelope =
+        serde_json::from_value(value.clone()).map_err(malformed_document)?;
+    if envelope.header.schema_version == COMPONENT_SCHEMA_VERSION_1_0 {
+        migrate_component_1_0_to_1_1(&mut value)?;
+    } else if envelope.header.schema_version != COMPONENT_SCHEMA_VERSION {
+        return Err(unsupported_schema());
+    }
+    serde_json::from_value(value).map_err(malformed_document)
 }
 
 /// Serializes a model using stable pretty-printed native JSON.
@@ -63,15 +73,57 @@ pub fn save_custom_component_json(
 fn enforce_version(source: &str, supported: SchemaVersion) -> Result<(), Diagnostic> {
     let envelope: VersionEnvelope = serde_json::from_str(source).map_err(malformed_document)?;
     if envelope.header.schema_version != supported {
-        return Err(Diagnostic::new(
-            DiagnosticSeverity::Error,
-            DiagnosticCategory::Validation,
-            None,
-            Some("schema_version".into()),
-            "simulation_persistence_unsupported_schema",
-        ));
+        return Err(unsupported_schema());
     }
     Ok(())
+}
+
+/// Adds parameter mappings and an audit record to a schema 1.0 component value.
+fn migrate_component_1_0_to_1_1(value: &mut serde_json::Value) -> Result<(), Diagnostic> {
+    let object = value.as_object_mut().ok_or_else(malformed_value)?;
+    object
+        .entry("parameter_mappings")
+        .or_insert_with(|| serde_json::json!([]));
+    let header = object
+        .get_mut("header")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or_else(malformed_value)?;
+    header.insert(
+        "schema_version".into(),
+        serde_json::to_value(COMPONENT_SCHEMA_VERSION).map_err(malformed_document)?,
+    );
+    let migrations = header
+        .get_mut("migrations")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(malformed_value)?;
+    migrations.push(serde_json::json!({
+        "from": COMPONENT_SCHEMA_VERSION_1_0,
+        "to": COMPONENT_SCHEMA_VERSION,
+        "migration_id": "simulation_component_1_0_to_1_1_parameter_mappings"
+    }));
+    Ok(())
+}
+
+/// Creates the stable unsupported-schema diagnostic.
+fn unsupported_schema() -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticSeverity::Error,
+        DiagnosticCategory::Validation,
+        None,
+        Some("schema_version".into()),
+        "simulation_persistence_unsupported_schema",
+    )
+}
+
+/// Creates the stable malformed-document diagnostic without a serde error.
+fn malformed_value() -> Diagnostic {
+    Diagnostic::new(
+        DiagnosticSeverity::Error,
+        DiagnosticCategory::Validation,
+        None,
+        None,
+        "simulation_persistence_malformed_document",
+    )
 }
 
 /// Converts serde failures into a stable public diagnostic.
@@ -241,6 +293,7 @@ mod tests {
                     port_key: "out".into(),
                 },
             }],
+            parameter_mappings: vec![],
             state: vec![StateDeclaration {
                 key: "previous".into(),
                 value_type: ParameterValueType::Scalar,
@@ -249,6 +302,9 @@ mod tests {
             test_cases: vec![ComponentTestCase {
                 name: "identity".into(),
                 parameter_overrides: BTreeMap::new(),
+                simulation: None,
+                inputs: BTreeMap::new(),
+                expected_outputs: vec![],
                 expected_behavior: "Output follows input".into(),
             }],
             dependencies: vec![],
@@ -299,6 +355,23 @@ mod tests {
             "simulation_persistence_unsupported_schema"
         );
         assert_eq!(diagnostic.field().unwrap().as_str(), "schema_version");
+    }
+
+    #[test]
+    fn migrates_component_schema_1_0_with_audit_record() {
+        let mut value = serde_json::to_value(component_fixture()).unwrap();
+        value["header"]["schema_version"]["minor"] = serde_json::json!(0);
+        value["header"]["migrations"] = serde_json::json!([]);
+        value.as_object_mut().unwrap().remove("parameter_mappings");
+
+        let migrated = load_custom_component_json(&value.to_string()).unwrap();
+
+        assert_eq!(migrated.header.schema_version, COMPONENT_SCHEMA_VERSION);
+        assert!(migrated.parameter_mappings.is_empty());
+        assert_eq!(
+            migrated.header.migrations[0].migration_id.as_str(),
+            "simulation_component_1_0_to_1_1_parameter_mappings"
+        );
     }
 
     #[test]

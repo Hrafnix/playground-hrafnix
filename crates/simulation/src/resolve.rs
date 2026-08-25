@@ -5,7 +5,7 @@ use crate::component::{
 use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, EntityReference};
 use crate::document::{
     ArtifactRevision, ComponentReference, Composition, CustomComponentDocument, DependencyLock,
-    ModelDocument, ProbeDefinition, PublicPortMapping, SimulationSettings,
+    ModelDocument, ProbeDefinition, PublicParameterMapping, PublicPortMapping, SimulationSettings,
 };
 use crate::identity::{ComponentId, DocumentId, PortId, SystemId};
 use crate::registry::ComponentRegistry;
@@ -60,8 +60,17 @@ pub enum ResolvedComponentSource {
         revision: ArtifactRevision,
         /// Public-to-private port mappings.
         port_mappings: Vec<PublicPortMapping>,
+        /// Public-to-private parameter mappings.
+        parameter_mappings: Vec<PublicParameterMapping>,
         /// Recursively expanded private implementation.
         implementation: Box<ResolvedSystem>,
+    },
+    /// Read-only placeholder retaining an unavailable source reference.
+    Unresolved {
+        /// Original persisted source reference.
+        reference: ComponentReference,
+        /// Stable reason this source could not be resolved.
+        diagnostic: Diagnostic,
     },
 }
 
@@ -165,6 +174,7 @@ pub fn resolve_model(
         registry,
         loader,
         &mut Vec::new(),
+        false,
     )?;
 
     Ok(ResolvedModel {
@@ -175,6 +185,51 @@ pub fn resolve_model(
     })
 }
 
+/// Resolves available dependencies and preserves unavailable instances as placeholders.
+#[must_use]
+pub fn resolve_model_with_placeholders(
+    model: &ModelDocument,
+    registry: &ComponentRegistry,
+    loader: &impl CustomComponentLoader,
+) -> ResolvedModel {
+    let root = resolve_system(
+        &model.root,
+        model.header.document_id,
+        &model.dependencies,
+        registry,
+        loader,
+        &mut Vec::new(),
+        true,
+    )
+    .unwrap_or_else(|failure| ResolvedSystem {
+        id: model.root.system_id,
+        document_id: model.header.document_id,
+        components: model
+            .root
+            .components
+            .iter()
+            .map(|instance| {
+                unresolved_component(
+                    instance,
+                    failure.diagnostic.clone(),
+                    SourceProvenance {
+                        document_id: model.header.document_id,
+                        system_id: model.root.system_id,
+                        component_id: instance.id,
+                    },
+                )
+            })
+            .collect(),
+        connections: model.root.connections.clone(),
+    });
+    ResolvedModel {
+        document_id: model.header.document_id,
+        root,
+        simulation: model.simulation,
+        probes: model.probes.clone(),
+    }
+}
+
 /// Resolves every component in one source composition while preserving its boundary.
 fn resolve_system(
     composition: &Composition,
@@ -183,6 +238,7 @@ fn resolve_system(
     registry: &ComponentRegistry,
     loader: &impl CustomComponentLoader,
     stack: &mut Vec<DocumentId>,
+    preserve_unresolved: bool,
 ) -> Result<ResolvedSystem, ResolutionFailure> {
     let mut components = Vec::with_capacity(composition.components.len());
     for instance in &composition.components {
@@ -191,17 +247,15 @@ fn resolve_system(
             system_id: composition.system_id,
             component_id: instance.id,
         };
-        let resolved = match &instance.component {
-            ComponentReference::BuiltIn { type_id } => {
-                let definition = registry
-                    .require(type_id, instance.id)
-                    .map_err(|diagnostic| ResolutionFailure {
-                        kind: ResolutionFailureKind::UnknownBuiltIn,
-                        diagnostic,
-                        dependency_path: Vec::new(),
-                    })?;
-                resolved_builtin(instance, definition, provenance)
-            }
+        let resolution = match &instance.component {
+            ComponentReference::BuiltIn { type_id } => registry
+                .require(type_id, instance.id)
+                .map(|definition| resolved_builtin(instance, definition, provenance))
+                .map_err(|diagnostic| ResolutionFailure {
+                    kind: ResolutionFailureKind::UnknownBuiltIn,
+                    diagnostic,
+                    dependency_path: Vec::new(),
+                }),
             ComponentReference::Custom {
                 document_id: expected_id,
                 revision,
@@ -216,7 +270,15 @@ fn resolve_system(
                 loader,
                 stack,
                 provenance,
-            )?,
+                preserve_unresolved,
+            ),
+        };
+        let resolved = match resolution {
+            Ok(component) => component,
+            Err(failure) if preserve_unresolved => {
+                unresolved_component(instance, failure.diagnostic, provenance)
+            }
+            Err(failure) => return Err(failure),
         };
         components.push(resolved);
     }
@@ -264,6 +326,7 @@ fn resolve_custom(
     loader: &impl CustomComponentLoader,
     stack: &mut Vec<DocumentId>,
     provenance: SourceProvenance,
+    preserve_unresolved: bool,
 ) -> Result<ResolvedComponent, ResolutionFailure> {
     let Some(lock) = locks.iter().find(|lock| lock.document_id == expected_id) else {
         return Err(failure(
@@ -328,6 +391,7 @@ fn resolve_custom(
         registry,
         loader,
         stack,
+        preserve_unresolved,
     );
     stack.pop();
     let implementation = implementation?;
@@ -360,10 +424,34 @@ fn resolve_custom(
             document_id: expected_id,
             revision: revision.clone(),
             port_mappings: artifact.document.port_mappings.clone(),
+            parameter_mappings: artifact.document.parameter_mappings.clone(),
             implementation: Box::new(implementation),
         },
         provenance,
     })
+}
+
+/// Creates a read-only placeholder from one unresolved source instance.
+fn unresolved_component(
+    instance: &crate::document::ComponentInstance,
+    diagnostic: Diagnostic,
+    provenance: SourceProvenance,
+) -> ResolvedComponent {
+    ResolvedComponent {
+        id: instance.id,
+        name: instance.name.clone(),
+        parameters: vec![],
+        ports: vec![],
+        public_port_ids: BTreeMap::new(),
+        capabilities: ComponentCapabilities::default(),
+        parameter_overrides: instance.parameter_overrides.clone(),
+        enabled: instance.enabled,
+        source: ResolvedComponentSource::Unresolved {
+            reference: instance.component.clone(),
+            diagnostic,
+        },
+        provenance,
+    }
 }
 
 /// Derives whether a custom component has any mapped input-to-output direct path.
@@ -451,7 +539,7 @@ mod tests {
     use super::{
         CustomComponentLoader, LoadedCustomComponent, ResolutionFailureKind, ResolvedComponent,
         ResolvedComponentSource, ResolvedSystem, SourceProvenance, custom_capabilities,
-        resolve_model,
+        resolve_model, resolve_model_with_placeholders,
     };
     use crate::component::{
         ComponentCapabilities, ComponentCapability, ComponentDefinition, ComponentTypeId,
@@ -542,6 +630,7 @@ mod tests {
                 annotations: BTreeMap::new(),
             },
             port_mappings: vec![],
+            parameter_mappings: vec![],
             state: vec![],
             test_cases: vec![],
             dependencies,
@@ -702,6 +791,57 @@ mod tests {
                 DocumentId::from_raw(3),
                 DocumentId::from_raw(2)
             ]
+        );
+    }
+
+    #[test]
+    fn permissive_resolution_preserves_unknown_builtin_placeholder() {
+        let unknown_type = ComponentTypeId::new("missing.signal").unwrap();
+        let instance = ComponentInstance {
+            id: ComponentId::from_raw(77),
+            name: "missing".into(),
+            component: ComponentReference::BuiltIn {
+                type_id: unknown_type.clone(),
+            },
+            parameter_overrides: BTreeMap::new(),
+            enabled: true,
+            position: CanvasPosition { x: 0.0, y: 0.0 },
+        };
+        let source = model(instance, vec![]);
+        let resolved = resolve_model_with_placeholders(
+            &source,
+            &ComponentRegistry::new(),
+            &MemoryLoader(BTreeMap::new()),
+        );
+
+        let ResolvedComponentSource::Unresolved {
+            reference,
+            diagnostic,
+        } = &resolved.root.components[0].source
+        else {
+            panic!("expected unresolved placeholder");
+        };
+        assert_eq!(
+            reference,
+            &ComponentReference::BuiltIn {
+                type_id: unknown_type,
+            }
+        );
+        assert_eq!(
+            diagnostic.message_key().as_str(),
+            "simulation_registry_unknown_builtin"
+        );
+        assert_eq!(
+            resolved.root.components[0].provenance.component_id,
+            ComponentId::from_raw(77)
+        );
+        assert!(
+            crate::validation::validate_model(
+                &resolved,
+                crate::validation::ValidationLimits::default()
+            )
+            .iter()
+            .any(|value| value.message_key() == diagnostic.message_key())
         );
     }
 
