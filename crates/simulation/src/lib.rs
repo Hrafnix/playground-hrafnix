@@ -23,6 +23,8 @@
     )
 )]
 
+/// Executable signal/control primitive definitions and behaviors.
+pub mod builtins;
 /// Component metadata and public interface contracts.
 pub mod component;
 /// Simulation-owned diagnostics and lower-layer message adaptation.
@@ -39,6 +41,10 @@ pub mod persistence;
 pub mod registry;
 /// Custom-component dependency resolution and immutable graph expansion.
 pub mod resolve;
+/// Simulation run metadata and sampled signal results.
+pub mod results;
+/// Synchronous fixed-step simulation runtime.
+pub mod runtime;
 /// Deterministic direct-feedthrough execution-plan construction.
 pub mod schedule;
 /// Fixed-step endpoint and state-update semantics.

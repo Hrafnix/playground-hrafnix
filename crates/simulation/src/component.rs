@@ -1,7 +1,10 @@
+use crate::diagnostic::Diagnostic;
+use crate::identity::{ComponentId, RunId};
 use crate::parameter::ParameterValueType;
+use crate::value::RuntimeValue;
 use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use units::UnitId;
 
@@ -166,6 +169,78 @@ pub struct ComponentDefinition {
     pub capabilities: ComponentCapabilities,
     /// Optional deprecation guidance.
     pub deprecation: Option<Deprecation>,
+}
+
+/// Stable-keyed runtime parameters, inputs, outputs, or owned state.
+pub type RuntimeValues = BTreeMap<ShareableString, RuntimeValue>;
+
+/// Immutable context supplied during initialization and stepping.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StepContext {
+    /// Identity of the current run.
+    pub run_id: RunId,
+    /// Current simulation-grid time.
+    pub time: f64,
+    /// Fixed transition duration.
+    pub timestep: f64,
+    /// Current sample index, starting at zero.
+    pub step_index: u64,
+}
+
+/// Outputs and owned state computed before an atomic runtime commit.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ComponentUpdate {
+    /// Complete output values produced by the component.
+    pub outputs: RuntimeValues,
+    /// Complete next owned state.
+    pub next_state: RuntimeValues,
+}
+
+/// Configured component algorithm whose mutable state remains runtime-owned.
+pub trait ComponentBehavior: fmt::Debug + Send + Sync {
+    /// Computes initialized outputs and state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a runtime diagnostic when initialization cannot produce valid values.
+    fn initialize(
+        &self,
+        context: StepContext,
+        parameters: &RuntimeValues,
+    ) -> Result<ComponentUpdate, Diagnostic>;
+
+    /// Computes one update without mutating committed runtime state.
+    ///
+    /// # Errors
+    ///
+    /// Returns a runtime diagnostic without exposing partial outputs or state.
+    fn evaluate(
+        &self,
+        context: StepContext,
+        parameters: &RuntimeValues,
+        inputs: &RuntimeValues,
+        state: &RuntimeValues,
+    ) -> Result<ComponentUpdate, Diagnostic>;
+
+    /// Finalizes one completed or otherwise terminal component run.
+    ///
+    /// # Errors
+    ///
+    /// Returns a runtime diagnostic when finalization fails.
+    fn finalize(
+        &self,
+        _context: StepContext,
+        _parameters: &RuntimeValues,
+        _state: &RuntimeValues,
+    ) -> Result<(), Diagnostic> {
+        Ok(())
+    }
+}
+
+/// Factory for one configured runtime behavior instance.
+pub trait ComponentFactory: fmt::Debug + Send + Sync {
+    /// Creates a fresh behavior for a simulation runtime.
+    fn create(&self, component_id: ComponentId) -> Box<dyn ComponentBehavior>;
 }
 
 #[cfg(test)]

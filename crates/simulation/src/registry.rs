@@ -1,7 +1,8 @@
-use crate::component::{ComponentDefinition, ComponentTypeId};
+use crate::component::{ComponentDefinition, ComponentFactory, ComponentTypeId};
 use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, EntityReference};
 use crate::identity::ComponentId;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// Registry insertion failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +16,8 @@ pub enum RegistryError {
 pub struct ComponentRegistry {
     /// Definitions ordered by stable type ID.
     definitions: BTreeMap<ComponentTypeId, ComponentDefinition>,
+    /// Runtime factories installed for executable definitions.
+    factories: BTreeMap<ComponentTypeId, Arc<dyn ComponentFactory>>,
 }
 
 impl ComponentRegistry {
@@ -23,6 +26,7 @@ impl ComponentRegistry {
     pub const fn new() -> Self {
         Self {
             definitions: BTreeMap::new(),
+            factories: BTreeMap::new(),
         }
     }
 
@@ -41,6 +45,23 @@ impl ComponentRegistry {
         Ok(())
     }
 
+    /// Registers executable metadata and its runtime factory atomically.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RegistryError::DuplicateTypeId`] without changing the registry
+    /// when the stable type ID is already installed.
+    pub fn register_with_factory(
+        &mut self,
+        definition: ComponentDefinition,
+        factory: Arc<dyn ComponentFactory>,
+    ) -> Result<(), RegistryError> {
+        let type_id = definition.type_id.clone();
+        self.register(definition)?;
+        self.factories.insert(type_id, factory);
+        Ok(())
+    }
+
     /// Returns a registered definition by stable type ID.
     #[must_use]
     pub fn get(&self, type_id: &ComponentTypeId) -> Option<&ComponentDefinition> {
@@ -50,6 +71,12 @@ impl ComponentRegistry {
     /// Returns registered definitions in stable type-ID order.
     pub fn iter(&self) -> impl Iterator<Item = &ComponentDefinition> {
         self.definitions.values()
+    }
+
+    /// Returns the runtime factory installed for a built-in type.
+    #[must_use]
+    pub fn factory(&self, type_id: &ComponentTypeId) -> Option<&Arc<dyn ComponentFactory>> {
+        self.factories.get(type_id)
     }
 
     /// Resolves a built-in reference or returns a stable validation diagnostic.
@@ -78,11 +105,45 @@ impl ComponentRegistry {
 mod tests {
     use super::{ComponentRegistry, RegistryError};
     use crate::component::{
-        ComponentCapabilities, ComponentCapability, ComponentDefinition, ComponentTypeId,
-        SemanticVersion,
+        ComponentBehavior, ComponentCapabilities, ComponentCapability, ComponentDefinition,
+        ComponentFactory, ComponentTypeId, ComponentUpdate, RuntimeValues, SemanticVersion,
+        StepContext,
     };
     use crate::diagnostic::{DiagnosticCategory, DiagnosticSeverity, EntityReference};
     use crate::identity::ComponentId;
+    use std::sync::Arc;
+
+    #[derive(Debug)]
+    struct TestFactory;
+
+    impl ComponentFactory for TestFactory {
+        fn create(&self, _component_id: ComponentId) -> Box<dyn ComponentBehavior> {
+            Box::new(TestBehavior)
+        }
+    }
+
+    #[derive(Debug)]
+    struct TestBehavior;
+
+    impl ComponentBehavior for TestBehavior {
+        fn initialize(
+            &self,
+            _context: StepContext,
+            _parameters: &RuntimeValues,
+        ) -> Result<ComponentUpdate, crate::diagnostic::Diagnostic> {
+            Ok(ComponentUpdate::default())
+        }
+
+        fn evaluate(
+            &self,
+            _context: StepContext,
+            _parameters: &RuntimeValues,
+            _inputs: &RuntimeValues,
+            _state: &RuntimeValues,
+        ) -> Result<ComponentUpdate, crate::diagnostic::Diagnostic> {
+            Ok(ComponentUpdate::default())
+        }
+    }
 
     /// Creates a minimal deterministic registry definition.
     fn definition(type_id: &str) -> ComponentDefinition {
@@ -140,5 +201,19 @@ mod tests {
             diagnostic.message_key().as_str(),
             "simulation_registry_unknown_builtin"
         );
+    }
+
+    #[test]
+    fn executable_registration_retains_factory_without_breaking_metadata_lookup() {
+        let mut registry = ComponentRegistry::new();
+        let definition = definition("signal.gain");
+        let type_id = definition.type_id.clone();
+
+        registry
+            .register_with_factory(definition.clone(), Arc::new(TestFactory))
+            .unwrap();
+
+        assert_eq!(registry.get(&type_id), Some(&definition));
+        assert!(registry.factory(&type_id).is_some());
     }
 }
