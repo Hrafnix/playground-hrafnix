@@ -59,14 +59,33 @@ pub struct Diagnostic {
     /// Stable affected entity when known.
     entity: Option<EntityReference>,
     /// Parameter, port, or field key when known.
-    field: Option<ShareableString>,
+    field: Option<Box<ShareableString>>,
     /// Stable untranslated message key.
-    message_key: ShareableString,
+    message_key: Box<ShareableString>,
     /// Original lower-layer message, preserving paths, parameters, and detail.
-    source: Option<Message>,
+    source: Option<Box<Message>>,
 }
 
 impl Diagnostic {
+    /// Creates a simulation-owned diagnostic without a lower-layer source message.
+    #[must_use]
+    pub fn new(
+        severity: DiagnosticSeverity,
+        category: DiagnosticCategory,
+        entity: Option<EntityReference>,
+        field: Option<ShareableString>,
+        message_key: impl Into<ShareableString>,
+    ) -> Self {
+        Self {
+            severity,
+            category,
+            entity,
+            field: field.map(Box::new),
+            message_key: Box::new(message_key.into()),
+            source: None,
+        }
+    }
+
     /// Adapts a lower-layer message and associates it with simulation context.
     #[must_use]
     pub fn from_message(
@@ -78,9 +97,9 @@ impl Diagnostic {
             severity: severity_from_message(message.level()),
             category: category_from_message(message.category()),
             entity,
-            field,
-            message_key: message.translate_data().message_key().clone(),
-            source: Some(message),
+            field: field.map(Box::new),
+            message_key: Box::new(message.translate_data().message_key().clone()),
+            source: Some(Box::new(message)),
         }
     }
 
@@ -104,8 +123,8 @@ impl Diagnostic {
 
     /// Returns the affected field key.
     #[must_use]
-    pub const fn field(&self) -> Option<&ShareableString> {
-        self.field.as_ref()
+    pub fn field(&self) -> Option<&ShareableString> {
+        self.field.as_deref()
     }
 
     /// Returns the stable message key.
@@ -116,8 +135,8 @@ impl Diagnostic {
 
     /// Returns the preserved lower-layer message.
     #[must_use]
-    pub const fn source(&self) -> Option<&Message> {
-        self.source.as_ref()
+    pub fn source(&self) -> Option<&Message> {
+        self.source.as_deref()
     }
 }
 
@@ -178,5 +197,22 @@ mod tests {
                 .to_string(),
             "component/gain"
         );
+    }
+
+    #[test]
+    fn creates_native_simulation_diagnostic_without_source() {
+        let diagnostic = Diagnostic::new(
+            DiagnosticSeverity::Error,
+            DiagnosticCategory::Validation,
+            None,
+            Some("schema_version".into()),
+            "simulation_unsupported_schema",
+        );
+
+        assert_eq!(
+            diagnostic.message_key().as_str(),
+            "simulation_unsupported_schema"
+        );
+        assert!(diagnostic.source().is_none());
     }
 }

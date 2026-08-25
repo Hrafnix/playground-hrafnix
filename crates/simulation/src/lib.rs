@@ -23,12 +23,20 @@
     )
 )]
 
+/// Component metadata and public interface contracts.
+pub mod component;
 /// Simulation-owned diagnostics and lower-layer message adaptation.
 pub mod diagnostic;
+/// Persisted model and custom-component document schemas.
+pub mod document;
 /// Stable simulation identity types and injectable ID generation.
 pub mod identity;
 /// Datastore parameter-definition adaptation.
 pub mod parameter;
+/// Version-aware native JSON loading and saving.
+pub mod persistence;
+/// Built-in component definition registry.
+pub mod registry;
 /// Fixed-step endpoint and state-update semantics.
 pub mod timing;
 /// Runtime values and expression-result adaptation.

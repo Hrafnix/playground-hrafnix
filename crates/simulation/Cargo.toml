@@ -8,15 +8,13 @@ publish.workspace = true
 
 [dependencies]
 serde.workspace = true
+serde_json.workspace = true
 
 datastore.workspace = true
 expression_engine.workspace = true
 message.workspace = true
 shareable_string.workspace = true
 units.workspace = true
-
-[dev-dependencies]
-serde_json.workspace = true
 
 [lints]
 workspace = true
