@@ -59,6 +59,8 @@ pub mod schedule;
 mod signal_expression;
 /// Fixed-step endpoint and state-update semantics.
 pub mod timing;
+/// Executable one-dimensional translational mechanics slice.
+pub mod translational;
 /// Recursive resolved-graph and model-settings validation.
 pub mod validation;
 /// Runtime values and expression-result adaptation.

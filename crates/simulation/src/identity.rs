@@ -99,6 +99,7 @@ define_id!(
 );
 define_id!(SystemId, "Stable identity of a system within a document.");
 define_id!(ComponentId, "Stable identity of a component instance.");
+define_id!(NodeId, "Stable identity of a conservative physical node.");
 define_id!(PortId, "Stable identity of an explicitly persisted port.");
 define_id!(ConnectionId, "Stable identity of a connection.");
 define_id!(ProbeId, "Stable identity of a probe.");
