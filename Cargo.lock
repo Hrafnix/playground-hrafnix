@@ -3279,6 +3279,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "simulation_editor"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "eframe",
+ "egui",
+ "shareable_string",
+ "simulation",
+]
+
+[[package]]
 name = "siphasher"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,105 @@
+{
+  "header": {
+    "schema_version": {
+      "major": 1,
+      "minor": 0
+    },
+    "document_id": "0000000000000000000000006a8d17be",
+    "title": "Untitled signal model",
+    "description": "",
+    "author": "",
+    "created_at": "unix:1787631550",
+    "updated_at": "unix:1787631550",
+    "migrations": []
+  },
+  "root": {
+    "system_id": "00000000000000000000000000000001",
+    "components": [
+      {
+        "id": "00000000000000000000000000000001",
+        "name": "Constant 3",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.constant"
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 480.0,
+          "y": 40.0
+        }
+      },
+      {
+        "id": "00000000000000000000000000000002",
+        "name": "Add 4",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.add"
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 40.0,
+          "y": 165.0
+        }
+      },
+      {
+        "id": "00000000000000000000000000000003",
+        "name": "Constant 5",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.constant"
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 260.0,
+          "y": 165.0
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "00000000000000000000000000000001",
+        "source": {
+          "component_id": "00000000000000000000000000000001",
+          "port_key": "out"
+        },
+        "target": {
+          "component_id": "00000000000000000000000000000002",
+          "port_key": "a"
+        },
+        "label": null,
+        "route": []
+      },
+      {
+        "id": "00000000000000000000000000000002",
+        "source": {
+          "component_id": "00000000000000000000000000000003",
+          "port_key": "out"
+        },
+        "target": {
+          "component_id": "00000000000000000000000000000002",
+          "port_key": "b"
+        },
+        "label": null,
+        "route": []
+      }
+    ],
+    "annotations": {}
+  },
+  "simulation": {
+    "start_time": 0.0,
+    "stop_time": 1.0,
+    "timestep": 0.01,
+    "maximum_steps": 100000,
+    "random_seed": 1,
+    "logging": "every_step",
+    "semantics": {
+      "initial_sample": "CaptureInitializedOutputs",
+      "state_update": "OutputsBeforeStateCommit"
+    }
+  },
+  "probes": [],
+  "dependencies": []
+}
