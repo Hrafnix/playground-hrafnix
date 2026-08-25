@@ -1,6 +1,6 @@
 use crate::component::{PortDefinition, PortDirection};
 use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, EntityReference};
-use crate::document::{PortEndpoint, PublicPortMapping};
+use crate::document::{LoggingPolicy, PortEndpoint, PublicPortMapping};
 use crate::identity::{ComponentId, ConnectionId};
 use crate::parameter::ParameterValueType;
 use crate::resolve::{ResolvedComponent, ResolvedComponentSource, ResolvedModel, ResolvedSystem};
@@ -73,6 +73,16 @@ pub fn validate_model(model: &ResolvedModel, limits: ValidationLimits) -> Vec<Di
             "simulation",
             "simulation_validation_invalid_timing",
         )),
+    }
+    if matches!(
+        model.simulation.logging,
+        LoggingPolicy::EveryNthStep { interval: 0 }
+    ) {
+        diagnostics.push(model_diagnostic(
+            model,
+            "logging",
+            "simulation_validation_invalid_logging_interval",
+        ));
     }
 
     let root_components = component_index(&model.root);

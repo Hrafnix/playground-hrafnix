@@ -117,8 +117,12 @@ mod tests {
     struct TestFactory;
 
     impl ComponentFactory for TestFactory {
-        fn create(&self, _component_id: ComponentId) -> Box<dyn ComponentBehavior> {
-            Box::new(TestBehavior)
+        fn create(
+            &self,
+            _component_id: ComponentId,
+            _parameters: &RuntimeValues,
+        ) -> Result<Box<dyn ComponentBehavior>, crate::diagnostic::Diagnostic> {
+            Ok(Box::new(TestBehavior))
         }
     }
 

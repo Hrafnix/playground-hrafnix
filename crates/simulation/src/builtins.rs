@@ -8,8 +8,10 @@ use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, Enti
 use crate::identity::ComponentId;
 use crate::parameter::ParameterValueType;
 use crate::registry::{ComponentRegistry, RegistryError};
+use crate::signal_expression::CompiledSignalExpression;
 use crate::value::RuntimeValue;
 use std::sync::Arc;
+use units::{UnitFamilyId, UnitId};
 
 /// Failure while installing the standard signal component library.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,7 +34,7 @@ impl From<RegistryError> for BuiltinRegistrationError {
     }
 }
 
-/// Registers the Phase 3 signal/control primitive library.
+/// Registers the standard signal/control primitive library.
 ///
 /// # Errors
 ///
@@ -63,6 +65,16 @@ enum BuiltinKind {
     Delay,
     /// Pass-through probe component.
     Probe,
+    /// Time-dependent linear ramp source.
+    Ramp,
+    /// Two-input scalar multiplication.
+    Multiply,
+    /// Forward-Euler first-order transfer function.
+    FirstOrderTransfer,
+    /// Scalar conversion between compatible units.
+    UnitConversion,
+    /// Compiled scalar expression over input and simulation time.
+    Expression,
 }
 
 /// Factory for one built-in algorithm kind.
@@ -73,11 +85,28 @@ struct BuiltinFactory {
 }
 
 impl ComponentFactory for BuiltinFactory {
-    fn create(&self, component_id: ComponentId) -> Box<dyn ComponentBehavior> {
-        Box::new(BuiltinBehavior {
+    fn create(
+        &self,
+        component_id: ComponentId,
+        parameters: &RuntimeValues,
+    ) -> Result<Box<dyn ComponentBehavior>, Diagnostic> {
+        let expression = if matches!(self.kind, BuiltinKind::Expression) {
+            let source = string_parameter(parameters, "expression", component_id)?;
+            Some(CompiledSignalExpression::compile(source).map_err(|_| {
+                runtime_diagnostic(
+                    component_id,
+                    "expression",
+                    "simulation_runtime_invalid_signal_expression",
+                )
+            })?)
+        } else {
+            None
+        };
+        Ok(Box::new(BuiltinBehavior {
             component_id,
             kind: self.kind,
-        })
+            expression,
+        }))
     }
 }
 
@@ -88,6 +117,8 @@ struct BuiltinBehavior {
     component_id: ComponentId,
     /// Selected primitive algorithm.
     kind: BuiltinKind,
+    /// Precompiled algorithm for the Expression primitive.
+    expression: Option<CompiledSignalExpression>,
 }
 
 impl ComponentBehavior for BuiltinBehavior {
@@ -101,16 +132,20 @@ impl ComponentBehavior for BuiltinBehavior {
                 parameter(parameters, "value", self.component_id)?.clone(),
             )),
             BuiltinKind::Step => self.step_source(context, parameters),
-            BuiltinKind::Integrator | BuiltinKind::Delay => {
+            BuiltinKind::Integrator | BuiltinKind::Delay | BuiltinKind::FirstOrderTransfer => {
                 let initial = parameter(parameters, "initial_value", self.component_id)?;
                 Ok(ComponentUpdate {
                     outputs: values([("out", initial.clone())]),
                     next_state: values([("value", initial.clone())]),
                 })
             }
-            BuiltinKind::Gain | BuiltinKind::Add | BuiltinKind::Probe => {
-                Ok(output(RuntimeValue::Scalar(0.0)))
-            }
+            BuiltinKind::Ramp => self.ramp_source(context, parameters),
+            BuiltinKind::Gain
+            | BuiltinKind::Add
+            | BuiltinKind::Multiply
+            | BuiltinKind::UnitConversion
+            | BuiltinKind::Expression
+            | BuiltinKind::Probe => Ok(output(RuntimeValue::Scalar(0.0))),
         }
     }
 
@@ -156,6 +191,19 @@ impl ComponentBehavior for BuiltinBehavior {
                 )?;
                 finite_output(left + right, self.component_id)
             }
+            BuiltinKind::Multiply => {
+                let left = scalar(
+                    input(inputs, "a", self.component_id)?,
+                    self.component_id,
+                    "a",
+                )?;
+                let right = scalar(
+                    input(inputs, "b", self.component_id)?,
+                    self.component_id,
+                    "b",
+                )?;
+                finite_output(left * right, self.component_id)
+            }
             BuiltinKind::Integrator => {
                 let input_value = scalar(
                     input(inputs, "in", self.component_id)?,
@@ -184,6 +232,85 @@ impl ComponentBehavior for BuiltinBehavior {
                     next_state: values([("value", next.clone())]),
                 })
             }
+            BuiltinKind::Ramp => self.ramp_source(context, parameters),
+            BuiltinKind::FirstOrderTransfer => {
+                let input_value = scalar(
+                    input(inputs, "in", self.component_id)?,
+                    self.component_id,
+                    "in",
+                )?;
+                let current = scalar(
+                    input(state, "value", self.component_id)?,
+                    self.component_id,
+                    "value",
+                )?;
+                let gain = scalar(
+                    parameter(parameters, "gain", self.component_id)?,
+                    self.component_id,
+                    "gain",
+                )?;
+                let time_constant = scalar(
+                    parameter(parameters, "time_constant", self.component_id)?,
+                    self.component_id,
+                    "time_constant",
+                )?;
+                if time_constant <= 0.0 {
+                    return Err(runtime_diagnostic(
+                        self.component_id,
+                        "time_constant",
+                        "simulation_runtime_nonpositive_time_constant",
+                    ));
+                }
+                let next = finite(
+                    current + context.timestep * (gain * input_value - current) / time_constant,
+                    self.component_id,
+                    "out",
+                )?;
+                Ok(ComponentUpdate {
+                    outputs: values([("out", RuntimeValue::Scalar(next))]),
+                    next_state: values([("value", RuntimeValue::Scalar(next))]),
+                })
+            }
+            BuiltinKind::UnitConversion => {
+                let value = scalar(
+                    input(inputs, "in", self.component_id)?,
+                    self.component_id,
+                    "in",
+                )?;
+                let from_unit = unit_parameter(parameters, "from_unit", self.component_id)?;
+                let to_unit = unit_parameter(parameters, "to_unit", self.component_id)?;
+                let converted =
+                    units::conversion::convert(value, from_unit, to_unit).map_err(|_| {
+                        runtime_diagnostic(
+                            self.component_id,
+                            "to_unit",
+                            "simulation_runtime_incompatible_units",
+                        )
+                    })?;
+                Ok(output(RuntimeValue::ScalarWithUnit {
+                    value: converted,
+                    unit: to_unit,
+                }))
+            }
+            BuiltinKind::Expression => {
+                let input_value = scalar(
+                    input(inputs, "in", self.component_id)?,
+                    self.component_id,
+                    "in",
+                )?;
+                let value = self
+                    .expression
+                    .as_ref()
+                    .and_then(|expression| expression.evaluate(input_value, context.time))
+                    .ok_or_else(|| {
+                        runtime_diagnostic(
+                            self.component_id,
+                            "out",
+                            "simulation_runtime_nonfinite_value",
+                        )
+                    })?;
+                finite_output(value, self.component_id)
+            }
             BuiltinKind::Probe => Ok(output(input(inputs, "in", self.component_id)?.clone())),
         }
     }
@@ -209,6 +336,35 @@ impl BuiltinBehavior {
         Ok(output(
             parameter(parameters, key, self.component_id)?.clone(),
         ))
+    }
+
+    /// Computes a ramp with a constant pre-start value.
+    #[allow(
+        clippy::float_arithmetic,
+        reason = "The ramp primitive performs validated finite scalar arithmetic."
+    )]
+    fn ramp_source(
+        &self,
+        context: StepContext,
+        parameters: &RuntimeValues,
+    ) -> Result<ComponentUpdate, Diagnostic> {
+        let initial = scalar(
+            parameter(parameters, "initial_value", self.component_id)?,
+            self.component_id,
+            "initial_value",
+        )?;
+        let slope = scalar(
+            parameter(parameters, "slope", self.component_id)?,
+            self.component_id,
+            "slope",
+        )?;
+        let start_time = scalar(
+            parameter(parameters, "start_time", self.component_id)?,
+            self.component_id,
+            "start_time",
+        )?;
+        let elapsed = (context.time - start_time).max(0.0);
+        finite_output(initial + slope * elapsed, self.component_id)
     }
 }
 
@@ -309,6 +465,87 @@ fn definitions() -> Result<Vec<(ComponentDefinition, BuiltinKind)>, InvalidCompo
             )?,
             BuiltinKind::Probe,
         ),
+        (
+            definition(
+                "signal.ramp",
+                "Ramp",
+                vec![
+                    parameter_definition("initial_value", "0.0"),
+                    parameter_definition("slope", "1.0"),
+                    parameter_definition("start_time", "0.0"),
+                ],
+                vec![output_port("out")],
+                [
+                    ComponentCapability::TimeDependent,
+                    ComponentCapability::Deterministic,
+                ],
+            )?,
+            BuiltinKind::Ramp,
+        ),
+        (
+            definition(
+                "signal.multiply",
+                "Multiply",
+                vec![],
+                vec![input_port("a"), input_port("b"), output_port("out")],
+                [
+                    ComponentCapability::DirectFeedthrough,
+                    ComponentCapability::Deterministic,
+                ],
+            )?,
+            BuiltinKind::Multiply,
+        ),
+        (
+            definition(
+                "signal.first_order_transfer",
+                "First-Order Transfer Function",
+                vec![
+                    parameter_definition("gain", "1.0"),
+                    parameter_definition("time_constant", "1.0"),
+                    parameter_definition("initial_value", "0.0"),
+                ],
+                vec![input_port("in"), output_port("out")],
+                [
+                    ComponentCapability::Stateful,
+                    ComponentCapability::AlgebraicLoopBreak,
+                    ComponentCapability::Deterministic,
+                ],
+            )?,
+            BuiltinKind::FirstOrderTransfer,
+        ),
+        (
+            definition(
+                "signal.unit_conversion",
+                "Unit Conversion",
+                vec![
+                    unit_parameter_definition("from_unit", UnitId::Time_Second),
+                    unit_parameter_definition("to_unit", UnitId::Time_Second),
+                ],
+                vec![
+                    input_port("in"),
+                    unit_output_port("out", UnitId::Time_Second),
+                ],
+                [
+                    ComponentCapability::DirectFeedthrough,
+                    ComponentCapability::Deterministic,
+                ],
+            )?,
+            BuiltinKind::UnitConversion,
+        ),
+        (
+            definition(
+                "signal.expression",
+                "Expression",
+                vec![string_parameter_definition("expression", "x")],
+                vec![input_port("in"), output_port("out")],
+                [
+                    ComponentCapability::DirectFeedthrough,
+                    ComponentCapability::TimeDependent,
+                    ComponentCapability::Deterministic,
+                ],
+            )?,
+            BuiltinKind::Expression,
+        ),
     ])
 }
 
@@ -350,6 +587,28 @@ fn parameter_definition(key: &str, default_expression: &str) -> ParameterDefinit
     }
 }
 
+/// Creates one unit-selector parameter schema.
+fn unit_parameter_definition(key: &str, default_unit: UnitId) -> ParameterDefinition {
+    ParameterDefinition {
+        key: key.into(),
+        display_name: key.into(),
+        description: "".into(),
+        value_type: ParameterValueType::Unit(UnitFamilyId::Time),
+        default_expression: default_unit.string_id().into(),
+    }
+}
+
+/// Creates one literal string parameter schema.
+fn string_parameter_definition(key: &str, default_value: &str) -> ParameterDefinition {
+    ParameterDefinition {
+        key: key.into(),
+        display_name: key.into(),
+        description: "".into(),
+        value_type: ParameterValueType::String,
+        default_expression: default_value.into(),
+    }
+}
+
 /// Creates one required scalar input schema.
 fn input_port(key: &str) -> PortDefinition {
     port(key, PortDirection::Input, true)
@@ -358,6 +617,19 @@ fn input_port(key: &str) -> PortDefinition {
 /// Creates one scalar output schema.
 fn output_port(key: &str) -> PortDefinition {
     port(key, PortDirection::Output, false)
+}
+
+/// Creates one unit-bearing scalar output schema.
+fn unit_output_port(key: &str, unit: UnitId) -> PortDefinition {
+    PortDefinition {
+        key: key.into(),
+        display_name: key.into(),
+        description: "".into(),
+        direction: PortDirection::Output,
+        value_type: ParameterValueType::ScalarWithUnit(unit),
+        unit: Some(unit),
+        required: false,
+    }
 }
 
 /// Creates common scalar port metadata.
@@ -412,6 +684,52 @@ fn scalar(value: &RuntimeValue, component_id: ComponentId, field: &str) -> Resul
     }
 }
 
+/// Extracts a unit selector runtime value.
+fn unit_parameter(
+    parameters: &RuntimeValues,
+    key: &str,
+    component_id: ComponentId,
+) -> Result<UnitId, Diagnostic> {
+    match parameter(parameters, key, component_id)? {
+        RuntimeValue::Unit(unit) => Ok(*unit),
+        RuntimeValue::Boolean(_)
+        | RuntimeValue::Integer(_)
+        | RuntimeValue::Scalar(_)
+        | RuntimeValue::ScalarWithUnit { .. }
+        | RuntimeValue::String(_)
+        | RuntimeValue::Identifier(_)
+        | RuntimeValue::Path(_)
+        | RuntimeValue::Table(_) => Err(runtime_diagnostic(
+            component_id,
+            key,
+            "simulation_runtime_expected_unit",
+        )),
+    }
+}
+
+/// Extracts a string configuration value.
+fn string_parameter<'a>(
+    parameters: &'a RuntimeValues,
+    key: &str,
+    component_id: ComponentId,
+) -> Result<&'a str, Diagnostic> {
+    match parameter(parameters, key, component_id)? {
+        RuntimeValue::String(value) => Ok(value.as_str()),
+        RuntimeValue::Boolean(_)
+        | RuntimeValue::Integer(_)
+        | RuntimeValue::Scalar(_)
+        | RuntimeValue::ScalarWithUnit { .. }
+        | RuntimeValue::Identifier(_)
+        | RuntimeValue::Path(_)
+        | RuntimeValue::Table(_)
+        | RuntimeValue::Unit(_) => Err(runtime_diagnostic(
+            component_id,
+            key,
+            "simulation_runtime_expected_string",
+        )),
+    }
+}
+
 /// Validates a computed finite scalar.
 fn finite(value: f64, component_id: ComponentId, field: &str) -> Result<f64, Diagnostic> {
     value.is_finite().then_some(value).ok_or_else(|| {
@@ -462,6 +780,7 @@ mod tests {
     use crate::identity::{ComponentId, RunId};
     use crate::registry::ComponentRegistry;
     use crate::value::RuntimeValue;
+    use units::UnitId;
 
     fn context(time: f64) -> StepContext {
         StepContext {
@@ -473,11 +792,11 @@ mod tests {
     }
 
     #[test]
-    fn registers_all_phase_three_primitives_with_factories() {
+    fn registers_all_available_primitives_with_factories() {
         let mut registry = ComponentRegistry::new();
         register_signal_builtins(&mut registry).unwrap();
 
-        assert_eq!(registry.iter().count(), 7);
+        assert_eq!(registry.iter().count(), 12);
         for definition in registry.iter() {
             assert!(registry.factory(&definition.type_id).is_some());
         }
@@ -488,6 +807,7 @@ mod tests {
         let behavior = BuiltinBehavior {
             component_id: ComponentId::from_raw(1),
             kind: BuiltinKind::Step,
+            expression: None,
         };
         let parameters = values([
             ("initial_value", RuntimeValue::Scalar(2.0)),
@@ -516,6 +836,7 @@ mod tests {
         let behavior = BuiltinBehavior {
             component_id: ComponentId::from_raw(1),
             kind: BuiltinKind::Integrator,
+            expression: None,
         };
         let update = behavior
             .evaluate(
@@ -549,5 +870,119 @@ mod tests {
                 .capabilities
                 .contains(ComponentCapability::DirectFeedthrough)
         );
+    }
+
+    #[test]
+    fn ramp_observes_start_boundary() {
+        let behavior = BuiltinBehavior {
+            component_id: ComponentId::from_raw(1),
+            kind: BuiltinKind::Ramp,
+            expression: None,
+        };
+        let parameters = values([
+            ("initial_value", RuntimeValue::Scalar(3.0)),
+            ("slope", RuntimeValue::Scalar(2.0)),
+            ("start_time", RuntimeValue::Scalar(0.5)),
+        ]);
+
+        assert_eq!(
+            behavior
+                .initialize(context(0.25), &parameters)
+                .unwrap()
+                .outputs["out"],
+            RuntimeValue::Scalar(3.0)
+        );
+        assert_eq!(
+            behavior
+                .initialize(context(1.0), &parameters)
+                .unwrap()
+                .outputs["out"],
+            RuntimeValue::Scalar(4.0)
+        );
+    }
+
+    #[test]
+    fn first_order_transfer_has_exact_euler_sequence() {
+        let behavior = BuiltinBehavior {
+            component_id: ComponentId::from_raw(1),
+            kind: BuiltinKind::FirstOrderTransfer,
+            expression: None,
+        };
+        let parameters = values([
+            ("gain", RuntimeValue::Scalar(2.0)),
+            ("time_constant", RuntimeValue::Scalar(0.5)),
+            ("initial_value", RuntimeValue::Scalar(0.0)),
+        ]);
+        let initialized = behavior.initialize(context(0.0), &parameters).unwrap();
+        let first = behavior
+            .evaluate(
+                context(0.0),
+                &parameters,
+                &values([("in", RuntimeValue::Scalar(1.0))]),
+                &initialized.next_state,
+            )
+            .unwrap();
+        let second = behavior
+            .evaluate(
+                context(0.25),
+                &parameters,
+                &values([("in", RuntimeValue::Scalar(1.0))]),
+                &first.next_state,
+            )
+            .unwrap();
+
+        assert_eq!(first.outputs["out"], RuntimeValue::Scalar(1.0));
+        assert_eq!(second.outputs["out"], RuntimeValue::Scalar(1.5));
+    }
+
+    #[test]
+    fn unit_conversion_uses_declared_units() {
+        let behavior = BuiltinBehavior {
+            component_id: ComponentId::from_raw(1),
+            kind: BuiltinKind::UnitConversion,
+            expression: None,
+        };
+        let parameters = values([
+            ("from_unit", RuntimeValue::Unit(UnitId::Time_Minute)),
+            ("to_unit", RuntimeValue::Unit(UnitId::Time_Second)),
+        ]);
+        let update = behavior
+            .evaluate(
+                context(0.0),
+                &parameters,
+                &values([("in", RuntimeValue::Scalar(2.0))]),
+                &RuntimeValues::new(),
+            )
+            .unwrap();
+
+        assert_eq!(
+            update.outputs["out"],
+            RuntimeValue::ScalarWithUnit {
+                value: 120.0,
+                unit: UnitId::Time_Second,
+            }
+        );
+    }
+
+    #[test]
+    fn expression_factory_compiles_once_and_evaluates_runtime_symbols() {
+        let factory = super::BuiltinFactory {
+            kind: BuiltinKind::Expression,
+        };
+        let parameters = values([("expression", RuntimeValue::String("2 * x + time".into()))]);
+        let behavior =
+            super::ComponentFactory::create(&factory, ComponentId::from_raw(1), &parameters)
+                .unwrap();
+
+        let update = behavior
+            .evaluate(
+                context(0.5),
+                &parameters,
+                &values([("in", RuntimeValue::Scalar(3.0))]),
+                &RuntimeValues::new(),
+            )
+            .unwrap();
+
+        assert_eq!(update.outputs["out"], RuntimeValue::Scalar(6.5));
     }
 }

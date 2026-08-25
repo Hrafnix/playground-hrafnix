@@ -47,6 +47,8 @@ pub mod results;
 pub mod runtime;
 /// Deterministic direct-feedthrough execution-plan construction.
 pub mod schedule;
+/// Internal configuration-time compiler for signal expressions.
+mod signal_expression;
 /// Fixed-step endpoint and state-update semantics.
 pub mod timing;
 /// Recursive resolved-graph and model-settings validation.

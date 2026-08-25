@@ -172,6 +172,24 @@ pub struct Composition {
 pub enum LoggingPolicy {
     /// Capture every fixed-step sample.
     EveryStep,
+    /// Capture every `interval` grid samples and always capture the final sample.
+    EveryNthStep {
+        /// Positive sample-index interval.
+        interval: u64,
+    },
+}
+
+impl LoggingPolicy {
+    /// Returns whether one sample index should be retained.
+    #[must_use]
+    pub fn captures(self, sample_index: u64, final_index: u64) -> bool {
+        match self {
+            Self::EveryStep => true,
+            Self::EveryNthStep { interval } => {
+                sample_index.checked_rem(interval) == Some(0) || sample_index == final_index
+            }
+        }
+    }
 }
 
 /// Persisted fixed-step simulation settings.

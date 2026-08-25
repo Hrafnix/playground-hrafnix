@@ -239,8 +239,16 @@ pub trait ComponentBehavior: fmt::Debug + Send + Sync {
 
 /// Factory for one configured runtime behavior instance.
 pub trait ComponentFactory: fmt::Debug + Send + Sync {
-    /// Creates a fresh behavior for a simulation runtime.
-    fn create(&self, component_id: ComponentId) -> Box<dyn ComponentBehavior>;
+    /// Creates a fresh behavior from evaluated configuration values.
+    ///
+    /// # Errors
+    ///
+    /// Returns a component-scoped diagnostic when configuration cannot be compiled.
+    fn create(
+        &self,
+        component_id: ComponentId,
+        parameters: &RuntimeValues,
+    ) -> Result<Box<dyn ComponentBehavior>, Diagnostic>;
 }
 
 #[cfg(test)]
