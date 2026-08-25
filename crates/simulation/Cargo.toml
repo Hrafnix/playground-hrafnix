@@ -1,0 +1,22 @@
+[package]
+name = "simulation"
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+datastore.workspace = true
+expression_engine.workspace = true
+message.workspace = true
+shareable_string.workspace = true
+units.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true
