@@ -37,7 +37,13 @@ pub mod parameter;
 pub mod persistence;
 /// Built-in component definition registry.
 pub mod registry;
+/// Custom-component dependency resolution and immutable graph expansion.
+pub mod resolve;
+/// Deterministic direct-feedthrough execution-plan construction.
+pub mod schedule;
 /// Fixed-step endpoint and state-update semantics.
 pub mod timing;
+/// Recursive resolved-graph and model-settings validation.
+pub mod validation;
 /// Runtime values and expression-result adaptation.
 pub mod value;
