@@ -43,6 +43,8 @@ pub mod identity;
 pub mod parameter;
 /// Version-aware native JSON loading and saving.
 pub mod persistence;
+/// Physical-domain equations, causality, initialization, and solver contracts.
+pub mod physical;
 /// Built-in component definition registry.
 pub mod registry;
 /// Custom-component dependency resolution and immutable graph expansion.

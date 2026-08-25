@@ -4,8 +4,11 @@
 
 /// Module containing the conversion logic for units of measurement.
 pub mod conversion;
+/// SI base-dimension algebra and derived physical quantities.
+pub mod dimension;
 /// Module containing definitions for various units of measurement.
 pub mod unit_definitions;
 
 pub use conversion::*;
+pub use dimension::*;
 pub use unit_definitions::*;
