@@ -181,6 +181,7 @@ mod tests {
             name: "gain".into(),
             component: ComponentReference::BuiltIn {
                 type_id: ComponentTypeId::new("signal.gain").unwrap(),
+                version: None,
             },
             parameter_overrides: BTreeMap::from([("gain".into(), "2.0".into())]),
             enabled: true,

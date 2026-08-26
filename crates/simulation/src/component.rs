@@ -56,6 +56,22 @@ pub struct SemanticVersion {
     pub patch: u16,
 }
 
+impl SemanticVersion {
+    /// Lowest representable semantic version.
+    pub const MIN: Self = Self {
+        major: u16::MIN,
+        minor: u16::MIN,
+        patch: u16::MIN,
+    };
+
+    /// Highest representable semantic version.
+    pub const MAX: Self = Self {
+        major: u16::MAX,
+        minor: u16::MAX,
+        patch: u16::MAX,
+    };
+}
+
 /// Direction of a signal port in a component interface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

@@ -159,6 +159,7 @@ fn test_model(
             name: format!("input_{}", port.definition.key).into(),
             component: ComponentReference::BuiltIn {
                 type_id: constant_type.clone(),
+                version: None,
             },
             parameter_overrides: BTreeMap::from([("value".into(), expression.clone())]),
             enabled: true,

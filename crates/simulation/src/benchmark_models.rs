@@ -117,6 +117,7 @@ fn instance(
         name: name.into(),
         component: ComponentReference::BuiltIn {
             type_id: ComponentTypeId::new(type_id)?,
+            version: None,
         },
         parameter_overrides: overrides
             .iter()
@@ -140,7 +141,7 @@ fn connection(
         source: endpoint(source, source_port),
         target: endpoint(target, target_port),
         label: None,
-        route: Vec::new(),
+        route: vec![],
     }
 }
 

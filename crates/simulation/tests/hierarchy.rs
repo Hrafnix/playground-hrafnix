@@ -84,6 +84,7 @@ fn builtin(
         name: format!("component-{id}").into(),
         component: ComponentReference::BuiltIn {
             type_id: ComponentTypeId::new(type_id).map_err(|error| format!("{error:?}"))?,
+            version: None,
         },
         parameter_overrides: overrides
             .iter()

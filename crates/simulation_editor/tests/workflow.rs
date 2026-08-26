@@ -105,6 +105,7 @@ fn add(
     let outcome = controller
         .execute(DocumentCommand::AddBuiltIn {
             type_id: ComponentTypeId::new(type_id).map_err(|error| format!("{error:?}"))?,
+            version: None,
             name: name.into(),
             position: CanvasPosition { x, y: 120.0 },
         })

@@ -66,6 +66,9 @@ pub enum ComponentReference {
     BuiltIn {
         /// Stable registry type ID.
         type_id: ComponentTypeId,
+        /// Exact installed version, or latest when omitted.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        version: Option<crate::component::SemanticVersion>,
     },
     /// Independently persisted reusable component.
     Custom {

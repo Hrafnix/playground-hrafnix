@@ -2,7 +2,7 @@
 
 use shareable_string::ShareableString;
 use simulation::builtins::register_signal_builtins;
-use simulation::component::ComponentTypeId;
+use simulation::component::{ComponentTypeId, SemanticVersion};
 use simulation::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity};
 use simulation::document::{
     CanvasPosition, ComponentInstance, ComponentReference, Composition, Connection, DocumentHeader,
@@ -31,6 +31,8 @@ pub enum DocumentCommand {
     AddBuiltIn {
         /// Stable built-in type identity.
         type_id: ComponentTypeId,
+        /// Exact built-in version, or latest when omitted.
+        version: Option<SemanticVersion>,
         /// User-facing instance name.
         name: ShareableString,
         /// Initial canvas location.
@@ -225,8 +227,12 @@ impl DocumentController {
     pub fn definition(
         &self,
         type_id: &ComponentTypeId,
+        version: Option<SemanticVersion>,
     ) -> Option<&simulation::component::ComponentDefinition> {
-        self.registry.get(type_id)
+        version.map_or_else(
+            || self.registry.get(type_id),
+            |version| self.registry.get_version(type_id, version),
+        )
     }
 
     /// Returns diagnostics from the most recent validate or run action.
@@ -397,6 +403,7 @@ fn apply_command(
     match command {
         DocumentCommand::AddBuiltIn {
             type_id,
+            version,
             name,
             position,
         } => {
@@ -404,7 +411,7 @@ fn apply_command(
             document.root.components.push(ComponentInstance {
                 id,
                 name,
-                component: ComponentReference::BuiltIn { type_id },
+                component: ComponentReference::BuiltIn { type_id, version },
                 parameter_overrides: BTreeMap::new(),
                 enabled: true,
                 position,

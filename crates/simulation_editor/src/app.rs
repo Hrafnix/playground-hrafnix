@@ -11,7 +11,9 @@
 use crate::controller::{CommandOutcome, DocumentCommand, DocumentController};
 use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
 use shareable_string::ShareableString;
-use simulation::component::{ComponentTypeId, ParameterDefinition, PortDefinition, PortDirection};
+use simulation::component::{
+    ComponentTypeId, ParameterDefinition, PortDefinition, PortDirection, SemanticVersion,
+};
 use simulation::diagnostic::DiagnosticSeverity;
 use simulation::document::{CanvasPosition, ComponentReference, PortEndpoint};
 use simulation::identity::{ComponentId, DocumentId};
@@ -203,6 +205,7 @@ impl EditorApp {
                     .map(|definition| {
                         (
                             definition.type_id.clone(),
+                            definition.version,
                             definition.display_name.clone(),
                             definition.category.clone(),
                             definition.documentation.clone(),
@@ -210,7 +213,7 @@ impl EditorApp {
                     })
                     .collect();
                 egui::ScrollArea::vertical().show(ui, |ui| {
-                    for (type_id, name, category, documentation) in entries {
+                    for (type_id, version, name, category, documentation) in entries {
                         let response = ui
                             .add_sized(
                                 [190.0, 42.0],
@@ -222,7 +225,7 @@ impl EditorApp {
                             )
                             .on_hover_text(documentation.as_str());
                         if response.clicked() {
-                            self.add_component(type_id, &name);
+                            self.add_component(type_id, version, &name);
                         }
                     }
                 });
@@ -339,11 +342,11 @@ impl EditorApp {
         };
         ui.strong(component.name.as_str());
         ui.small(component.id.to_string());
-        let ComponentReference::BuiltIn { type_id } = &component.component else {
+        let ComponentReference::BuiltIn { type_id, version } = &component.component else {
             ui.label("Custom component");
             return;
         };
-        let Some(definition) = self.controller.definition(type_id) else {
+        let Some(definition) = self.controller.definition(type_id, *version) else {
             ui.colored_label(Color32::from_rgb(174, 52, 45), "Unavailable built-in");
             return;
         };
@@ -570,7 +573,7 @@ impl EditorApp {
             Color32::from_rgb(27, 31, 29),
         );
         let source_label = match &component.component {
-            ComponentReference::BuiltIn { type_id } => type_id.as_str(),
+            ComponentReference::BuiltIn { type_id, .. } => type_id.as_str(),
             ComponentReference::Custom { .. } => "custom component",
         };
         ui.painter().text(
@@ -597,12 +600,18 @@ impl EditorApp {
     }
 
     /// Adds one palette item through a document command.
-    fn add_component(&mut self, type_id: ComponentTypeId, display_name: &ShareableString) {
+    fn add_component(
+        &mut self,
+        type_id: ComponentTypeId,
+        version: SemanticVersion,
+        display_name: &ShareableString,
+    ) {
         let column = self.placement_index % 3;
         let row = self.placement_index / 3;
         self.placement_index = self.placement_index.saturating_add(1);
         let outcome = self.controller.execute(DocumentCommand::AddBuiltIn {
             type_id,
+            version: Some(version),
             name: format!("{} {}", display_name.as_str(), self.placement_index).into(),
             position: CanvasPosition {
                 x: 40.0 + f64::from(column) * 220.0,

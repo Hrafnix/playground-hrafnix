@@ -135,7 +135,7 @@ impl SimulationRuntime {
         let mut components = BTreeMap::new();
         let mut diagnostics = Vec::new();
         for component in &model.root.components {
-            let ResolvedComponentSource::BuiltIn { type_id, .. } = &component.source else {
+            let ResolvedComponentSource::BuiltIn { type_id, version } = &component.source else {
                 diagnostics.push(build_diagnostic(
                     component.id,
                     "component",
@@ -143,7 +143,7 @@ impl SimulationRuntime {
                 ));
                 continue;
             };
-            let Some(factory) = registry.factory(type_id) else {
+            let Some(factory) = registry.factory_version(type_id, *version) else {
                 diagnostics.push(build_diagnostic(
                     component.id,
                     "component",
@@ -848,6 +848,7 @@ mod tests {
             name: format!("component-{id}").into(),
             component: ComponentReference::BuiltIn {
                 type_id: ComponentTypeId::new(type_id).unwrap(),
+                version: None,
             },
             parameter_overrides: overrides
                 .iter()
@@ -1006,6 +1007,7 @@ mod tests {
         let mut model = model();
         model.root.components[0].component = ComponentReference::BuiltIn {
             type_id: ComponentTypeId::new("test.cancelling_source").unwrap(),
+            version: None,
         };
         model.root.components[0].parameter_overrides.clear();
         let resolved = resolve_model(&model, &registry, &NoCustomComponents).unwrap();

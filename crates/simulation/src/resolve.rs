@@ -248,8 +248,11 @@ fn resolve_system(
             component_id: instance.id,
         };
         let resolution = match &instance.component {
-            ComponentReference::BuiltIn { type_id } => registry
-                .require(type_id, instance.id)
+            ComponentReference::BuiltIn { type_id, version } => version
+                .map_or_else(
+                    || registry.require(type_id, instance.id),
+                    |version| registry.require_version(type_id, version, instance.id),
+                )
                 .map(|definition| resolved_builtin(instance, definition, provenance))
                 .map_err(|diagnostic| ResolutionFailure {
                     kind: ResolutionFailureKind::UnknownBuiltIn,
@@ -690,6 +693,44 @@ mod tests {
     }
 
     #[test]
+    fn resolves_pinned_builtin_version_when_newer_version_is_installed() {
+        let mut registry = registry();
+        let type_id = ComponentTypeId::new("signal.constant").unwrap();
+        let version_one = SemanticVersion {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        };
+        let mut version_two = registry.get(&type_id).unwrap().clone();
+        version_two.version.major = 2;
+        registry.register(version_two).unwrap();
+        let source = model(
+            ComponentInstance {
+                id: ComponentId::from_raw(7),
+                name: "constant".into(),
+                component: ComponentReference::BuiltIn {
+                    type_id: type_id.clone(),
+                    version: Some(version_one),
+                },
+                parameter_overrides: BTreeMap::new(),
+                enabled: true,
+                position: CanvasPosition { x: 0.0, y: 0.0 },
+            },
+            vec![],
+        );
+
+        let resolved = resolve_model(&source, &registry, &MemoryLoader(BTreeMap::new())).unwrap();
+
+        assert_eq!(
+            resolved.root.components[0].source,
+            ResolvedComponentSource::BuiltIn {
+                type_id,
+                version: version_one,
+            }
+        );
+    }
+
+    #[test]
     fn resolves_nested_custom_components_with_provenance() {
         let leaf = custom(3, 30, vec![], vec![]);
         let middle = custom(
@@ -802,6 +843,7 @@ mod tests {
             name: "missing".into(),
             component: ComponentReference::BuiltIn {
                 type_id: unknown_type.clone(),
+                version: None,
             },
             parameter_overrides: BTreeMap::new(),
             enabled: true,
@@ -825,6 +867,7 @@ mod tests {
             reference,
             &ComponentReference::BuiltIn {
                 type_id: unknown_type,
+                version: None,
             }
         );
         assert_eq!(
