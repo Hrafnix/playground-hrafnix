@@ -820,6 +820,7 @@ mod tests {
                 unit: None,
                 required: false,
             }],
+            appearance: Default::default(),
             capabilities: ComponentCapabilities::new([
                 ComponentCapability::TimeDependent,
                 ComponentCapability::Deterministic,

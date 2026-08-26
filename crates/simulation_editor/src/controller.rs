@@ -5,9 +5,9 @@ use simulation::builtins::register_signal_builtins;
 use simulation::component::{ComponentTypeId, SemanticVersion};
 use simulation::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity};
 use simulation::document::{
-    CanvasPosition, ComponentInstance, ComponentReference, Composition, Connection, DocumentHeader,
-    LoggingPolicy, MODEL_SCHEMA_VERSION, ModelDocument, PortEndpoint, ProbeDefinition,
-    SimulationSettings,
+    CanvasPosition, ComponentInstance, ComponentReference, Composition, Connection,
+    CustomComponentDocument, DocumentHeader, LoggingPolicy, MODEL_SCHEMA_VERSION, ModelDocument,
+    PortEndpoint, ProbeDefinition, SimulationSettings,
 };
 use simulation::identity::{ComponentId, ConnectionId, DocumentId, ProbeId, RunId, SystemId};
 use simulation::persistence::{load_custom_component_json, load_model_json, save_model_json};
@@ -233,6 +233,33 @@ impl DocumentController {
             || self.registry.get(type_id),
             |version| self.registry.get_version(type_id, version),
         )
+    }
+
+    /// Loads custom-component metadata after verifying its dependency lock.
+    #[must_use]
+    pub fn custom_component_document(
+        &self,
+        reference: &ComponentReference,
+    ) -> Option<CustomComponentDocument> {
+        let ComponentReference::Custom {
+            document_id,
+            revision,
+            source,
+        } = reference
+        else {
+            return None;
+        };
+        let lock = self.document.dependencies.iter().find(|lock| {
+            lock.document_id == *document_id && lock.revision == *revision && lock.source == *source
+        })?;
+        let loaded = self.loader().load(source.as_str()).ok()?;
+        if loaded.document.header.document_id != *document_id
+            || loaded.document.revision != *revision
+            || loaded.checksum != lock.checksum
+        {
+            return None;
+        }
+        Some(loaded.document)
     }
 
     /// Returns diagnostics from the most recent validate or run action.

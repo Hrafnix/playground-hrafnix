@@ -624,6 +624,7 @@ mod tests {
         CustomComponentDocument {
             header: header(document_id, COMPONENT_SCHEMA_VERSION),
             revision: ArtifactRevision("1.0.0".into()),
+            appearance: Default::default(),
             public_parameters: vec![],
             public_ports: vec![],
             implementation: Composition {
@@ -685,6 +686,7 @@ mod tests {
                 documentation: "".into(),
                 parameters: vec![],
                 ports: vec![],
+                appearance: Default::default(),
                 capabilities: ComponentCapabilities::default(),
                 deprecation: None,
             })

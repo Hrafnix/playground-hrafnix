@@ -1,4 +1,4 @@
-use crate::component::{ComponentTypeId, ParameterDefinition, PortDefinition};
+use crate::component::{ComponentAppearance, ComponentTypeId, ParameterDefinition, PortDefinition};
 use crate::identity::{ComponentId, ConnectionId, DocumentId, PortId, ProbeId, SystemId};
 use crate::parameter::ParameterValueType;
 use crate::timing::FixedStepSemantics;
@@ -315,6 +315,9 @@ pub struct CustomComponentDocument {
     pub header: DocumentHeader,
     /// Independent artifact revision.
     pub revision: ArtifactRevision,
+    /// Optional custom icon and public-port placement.
+    #[serde(default, skip_serializing_if = "ComponentAppearance::is_empty")]
+    pub appearance: ComponentAppearance,
     /// Public component parameters.
     pub public_parameters: Vec<ParameterDefinition>,
     /// Public component ports.

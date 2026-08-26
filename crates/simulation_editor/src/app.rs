@@ -12,7 +12,8 @@ use crate::controller::{CommandOutcome, DocumentCommand, DocumentController};
 use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
 use shareable_string::ShareableString;
 use simulation::component::{
-    ComponentTypeId, ParameterDefinition, PortDefinition, PortDirection, SemanticVersion,
+    ComponentAppearance, ComponentTypeId, NormalizedPosition, ParameterDefinition, PortDefinition,
+    PortDirection, SemanticVersion,
 };
 use simulation::diagnostic::DiagnosticSeverity;
 use simulation::document::{CanvasPosition, ComponentReference, PortEndpoint};
@@ -21,6 +22,7 @@ use simulation::results::{RunStatus, SignalSeries};
 use simulation::value::RuntimeValue;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Width reserved for the component library.
 const PALETTE_WIDTH: f32 = 210.0;
@@ -32,6 +34,28 @@ const RESULTS_HEIGHT: f32 = 230.0;
 const NODE_WIDTH: f32 = 170.0;
 /// Stable visual node height.
 const NODE_HEIGHT: f32 = 82.0;
+/// Radius of one canvas port icon.
+const PORT_RADIUS: f32 = 5.0;
+
+/// Cached visual metadata loaded from a component definition or artifact.
+#[derive(Debug, Clone)]
+struct ComponentPresentation {
+    /// Public ports rendered on the node.
+    ports: Vec<PortDefinition>,
+    /// Explicit normalized public-port locations.
+    port_locations: BTreeMap<ShareableString, NormalizedPosition>,
+    /// Optional embedded SVG prepared for egui's shared byte loader.
+    icon: Option<EmbeddedSvg>,
+}
+
+/// Shared embedded SVG data and its content-addressed cache key.
+#[derive(Debug, Clone)]
+struct EmbeddedSvg {
+    /// Stable egui byte-loader URI.
+    uri: String,
+    /// Shared SVG source bytes.
+    bytes: Arc<[u8]>,
+}
 
 /// Mutable UI state wrapped around one command-driven controller.
 #[derive(Debug)]
@@ -54,6 +78,12 @@ pub struct EditorApp {
     placement_index: u32,
     /// Native artifacts opened or saved during this session.
     recent_artifacts: Vec<PathBuf>,
+    /// Built-in presentation data keyed by exact registry identity.
+    builtin_presentations: BTreeMap<(ComponentTypeId, SemanticVersion), ComponentPresentation>,
+    /// Verified custom presentation data keyed by root instance.
+    custom_presentations: BTreeMap<ComponentId, ComponentPresentation>,
+    /// Whether SVG image loaders were installed on the current context.
+    image_loaders_installed: bool,
 }
 
 impl EditorApp {
@@ -63,9 +93,19 @@ impl EditorApp {
     ///
     /// Returns an error if the standard component registry cannot be installed.
     pub fn new(document_id: DocumentId, timestamp: &str) -> Result<Self, String> {
+        let controller =
+            DocumentController::new(document_id, timestamp).map_err(|error| error.to_string())?;
+        let builtin_presentations = controller
+            .palette()
+            .map(|definition| {
+                (
+                    (definition.type_id.clone(), definition.version),
+                    component_presentation(definition.ports.clone(), definition.appearance.clone()),
+                )
+            })
+            .collect();
         Ok(Self {
-            controller: DocumentController::new(document_id, timestamp)
-                .map_err(|error| error.to_string())?,
+            controller,
             selected_component: None,
             palette_filter: String::new(),
             path_input: "signal-model.json".into(),
@@ -74,11 +114,18 @@ impl EditorApp {
             pending_source: None,
             placement_index: 0,
             recent_artifacts: Vec::new(),
+            builtin_presentations,
+            custom_presentations: BTreeMap::new(),
+            image_loaders_installed: false,
         })
     }
 
     /// Draws one complete editor frame.
     pub fn show(&mut self, ui: &mut egui::Ui) {
+        if !self.image_loaders_installed {
+            egui_extras::install_image_loaders(ui.ctx());
+            self.image_loaders_installed = true;
+        }
         Self::apply_visual_style(ui.ctx());
         self.show_toolbar(ui);
         self.show_palette(ui);
@@ -148,11 +195,13 @@ impl EditorApp {
                 if ui.button("Undo").clicked() && self.controller.undo() {
                     self.status = "Undid command".into();
                     self.selected_component = None;
+                    self.refresh_custom_presentations();
                     self.autosave();
                 }
                 if ui.button("Redo").clicked() && self.controller.redo() {
                     self.status = "Redid command".into();
                     self.selected_component = None;
+                    self.refresh_custom_presentations();
                     self.autosave();
                 }
                 ui.separator();
@@ -508,6 +557,23 @@ impl EditorApp {
             draw_grid(ui, available);
             let components = self.controller.document().root.components.clone();
             let connections = self.controller.document().root.connections.clone();
+            let presentations: BTreeMap<_, _> = components
+                .iter()
+                .filter_map(|component| {
+                    let presentation = match &component.component {
+                        ComponentReference::BuiltIn { type_id, version } => {
+                            let definition = self.controller.definition(type_id, *version)?;
+                            self.builtin_presentations
+                                .get(&(type_id.clone(), definition.version))
+                                .cloned()
+                        }
+                        ComponentReference::Custom { .. } => {
+                            self.custom_presentations.get(&component.id).cloned()
+                        }
+                    }?;
+                    Some((component.id, presentation))
+                })
+                .collect();
             for connection in connections {
                 let source = components
                     .iter()
@@ -516,9 +582,30 @@ impl EditorApp {
                     .iter()
                     .find(|component| component.id == connection.target.component_id);
                 if let (Some(source), Some(target)) = (source, target) {
-                    let start =
-                        canvas_pos(available, source.position) + Vec2::new(NODE_WIDTH, 41.0);
-                    let end = canvas_pos(available, target.position) + Vec2::new(0.0, 41.0);
+                    let source_rect = node_rect(available, source.position);
+                    let target_rect = node_rect(available, target.position);
+                    let start = port_position(
+                        source_rect,
+                        presentations
+                            .get(&source.id)
+                            .map(|presentation| presentation.ports.as_slice()),
+                        presentations
+                            .get(&source.id)
+                            .map(|presentation| &presentation.port_locations),
+                        connection.source.port_key.as_str(),
+                    )
+                    .unwrap_or_else(|| source_rect.right_center());
+                    let end = port_position(
+                        target_rect,
+                        presentations
+                            .get(&target.id)
+                            .map(|presentation| presentation.ports.as_slice()),
+                        presentations
+                            .get(&target.id)
+                            .map(|presentation| &presentation.port_locations),
+                        connection.target.port_key.as_str(),
+                    )
+                    .unwrap_or_else(|| target_rect.left_center());
                     ui.painter().line_segment(
                         [start, end],
                         Stroke::new(2.5, Color32::from_rgb(20, 117, 112)),
@@ -526,7 +613,21 @@ impl EditorApp {
                 }
             }
             for component in components {
-                self.show_node(ui, available, &component);
+                let presentation = presentations.get(&component.id).cloned();
+                self.show_node(
+                    ui,
+                    available,
+                    &component,
+                    presentation
+                        .as_ref()
+                        .map_or(&[][..], |presentation| presentation.ports.as_slice()),
+                    presentation
+                        .as_ref()
+                        .map(|presentation| &presentation.port_locations),
+                    presentation
+                        .as_ref()
+                        .and_then(|presentation| presentation.icon.as_ref()),
+                );
             }
         });
     }
@@ -537,9 +638,11 @@ impl EditorApp {
         ui: &mut egui::Ui,
         canvas: Rect,
         component: &simulation::document::ComponentInstance,
+        ports: &[PortDefinition],
+        port_locations: Option<&BTreeMap<ShareableString, NormalizedPosition>>,
+        icon: Option<&EmbeddedSvg>,
     ) {
-        let minimum = canvas_pos(canvas, component.position);
-        let rect = Rect::from_min_size(minimum, Vec2::new(NODE_WIDTH, NODE_HEIGHT));
+        let rect = node_rect(canvas, component.position);
         let response = ui.interact(
             rect,
             egui::Id::new(component.id.as_raw()),
@@ -565,8 +668,16 @@ impl EditorApp {
             ),
             StrokeKind::Outside,
         );
+        if let Some(icon) = icon {
+            let icon_rect =
+                Rect::from_min_size(rect.min + Vec2::new(12.0, 27.0), Vec2::new(44.0, 44.0));
+            egui::Image::from_bytes(icon.uri.clone(), Arc::clone(&icon.bytes))
+                .fit_to_exact_size(icon_rect.size())
+                .paint_at(ui, icon_rect);
+        }
+        let label_offset = if icon.is_some() { 68.0 } else { 12.0 };
         ui.painter().text(
-            rect.min + Vec2::new(12.0, 14.0),
+            rect.min + Vec2::new(label_offset, 14.0),
             egui::Align2::LEFT_TOP,
             component.name.as_str(),
             FontId::proportional(16.0),
@@ -577,12 +688,48 @@ impl EditorApp {
             ComponentReference::Custom { .. } => "custom component",
         };
         ui.painter().text(
-            rect.min + Vec2::new(12.0, 44.0),
+            rect.min + Vec2::new(label_offset, 44.0),
             egui::Align2::LEFT_TOP,
             source_label,
             FontId::monospace(11.0),
             Color32::from_rgb(91, 96, 92),
         );
+        for port in ports {
+            let Some(position) =
+                port_position(rect, Some(ports), port_locations, port.key.as_str())
+            else {
+                continue;
+            };
+            let icon_rect = Rect::from_center_size(position, Vec2::splat(PORT_RADIUS * 3.0));
+            ui.interact(
+                icon_rect,
+                egui::Id::new((component.id.as_raw(), port.key.as_str())),
+                Sense::hover(),
+            )
+            .on_hover_text(format!(
+                "{} ({:?})",
+                port.display_name.as_str(),
+                port.direction
+            ));
+            match port.direction {
+                PortDirection::Input => {
+                    ui.painter().circle(
+                        position,
+                        PORT_RADIUS,
+                        Color32::WHITE,
+                        Stroke::new(2.0, Color32::from_rgb(52, 87, 139)),
+                    );
+                }
+                PortDirection::Output => {
+                    ui.painter().circle(
+                        position,
+                        PORT_RADIUS,
+                        Color32::from_rgb(20, 117, 112),
+                        Stroke::new(1.5, Color32::WHITE),
+                    );
+                }
+            }
+        }
         if response.clicked() {
             self.selected_component = Some(component.id);
             self.parameter_drafts.clear();
@@ -653,6 +800,7 @@ impl EditorApp {
                 self.selected_component = None;
                 self.parameter_drafts.clear();
                 self.pending_source = None;
+                self.custom_presentations.clear();
                 self.status = "New model".into();
             }
             Err(error) => self.status = error.to_string(),
@@ -669,6 +817,7 @@ impl EditorApp {
                 self.selected_component = None;
                 self.parameter_drafts.clear();
                 self.pending_source = None;
+                self.refresh_custom_presentations();
                 self.status = "Model opened".into();
             }
             Err(error) => self.status = error.to_string(),
@@ -685,6 +834,7 @@ impl EditorApp {
                 self.selected_component = None;
                 self.parameter_drafts.clear();
                 self.pending_source = None;
+                self.refresh_custom_presentations();
                 self.status = "Recovered autosave".into();
             }
             Err(error) => self.status = error.to_string(),
@@ -728,11 +878,98 @@ impl EditorApp {
         self.recent_artifacts.insert(0, path);
         self.recent_artifacts.truncate(6);
     }
+
+    /// Reloads verified custom appearance data for root component instances.
+    fn refresh_custom_presentations(&mut self) {
+        self.custom_presentations = self
+            .controller
+            .document()
+            .root
+            .components
+            .iter()
+            .filter_map(|component| {
+                let document = self
+                    .controller
+                    .custom_component_document(&component.component)?;
+                Some((
+                    component.id,
+                    component_presentation(
+                        document
+                            .public_ports
+                            .into_iter()
+                            .map(|port| port.definition)
+                            .collect(),
+                        document.appearance,
+                    ),
+                ))
+            })
+            .collect();
+    }
+}
+
+/// Converts serializable component appearance into cached editor resources.
+fn component_presentation(
+    ports: Vec<PortDefinition>,
+    appearance: ComponentAppearance,
+) -> ComponentPresentation {
+    let icon = appearance.icon_svg.as_ref().map(|svg| EmbeddedSvg {
+        uri: format!(
+            "bytes://component-{}.svg",
+            blake3::hash(svg.as_str().as_bytes()).to_hex()
+        ),
+        bytes: Arc::from(svg.as_str().as_bytes()),
+    });
+    ComponentPresentation {
+        ports,
+        port_locations: appearance.port_locations,
+        icon,
+    }
 }
 
 /// Converts persisted canvas coordinates into panel coordinates.
 fn canvas_pos(canvas: Rect, position: CanvasPosition) -> Pos2 {
     canvas.min + Vec2::new(position.x as f32, position.y as f32)
+}
+
+/// Returns the fixed canvas rectangle for one persisted node location.
+fn node_rect(canvas: Rect, position: CanvasPosition) -> Rect {
+    Rect::from_min_size(
+        canvas_pos(canvas, position),
+        Vec2::new(NODE_WIDTH, NODE_HEIGHT),
+    )
+}
+
+/// Places one port evenly along the node edge selected by its direction.
+fn port_position(
+    rect: Rect,
+    ports: Option<&[PortDefinition]>,
+    locations: Option<&BTreeMap<ShareableString, NormalizedPosition>>,
+    port_key: &str,
+) -> Option<Pos2> {
+    let ports = ports?;
+    let port = ports.iter().find(|port| port.key.as_str() == port_key)?;
+    if let Some(location) = locations.and_then(|locations| locations.get(&port.key))
+        && location.x.is_finite()
+        && location.y.is_finite()
+    {
+        return Some(Pos2::new(
+            rect.left() + rect.width() * location.x.clamp(0.0, 1.0),
+            rect.top() + rect.height() * location.y.clamp(0.0, 1.0),
+        ));
+    }
+    let matching: Vec<_> = ports
+        .iter()
+        .filter(|candidate| candidate.direction == port.direction)
+        .collect();
+    let index = matching
+        .iter()
+        .position(|candidate| candidate.key == port.key)?;
+    let y_fraction = (index + 1) as f32 / (matching.len() + 1) as f32;
+    let x = match port.direction {
+        PortDirection::Input => rect.left(),
+        PortDirection::Output => rect.right(),
+    };
+    Some(Pos2::new(x, rect.top() + rect.height() * y_fraction))
 }
 
 /// Draws a subtle fixed grid for spatial orientation.
@@ -915,4 +1152,79 @@ fn plot_point(
         rect.left() + rect.width() * x_fraction,
         rect.bottom() - rect.height() * y_fraction,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{EditorApp, port_position};
+    use eframe::egui::{Pos2, Rect};
+    use simulation::component::{NormalizedPosition, PortDefinition, PortDirection};
+    use simulation::identity::DocumentId;
+    use simulation::parameter::ParameterValueType;
+    use std::collections::BTreeMap;
+
+    fn port(key: &str, direction: PortDirection) -> PortDefinition {
+        PortDefinition {
+            key: key.into(),
+            display_name: key.into(),
+            description: "".into(),
+            direction,
+            value_type: ParameterValueType::Scalar,
+            unit: None,
+            required: direction == PortDirection::Input,
+        }
+    }
+
+    fn assert_position(actual: Option<Pos2>, expected: Pos2) {
+        let actual = actual.expect("port should have a position");
+        assert!((actual.x - expected.x).abs() < 0.001);
+        assert!((actual.y - expected.y).abs() < 0.001);
+    }
+
+    #[test]
+    fn ports_are_spaced_on_their_directional_edges() {
+        let rect = Rect::from_min_max(Pos2::new(10.0, 20.0), Pos2::new(110.0, 100.0));
+        let ports = [
+            port("a", PortDirection::Input),
+            port("b", PortDirection::Input),
+            port("out", PortDirection::Output),
+        ];
+
+        assert_position(
+            port_position(rect, Some(&ports), None, "a"),
+            Pos2::new(10.0, 20.0 + 80.0 / 3.0),
+        );
+        assert_position(
+            port_position(rect, Some(&ports), None, "b"),
+            Pos2::new(10.0, 20.0 + 160.0 / 3.0),
+        );
+        assert_position(
+            port_position(rect, Some(&ports), None, "out"),
+            Pos2::new(110.0, 60.0),
+        );
+    }
+
+    #[test]
+    fn explicit_port_location_overrides_directional_edge() {
+        let rect = Rect::from_min_max(Pos2::new(10.0, 20.0), Pos2::new(110.0, 100.0));
+        let ports = [port("out", PortDirection::Output)];
+        let locations = BTreeMap::from([("out".into(), NormalizedPosition { x: 0.25, y: 0.75 })]);
+
+        assert_position(
+            port_position(rect, Some(&ports), Some(&locations), "out"),
+            Pos2::new(35.0, 80.0),
+        );
+    }
+
+    #[test]
+    fn editor_caches_every_builtin_icon() {
+        let app = EditorApp::new(DocumentId::from_raw(1), "test").unwrap();
+
+        assert_eq!(app.builtin_presentations.len(), 20);
+        assert!(
+            app.builtin_presentations
+                .values()
+                .all(|presentation| presentation.icon.is_some())
+        );
+    }
 }

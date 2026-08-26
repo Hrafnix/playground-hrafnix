@@ -217,6 +217,7 @@ mod tests {
             documentation: "Multiplies a signal.".into(),
             parameters: vec![],
             ports: vec![],
+            appearance: Default::default(),
             capabilities: ComponentCapabilities::new([
                 ComponentCapability::DirectFeedthrough,
                 ComponentCapability::Deterministic,

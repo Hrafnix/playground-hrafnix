@@ -142,7 +142,10 @@ mod tests {
     use super::{
         load_custom_component_json, load_model_json, save_custom_component_json, save_model_json,
     };
-    use crate::component::{ComponentTypeId, ParameterDefinition, PortDefinition, PortDirection};
+    use crate::component::{
+        ComponentAppearance, ComponentTypeId, NormalizedPosition, ParameterDefinition,
+        PortDefinition, PortDirection,
+    };
     use crate::document::{
         ArtifactRevision, COMPONENT_SCHEMA_VERSION, CanvasPosition, ComponentInstance,
         ComponentReference, ComponentTestCase, Composition, Connection, CustomComponentDocument,
@@ -279,6 +282,16 @@ mod tests {
         CustomComponentDocument {
             header: header(10, true),
             revision: ArtifactRevision("1.0.0".into()),
+            appearance: ComponentAppearance {
+                icon_svg: Some(
+                    r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><path d="M10 30h80"/></svg>"#
+                        .into(),
+                ),
+                port_locations: BTreeMap::from([(
+                    "out".into(),
+                    NormalizedPosition { x: 1.0, y: 0.5 },
+                )]),
+            },
             public_parameters: vec![parameter],
             public_ports: vec![port],
             implementation: Composition {

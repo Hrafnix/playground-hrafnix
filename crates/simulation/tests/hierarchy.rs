@@ -117,6 +117,7 @@ fn gain_wrapper() -> Result<CustomComponentDocument, String> {
     Ok(CustomComponentDocument {
         header: header(50, true),
         revision: ArtifactRevision("1.0.0".into()),
+        appearance: Default::default(),
         public_parameters: vec![ParameterDefinition {
             key: "gain".into(),
             display_name: "Gain".into(),
@@ -188,6 +189,7 @@ fn outer_wrapper(inner: &CustomComponentDocument) -> CustomComponentDocument {
     CustomComponentDocument {
         header: header(60, true),
         revision: ArtifactRevision("1.0.0".into()),
+        appearance: Default::default(),
         public_parameters: inner.public_parameters.clone(),
         public_ports: vec![
             PublicPortDefinition {

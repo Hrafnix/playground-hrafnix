@@ -116,6 +116,34 @@ pub struct PortDefinition {
     pub required: bool,
 }
 
+/// Position normalized to the width and height of a component icon.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct NormalizedPosition {
+    /// Horizontal fraction, normally between zero and one.
+    pub x: f32,
+    /// Vertical fraction, normally between zero and one.
+    pub y: f32,
+}
+
+/// Optional visual presentation shared by built-in and custom components.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ComponentAppearance {
+    /// Complete SVG document rendered inside component instances.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_svg: Option<ShareableString>,
+    /// Normalized icon locations keyed by public port key.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub port_locations: BTreeMap<ShareableString, NormalizedPosition>,
+}
+
+impl ComponentAppearance {
+    /// Returns whether the component relies entirely on editor defaults.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.icon_svg.is_none() && self.port_locations.is_empty()
+    }
+}
+
 /// One scheduling or runtime trait declared by a component definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -161,7 +189,7 @@ pub struct Deprecation {
 }
 
 /// Immutable metadata registered for one built-in component type.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ComponentDefinition {
     /// Stable built-in type identity.
     pub type_id: ComponentTypeId,
@@ -181,6 +209,9 @@ pub struct ComponentDefinition {
     pub parameters: Vec<ParameterDefinition>,
     /// Public ports in display order.
     pub ports: Vec<PortDefinition>,
+    /// Optional icon and public-port placement.
+    #[serde(default, skip_serializing_if = "ComponentAppearance::is_empty")]
+    pub appearance: ComponentAppearance,
     /// Runtime and scheduling capabilities.
     pub capabilities: ComponentCapabilities,
     /// Optional deprecation guidance.
