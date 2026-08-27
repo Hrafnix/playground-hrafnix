@@ -75,6 +75,19 @@ fn verify_workflow() -> Result<(), String> {
             position: CanvasPosition { x: 420.0, y: 140.0 },
         })
         .map_err(|error| error.to_string())?;
+    if component_position(&controller, gain) != Some(CanvasPosition { x: 420.0, y: 140.0 }) {
+        return Err("move command did not update the component position".into());
+    }
+    if !controller.undo()
+        || component_position(&controller, gain) != Some(CanvasPosition { x: 360.0, y: 120.0 })
+    {
+        return Err("undo did not restore the component position".into());
+    }
+    if !controller.redo()
+        || component_position(&controller, gain) != Some(CanvasPosition { x: 420.0, y: 140.0 })
+    {
+        return Err("redo did not restore the moved component position".into());
+    }
     controller
         .autosave(&path)
         .map_err(|error| error.to_string())?;
@@ -124,6 +137,20 @@ fn endpoint(component_id: ComponentId, port_key: &str) -> PortEndpoint {
         component_id,
         port_key: port_key.into(),
     }
+}
+
+/// Returns one root component's persisted canvas position.
+fn component_position(
+    controller: &DocumentController,
+    component_id: ComponentId,
+) -> Option<CanvasPosition> {
+    controller
+        .document()
+        .root
+        .components
+        .iter()
+        .find(|component| component.id == component_id)
+        .map(|component| component.position)
 }
 
 /// Returns a process-specific temporary model path.

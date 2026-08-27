@@ -57,6 +57,15 @@ struct EmbeddedSvg {
     bytes: Arc<[u8]>,
 }
 
+/// In-progress component movement before one atomic command commit.
+#[derive(Debug, Clone, Copy)]
+struct ComponentDrag {
+    /// Component currently owning the pointer gesture.
+    component_id: ComponentId,
+    /// Latest preview position in canvas coordinates.
+    position: CanvasPosition,
+}
+
 /// Mutable UI state wrapped around one command-driven controller.
 #[derive(Debug)]
 pub struct EditorApp {
@@ -74,6 +83,8 @@ pub struct EditorApp {
     parameter_drafts: BTreeMap<(ComponentId, ShareableString), String>,
     /// Output endpoint waiting to be connected.
     pending_source: Option<PortEndpoint>,
+    /// Live component position while a pointer drag is active.
+    component_drag: Option<ComponentDrag>,
     /// Alternating palette placement offset.
     placement_index: u32,
     /// Native artifacts opened or saved during this session.
@@ -112,6 +123,7 @@ impl EditorApp {
             status: "Ready".into(),
             parameter_drafts: BTreeMap::new(),
             pending_source: None,
+            component_drag: None,
             placement_index: 0,
             recent_artifacts: Vec::new(),
             builtin_presentations,
@@ -195,12 +207,14 @@ impl EditorApp {
                 if ui.button("Undo").clicked() && self.controller.undo() {
                     self.status = "Undid command".into();
                     self.selected_component = None;
+                    self.component_drag = None;
                     self.refresh_custom_presentations();
                     self.autosave();
                 }
                 if ui.button("Redo").clicked() && self.controller.redo() {
                     self.status = "Redid command".into();
                     self.selected_component = None;
+                    self.component_drag = None;
                     self.refresh_custom_presentations();
                     self.autosave();
                 }
@@ -574,6 +588,55 @@ impl EditorApp {
                     Some((component.id, presentation))
                 })
                 .collect();
+            let mut node_rects = BTreeMap::new();
+            let mut responses = BTreeMap::new();
+            let mut completed_move = None;
+            for component in &components {
+                let preview_position = self
+                    .component_drag
+                    .filter(|drag| drag.component_id == component.id)
+                    .map_or(component.position, |drag| drag.position);
+                let response = ui.interact(
+                    node_rect(available, preview_position),
+                    egui::Id::new(component.id.as_raw()),
+                    Sense::click_and_drag(),
+                );
+                if response.drag_started() {
+                    self.component_drag = Some(ComponentDrag {
+                        component_id: component.id,
+                        position: component.position,
+                    });
+                    self.selected_component = Some(component.id);
+                    self.parameter_drafts.clear();
+                }
+                if response.dragged()
+                    && let Some(drag) = self
+                        .component_drag
+                        .as_mut()
+                        .filter(|drag| drag.component_id == component.id)
+                {
+                    drag.position =
+                        translated_position(drag.position, response.drag_delta(), available.size());
+                    ui.ctx().request_repaint();
+                }
+                if response.drag_stopped()
+                    && let Some(drag) = self
+                        .component_drag
+                        .take()
+                        .filter(|drag| drag.component_id == component.id)
+                {
+                    completed_move = Some(drag);
+                }
+                let display_position = completed_move
+                    .filter(|drag| drag.component_id == component.id)
+                    .or_else(|| {
+                        self.component_drag
+                            .filter(|drag| drag.component_id == component.id)
+                    })
+                    .map_or(component.position, |drag| drag.position);
+                node_rects.insert(component.id, node_rect(available, display_position));
+                responses.insert(component.id, response);
+            }
             for connection in connections {
                 let source = components
                     .iter()
@@ -582,8 +645,14 @@ impl EditorApp {
                     .iter()
                     .find(|component| component.id == connection.target.component_id);
                 if let (Some(source), Some(target)) = (source, target) {
-                    let source_rect = node_rect(available, source.position);
-                    let target_rect = node_rect(available, target.position);
+                    let source_rect = node_rects
+                        .get(&source.id)
+                        .copied()
+                        .unwrap_or_else(|| node_rect(available, source.position));
+                    let target_rect = node_rects
+                        .get(&target.id)
+                        .copied()
+                        .unwrap_or_else(|| node_rect(available, target.position));
                     let start = port_position(
                         source_rect,
                         presentations
@@ -614,9 +683,17 @@ impl EditorApp {
             }
             for component in components {
                 let presentation = presentations.get(&component.id).cloned();
+                let rect = node_rects
+                    .get(&component.id)
+                    .copied()
+                    .unwrap_or_else(|| node_rect(available, component.position));
+                let Some(response) = responses.get(&component.id) else {
+                    continue;
+                };
                 self.show_node(
                     ui,
-                    available,
+                    rect,
+                    response,
                     &component,
                     presentation
                         .as_ref()
@@ -629,6 +706,12 @@ impl EditorApp {
                         .and_then(|presentation| presentation.icon.as_ref()),
                 );
             }
+            if let Some(drag) = completed_move {
+                self.apply(DocumentCommand::MoveComponent {
+                    component_id: drag.component_id,
+                    position: drag.position,
+                });
+            }
         });
     }
 
@@ -636,18 +719,13 @@ impl EditorApp {
     fn show_node(
         &mut self,
         ui: &mut egui::Ui,
-        canvas: Rect,
+        rect: Rect,
+        response: &egui::Response,
         component: &simulation::document::ComponentInstance,
         ports: &[PortDefinition],
         port_locations: Option<&BTreeMap<ShareableString, NormalizedPosition>>,
         icon: Option<&EmbeddedSvg>,
     ) {
-        let rect = node_rect(canvas, component.position);
-        let response = ui.interact(
-            rect,
-            egui::Id::new(component.id.as_raw()),
-            Sense::click_and_drag(),
-        );
         let selected = self.selected_component == Some(component.id);
         let fill = if selected {
             Color32::from_rgb(222, 237, 232)
@@ -734,16 +812,6 @@ impl EditorApp {
             self.selected_component = Some(component.id);
             self.parameter_drafts.clear();
         }
-        if response.drag_stopped() {
-            let delta = response.drag_delta();
-            self.apply(DocumentCommand::MoveComponent {
-                component_id: component.id,
-                position: CanvasPosition {
-                    x: component.position.x + f64::from(delta.x),
-                    y: component.position.y + f64::from(delta.y),
-                },
-            });
-        }
     }
 
     /// Adds one palette item through a document command.
@@ -800,6 +868,7 @@ impl EditorApp {
                 self.selected_component = None;
                 self.parameter_drafts.clear();
                 self.pending_source = None;
+                self.component_drag = None;
                 self.custom_presentations.clear();
                 self.status = "New model".into();
             }
@@ -817,6 +886,7 @@ impl EditorApp {
                 self.selected_component = None;
                 self.parameter_drafts.clear();
                 self.pending_source = None;
+                self.component_drag = None;
                 self.refresh_custom_presentations();
                 self.status = "Model opened".into();
             }
@@ -834,6 +904,7 @@ impl EditorApp {
                 self.selected_component = None;
                 self.parameter_drafts.clear();
                 self.pending_source = None;
+                self.component_drag = None;
                 self.refresh_custom_presentations();
                 self.status = "Recovered autosave".into();
             }
@@ -937,6 +1008,16 @@ fn node_rect(canvas: Rect, position: CanvasPosition) -> Rect {
         canvas_pos(canvas, position),
         Vec2::new(NODE_WIDTH, NODE_HEIGHT),
     )
+}
+
+/// Applies one frame of pointer movement while keeping the node on the canvas.
+fn translated_position(position: CanvasPosition, delta: Vec2, canvas_size: Vec2) -> CanvasPosition {
+    CanvasPosition {
+        x: (position.x + f64::from(delta.x))
+            .clamp(0.0, f64::from((canvas_size.x - NODE_WIDTH).max(0.0))),
+        y: (position.y + f64::from(delta.y))
+            .clamp(0.0, f64::from((canvas_size.y - NODE_HEIGHT).max(0.0))),
+    }
 }
 
 /// Places one port evenly along the node edge selected by its direction.
@@ -1156,9 +1237,10 @@ fn plot_point(
 
 #[cfg(test)]
 mod tests {
-    use super::{EditorApp, port_position};
-    use eframe::egui::{Pos2, Rect};
+    use super::{EditorApp, NODE_HEIGHT, port_position, translated_position};
+    use eframe::egui::{Pos2, Rect, Vec2};
     use simulation::component::{NormalizedPosition, PortDefinition, PortDirection};
+    use simulation::document::CanvasPosition;
     use simulation::identity::DocumentId;
     use simulation::parameter::ParameterValueType;
     use std::collections::BTreeMap;
@@ -1225,6 +1307,29 @@ mod tests {
             app.builtin_presentations
                 .values()
                 .all(|presentation| presentation.icon.is_some())
+        );
+    }
+
+    #[test]
+    fn dragged_position_moves_and_stays_inside_canvas() {
+        assert_eq!(
+            translated_position(
+                CanvasPosition { x: 20.0, y: 30.0 },
+                Vec2::new(15.0, -10.0),
+                Vec2::new(500.0, 400.0),
+            ),
+            CanvasPosition { x: 35.0, y: 20.0 }
+        );
+        assert_eq!(
+            translated_position(
+                CanvasPosition { x: 20.0, y: 30.0 },
+                Vec2::new(-100.0, 500.0),
+                Vec2::new(500.0, 400.0),
+            ),
+            CanvasPosition {
+                x: 0.0,
+                y: 400.0 - f64::from(NODE_HEIGHT),
+            }
         );
     }
 }
