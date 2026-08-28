@@ -123,12 +123,47 @@ pub struct NormalizedPosition {
     pub x: f32,
     /// Vertical fraction, normally between zero and one.
     pub y: f32,
+    /// Outward port orientation in degrees.
+    #[serde(default)]
+    pub angle: f32,
+}
+
+/// Visual convention represented by a component icon.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ComponentIconType {
+    /// User-oriented pictorial representation.
+    User,
+    /// Standards-oriented schematic representation.
+    Iso,
+}
+
+/// One external SVG icon associated with a component appearance.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ComponentIcon {
+    /// Icon convention used when selecting between available representations.
+    pub icon_type: ComponentIconType,
+    /// SVG path, resolved relative to the component appearance document.
+    pub path: ShareableString,
+    /// Scale applied inside the component icon area.
+    #[serde(default = "default_icon_scale")]
+    pub scale: f32,
+    /// Whether the icon rotates with a rotated component instance.
+    #[serde(default)]
+    pub rotate_with_component: bool,
+}
+
+const fn default_icon_scale() -> f32 {
+    1.0
 }
 
 /// Optional visual presentation shared by built-in and custom components.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ComponentAppearance {
-    /// Complete SVG document rendered inside component instances.
+    /// External SVG representations in preference-independent order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub icons: Vec<ComponentIcon>,
+    /// Legacy embedded SVG retained for backward-compatible artifact loading.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_svg: Option<ShareableString>,
     /// Normalized icon locations keyed by public port key.
@@ -140,7 +175,7 @@ impl ComponentAppearance {
     /// Returns whether the component relies entirely on editor defaults.
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        self.icon_svg.is_none() && self.port_locations.is_empty()
+        self.icons.is_empty() && self.icon_svg.is_none() && self.port_locations.is_empty()
     }
 }
 

@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 /// Current schema accepted for model documents.
 pub const MODEL_SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 0 };
 /// Current schema accepted for custom-component documents.
-pub const COMPONENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 1 };
+pub const COMPONENT_SCHEMA_VERSION: SchemaVersion = SchemaVersion { major: 1, minor: 2 };
 
 /// Version of a persisted document schema.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

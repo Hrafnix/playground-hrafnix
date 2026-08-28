@@ -12,16 +12,18 @@ use crate::controller::{CommandOutcome, DocumentCommand, DocumentController};
 use eframe::egui::{self, Color32, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2};
 use shareable_string::ShareableString;
 use simulation::component::{
-    ComponentAppearance, ComponentTypeId, NormalizedPosition, ParameterDefinition, PortDefinition,
-    PortDirection, SemanticVersion,
+    ComponentAppearance, ComponentIconType, ComponentTypeId, NormalizedPosition,
+    ParameterDefinition, PortDefinition, PortDirection, SemanticVersion,
 };
 use simulation::diagnostic::DiagnosticSeverity;
 use simulation::document::{CanvasPosition, ComponentReference, PortEndpoint};
 use simulation::identity::{ComponentId, DocumentId};
+use simulation::parameter::ParameterValueType;
 use simulation::results::{RunStatus, SignalSeries};
 use simulation::value::RuntimeValue;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 /// Width reserved for the component library.
@@ -30,12 +32,49 @@ const PALETTE_WIDTH: f32 = 210.0;
 const INSPECTOR_WIDTH: f32 = 300.0;
 /// Height reserved for results.
 const RESULTS_HEIGHT: f32 = 230.0;
-/// Stable visual node width.
-const NODE_WIDTH: f32 = 170.0;
-/// Stable visual node height.
-const NODE_HEIGHT: f32 = 82.0;
+/// Width of the component SVG that forms the node body.
+const ICON_WIDTH: f32 = 100.0;
+/// Height of the component SVG that forms the node body.
+const ICON_HEIGHT: f32 = 60.0;
+/// Stable interaction width around one component.
+const NODE_WIDTH: f32 = ICON_WIDTH;
+/// Stable interaction height including the component name.
+const NODE_HEIGHT: f32 = 80.0;
 /// Radius of one canvas port icon.
 const PORT_RADIUS: f32 = 5.0;
+
+/// Hopsan-equivalent built-in graphic selected from a port's runtime contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PortIconKind {
+    SignalRead,
+    SignalWrite,
+    Signal2dRead,
+    Signal2dWrite,
+}
+
+impl PortIconKind {
+    /// Returns the packaged SVG bytes and stable loader URI for this graphic.
+    const fn svg(self) -> (&'static str, &'static [u8]) {
+        match self {
+            Self::SignalRead => (
+                "bytes://port-signal-read.svg",
+                include_bytes!("../assets/ports/signal-read.svg"),
+            ),
+            Self::SignalWrite => (
+                "bytes://port-signal-write.svg",
+                include_bytes!("../assets/ports/signal-write.svg"),
+            ),
+            Self::Signal2dRead => (
+                "bytes://port-signal-2d-read.svg",
+                include_bytes!("../assets/ports/signal-2d-read.svg"),
+            ),
+            Self::Signal2dWrite => (
+                "bytes://port-signal-2d-write.svg",
+                include_bytes!("../assets/ports/signal-2d-write.svg"),
+            ),
+        }
+    }
+}
 
 /// Cached visual metadata loaded from a component definition or artifact.
 #[derive(Debug, Clone)]
@@ -46,6 +85,8 @@ struct ComponentPresentation {
     port_locations: BTreeMap<ShareableString, NormalizedPosition>,
     /// Optional embedded SVG prepared for egui's shared byte loader.
     icon: Option<EmbeddedSvg>,
+    /// Scale applied to the icon within its allocated node area.
+    icon_scale: f32,
 }
 
 /// Shared embedded SVG data and its content-addressed cache key.
@@ -95,6 +136,8 @@ pub struct EditorApp {
     custom_presentations: BTreeMap<ComponentId, ComponentPresentation>,
     /// Whether SVG image loaders were installed on the current context.
     image_loaders_installed: bool,
+    /// Preferred component icon convention.
+    icon_type: ComponentIconType,
 }
 
 impl EditorApp {
@@ -111,7 +154,12 @@ impl EditorApp {
             .map(|definition| {
                 (
                     (definition.type_id.clone(), definition.version),
-                    component_presentation(definition.ports.clone(), definition.appearance.clone()),
+                    component_presentation(
+                        definition.ports.clone(),
+                        definition.appearance.clone(),
+                        &builtin_icon_directory(),
+                        ComponentIconType::User,
+                    ),
                 )
             })
             .collect();
@@ -129,6 +177,7 @@ impl EditorApp {
             builtin_presentations,
             custom_presentations: BTreeMap::new(),
             image_loaders_installed: false,
+            icon_type: ComponentIconType::User,
         })
     }
 
@@ -228,6 +277,13 @@ impl EditorApp {
                 }
                 if ui.button("Run").clicked() {
                     self.run_model();
+                }
+                ui.separator();
+                let previous_icon_type = self.icon_type;
+                ui.selectable_value(&mut self.icon_type, ComponentIconType::User, "User");
+                ui.selectable_value(&mut self.icon_type, ComponentIconType::Iso, "ISO");
+                if self.icon_type != previous_icon_type {
+                    self.refresh_presentations();
                 }
                 let dirty = if self.controller.is_dirty() {
                     "Modified"
@@ -645,14 +701,18 @@ impl EditorApp {
                     .iter()
                     .find(|component| component.id == connection.target.component_id);
                 if let (Some(source), Some(target)) = (source, target) {
-                    let source_rect = node_rects
+                    let source_node_rect = node_rects
                         .get(&source.id)
                         .copied()
                         .unwrap_or_else(|| node_rect(available, source.position));
-                    let target_rect = node_rects
+                    let target_node_rect = node_rects
                         .get(&target.id)
                         .copied()
                         .unwrap_or_else(|| node_rect(available, target.position));
+                    let source_rect =
+                        component_icon_rect(source_node_rect, presentations.get(&source.id));
+                    let target_rect =
+                        component_icon_rect(target_node_rect, presentations.get(&target.id));
                     let start = port_position(
                         source_rect,
                         presentations
@@ -704,6 +764,9 @@ impl EditorApp {
                     presentation
                         .as_ref()
                         .and_then(|presentation| presentation.icon.as_ref()),
+                    presentation
+                        .as_ref()
+                        .map_or(1.0, |presentation| presentation.icon_scale),
                 );
             }
             if let Some(drag) = completed_move {
@@ -725,56 +788,29 @@ impl EditorApp {
         ports: &[PortDefinition],
         port_locations: Option<&BTreeMap<ShareableString, NormalizedPosition>>,
         icon: Option<&EmbeddedSvg>,
+        icon_scale: f32,
     ) {
         let selected = self.selected_component == Some(component.id);
-        let fill = if selected {
-            Color32::from_rgb(222, 237, 232)
-        } else {
-            Color32::WHITE
-        };
-        ui.painter().rect(
-            rect,
-            5.0,
-            fill,
-            Stroke::new(
-                if selected { 2.0 } else { 1.0 },
-                if selected {
-                    Color32::from_rgb(20, 117, 112)
-                } else {
-                    Color32::from_rgb(108, 112, 107)
-                },
-            ),
-            StrokeKind::Outside,
-        );
+        let icon_rect = component_icon_rect_from_scale(rect, icon_scale);
         if let Some(icon) = icon {
-            let icon_rect =
-                Rect::from_min_size(rect.min + Vec2::new(12.0, 27.0), Vec2::new(44.0, 44.0));
             egui::Image::from_bytes(icon.uri.clone(), Arc::clone(&icon.bytes))
                 .fit_to_exact_size(icon_rect.size())
                 .paint_at(ui, icon_rect);
         }
-        let label_offset = if icon.is_some() { 68.0 } else { 12.0 };
         ui.painter().text(
-            rect.min + Vec2::new(label_offset, 14.0),
-            egui::Align2::LEFT_TOP,
+            Pos2::new(rect.center().x, rect.bottom()),
+            egui::Align2::CENTER_BOTTOM,
             component.name.as_str(),
-            FontId::proportional(16.0),
-            Color32::from_rgb(27, 31, 29),
-        );
-        let source_label = match &component.component {
-            ComponentReference::BuiltIn { type_id, .. } => type_id.as_str(),
-            ComponentReference::Custom { .. } => "custom component",
-        };
-        ui.painter().text(
-            rect.min + Vec2::new(label_offset, 44.0),
-            egui::Align2::LEFT_TOP,
-            source_label,
-            FontId::monospace(11.0),
-            Color32::from_rgb(91, 96, 92),
+            FontId::proportional(13.0),
+            if selected {
+                Color32::from_rgb(20, 117, 112)
+            } else {
+                Color32::from_rgb(27, 31, 29)
+            },
         );
         for port in ports {
             let Some(position) =
-                port_position(rect, Some(ports), port_locations, port.key.as_str())
+                port_position(icon_rect, Some(ports), port_locations, port.key.as_str())
             else {
                 continue;
             };
@@ -789,24 +825,14 @@ impl EditorApp {
                 port.display_name.as_str(),
                 port.direction
             ));
-            match port.direction {
-                PortDirection::Input => {
-                    ui.painter().circle(
-                        position,
-                        PORT_RADIUS,
-                        Color32::WHITE,
-                        Stroke::new(2.0, Color32::from_rgb(52, 87, 139)),
-                    );
-                }
-                PortDirection::Output => {
-                    ui.painter().circle(
-                        position,
-                        PORT_RADIUS,
-                        Color32::from_rgb(20, 117, 112),
-                        Stroke::new(1.5, Color32::WHITE),
-                    );
-                }
-            }
+            let angle = port_locations
+                .and_then(|locations| locations.get(&port.key))
+                .map_or(0.0, |location| location.angle.to_radians());
+            let (uri, bytes) = select_port_icon(port).svg();
+            egui::Image::from_bytes(uri, bytes)
+                .fit_to_exact_size(icon_rect.size())
+                .rotate(angle, Vec2::splat(0.5))
+                .paint_at(ui, icon_rect);
         }
         if response.clicked() {
             self.selected_component = Some(component.id);
@@ -952,6 +978,12 @@ impl EditorApp {
 
     /// Reloads verified custom appearance data for root component instances.
     fn refresh_custom_presentations(&mut self) {
+        let model_directory = self
+            .controller
+            .path()
+            .and_then(Path::parent)
+            .unwrap_or_else(|| Path::new("."))
+            .to_path_buf();
         self.custom_presentations = self
             .controller
             .document()
@@ -959,9 +991,16 @@ impl EditorApp {
             .components
             .iter()
             .filter_map(|component| {
+                let ComponentReference::Custom { source, .. } = &component.component else {
+                    return None;
+                };
                 let document = self
                     .controller
                     .custom_component_document(&component.component)?;
+                let component_directory = model_directory
+                    .join(source.as_str())
+                    .parent()
+                    .map_or_else(|| model_directory.clone(), Path::to_path_buf);
                 Some((
                     component.id,
                     component_presentation(
@@ -971,10 +1010,46 @@ impl EditorApp {
                             .map(|port| port.definition)
                             .collect(),
                         document.appearance,
+                        &component_directory,
+                        self.icon_type,
                     ),
                 ))
             })
             .collect();
+    }
+
+    /// Reloads built-in and custom icons after the visual convention changes.
+    fn refresh_presentations(&mut self) {
+        self.builtin_presentations = self
+            .controller
+            .palette()
+            .map(|definition| {
+                (
+                    (definition.type_id.clone(), definition.version),
+                    component_presentation(
+                        definition.ports.clone(),
+                        definition.appearance.clone(),
+                        &builtin_icon_directory(),
+                        self.icon_type,
+                    ),
+                )
+            })
+            .collect();
+        self.refresh_custom_presentations();
+    }
+}
+
+/// Selects the signal-port graphic using Hopsan's node-shape and read/write ordering.
+const fn select_port_icon(port: &PortDefinition) -> PortIconKind {
+    let is_signal_2d = matches!(
+        port.value_type,
+        ParameterValueType::Table | ParameterValueType::TableWithUnits(_)
+    );
+    match (is_signal_2d, port.direction) {
+        (false, PortDirection::Input) => PortIconKind::SignalRead,
+        (false, PortDirection::Output) => PortIconKind::SignalWrite,
+        (true, PortDirection::Input) => PortIconKind::Signal2dRead,
+        (true, PortDirection::Output) => PortIconKind::Signal2dWrite,
     }
 }
 
@@ -982,19 +1057,56 @@ impl EditorApp {
 fn component_presentation(
     ports: Vec<PortDefinition>,
     appearance: ComponentAppearance,
+    base_directory: &Path,
+    preferred_type: ComponentIconType,
 ) -> ComponentPresentation {
-    let icon = appearance.icon_svg.as_ref().map(|svg| EmbeddedSvg {
-        uri: format!(
-            "bytes://component-{}.svg",
-            blake3::hash(svg.as_str().as_bytes()).to_hex()
-        ),
-        bytes: Arc::from(svg.as_str().as_bytes()),
+    let external_icon = appearance
+        .icons
+        .iter()
+        .filter(|icon| icon.icon_type == preferred_type)
+        .chain(
+            appearance
+                .icons
+                .iter()
+                .filter(|icon| icon.icon_type != preferred_type),
+        )
+        .find_map(|icon| {
+            fs::read(base_directory.join(icon.path.as_str()))
+                .ok()
+                .map(|bytes| (bytes, icon.scale))
+        });
+    let (bytes, icon_scale) = external_icon
+        .or_else(|| {
+            appearance
+                .icon_svg
+                .as_ref()
+                .map(|svg| (svg.as_str().as_bytes().to_vec(), 1.0))
+        })
+        .unwrap_or_else(|| {
+            (
+                include_bytes!("../assets/icons/missing-component.svg").to_vec(),
+                1.0,
+            )
+        });
+    let icon = Some(EmbeddedSvg {
+        uri: format!("bytes://component-{}.svg", blake3::hash(&bytes).to_hex()),
+        bytes: Arc::from(bytes),
     });
     ComponentPresentation {
         ports,
         port_locations: appearance.port_locations,
         icon,
+        icon_scale: if icon_scale.is_finite() && icon_scale > 0.0 {
+            icon_scale
+        } else {
+            1.0
+        },
     }
+}
+
+/// Returns the packaged base directory used by built-in appearance paths.
+fn builtin_icon_directory() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("assets")
 }
 
 /// Converts persisted canvas coordinates into panel coordinates.
@@ -1007,6 +1119,23 @@ fn node_rect(canvas: Rect, position: CanvasPosition) -> Rect {
     Rect::from_min_size(
         canvas_pos(canvas, position),
         Vec2::new(NODE_WIDTH, NODE_HEIGHT),
+    )
+}
+
+/// Returns the SVG bounds used as the base for one component's port poses.
+fn component_icon_rect(node_rect: Rect, presentation: Option<&ComponentPresentation>) -> Rect {
+    component_icon_rect_from_scale(
+        node_rect,
+        presentation.map_or(1.0, |presentation| presentation.icon_scale),
+    )
+}
+
+/// Fits a scaled SVG at the top center of one component interaction rectangle.
+fn component_icon_rect_from_scale(node_rect: Rect, icon_scale: f32) -> Rect {
+    let scale = icon_scale.clamp(0.25, 1.5);
+    Rect::from_center_size(
+        Pos2::new(node_rect.center().x, node_rect.top() + ICON_HEIGHT * 0.5),
+        Vec2::new(ICON_WIDTH * scale, ICON_HEIGHT * scale),
     )
 }
 
@@ -1237,9 +1366,16 @@ fn plot_point(
 
 #[cfg(test)]
 mod tests {
-    use super::{EditorApp, NODE_HEIGHT, port_position, translated_position};
+    use super::{
+        EditorApp, ICON_HEIGHT, ICON_WIDTH, NODE_HEIGHT, PortIconKind, builtin_icon_directory,
+        component_icon_rect_from_scale, component_presentation, port_position, select_port_icon,
+        translated_position,
+    };
     use eframe::egui::{Pos2, Rect, Vec2};
-    use simulation::component::{NormalizedPosition, PortDefinition, PortDirection};
+    use simulation::component::{
+        ComponentAppearance, ComponentIcon, ComponentIconType, NormalizedPosition, PortDefinition,
+        PortDirection,
+    };
     use simulation::document::CanvasPosition;
     use simulation::identity::DocumentId;
     use simulation::parameter::ParameterValueType;
@@ -1290,11 +1426,39 @@ mod tests {
     fn explicit_port_location_overrides_directional_edge() {
         let rect = Rect::from_min_max(Pos2::new(10.0, 20.0), Pos2::new(110.0, 100.0));
         let ports = [port("out", PortDirection::Output)];
-        let locations = BTreeMap::from([("out".into(), NormalizedPosition { x: 0.25, y: 0.75 })]);
+        let locations = BTreeMap::from([(
+            "out".into(),
+            NormalizedPosition {
+                x: 0.25,
+                y: 0.75,
+                angle: 90.0,
+            },
+        )]);
 
         assert_position(
             port_position(rect, Some(&ports), Some(&locations), "out"),
             Pos2::new(35.0, 80.0),
+        );
+    }
+
+    #[test]
+    fn component_icon_is_the_base_for_port_positions() {
+        let node = Rect::from_min_size(Pos2::new(20.0, 30.0), Vec2::new(ICON_WIDTH, NODE_HEIGHT));
+        let icon = component_icon_rect_from_scale(node, 1.0);
+        let ports = [port("out", PortDirection::Output)];
+        let locations = BTreeMap::from([(
+            "out".into(),
+            NormalizedPosition {
+                x: 1.0,
+                y: 0.5,
+                angle: 0.0,
+            },
+        )]);
+
+        assert_eq!(icon.size(), Vec2::new(ICON_WIDTH, ICON_HEIGHT));
+        assert_position(
+            port_position(icon, Some(&ports), Some(&locations), "out"),
+            icon.right_center(),
         );
     }
 
@@ -1308,6 +1472,53 @@ mod tests {
                 .values()
                 .all(|presentation| presentation.icon.is_some())
         );
+    }
+
+    #[test]
+    fn icon_resolution_falls_back_to_an_available_variant() {
+        let appearance = ComponentAppearance {
+            icons: vec![
+                ComponentIcon {
+                    icon_type: ComponentIconType::User,
+                    path: "icons/not-installed.svg".into(),
+                    scale: 1.0,
+                    rotate_with_component: true,
+                },
+                ComponentIcon {
+                    icon_type: ComponentIconType::Iso,
+                    path: "icons/signal.step.svg".into(),
+                    scale: 0.75,
+                    rotate_with_component: false,
+                },
+            ],
+            icon_svg: None,
+            port_locations: BTreeMap::new(),
+        };
+
+        let presentation = component_presentation(
+            vec![],
+            appearance,
+            &builtin_icon_directory(),
+            ComponentIconType::User,
+        );
+
+        assert!(presentation.icon.is_some());
+        assert_eq!(presentation.icon_scale, 0.75);
+    }
+
+    #[test]
+    fn port_icon_selection_matches_signal_shape_and_direction() {
+        let mut scalar_input = port("in", PortDirection::Input);
+        assert_eq!(select_port_icon(&scalar_input), PortIconKind::SignalRead);
+
+        scalar_input.direction = PortDirection::Output;
+        assert_eq!(select_port_icon(&scalar_input), PortIconKind::SignalWrite);
+
+        scalar_input.value_type = ParameterValueType::Table;
+        assert_eq!(select_port_icon(&scalar_input), PortIconKind::Signal2dWrite);
+
+        scalar_input.direction = PortDirection::Input;
+        assert_eq!(select_port_icon(&scalar_input), PortIconKind::Signal2dRead);
     }
 
     #[test]

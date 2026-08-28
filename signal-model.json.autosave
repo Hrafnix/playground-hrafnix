@@ -4,12 +4,12 @@
       "major": 1,
       "minor": 0
     },
-    "document_id": "0000000000000000000000006a8f7e84",
+    "document_id": "0000000000000000000000006a90d392",
     "title": "Untitled signal model",
     "description": "",
     "author": "",
-    "created_at": "unix:1787788932",
-    "updated_at": "unix:1787788932",
+    "created_at": "unix:1787876242",
+    "updated_at": "unix:1787876242",
     "migrations": []
   },
   "root": {
@@ -17,10 +17,10 @@
     "components": [
       {
         "id": "00000000000000000000000000000001",
-        "name": "Constant 1",
+        "name": "Assertion 1",
         "component": {
           "kind": "built_in",
-          "type_id": "signal.constant",
+          "type_id": "signal.assertion",
           "version": {
             "major": 1,
             "minor": 0,
@@ -30,13 +30,32 @@
         "parameter_overrides": {},
         "enabled": true,
         "position": {
-          "x": 58.6484375,
-          "y": 79.90625
+          "x": 66.82421875,
+          "y": 133.37109375
         }
       },
       {
         "id": "00000000000000000000000000000002",
-        "name": "Add 2",
+        "name": "Assertion 2",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.assertion",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 260.0,
+          "y": 40.0
+        }
+      },
+      {
+        "id": "00000000000000000000000000000003",
+        "name": "Add 3",
         "component": {
           "kind": "built_in",
           "type_id": "signal.add",
@@ -49,16 +68,16 @@
         "parameter_overrides": {},
         "enabled": true,
         "position": {
-          "x": 362.02734375,
-          "y": 143.87109375
+          "x": 480.0,
+          "y": 40.0
         }
       },
       {
-        "id": "00000000000000000000000000000003",
-        "name": "Constant 3",
+        "id": "00000000000000000000000000000004",
+        "name": "Clamp 4",
         "component": {
           "kind": "built_in",
-          "type_id": "signal.constant",
+          "type_id": "signal.clamp",
           "version": {
             "major": 1,
             "minor": 0,
@@ -68,44 +87,131 @@
         "parameter_overrides": {},
         "enabled": true,
         "position": {
-          "x": 61.20703125,
-          "y": 210.62109375
+          "x": 92.2578125,
+          "y": 289.95703125
+        }
+      },
+      {
+        "id": "00000000000000000000000000000005",
+        "name": "Expression 5",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.expression",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 260.0,
+          "y": 165.0
+        }
+      },
+      {
+        "id": "00000000000000000000000000000006",
+        "name": "Integrator 6",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.integrator",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 480.0,
+          "y": 165.0
+        }
+      },
+      {
+        "id": "00000000000000000000000000000007",
+        "name": "Multiply 7",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.multiply",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 371.78125,
+          "y": 303.265625
+        }
+      },
+      {
+        "id": "00000000000000000000000000000008",
+        "name": "Multiply 8",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.multiply",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 260.0,
+          "y": 290.0
+        }
+      },
+      {
+        "id": "00000000000000000000000000000009",
+        "name": "Probe 9",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.probe",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 480.0,
+          "y": 290.0
+        }
+      },
+      {
+        "id": "0000000000000000000000000000000a",
+        "name": "Ramp 10",
+        "component": {
+          "kind": "built_in",
+          "type_id": "signal.ramp",
+          "version": {
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+          }
+        },
+        "parameter_overrides": {},
+        "enabled": true,
+        "position": {
+          "x": 254.96484375,
+          "y": 424.875
         }
       }
     ],
-    "connections": [
-      {
-        "id": "00000000000000000000000000000001",
-        "source": {
-          "component_id": "00000000000000000000000000000001",
-          "port_key": "out"
-        },
-        "target": {
-          "component_id": "00000000000000000000000000000002",
-          "port_key": "a"
-        },
-        "label": null,
-        "route": []
-      },
-      {
-        "id": "00000000000000000000000000000002",
-        "source": {
-          "component_id": "00000000000000000000000000000003",
-          "port_key": "out"
-        },
-        "target": {
-          "component_id": "00000000000000000000000000000002",
-          "port_key": "b"
-        },
-        "label": null,
-        "route": []
-      }
-    ],
+    "connections": [],
     "annotations": {}
   },
   "simulation": {
     "start_time": 0.0,
-    "stop_time": 4.0,
+    "stop_time": 1.0,
     "timestep": 0.01,
     "maximum_steps": 100000,
     "random_seed": 1,
@@ -115,43 +221,6 @@
       "state_update": "OutputsBeforeStateCommit"
     }
   },
-  "probes": [
-    {
-      "id": "00000000000000000000000000000001",
-      "target": {
-        "component_id": "00000000000000000000000000000002",
-        "port_key": "out"
-      },
-      "display_name": "out",
-      "plot_group": null
-    },
-    {
-      "id": "00000000000000000000000000000002",
-      "target": {
-        "component_id": "00000000000000000000000000000002",
-        "port_key": "out"
-      },
-      "display_name": "out",
-      "plot_group": null
-    },
-    {
-      "id": "00000000000000000000000000000003",
-      "target": {
-        "component_id": "00000000000000000000000000000002",
-        "port_key": "out"
-      },
-      "display_name": "out",
-      "plot_group": null
-    },
-    {
-      "id": "00000000000000000000000000000004",
-      "target": {
-        "component_id": "00000000000000000000000000000002",
-        "port_key": "out"
-      },
-      "display_name": "out",
-      "plot_group": null
-    }
-  ],
+  "probes": [],
   "dependencies": []
 }

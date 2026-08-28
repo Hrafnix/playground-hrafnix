@@ -7,6 +7,8 @@ use serde::Deserialize;
 
 /// Last custom-component schema accepted through an explicit migration.
 const COMPONENT_SCHEMA_VERSION_1_0: SchemaVersion = SchemaVersion { major: 1, minor: 0 };
+/// Previous custom-component schema accepted through an explicit migration.
+const COMPONENT_SCHEMA_VERSION_1_1: SchemaVersion = SchemaVersion { major: 1, minor: 1 };
 
 /// Minimal envelope read before deserializing a complete document.
 #[derive(Debug, Deserialize)]
@@ -41,10 +43,14 @@ pub fn load_custom_component_json(source: &str) -> Result<CustomComponentDocumen
     let mut value: serde_json::Value = serde_json::from_str(source).map_err(malformed_document)?;
     let envelope: VersionEnvelope =
         serde_json::from_value(value.clone()).map_err(malformed_document)?;
-    if envelope.header.schema_version == COMPONENT_SCHEMA_VERSION_1_0 {
-        migrate_component_1_0_to_1_1(&mut value)?;
-    } else if envelope.header.schema_version != COMPONENT_SCHEMA_VERSION {
-        return Err(unsupported_schema());
+    match envelope.header.schema_version {
+        COMPONENT_SCHEMA_VERSION_1_0 => {
+            migrate_component_1_0_to_1_1(&mut value)?;
+            migrate_component_1_1_to_1_2(&mut value)?;
+        }
+        COMPONENT_SCHEMA_VERSION_1_1 => migrate_component_1_1_to_1_2(&mut value)?,
+        COMPONENT_SCHEMA_VERSION => {}
+        _ => return Err(unsupported_schema()),
     }
     serde_json::from_value(value).map_err(malformed_document)
 }
@@ -90,7 +96,7 @@ fn migrate_component_1_0_to_1_1(value: &mut serde_json::Value) -> Result<(), Dia
         .ok_or_else(malformed_value)?;
     header.insert(
         "schema_version".into(),
-        serde_json::to_value(COMPONENT_SCHEMA_VERSION).map_err(malformed_document)?,
+        serde_json::to_value(COMPONENT_SCHEMA_VERSION_1_1).map_err(malformed_document)?,
     );
     let migrations = header
         .get_mut("migrations")
@@ -98,8 +104,31 @@ fn migrate_component_1_0_to_1_1(value: &mut serde_json::Value) -> Result<(), Dia
         .ok_or_else(malformed_value)?;
     migrations.push(serde_json::json!({
         "from": COMPONENT_SCHEMA_VERSION_1_0,
-        "to": COMPONENT_SCHEMA_VERSION,
+        "to": COMPONENT_SCHEMA_VERSION_1_1,
         "migration_id": "simulation_component_1_0_to_1_1_parameter_mappings"
+    }));
+    Ok(())
+}
+
+/// Records adoption of external icon variants and oriented port poses.
+fn migrate_component_1_1_to_1_2(value: &mut serde_json::Value) -> Result<(), Diagnostic> {
+    let header = value
+        .as_object_mut()
+        .and_then(|object| object.get_mut("header"))
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or_else(malformed_value)?;
+    header.insert(
+        "schema_version".into(),
+        serde_json::to_value(COMPONENT_SCHEMA_VERSION).map_err(malformed_document)?,
+    );
+    let migrations = header
+        .get_mut("migrations")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(malformed_value)?;
+    migrations.push(serde_json::json!({
+        "from": COMPONENT_SCHEMA_VERSION_1_1,
+        "to": COMPONENT_SCHEMA_VERSION,
+        "migration_id": "simulation_component_1_1_to_1_2_external_icons"
     }));
     Ok(())
 }
@@ -283,13 +312,18 @@ mod tests {
             header: header(10, true),
             revision: ArtifactRevision("1.0.0".into()),
             appearance: ComponentAppearance {
+                icons: vec![],
                 icon_svg: Some(
                     r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><path d="M10 30h80"/></svg>"#
                         .into(),
                 ),
                 port_locations: BTreeMap::from([(
                     "out".into(),
-                    NormalizedPosition { x: 1.0, y: 0.5 },
+                    NormalizedPosition {
+                        x: 1.0,
+                        y: 0.5,
+                        angle: 0.0,
+                    },
                 )]),
             },
             public_parameters: vec![parameter],
@@ -385,6 +419,25 @@ mod tests {
         assert_eq!(
             migrated.header.migrations[0].migration_id.as_str(),
             "simulation_component_1_0_to_1_1_parameter_mappings"
+        );
+        assert_eq!(
+            migrated.header.migrations[1].migration_id.as_str(),
+            "simulation_component_1_1_to_1_2_external_icons"
+        );
+    }
+
+    #[test]
+    fn migrates_component_schema_1_1_with_audit_record() {
+        let mut value = serde_json::to_value(component_fixture()).unwrap();
+        value["header"]["schema_version"]["minor"] = serde_json::json!(1);
+        value["header"]["migrations"] = serde_json::json!([]);
+
+        let migrated = load_custom_component_json(&value.to_string()).unwrap();
+
+        assert_eq!(migrated.header.schema_version, COMPONENT_SCHEMA_VERSION);
+        assert_eq!(
+            migrated.header.migrations[0].migration_id.as_str(),
+            "simulation_component_1_1_to_1_2_external_icons"
         );
     }
 

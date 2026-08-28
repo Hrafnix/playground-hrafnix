@@ -1,8 +1,8 @@
 use crate::component::{
     ComponentAppearance, ComponentBehavior, ComponentCapabilities, ComponentCapability,
-    ComponentDefinition, ComponentFactory, ComponentTypeId, ComponentUpdate,
-    InvalidComponentTypeId, NormalizedPosition, ParameterDefinition, PortDefinition, PortDirection,
-    RuntimeValues, SemanticVersion, StepContext,
+    ComponentDefinition, ComponentFactory, ComponentIcon, ComponentIconType, ComponentTypeId,
+    ComponentUpdate, InvalidComponentTypeId, NormalizedPosition, ParameterDefinition,
+    PortDefinition, PortDirection, RuntimeValues, SemanticVersion, StepContext,
 };
 use crate::diagnostic::{Diagnostic, DiagnosticCategory, DiagnosticSeverity, EntityReference};
 use crate::identity::ComponentId;
@@ -876,52 +876,6 @@ fn definition<const N: usize>(
 
 /// Creates a distinct symbol and stable edge locations for one built-in.
 fn builtin_appearance(type_id: &str, ports: &[PortDefinition]) -> ComponentAppearance {
-    let geometry = match type_id {
-        "signal.constant" => {
-            r##"<path d="M18 30H82"/><circle cx="50" cy="30" r="6" fill="#147570"/>"##
-        }
-        "signal.step" => r#"<path d="M15 45H48V15H85"/>"#,
-        "signal.gain" => r#"<path d="M20 12L82 30L20 48Z"/>"#,
-        "signal.add" => r#"<circle cx="50" cy="30" r="22"/><path d="M37 30H63M50 17V43"/>"#,
-        "signal.integrator" => r#"<path d="M17 46C34 46 38 14 54 14S70 46 85 46"/>"#,
-        "signal.delay" => {
-            r#"<rect x="25" y="12" width="50" height="36"/><path d="M35 30H65M57 22L65 30L57 38"/>"#
-        }
-        "signal.probe" => {
-            r##"<circle cx="50" cy="30" r="22"/><circle cx="50" cy="30" r="8" fill="#147570"/>"##
-        }
-        "signal.ramp" => r#"<path d="M15 46H32L78 14H85"/>"#,
-        "signal.multiply" => {
-            r#"<circle cx="50" cy="30" r="22"/><path d="M39 19L61 41M61 19L39 41"/>"#
-        }
-        "signal.first_order_transfer" => {
-            r#"<path d="M15 45C35 45 33 17 82 15"/><path d="M15 15V45H85" opacity=".35"/>"#
-        }
-        "signal.unit_conversion" => {
-            r#"<path d="M17 21H76M68 13L76 21L68 29M83 39H24M32 31L24 39L32 47"/>"#
-        }
-        "signal.expression" => r#"<path d="M35 11H20V49H35M65 11H80V49H65M40 42L60 18"/>"#,
-        "signal.subtract" => r#"<circle cx="50" cy="30" r="22"/><path d="M37 30H63"/>"#,
-        "signal.divide" => {
-            r##"<circle cx="50" cy="30" r="22"/><path d="M38 30H62"/><circle cx="50" cy="20" r="3" fill="#147570"/><circle cx="50" cy="40" r="3" fill="#147570"/>"##
-        }
-        "signal.clamp" => r#"<path d="M15 44H30L70 16H85M30 12V48M70 12V48"/>"#,
-        "signal.switch" => {
-            r##"<circle cx="24" cy="18" r="4" fill="#147570"/><circle cx="24" cy="42" r="4" fill="#147570"/><circle cx="78" cy="30" r="4" fill="#147570"/><path d="M28 18L70 28"/>"##
-        }
-        "signal.greater_than" => r#"<path d="M29 14L70 30L29 46"/>"#,
-        "signal.boolean_not" => r#"<path d="M20 12L68 30L20 48Z"/><circle cx="76" cy="30" r="7"/>"#,
-        "signal.lookup" => {
-            r##"<path d="M15 46L34 37L53 18L84 13"/><circle cx="34" cy="37" r="3" fill="#147570"/><circle cx="53" cy="18" r="3" fill="#147570"/>"##
-        }
-        "signal.assertion" => {
-            r##"<path d="M50 8L82 30L50 52L18 30Z"/><path d="M50 18V34"/><circle cx="50" cy="42" r="3" fill="#147570"/>"##
-        }
-        _ => r#"<rect x="20" y="12" width="60" height="36"/>"#,
-    };
-    let icon_svg = format!(
-        r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60"><g fill="none" stroke="#1b1f1d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">{geometry}</g></svg>"##
-    );
     let mut input_index = 0_usize;
     let mut output_index = 0_usize;
     let port_locations = ports
@@ -941,13 +895,23 @@ fn builtin_appearance(type_id: &str, ports: &[PortDefinition]) -> ComponentAppea
                     PortDirection::Output => 1.0,
                 },
                 y: (*index + 1) as f32 / (count + 1) as f32,
+                angle: match port.direction {
+                    PortDirection::Input => 180.0,
+                    PortDirection::Output => 0.0,
+                },
             };
             *index += 1;
             (port.key.clone(), location)
         })
         .collect();
     ComponentAppearance {
-        icon_svg: Some(icon_svg.into()),
+        icons: vec![ComponentIcon {
+            icon_type: ComponentIconType::User,
+            path: format!("icons/{type_id}.svg").into(),
+            scale: 1.0,
+            rotate_with_component: true,
+        }],
+        icon_svg: None,
         port_locations,
     }
 }
@@ -1279,7 +1243,8 @@ mod tests {
         register_signal_builtins(&mut registry).unwrap();
         let icons: BTreeSet<_> = registry
             .iter()
-            .filter_map(|definition| definition.appearance.icon_svg.as_ref())
+            .filter_map(|definition| definition.appearance.icons.first())
+            .map(|icon| &icon.path)
             .collect();
 
         assert_eq!(icons.len(), 20);
@@ -1292,6 +1257,7 @@ mod tests {
                 let location = definition.appearance.port_locations.get(&port.key).unwrap();
                 assert!((0.0..=1.0).contains(&location.x));
                 assert!((0.0..=1.0).contains(&location.y));
+                assert!(matches!(location.angle, 0.0 | 180.0));
             }
         }
     }
