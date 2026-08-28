@@ -7,6 +7,14 @@
 //! ```
 
 // Macros
+pub use crate::{
+    boolean_compile_time, choice_compile_time, choice_item_compile_time, file_compile_time,
+    folder_compile_time, global_object_compile_time, integer_compile_time, item_compile_time,
+    map_compile_time, map_item_compile_time, number_compile_time, number_with_units_compile_time,
+    parameter_object_compile_time, separator_compile_time, string_compile_time, tab_compile_time,
+    table_compile_time, table_with_units_compile_time, unit_compile_time,
+    variable_object_compile_time,
+};
 pub use keys::{global_key, parameter_key, store_key, unit_key, variable_key};
 
 // Core types

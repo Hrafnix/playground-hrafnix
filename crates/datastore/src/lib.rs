@@ -41,6 +41,8 @@
     )
 )]
 
+/// Compile time implements for compile-time checks and validations of definitions and data structures.
+pub mod compile_time;
 /// Data structure definitions.
 pub mod definition;
 /// Editable data implementation.

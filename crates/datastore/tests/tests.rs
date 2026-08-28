@@ -29,6 +29,7 @@
     clippy::wildcard_enum_match_arm
 )]
 
+mod compile_time;
 mod definition;
 mod editable;
 mod frozen;
