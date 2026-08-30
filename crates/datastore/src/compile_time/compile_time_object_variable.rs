@@ -17,7 +17,7 @@ impl VariableObjectCompileTime {
     ///
     /// This is an implementation detail; call `variable_object_compile_time!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
-    /// `(ConstVariableKey, ItemCompileTimeType)` key/item pairs.
+    /// `(ConstVariableKey, ItemCompileTime)` key/item pairs.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
@@ -95,11 +95,8 @@ impl VariableObjectCompileTime {
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
-/// - `items`: `&'static [(ConstVariableKey, ItemCompileTimeType)]` ordered slice of
-///   key/item pairs.
-/// - `"key"`: variable-key string literal. In the inline form, each key is validated by
-///   `variable_key!` internally.
-/// - `item`: [`ItemCompileTime`] expression, typically built with `item_compile_time!`.
+/// - `items`: `&'static [(ConstVariableKey, ItemCompileTime)]` ordered slice of key/item
+///   pairs, typically built with `variable_key!` and `item_compile_time!`.
 ///
 /// # Examples
 /// ```rust

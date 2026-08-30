@@ -17,7 +17,7 @@ impl ParameterObjectCompileTime {
     ///
     /// This is an implementation detail; call `parameter_object_compile_time!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
-    /// `(ConstParameterKey, ItemCompileTimeType)` key/item pairs.
+    /// `(ConstParameterKey, ItemCompileTime)` key/item pairs.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
@@ -95,11 +95,8 @@ impl ParameterObjectCompileTime {
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
-/// - `items`: `&'static [(ConstParameterKey, ItemCompileTimeType)]` ordered slice of
-///   key/item pairs.
-/// - `"key"`: parameter-key string literal. In the inline form, each key is validated by
-///   `parameter_key!` internally.
-/// - `item`: [`ItemCompileTime`] expression, typically built with `item_compile_time!`.
+/// - `items`: `&'static [(ConstParameterKey, ItemCompileTime)]` ordered slice of key/item
+///   pairs, typically built with `parameter_key!` and `item_compile_time!`.
 ///
 /// # Examples
 /// ```rust
