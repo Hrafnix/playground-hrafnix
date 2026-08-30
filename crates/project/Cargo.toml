@@ -1,0 +1,15 @@
+[package]
+name = "project"
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+datastore.workspace = true
+keys.workspace = true
+phf.workspace = true
+
+[lints]
+workspace = true

@@ -95,8 +95,8 @@ impl VariableObjectCompileTime {
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
-/// - `items`: `&'static [(ConstVariableKey, ItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with `variable_key!` and `item_compile_time!`.
+/// - `items`: an inline array of string keys and items, or a
+///   `&'static [(ConstVariableKey, ItemCompileTime)]` ordered slice.
 ///
 /// # Examples
 /// ```rust

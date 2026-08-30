@@ -95,8 +95,8 @@ impl ParameterObjectCompileTime {
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
-/// - `items`: `&'static [(ConstParameterKey, ItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with `parameter_key!` and `item_compile_time!`.
+/// - `items`: an inline array of string keys and items, or a
+///   `&'static [(ConstParameterKey, ItemCompileTime)]` ordered slice.
 ///
 /// # Examples
 /// ```rust

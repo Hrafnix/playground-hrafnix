@@ -8,5 +8,9 @@ disallowed-methods = [
     { path = "keys::unit_key::ConstUnitKey::__new", reason = "construct via the `unit_key!` macro instead so invalid keys fail to compile" },
     { path = "keys::component_key::ConstComponentKey::__new", reason = "construct via the `component_key!` macro instead so invalid keys fail to compile" },
     { path = "keys::port_key::ConstPortKey::__new", reason = "construct via the `port_key!` macro instead so invalid keys fail to compile" },
+    { path = "model::definitions::icon_definition::IconDefinition::__new", reason = "construct via the `icon_definition!` macro instead so invalid definitions fail to compile" },
+    { path = "model::definitions::port_definition::PortDefinition::__new", reason = "construct via the `port_definition!` macro instead so invalid definitions fail to compile" },
+    { path = "model::definitions::built_in_component_definition::BuiltInComponentDefinition::__new", reason = "construct via the `built_in_component_definition!` macro instead so invalid definitions fail to compile" },
+    { path = "project::built_in_registry::category::Category::__new", reason = "construct via the `category!` macro instead so invalid categories fail to compile" },
 ]
 too-many-lines-threshold = 500

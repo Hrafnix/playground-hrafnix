@@ -95,8 +95,8 @@ impl GlobalObjectCompileTime {
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
-/// - `items`: `&'static [(ConstGlobalKey, ItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with `global_key!` and `item_compile_time!`.
+/// - `items`: an inline array of string keys and items, or a
+///   `&'static [(ConstGlobalKey, ItemCompileTime)]` ordered slice.
 ///
 /// # Examples
 /// ```rust
