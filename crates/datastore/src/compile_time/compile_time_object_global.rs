@@ -1,4 +1,4 @@
-use crate::compile_time::ItemCompileTimeType;
+use crate::compile_time::ItemCompileTime;
 use crate::compile_time::compile_time_common::assert_unique_keys;
 use crate::definition::GlobalObjectDefinition;
 use keys::global_key::ConstGlobalKey;
@@ -9,7 +9,7 @@ pub struct GlobalObjectCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
     /// Keyed items contained in this compile-time container.
-    items: &'static [(ConstGlobalKey, ItemCompileTimeType)],
+    items: &'static [(ConstGlobalKey, ItemCompileTime)],
 }
 
 impl GlobalObjectCompileTime {
@@ -23,7 +23,7 @@ impl GlobalObjectCompileTime {
     #[must_use]
     pub const fn __new(
         description: &'static str,
-        items: &'static [(ConstGlobalKey, ItemCompileTimeType)],
+        items: &'static [(ConstGlobalKey, ItemCompileTime)],
     ) -> Self {
         assert_unique_keys!(items, "GlobalObjectCompileTime item keys must be unique");
         Self { description, items }
@@ -36,7 +36,7 @@ impl GlobalObjectCompileTime {
     }
     #[must_use]
     /// Returns the keyed items.
-    pub const fn items(&self) -> &'static [(ConstGlobalKey, ItemCompileTimeType)] {
+    pub const fn items(&self) -> &'static [(ConstGlobalKey, ItemCompileTime)] {
         self.items
     }
     #[must_use]
@@ -51,7 +51,7 @@ impl GlobalObjectCompileTime {
     }
     #[must_use]
     /// Returns the value associated with the given key.
-    pub fn get(&self, key: &str) -> Option<&ItemCompileTimeType> {
+    pub fn get(&self, key: &str) -> Option<&ItemCompileTime> {
         self.items
             .iter()
             .find_map(|(item_key, item)| (item_key.as_str() == key).then_some(item))
@@ -61,7 +61,7 @@ impl GlobalObjectCompileTime {
         self.items.iter().map(|(key, _)| *key)
     }
     /// Returns an iterator over the entries.
-    pub fn iter(&self) -> impl Iterator<Item = &(ConstGlobalKey, ItemCompileTimeType)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &(ConstGlobalKey, ItemCompileTime)> + '_ {
         self.items.iter()
     }
     /// Converts this compile-time global object into a runtime definition.
@@ -99,11 +99,10 @@ impl GlobalObjectCompileTime {
 ///   pairs, typically built with `global_key!` and `item_compile_time!`.
 /// - `"key"`: global-key string literal. In the inline form, each key is validated by
 ///   `global_key!` internally, so callers do not need to invoke that macro themselves.
-/// - `item`: [`ItemCompileTimeType`] expression, typically built with `item_compile_time!`.
+/// - `item`: [`ItemCompileTime`] expression, typically built with `item_compile_time!`.
 ///
 /// # Examples
 /// ```rust
-/// use datastore::compile_time::GlobalObjectCompileTime;
 /// use datastore::prelude::*;
 ///
 /// const SETTINGS: GlobalObjectCompileTime = global_object_compile_time!(
@@ -120,7 +119,6 @@ impl GlobalObjectCompileTime {
 ///
 /// Duplicate item keys are rejected at compile time:
 /// ```compile_fail
-/// use datastore::compile_time::GlobalObjectCompileTime;
 /// use datastore::prelude::*;
 ///
 /// const SETTINGS: GlobalObjectCompileTime = global_object_compile_time!(

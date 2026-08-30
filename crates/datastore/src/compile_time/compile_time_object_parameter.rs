@@ -1,4 +1,4 @@
-use crate::compile_time::ItemCompileTimeType;
+use crate::compile_time::ItemCompileTime;
 use crate::compile_time::compile_time_common::assert_unique_keys;
 use crate::definition::ParameterObjectDefinition;
 use keys::parameter_key::ConstParameterKey;
@@ -9,7 +9,7 @@ pub struct ParameterObjectCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
     /// Keyed items contained in this compile-time container.
-    items: &'static [(ConstParameterKey, ItemCompileTimeType)],
+    items: &'static [(ConstParameterKey, ItemCompileTime)],
 }
 
 impl ParameterObjectCompileTime {
@@ -17,13 +17,12 @@ impl ParameterObjectCompileTime {
     ///
     /// This is an implementation detail; call `parameter_object_compile_time!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
-    /// `(ConstParameterKey, ItemCompileTimeType)` key/item pairs, typically built with the
-    /// `parameter_key!` macro and `item_compile_time!`.
+    /// `(ConstParameterKey, ItemCompileTimeType)` key/item pairs.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
         description: &'static str,
-        items: &'static [(ConstParameterKey, ItemCompileTimeType)],
+        items: &'static [(ConstParameterKey, ItemCompileTime)],
     ) -> Self {
         assert_unique_keys!(items, "ParameterObjectCompileTime item keys must be unique");
         Self { description, items }
@@ -36,7 +35,7 @@ impl ParameterObjectCompileTime {
     }
     #[must_use]
     /// Returns the keyed items.
-    pub const fn items(&self) -> &'static [(ConstParameterKey, ItemCompileTimeType)] {
+    pub const fn items(&self) -> &'static [(ConstParameterKey, ItemCompileTime)] {
         self.items
     }
     #[must_use]
@@ -51,7 +50,7 @@ impl ParameterObjectCompileTime {
     }
     #[must_use]
     /// Returns the value associated with the given key.
-    pub fn get(&self, key: &str) -> Option<&ItemCompileTimeType> {
+    pub fn get(&self, key: &str) -> Option<&ItemCompileTime> {
         self.items
             .iter()
             .find_map(|(item_key, item)| (item_key.as_str() == key).then_some(item))
@@ -61,7 +60,7 @@ impl ParameterObjectCompileTime {
         self.items.iter().map(|(key, _)| *key)
     }
     /// Returns an iterator over the entries.
-    pub fn iter(&self) -> impl Iterator<Item = &(ConstParameterKey, ItemCompileTimeType)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = &(ConstParameterKey, ItemCompileTime)> + '_ {
         self.items.iter()
     }
     /// Converts this compile-time parameter object into a runtime definition.
@@ -91,25 +90,28 @@ impl ParameterObjectCompileTime {
 /// # Syntax
 /// ```text
 /// parameter_object_compile_time!(description, items)
+/// parameter_object_compile_time!(description, [("key", item), ...])
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
 /// - `items`: `&'static [(ConstParameterKey, ItemCompileTimeType)]` ordered slice of
-///   key/item pairs, typically built with the `parameter_key!` macro and
-///   `item_compile_time!`.
+///   key/item pairs.
+/// - `"key"`: parameter-key string literal. In the inline form, each key is validated by
+///   `parameter_key!` internally.
+/// - `item`: [`ItemCompileTime`] expression, typically built with `item_compile_time!`.
 ///
 /// # Examples
 /// ```rust
-/// use datastore::compile_time::{ItemCompileTimeType, ParameterObjectCompileTime};
 /// use datastore::prelude::*;
 ///
-/// const PARAMETERS: &[(ConstParameterKey, ItemCompileTimeType)] = &[(
-///     parameter_key!("p_thickness"),
-///     item_compile_time!(number = number_compile_time!("Thickness", default = "1")),
-/// )];
-/// const SETTINGS: ParameterObjectCompileTime =
-///     parameter_object_compile_time!("Parameters", PARAMETERS);
+/// const SETTINGS: ParameterObjectCompileTime = parameter_object_compile_time!(
+///     "Parameters",
+///     [(
+///         "p_thickness",
+///         item_compile_time!(number = number_compile_time!("Thickness", default = "1")),
+///     )],
+/// );
 /// assert_eq!(SETTINGS.count(), 1);
 ///
 /// let _definition = SETTINGS.into_definition();
@@ -117,7 +119,6 @@ impl ParameterObjectCompileTime {
 ///
 /// Duplicate item keys are rejected at compile time:
 /// ```compile_fail
-/// use datastore::compile_time::ParameterObjectCompileTime;
 /// use datastore::prelude::*;
 ///
 /// const SETTINGS: ParameterObjectCompileTime = parameter_object_compile_time!(
@@ -136,6 +137,16 @@ impl ParameterObjectCompileTime {
 /// ```
 #[macro_export]
 macro_rules! parameter_object_compile_time {
+    ($description:expr, [$(($key:literal, $item:expr $(,)?)),* $(,)?] $(,)?) => {
+        const {
+            $crate::compile_time::ParameterObjectCompileTime::__new(
+                $description,
+                &[
+                    $(($crate::prelude::parameter_key!($key), $item)),*
+                ],
+            )
+        }
+    };
     ($description:expr, $items:expr) => {
         const { $crate::compile_time::ParameterObjectCompileTime::__new($description, $items) }
     };
