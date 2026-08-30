@@ -24,6 +24,8 @@
 
 /// Common utilities for keys.
 pub(crate) mod common;
+/// Keys for components.
+pub mod component_key;
 /// Keys for global objects.
 pub mod global_key;
 /// Keys for parameters.
@@ -35,6 +37,7 @@ pub mod unit_key;
 /// Keys for variables.
 pub mod variable_key;
 
+pub use component_key::*;
 pub use global_key::*;
 pub use parameter_key::*;
 pub use store_key::*;
