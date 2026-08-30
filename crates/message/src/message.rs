@@ -33,6 +33,8 @@ impl fmt::Display for MessageLevel {
 pub enum MessageCategory {
     /// A message related to the datastore.
     Datastore,
+    /// A message related to a component.
+    Component,
     /// A message related to expression parsing.
     ExpressionParsing,
     /// A message related to expression evaluation.
@@ -43,6 +45,7 @@ impl fmt::Display for MessageCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
             MessageCategory::Datastore => "Datastore",
+            MessageCategory::Component => "Component",
             MessageCategory::ExpressionParsing => "Expression Parsing",
             MessageCategory::ExpressionEvaluation => "Expression Evaluation",
         };

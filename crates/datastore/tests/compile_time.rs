@@ -1,14 +1,10 @@
 //! Static compile-time definition conversion tests.
 
-use datastore::compile_time::{
-    ChoiceCompileTime, ChoiceItemCompileTime, GlobalObjectCompileTime, ItemCompileTimeType,
-    MapCompileTime, MapItemCompileTime, NumberCompileTime, StringCompileTime, TableCompileTime,
-};
-use datastore::definition::{
-    ChoiceDefinition, GlobalObjectDefinition, MapDefinition, TableDefinition,
-};
 use datastore::prelude::{
-    ConstGlobalKey, ConstStoreKey, choice_compile_time, choice_item_compile_time, global_key,
+    ChoiceCompileTime, ChoiceDefinition, ChoiceItemCompileTime, ConstGlobalKey, ConstStoreKey,
+    GlobalObjectCompileTime, GlobalObjectDefinition, ItemCompileTime, MapCompileTime,
+    MapDefinition, MapItemCompileTime, NumberCompileTime, StringCompileTime, TableCompileTime,
+    TableDefinition, choice_compile_time, choice_item_compile_time, global_key,
     global_object_compile_time, item_compile_time, map_compile_time, map_item_compile_time,
     number_compile_time, store_key, string_compile_time, table_compile_time,
 };
@@ -55,7 +51,7 @@ const OBJECT: GlobalObjectCompileTime = global_object_compile_time!(
         ("g_shape_map", item_compile_time!(map = MAP)),
     ],
 );
-const DUPLICATE_GLOBAL_ITEMS: &[(ConstGlobalKey, ItemCompileTimeType)] = &[
+const DUPLICATE_GLOBAL_ITEMS: &[(ConstGlobalKey, ItemCompileTime)] = &[
     (
         global_key!("g_duplicate"),
         item_compile_time!(string = string_compile_time!("First")),

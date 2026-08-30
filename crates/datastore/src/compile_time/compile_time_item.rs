@@ -9,7 +9,7 @@ use crate::definition::ItemDefinitionType;
 /// Compile-time representation of a heterogeneous item. Use the `item_compile_time!` macro
 /// to construct values; Rust enum variants remain public for matching.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ItemCompileTimeType {
+pub enum ItemCompileTime {
     /// Boolean item variant.
     Boolean(BooleanCompileTime),
     /// Choice item variant.
@@ -40,10 +40,10 @@ pub enum ItemCompileTimeType {
     Separator(SeparatorCompileTime),
 }
 
-/// Helper macro for converting compile-time item types into `ItemCompileTimeType`.
+/// Helper macro for converting compile-time item types into [`ItemCompileTime`].
 macro_rules! item_from {
     ($type:ty, $variant:ident) => {
-        impl From<$type> for ItemCompileTimeType {
+        impl From<$type> for ItemCompileTime {
             fn from(value: $type) -> Self {
                 Self::$variant(value)
             }
@@ -65,11 +65,11 @@ item_from!(UnitCompileTime, Unit);
 item_from!(TabCompileTime, Tab);
 item_from!(SeparatorCompileTime, Separator);
 
-impl ItemCompileTimeType {
+impl ItemCompileTime {
     /// Hidden wrapper for the `item_compile_time!(boolean = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
-    /// Wraps a [`BooleanCompileTime`] (a `true`/`false` toggle) as an `ItemCompileTimeType`.
+    /// Wraps a [`BooleanCompileTime`] (a `true`/`false` toggle) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __boolean(value: BooleanCompileTime) -> Self {
@@ -79,7 +79,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`ChoiceCompileTime`] (a single-select value chosen from a fixed list) as an
-    /// `ItemCompileTimeType`.
+    /// [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __choice(value: ChoiceCompileTime) -> Self {
@@ -88,7 +88,7 @@ impl ItemCompileTimeType {
     /// Hidden wrapper for the `item_compile_time!(file = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
-    /// Wraps a [`FileCompileTime`] (a file-picker parameter) as an `ItemCompileTimeType`.
+    /// Wraps a [`FileCompileTime`] (a file-picker parameter) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __file(value: FileCompileTime) -> Self {
@@ -97,7 +97,7 @@ impl ItemCompileTimeType {
     /// Hidden wrapper for the `item_compile_time!(folder = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
-    /// Wraps a [`FolderCompileTime`] (a folder-picker parameter) as an `ItemCompileTimeType`.
+    /// Wraps a [`FolderCompileTime`] (a folder-picker parameter) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __folder(value: FolderCompileTime) -> Self {
@@ -107,7 +107,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps an [`IntegerCompileTime`] (an integer value with an optional constraint) as an
-    /// `ItemCompileTimeType`.
+    /// [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __integer(value: IntegerCompileTime) -> Self {
@@ -117,7 +117,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`MapCompileTime`] (a nested, dynamically keyed collection of map items) as
-    /// an `ItemCompileTimeType`.
+    /// an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __map(value: MapCompileTime) -> Self {
@@ -127,7 +127,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`NumberCompileTime`] (an `f64` value with an optional constraint) as an
-    /// `ItemCompileTimeType`.
+    /// [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __number(value: NumberCompileTime) -> Self {
@@ -137,7 +137,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`NumberWithUnitsCompileTime`] (an `f64` value with a preferred unit and an
-    /// optional constraint) as an `ItemCompileTimeType`.
+    /// optional constraint) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __number_with_units(value: NumberWithUnitsCompileTime) -> Self {
@@ -146,7 +146,7 @@ impl ItemCompileTimeType {
     /// Hidden wrapper for the `item_compile_time!(string = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
-    /// Wraps a [`StringCompileTime`] (a free-form text value) as an `ItemCompileTimeType`.
+    /// Wraps a [`StringCompileTime`] (a free-form text value) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __string(value: StringCompileTime) -> Self {
@@ -156,7 +156,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`TableCompileTime`] (a table of unit-less numeric columns) as an
-    /// `ItemCompileTimeType`.
+    /// [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __table(value: TableCompileTime) -> Self {
@@ -166,7 +166,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`TableWithUnitsCompileTime`] (a table of numeric columns, each with its own
-    /// preferred unit) as an `ItemCompileTimeType`.
+    /// preferred unit) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __table_with_units(value: TableWithUnitsCompileTime) -> Self {
@@ -176,7 +176,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`UnitCompileTime`] (a value chosen from the units of a unit family) as an
-    /// `ItemCompileTimeType`.
+    /// [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __unit(value: UnitCompileTime) -> Self {
@@ -186,7 +186,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`TabCompileTime`] (a layout-only tab heading; stores no value) as an
-    /// `ItemCompileTimeType`.
+    /// [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __tab(value: TabCompileTime) -> Self {
@@ -196,7 +196,7 @@ impl ItemCompileTimeType {
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
     /// Wraps a [`SeparatorCompileTime`] (a layout-only visual divider; stores no value) as
-    /// an `ItemCompileTimeType`.
+    /// an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
     pub const fn __separator(value: SeparatorCompileTime) -> Self {
@@ -207,43 +207,31 @@ impl ItemCompileTimeType {
     #[must_use]
     pub fn into_definition(self) -> ItemDefinitionType {
         match self {
-            ItemCompileTimeType::Boolean(value) => {
-                ItemDefinitionType::Boolean(value.into_definition())
-            }
-            ItemCompileTimeType::Choice(value) => {
-                ItemDefinitionType::Choice(value.into_definition())
-            }
-            ItemCompileTimeType::File(value) => ItemDefinitionType::File(value.into_definition()),
-            ItemCompileTimeType::Folder(value) => {
-                ItemDefinitionType::Folder(value.into_definition())
-            }
-            ItemCompileTimeType::Integer(value) => {
-                ItemDefinitionType::Integer(value.into_definition())
-            }
-            ItemCompileTimeType::Map(value) => ItemDefinitionType::Map(value.into_definition()),
-            ItemCompileTimeType::Number(value) => {
-                ItemDefinitionType::Number(value.into_definition())
-            }
-            ItemCompileTimeType::NumberWithUnits(value) => {
+            ItemCompileTime::Boolean(value) => ItemDefinitionType::Boolean(value.into_definition()),
+            ItemCompileTime::Choice(value) => ItemDefinitionType::Choice(value.into_definition()),
+            ItemCompileTime::File(value) => ItemDefinitionType::File(value.into_definition()),
+            ItemCompileTime::Folder(value) => ItemDefinitionType::Folder(value.into_definition()),
+            ItemCompileTime::Integer(value) => ItemDefinitionType::Integer(value.into_definition()),
+            ItemCompileTime::Map(value) => ItemDefinitionType::Map(value.into_definition()),
+            ItemCompileTime::Number(value) => ItemDefinitionType::Number(value.into_definition()),
+            ItemCompileTime::NumberWithUnits(value) => {
                 ItemDefinitionType::NumberWithUnits(value.into_definition())
             }
-            ItemCompileTimeType::String(value) => {
-                ItemDefinitionType::String(value.into_definition())
-            }
-            ItemCompileTimeType::Table(value) => ItemDefinitionType::Table(value.into_definition()),
-            ItemCompileTimeType::TableWithUnits(value) => {
+            ItemCompileTime::String(value) => ItemDefinitionType::String(value.into_definition()),
+            ItemCompileTime::Table(value) => ItemDefinitionType::Table(value.into_definition()),
+            ItemCompileTime::TableWithUnits(value) => {
                 ItemDefinitionType::TableWithUnits(value.into_definition())
             }
-            ItemCompileTimeType::Unit(value) => ItemDefinitionType::Unit(value.into_definition()),
-            ItemCompileTimeType::Tab(value) => ItemDefinitionType::Tab(value.into_definition()),
-            ItemCompileTimeType::Separator(value) => {
+            ItemCompileTime::Unit(value) => ItemDefinitionType::Unit(value.into_definition()),
+            ItemCompileTime::Tab(value) => ItemDefinitionType::Tab(value.into_definition()),
+            ItemCompileTime::Separator(value) => {
                 ItemDefinitionType::Separator(value.into_definition())
             }
         }
     }
 }
 
-/// Wraps a compile-time value as an [`ItemCompileTimeType`] for use inside
+/// Wraps a compile-time value as an [`ItemCompileTime`] for use inside
 /// `global_object_compile_time!`, `parameter_object_compile_time!`, and
 /// `variable_object_compile_time!` item lists.
 ///
@@ -290,11 +278,11 @@ impl ItemCompileTimeType {
 ///
 /// # Examples
 /// ```rust
-/// use datastore::compile_time::ItemCompileTimeType;
+/// use datastore::compile_time::ItemCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const NAME: ItemCompileTimeType = item_compile_time!(string = string_compile_time!("Name"));
-/// const READY: ItemCompileTimeType =
+/// const NAME: ItemCompileTime = item_compile_time!(string = string_compile_time!("Name"));
+/// const READY: ItemCompileTime =
 ///     item_compile_time!(boolean = boolean_compile_time!("Ready", default = false));
 /// let _definition = NAME.into_definition();
 /// let _definition = READY.into_definition();
@@ -302,45 +290,45 @@ impl ItemCompileTimeType {
 #[macro_export]
 macro_rules! item_compile_time {
     (boolean = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__boolean($value) }
+        const { $crate::compile_time::ItemCompileTime::__boolean($value) }
     };
     (choice = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__choice($value) }
+        const { $crate::compile_time::ItemCompileTime::__choice($value) }
     };
     (file = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__file($value) }
+        const { $crate::compile_time::ItemCompileTime::__file($value) }
     };
     (folder = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__folder($value) }
+        const { $crate::compile_time::ItemCompileTime::__folder($value) }
     };
     (integer = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__integer($value) }
+        const { $crate::compile_time::ItemCompileTime::__integer($value) }
     };
     (map = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__map($value) }
+        const { $crate::compile_time::ItemCompileTime::__map($value) }
     };
     (number = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__number($value) }
+        const { $crate::compile_time::ItemCompileTime::__number($value) }
     };
     (number_with_units = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__number_with_units($value) }
+        const { $crate::compile_time::ItemCompileTime::__number_with_units($value) }
     };
     (string = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__string($value) }
+        const { $crate::compile_time::ItemCompileTime::__string($value) }
     };
     (table = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__table($value) }
+        const { $crate::compile_time::ItemCompileTime::__table($value) }
     };
     (table_with_units = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__table_with_units($value) }
+        const { $crate::compile_time::ItemCompileTime::__table_with_units($value) }
     };
     (unit = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__unit($value) }
+        const { $crate::compile_time::ItemCompileTime::__unit($value) }
     };
     (tab = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__tab($value) }
+        const { $crate::compile_time::ItemCompileTime::__tab($value) }
     };
     (separator = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTimeType::__separator($value) }
+        const { $crate::compile_time::ItemCompileTime::__separator($value) }
     };
 }
