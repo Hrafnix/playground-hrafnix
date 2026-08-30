@@ -285,28 +285,6 @@ fn test_definition_number_with_degenerate_range_constraint() {
 }
 
 #[test]
-fn test_number_constraint_deserialize_normalizes_swapped_range() {
-    // Why: `NumberConstraint::range` swaps `min`/`max` when `min > max`, but that
-    // guard must also hold when a constraint is deserialized directly (e.g. from a
-    // saved definition file), not just when constructed via the `range` function.
-    let json = serde_json::json!({
-        "constraint_enum": {
-            "Range": {
-                "min": 10.0,
-                "max": 0.0,
-                "min_inclusive": true,
-                "max_inclusive": false
-            }
-        }
-    });
-
-    let constraint: NumberConstraint = serde_json::from_value(json).unwrap();
-    let expected = NumberConstraint::range(10.0, 0.0, true, false);
-
-    assert_eq!(constraint, expected);
-}
-
-#[test]
 fn test_definition_number_with_constraint_and_default() {
     // Why: Test number definition creation with a constraint and a default value.
     let def = NumberWithUnitsDefinition::new_with_constraint_and_default(

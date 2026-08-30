@@ -1,11 +1,10 @@
 use crate::definition::NumberWithUnitsDefinition;
 use crate::frozen::NumberWithUnitsFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents number with units data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NumberWithUnitsEditable {
     /// Definition metadata for this number value.
     definition: NumberWithUnitsDefinition,

@@ -5,13 +5,12 @@ use crate::definition::{
 };
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// The definition of an item within a map entry.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MapItemDefinition {
     /// A boolean parameter.
     Boolean(BooleanDefinition),
@@ -162,7 +161,7 @@ impl TreePrint for MapItemDefinition {
 
 /// Definition for a map parameter where keys are strings and values follow a fixed schema of
 /// named `MapItemDefinition`s.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MapDefinition {
     /// Human-readable description of this map parameter.
     description: ShareableString,

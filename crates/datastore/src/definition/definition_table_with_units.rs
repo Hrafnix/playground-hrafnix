@@ -1,13 +1,12 @@
 use crate::definition::NumberWithUnitsDefinition;
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Definition for a table whose named columns are numbers with units.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableWithUnitsDefinition {
     /// Human-readable description of this table parameter.
     description: ShareableString,

@@ -3,12 +3,11 @@ use crate::editable::ItemEditable;
 use crate::frozen::GlobalObjectFrozen;
 use crate::traits::{ObjectEditable, TreePrint};
 use keys::global_key::GlobalKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GlobalObjectEditable {
     /// The definition of the object.
     definition: GlobalObjectDefinition,

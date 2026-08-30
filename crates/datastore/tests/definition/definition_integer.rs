@@ -181,28 +181,6 @@ fn test_definition_integer_with_equal_value_range_constraint() {
 }
 
 #[test]
-fn test_integer_constraint_deserialize_normalizes_swapped_range() {
-    // Why: `IntegerConstraint::range` swaps `min`/`max` when `min > max`, but that
-    // guard must also hold when a constraint is deserialized directly (e.g. from a
-    // saved definition file), not just when constructed via the `range` function.
-    let json = serde_json::json!({
-        "constraint_enum": {
-            "Range": {
-                "min": 10,
-                "max": 0,
-                "min_inclusive": true,
-                "max_inclusive": false
-            }
-        }
-    });
-
-    let constraint: IntegerConstraint = serde_json::from_value(json).unwrap();
-    let expected = IntegerConstraint::range(10, 0, true, false);
-
-    assert_eq!(constraint, expected);
-}
-
-#[test]
 fn test_definition_integer_with_constraint_and_default() {
     // Why: Test integer definition creation with a constraint and a default value.
     let def = IntegerDefinition::new_with_constraint_and_default(

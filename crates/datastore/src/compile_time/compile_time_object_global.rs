@@ -17,7 +17,7 @@ impl GlobalObjectCompileTime {
     ///
     /// This is an implementation detail; call `global_object_compile_time!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
-    /// `(ConstGlobalKey, ItemCompileTimeType)` key/item pairs, typically built with the
+    /// `(ConstGlobalKey, ItemCompileTime)` key/item pairs, typically built with the
     /// `global_key!` macro and `item_compile_time!`.
     #[doc(hidden)]
     #[must_use]
@@ -95,11 +95,8 @@ impl GlobalObjectCompileTime {
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
-/// - `items`: `&'static [(ConstGlobalKey, ItemCompileTimeType)]` ordered slice of key/item
+/// - `items`: `&'static [(ConstGlobalKey, ItemCompileTime)]` ordered slice of key/item
 ///   pairs, typically built with `global_key!` and `item_compile_time!`.
-/// - `"key"`: global-key string literal. In the inline form, each key is validated by
-///   `global_key!` internally, so callers do not need to invoke that macro themselves.
-/// - `item`: [`ItemCompileTime`] expression, typically built with `item_compile_time!`.
 ///
 /// # Examples
 /// ```rust

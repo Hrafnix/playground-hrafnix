@@ -1,9 +1,8 @@
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a separator-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SeparatorDefinition {
     /// Human-readable description of this separator parameter.
     description: ShareableString,

@@ -2,13 +2,12 @@ use crate::definition::ItemDefinitionType;
 use crate::traits::TreePrint;
 use keys::variable_key::VariableKey;
 use message::message::{Message, MessageCategory};
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Builder for creating a `VariableObjectDefinition`.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct VariableObjectDefinitionBuilder {
     /// Human-readable description for the object being built.
     description: ShareableString,
@@ -201,7 +200,7 @@ impl VariableObjectDefinitionBuilder {
 }
 
 /// Definition for an object, which is a collection of named variables.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct VariableObjectDefinition {
     /// Human-readable description of this variable object.
     description: ShareableString,

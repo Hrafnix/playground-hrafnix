@@ -13,7 +13,6 @@ hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
 
 [dependencies]
 blake3.workspace = true
-serde.workspace = true
 
 hotpath = { workspace = true, optional = true }
 
@@ -21,9 +20,6 @@ shareable_string.workspace = true
 keys.workspace = true
 message.workspace = true
 units.workspace = true
-
-[dev-dependencies]
-serde_json.workspace = true
 
 [lints]
 workspace = true

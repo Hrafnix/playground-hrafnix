@@ -1,11 +1,10 @@
 use crate::definition::ChoiceDefinition;
 use crate::editable::ChoiceEditable;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a choice data value in the frozen data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ChoiceFrozen {
     /// Definition metadata for this choice value.
     definition: ChoiceDefinition,

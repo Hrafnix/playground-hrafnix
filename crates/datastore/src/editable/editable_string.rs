@@ -1,11 +1,10 @@
 use crate::definition::StringDefinition;
 use crate::frozen::StringFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a string data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StringEditable {
     /// Definition metadata for this string value.
     definition: StringDefinition,

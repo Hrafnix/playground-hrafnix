@@ -1,9 +1,8 @@
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a number-based parameter constraint.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum IntegerConstraintEnum {
     /// Minimum value constraint.
     Min {
@@ -35,7 +34,7 @@ pub enum IntegerConstraintEnum {
 }
 
 /// Definition for an integer-based parameter constraint.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IntegerConstraint {
     /// The actual constraint variant (none, min, max, or range).
     pub(crate) constraint_enum: IntegerConstraintEnum,
@@ -99,47 +98,8 @@ impl IntegerConstraint {
     }
 }
 
-impl<'de> Deserialize<'de> for IntegerConstraint {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        // Mirrors the shape produced by the derived `Serialize` impl above, so the
-        // on-the-wire format is unchanged; only construction is routed through the
-        // same normalization logic as `IntegerConstraint::range` so a deserialized
-        // `Range` can never end up with `min > max`.
-        #[derive(Deserialize)]
-        struct Raw {
-            constraint_enum: IntegerConstraintEnum,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-        let constraint_enum = match raw.constraint_enum {
-            IntegerConstraintEnum::Range {
-                min,
-                max,
-                min_inclusive,
-                max_inclusive,
-            } => {
-                return Ok(IntegerConstraint::range(
-                    min,
-                    max,
-                    min_inclusive,
-                    max_inclusive,
-                ));
-            }
-            other @ (IntegerConstraintEnum::Min { .. }
-            | IntegerConstraintEnum::Max { .. }
-            | IntegerConstraintEnum::None) => other,
-        };
-
-        Ok(Self { constraint_enum })
-    }
-}
-
 /// Definition for an integer-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IntegerDefinition {
     /// Human-readable description of this integer parameter.
     description: ShareableString,

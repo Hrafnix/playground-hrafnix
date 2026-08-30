@@ -1,11 +1,10 @@
 use crate::definition::UnitDefinition;
 use crate::frozen::UnitFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a unit data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct UnitEditable {
     /// Definition metadata for this unit value.
     definition: UnitDefinition,

@@ -2,14 +2,13 @@ use crate::definition::TableWithUnitsDefinition;
 use crate::frozen::TableWithUnitsFrozen;
 use crate::traits::TreePrint;
 use message::message::{Message, MessageCategory};
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a table of number-with-units data in the editable data.
 ///
 /// Cell values are stored as plain strings (`rows`). Units are stored once per
 /// column (`units`), in definition column order, rather than per cell.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableWithUnitsEditable {
     /// Definition metadata for this table value.
     definition: TableWithUnitsDefinition,

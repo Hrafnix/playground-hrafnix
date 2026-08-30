@@ -1,10 +1,9 @@
 use crate::definition::TabDefinition;
 use crate::frozen::TabFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 
 /// Represents a tab structural element in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TabEditable {
     /// Definition metadata for this tab element.
     definition: TabDefinition,

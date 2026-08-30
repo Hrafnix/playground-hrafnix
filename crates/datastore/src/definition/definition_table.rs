@@ -1,13 +1,12 @@
 use crate::definition::NumberDefinition;
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Definition for a table, which is a collection of named number columns.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableDefinition {
     /// Human-readable description of this table parameter.
     description: ShareableString,

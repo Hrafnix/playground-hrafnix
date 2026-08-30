@@ -1,11 +1,10 @@
 use crate::definition::BooleanDefinition;
 use crate::frozen::BooleanFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a boolean data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BooleanEditable {
     /// Definition metadata for this boolean value.
     definition: BooleanDefinition,

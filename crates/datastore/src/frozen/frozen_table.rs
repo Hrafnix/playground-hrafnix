@@ -1,11 +1,10 @@
 use crate::definition::TableDefinition;
 use crate::editable::TableEditable;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a table of data in the frozen data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableFrozen {
     /// Definition metadata for this table value.
     definition: TableDefinition,

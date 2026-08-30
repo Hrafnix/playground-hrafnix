@@ -3,12 +3,11 @@ use crate::editable::ItemEditable;
 use crate::frozen::VariableObjectFrozen;
 use crate::traits::{ObjectEditable, TreePrint};
 use keys::variable_key::VariableKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct VariableObjectEditable {
     /// The definition of the object.
     definition: VariableObjectDefinition,

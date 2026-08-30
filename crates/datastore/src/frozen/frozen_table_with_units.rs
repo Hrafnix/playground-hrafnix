@@ -1,14 +1,13 @@
 use crate::definition::TableWithUnitsDefinition;
 use crate::editable::TableWithUnitsEditable;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a table of number-with-units data in the frozen data.
 ///
 /// Cell values are stored as plain strings (`rows`). Units are stored once per
 /// column (`units`), in definition column order, rather than per cell.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TableWithUnitsFrozen {
     /// Definition metadata for this table value.
     definition: TableWithUnitsDefinition,

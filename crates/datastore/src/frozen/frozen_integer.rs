@@ -1,11 +1,10 @@
 use crate::definition::IntegerDefinition;
 use crate::editable::IntegerEditable;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents integer data value in the frozen data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IntegerFrozen {
     /// Definition metadata for this integer value.
     definition: IntegerDefinition,

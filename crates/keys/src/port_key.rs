@@ -1,6 +1,5 @@
 use crate::common::{KEY_WORDS, is_valid_key_with_prefix};
 use message::message::{Message, MessageCategory};
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::fmt::Display;
 
@@ -310,29 +309,6 @@ impl PortKey {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn starts_with(&self, prefix: &str) -> bool {
         self.key.as_str().starts_with(prefix)
-    }
-}
-
-impl Serialize for PortKey {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(self.as_str())
-    }
-}
-
-impl<'de> Deserialize<'de> for PortKey {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        PortKey::new(ShareableString::from(s)).map_err(|message| {
-            serde::de::Error::custom(message.translate_data().message_key().as_str())
-        })
     }
 }
 

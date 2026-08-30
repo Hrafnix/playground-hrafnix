@@ -2,13 +2,12 @@ use crate::definition::ItemDefinitionType;
 use crate::traits::TreePrint;
 use keys::global_key::GlobalKey;
 use message::message::{Message, MessageCategory};
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Builder for creating a `GlobalObjectDefinition`.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct GlobalObjectDefinitionBuilder {
     /// Human-readable description for the object being built.
     description: ShareableString,
@@ -201,7 +200,7 @@ impl GlobalObjectDefinitionBuilder {
 }
 
 /// Definition for a global object, which is a collection of named items.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct GlobalObjectDefinition {
     /// Human-readable description of this global object.
     description: ShareableString,

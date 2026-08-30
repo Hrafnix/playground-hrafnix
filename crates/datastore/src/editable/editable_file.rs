@@ -1,11 +1,10 @@
 use crate::definition::FileDefinition;
 use crate::frozen::FileFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a file data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FileEditable {
     /// Definition metadata for this file value.
     definition: FileDefinition,
