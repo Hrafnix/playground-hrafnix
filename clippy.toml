@@ -7,5 +7,6 @@ disallowed-methods = [
     { path = "keys::variable_key::ConstVariableKey::__new", reason = "construct via the `variable_key!` macro instead so invalid keys fail to compile" },
     { path = "keys::unit_key::ConstUnitKey::__new", reason = "construct via the `unit_key!` macro instead so invalid keys fail to compile" },
     { path = "keys::component_key::ConstComponentKey::__new", reason = "construct via the `component_key!` macro instead so invalid keys fail to compile" },
+    { path = "keys::port_key::ConstPortKey::__new", reason = "construct via the `port_key!` macro instead so invalid keys fail to compile" },
 ]
 too-many-lines-threshold = 500
