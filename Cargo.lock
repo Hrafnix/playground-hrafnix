@@ -129,8 +129,6 @@ dependencies = [
  "hotpath",
  "keys",
  "message",
- "serde",
- "serde_json",
  "shareable_string",
  "units",
 ]
@@ -341,7 +339,6 @@ version = "0.1.0"
 dependencies = [
  "hotpath",
  "message",
- "serde",
  "shareable_string",
 ]
 
@@ -612,8 +609,6 @@ dependencies = [
  "hotpath",
  "parking_lot",
  "rustc-hash",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -733,7 +728,6 @@ version = "0.1.0"
 dependencies = [
  "hotpath",
  "keys",
- "serde",
 ]
 
 [[package]]

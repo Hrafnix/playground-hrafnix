@@ -1,9 +1,8 @@
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a file-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FileDefinition {
     /// Human-readable description of this file parameter.
     description: ShareableString,

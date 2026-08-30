@@ -1,9 +1,8 @@
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a tab-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TabDefinition {
     /// Human-readable description of this tab parameter.
     description: ShareableString,

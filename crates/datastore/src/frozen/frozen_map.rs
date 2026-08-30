@@ -7,12 +7,11 @@ use crate::frozen::{
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
 use message::message::{Message, MessageCategory};
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
 /// Represents an item within a frozen map entry.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MapItemFrozen {
     /// A boolean value.
     Boolean(BooleanFrozen),
@@ -216,7 +215,7 @@ impl TreePrint for MapItemFrozen {
 }
 
 /// Represents a single entry's value within a frozen map, following the map's entry schema.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MapEntryFrozen {
     /// The items in the map entry.
     items: BTreeMap<StoreKey, MapItemFrozen>,
@@ -454,7 +453,7 @@ impl TreePrint for MapEntryFrozen {
 }
 
 /// Represents a map of parameter in the frozen data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MapFrozen {
     /// The definition of the map.
     definition: MapDefinition,

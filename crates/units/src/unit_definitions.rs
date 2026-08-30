@@ -1,10 +1,9 @@
 use keys::{ConstUnitKey, unit_key};
-use serde::{Deserialize, Serialize};
 
 /// `UnitFamilyId` is an enum that represents the different families of units.
 /// Each family has a unique identifier that can be used to group units together.
 /// The `UnitFamilyId` enum is used in the Unit struct to specify the family of a unit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum UnitFamilyId {
     /// The family of units that do not belong to any specific category.
@@ -194,7 +193,7 @@ macro_rules! define_unit_ids {
         ),
     )*) => {
         /// Identifiers for the units supported by the calculator.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         #[repr(u16)]
         #[allow(non_camel_case_types)]
         pub enum UnitId {

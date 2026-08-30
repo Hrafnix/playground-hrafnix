@@ -6,10 +6,9 @@ use crate::editable::{
 };
 use crate::frozen::ItemFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 
 /// Represents a parameter value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ItemEditable {
     /// A boolean parameter.
     Boolean(BooleanEditable),

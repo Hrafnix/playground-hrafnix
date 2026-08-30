@@ -3,12 +3,11 @@ use crate::editable::ItemEditable;
 use crate::frozen::ParameterObjectFrozen;
 use crate::traits::{ObjectEditable, TreePrint};
 use keys::parameter_key::ParameterKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ParameterObjectEditable {
     /// The definition of the object.
     definition: ParameterObjectDefinition,

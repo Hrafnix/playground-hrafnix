@@ -1,10 +1,9 @@
 use crate::definition::{NumberConstraint, NumberConstraintEnum};
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a number-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NumberDefinition {
     /// Human-readable description of this number parameter.
     description: ShareableString,

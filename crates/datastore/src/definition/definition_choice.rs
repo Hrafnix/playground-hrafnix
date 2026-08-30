@@ -1,10 +1,9 @@
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Definition for a single choice item in a choice-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ChoiceItemDefinition {
     /// Unique key identifying this choice item.
     id: StoreKey,
@@ -54,7 +53,7 @@ impl ChoiceItemDefinition {
 }
 
 /// Definition for a choice-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ChoiceDefinition {
     /// Human-readable description of this choice parameter.
     description: ShareableString,

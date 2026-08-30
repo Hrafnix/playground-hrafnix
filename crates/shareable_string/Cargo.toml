@@ -14,13 +14,9 @@ hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
 [dependencies]
 blake3.workspace = true
 parking_lot.workspace = true
-serde.workspace = true
 rustc-hash.workspace = true
 
 hotpath = { workspace = true, optional = true }
-
-[dev-dependencies]
-serde_json.workspace = true
 
 [lints]
 workspace = true

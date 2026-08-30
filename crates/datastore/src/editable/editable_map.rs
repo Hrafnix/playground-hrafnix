@@ -6,12 +6,11 @@ use crate::editable::{
 use crate::frozen::{MapEntryFrozen, MapFrozen, MapItemFrozen};
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
 /// Represents an item within an editable map entry.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum MapItemEditable {
     /// A boolean value.
     Boolean(BooleanEditable),
@@ -430,7 +429,7 @@ impl TreePrint for MapItemEditable {
 }
 
 /// Represents a single entry's value within an editable map, following the map's entry schema.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MapEntryEditable {
     /// The items in the map entry.
     items: BTreeMap<StoreKey, MapItemEditable>,
@@ -544,7 +543,7 @@ impl TreePrint for MapEntryEditable {
 }
 
 /// Represents a map of parameter in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MapEditable {
     /// The definition of the map.
     definition: MapDefinition,

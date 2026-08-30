@@ -5,10 +5,9 @@ use crate::frozen::{
     TableWithUnitsFrozen, UnitFrozen,
 };
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 
 /// Represents a parameter value in the frozen data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ItemFrozen {
     /// A boolean parameter.
     Boolean(BooleanFrozen),

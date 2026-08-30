@@ -1,11 +1,10 @@
 use crate::definition::FolderDefinition;
 use crate::frozen::FolderFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a folder data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FolderEditable {
     /// Definition metadata for this folder value.
     definition: FolderDefinition,

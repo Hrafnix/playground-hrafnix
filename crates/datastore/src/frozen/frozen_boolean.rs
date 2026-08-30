@@ -1,11 +1,10 @@
 use crate::definition::BooleanDefinition;
 use crate::editable::BooleanEditable;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents a choice data value in the frozen data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BooleanFrozen {
     /// Definition metadata for this boolean value.
     definition: BooleanDefinition,

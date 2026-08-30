@@ -1,10 +1,9 @@
 use crate::definition::SeparatorDefinition;
 use crate::frozen::SeparatorFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 
 /// Represents a separator structural element in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SeparatorEditable {
     /// Definition metadata for this separator element.
     definition: SeparatorDefinition,

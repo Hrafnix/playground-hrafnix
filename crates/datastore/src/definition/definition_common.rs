@@ -1,8 +1,7 @@
-use serde::{Deserialize, Serialize};
 use std::ops::{AddAssign, Sub, SubAssign};
 
 /// Definition for a number-based parameter constraint.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum NumberConstraintEnum {
     /// Minimum value constraint.
     Min {
@@ -34,7 +33,7 @@ pub enum NumberConstraintEnum {
 }
 
 /// Definition for an integer-based parameter constraint.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NumberConstraint {
     /// The actual constraint variant (none, min, max, or range).
     pub(crate) constraint_enum: NumberConstraintEnum,
@@ -103,44 +102,5 @@ impl NumberConstraint {
                 max_inclusive,
             },
         }
-    }
-}
-
-impl<'de> Deserialize<'de> for NumberConstraint {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        // Mirrors the shape produced by the derived `Serialize` impl above, so the
-        // on-the-wire format is unchanged; only construction is routed through the
-        // same normalization logic as `NumberConstraint::range` so a deserialized
-        // `Range` can never end up with `min > max`.
-        #[derive(Deserialize)]
-        struct Raw {
-            constraint_enum: NumberConstraintEnum,
-        }
-
-        let raw = Raw::deserialize(deserializer)?;
-        let constraint_enum = match raw.constraint_enum {
-            NumberConstraintEnum::Range {
-                min,
-                max,
-                min_inclusive,
-                max_inclusive,
-            } => {
-                return Ok(NumberConstraint::range(
-                    min,
-                    max,
-                    min_inclusive,
-                    max_inclusive,
-                ));
-            }
-            other @ (NumberConstraintEnum::Min { .. }
-            | NumberConstraintEnum::Max { .. }
-            | NumberConstraintEnum::None) => other,
-        };
-
-        Ok(Self { constraint_enum })
     }
 }

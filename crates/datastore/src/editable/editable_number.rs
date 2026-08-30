@@ -1,11 +1,10 @@
 use crate::definition::NumberDefinition;
 use crate::frozen::NumberFrozen;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::ShareableString;
 
 /// Represents number data value in the editable data.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NumberEditable {
     /// Definition metadata for this number value.
     definition: NumberDefinition,

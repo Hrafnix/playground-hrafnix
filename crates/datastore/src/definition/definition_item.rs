@@ -5,11 +5,10 @@ use crate::definition::{
 };
 use crate::prelude::FileDefinition;
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::SharedStringStore;
 
 /// The type of item definition.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ItemDefinitionType {
     /// A boolean item.
     Boolean(BooleanDefinition),

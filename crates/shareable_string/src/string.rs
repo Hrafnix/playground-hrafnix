@@ -1,5 +1,4 @@
 use blake3;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Borrow;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -210,27 +209,6 @@ impl PartialOrd<ShareableString> for String {
     }
 }
 
-impl Serialize for ShareableString {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.data)
-    }
-}
-
-impl<'de> Deserialize<'de> for ShareableString {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Ok(ShareableString::new(s))
-    }
-}
-
 impl Default for ShareableString {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn default() -> Self {
@@ -393,36 +371,6 @@ mod tests {
         let uni = ShareableString::new("🦀 ¡Hola! 🦀");
         assert_eq!(uni.as_ref(), "🦀 ¡Hola! 🦀");
         assert_eq!(format!("{uni}"), "🦀 ¡Hola! 🦀");
-    }
-
-    #[test]
-    fn test_serde_serialization() {
-        let s = ShareableString::new("serde test");
-        let serialized = serde_json::to_string(&s).unwrap();
-        assert_eq!(serialized, "\"serde test\"");
-
-        let deserialized: ShareableString = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(deserialized, s);
-        assert_eq!(deserialized.current_blake3_hash(), s.current_blake3_hash());
-    }
-
-    #[test]
-    fn test_deserialize_error_propagated_from_string() {
-        // Each of these passes a non-string JSON Value directly into ShareableString's
-        // Deserialize impl, causing `String::deserialize(deserializer)?` at line 191
-        // to return an error that is propagated via `?`.
-        let non_strings: &[serde_json::Value] = &[
-            serde_json::json!(42),
-            serde_json::json!(4.25),
-            serde_json::json!(true),
-            serde_json::json!(null),
-            serde_json::json!(["a", "b"]),
-            serde_json::json!({"key": "value"}),
-        ];
-        for value in non_strings {
-            let result = serde_json::from_value::<ShareableString>(value.clone());
-            assert!(result.is_err(), "expected error for value: {value}");
-        }
     }
 
     #[test]

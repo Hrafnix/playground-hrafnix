@@ -1,11 +1,10 @@
 use crate::definition::{NumberConstraint, NumberConstraintEnum};
 use crate::traits::TreePrint;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use units::UnitId;
 
 /// Definition for a number-based parameter with units.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NumberWithUnitsDefinition {
     /// Human-readable description of this number parameter.
     description: ShareableString,

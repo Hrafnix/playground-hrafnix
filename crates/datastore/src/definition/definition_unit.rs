@@ -1,11 +1,10 @@
 use crate::traits::TreePrint;
 use keys::UnitKey;
-use serde::{Deserialize, Serialize};
 use shareable_string::{ShareableString, SharedStringStore};
 use units::{UnitFamilyId, UnitId};
 
 /// Definition for a choice-based parameter.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct UnitDefinition {
     /// Human-readable description of this choice parameter.
     description: ShareableString,
