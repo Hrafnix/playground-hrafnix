@@ -52,8 +52,8 @@ pub use shareable_string::{ShareableString, SharedStringStore, SharedStringTrans
 
 // Frozen data
 pub use crate::frozen::{
-    BooleanFrozen, ChoiceFrozen, FileFrozen, GlobalObjectFrozen, IntegerFrozen, ItemFrozen,
-    MapEntryFrozen, MapFrozen, MapItemFrozen, NumberFrozen, NumberWithUnitsFrozen,
+    BooleanFrozen, ChoiceFrozen, FileFrozen, FrozenStore, GlobalObjectFrozen, IntegerFrozen,
+    ItemFrozen, MapEntryFrozen, MapFrozen, MapItemFrozen, NumberFrozen, NumberWithUnitsFrozen,
     ParameterObjectFrozen, StringFrozen, TableFrozen, TableWithUnitsFrozen, UnitFrozen,
     VariableObjectFrozen,
 };

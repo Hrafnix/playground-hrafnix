@@ -209,6 +209,22 @@ impl ParameterObjectFrozen {
     pub const fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }
+
+    /// Creates a new `ParameterObjectFrozen` by merging `self` with `other` at the top level.
+    ///
+    /// Items already present in `self` (including `Map` items) are kept unchanged.
+    /// Items present in `other` but absent from `self` are added.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn merge_from(&self, other: &Self) -> Self {
+        let mut items = self.items.clone();
+        for (key, item) in &other.items {
+            if !items.contains_key(key) {
+                items.insert(key.clone(), item.clone());
+            }
+        }
+        Self::new_from_items(self.definition.description(), items)
+    }
 }
 
 impl PartialEq<&ParameterObjectFrozen> for ParameterObjectFrozen {

@@ -24,6 +24,8 @@ pub mod frozen_object_parameter;
 pub mod frozen_object_variable;
 /// Frozen separator data.
 pub mod frozen_separator;
+/// Frozen store data.
+pub mod frozen_store;
 /// Frozen string data.
 pub mod frozen_string;
 /// Frozen tab data.
@@ -48,6 +50,7 @@ pub use frozen_object_global::*;
 pub use frozen_object_parameter::*;
 pub use frozen_object_variable::*;
 pub use frozen_separator::*;
+pub use frozen_store::*;
 pub use frozen_string::*;
 pub use frozen_tab::*;
 pub use frozen_table::*;
