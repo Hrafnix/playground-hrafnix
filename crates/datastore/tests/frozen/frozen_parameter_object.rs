@@ -284,3 +284,144 @@ fn test_editable_parameter_object_print() {
         "Parameter Object Frozen (Test)\n    ├── p_p1 (D1) String - \"edited\"\n    ├── p_p2 (D2) Boolean - \"true\"\n    ├── p_p3 (D3) File - \"test.ext\"\n    ├── p_p4_v1 (D4) Integer - \"1\"\n    ├── p_p4_v2 (D4) Integer - \"2\"\n    ├── p_p4_v3 (D4) Integer - \"3\"\n    ├── p_p4_v4 (D4) Integer - \"4\"\n    ├── p_p4_v5 (D4) Integer - \"5\"\n    ├── p_p4_v6 (D4) Integer - \"6\"\n    ├── p_p4_v7 (D4) Integer - \"7\"\n    ├── p_p4_v8 (D4) Integer - \"8\"\n    ├── p_p5_v1 (D5) Number - \"1.0\"\n    ├── p_p5_v2 (D5) Number - \"2.0\"\n    ├── p_p5_v3 (D5) Number - \"3.0\"\n    ├── p_p5_v4 (D5) Number - \"4.0\"\n    ├── p_p5_v5 (D5) Number - \"5.0\"\n    ├── p_p5_v6 (D5) Number - \"6.0\"\n    ├── p_p5_v7 (D5) Number - \"7.0\"\n    ├── p_p5_v8 (D5) Number - \"8.0\"\n    ├── p_p5_v9 (D5) Number - \"9.0\"\n    ├── p_p6 (D6) Choice - \"test\"\n    ├── p_p7 (D7) Table 1 rows\n    │   ├── data\n    │   │   └── Row 0\n    │   │       ├── col1 \"100.0\"\n    │   │       └── col2 \"200.0\"\n    │   └── Parameter \"\"\n    └── p_p8 (D8) Map\n        └── key1\n            ├── col1 (C1) String - \"test 1\"\n            ├── col2 (C2) Number - \"55.0\"\n            └── col3 (C3) Table 1 rows\n                ├── data\n                │   └── Row 0\n                │       ├── col3_1 \"150.0\"\n                │       └── col3_2 \"250.0\"\n                └── Parameter \"\"\n"
     );
 }
+
+#[test]
+fn test_parameter_object_merge_unlocked() {
+    // Why: Unlocked merge should update existing items and add new ones from other.
+    let base = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Base")
+            .with(
+                ParameterKey::new("p_a".into()).unwrap(),
+                StringDefinition::new("A"),
+            )
+            .with(
+                ParameterKey::new("p_b".into()).unwrap(),
+                StringDefinition::new("B"),
+            )
+            .finish(),
+    );
+    let mut editable_base = base.thaw();
+    editable_set_value(&mut editable_base, "p_a", "hello").unwrap();
+    editable_set_value(&mut editable_base, "p_b", "world").unwrap();
+    let base = editable_base.freeze();
+
+    let other = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Other")
+            .with(
+                ParameterKey::new("p_a".into()).unwrap(),
+                StringDefinition::new("A"),
+            )
+            .with(
+                ParameterKey::new("p_c".into()).unwrap(),
+                StringDefinition::new("C"),
+            )
+            .finish(),
+    );
+    let mut editable_other = other.thaw();
+    editable_set_value(&mut editable_other, "p_a", "updated").unwrap();
+    editable_set_value(&mut editable_other, "p_c", "new").unwrap();
+    let other = editable_other.freeze();
+
+    let merged = base.merge(&other, false).unwrap();
+
+    // p_a updated from other, p_b retained from base, p_c added from other
+    assert_eq!(
+        merged.get("p_a").unwrap().get_string().unwrap().value(),
+        "updated"
+    );
+    assert_eq!(
+        merged.get("p_b").unwrap().get_string().unwrap().value(),
+        "world"
+    );
+    assert_eq!(
+        merged.get("p_c").unwrap().get_string().unwrap().value(),
+        "new"
+    );
+    assert_ne!(merged.hash(), base.hash());
+}
+
+#[test]
+fn test_parameter_object_merge_locked_same_keys() {
+    // Why: Locked merge with matching keys should succeed and update values.
+    let base = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Base")
+            .with(
+                ParameterKey::new("p_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+
+    let other = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Other")
+            .with(
+                ParameterKey::new("p_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+    let mut editable_other = other.thaw();
+    editable_set_value(&mut editable_other, "p_x", "updated").unwrap();
+    let other = editable_other.freeze();
+
+    let merged = base.merge(&other, true).unwrap();
+
+    assert_eq!(
+        merged.get("p_x").unwrap().get_string().unwrap().value(),
+        "updated"
+    );
+}
+
+#[test]
+fn test_parameter_object_merge_locked_new_item_error() {
+    // Why: Locked merge should error if other has keys not in self.
+    let base = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Base")
+            .with(
+                ParameterKey::new("p_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+    let other = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Other")
+            .with(
+                ParameterKey::new("p_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .with(
+                ParameterKey::new("p_y".into()).unwrap(),
+                StringDefinition::new("Y"),
+            )
+            .finish(),
+    );
+
+    assert!(base.merge(&other, true).is_err());
+}
+
+#[test]
+fn test_parameter_object_merge_locked_removed_item_error() {
+    // Why: Locked merge should error if self has keys absent from other.
+    let base = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Base")
+            .with(
+                ParameterKey::new("p_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .with(
+                ParameterKey::new("p_y".into()).unwrap(),
+                StringDefinition::new("Y"),
+            )
+            .finish(),
+    );
+    let other = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Other")
+            .with(
+                ParameterKey::new("p_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+
+    assert!(base.merge(&other, true).is_err());
+}

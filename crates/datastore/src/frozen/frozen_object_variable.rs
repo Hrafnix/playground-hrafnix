@@ -5,6 +5,7 @@ use crate::frozen::{
 };
 use crate::traits::TreePrint;
 use keys::variable_key::VariableKey;
+use message::message::{Message, MessageCategory};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
 
@@ -208,6 +209,52 @@ impl VariableObjectFrozen {
     #[must_use]
     pub const fn definition(&self) -> &VariableObjectDefinition {
         &self.definition
+    }
+
+    /// Merges another `VariableObjectFrozen` into this one, returning the merged result.
+    ///
+    /// For keys present in both `self` and `other`, `other`'s value takes precedence.
+    /// For keys only in `other`, the item is added to the result.
+    /// For keys only in `self`, the item is retained in the result.
+    ///
+    /// When `locked` is `true`, the key sets of `self` and `other` must match exactly.
+    /// If `other` introduces keys not present in `self` (new items) or `self` has keys
+    /// absent from `other` (removed items), an error is returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `locked` is `true` and the key sets differ.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn merge(&self, other: &Self, locked: bool) -> Result<Self, Message> {
+        if locked {
+            for key in other.items.keys() {
+                if !self.items.contains_key(key) {
+                    return Err(Message::error_with_param(
+                        MessageCategory::Datastore,
+                        "datastore_locked_new_item",
+                        "key",
+                        key.as_str().to_string(),
+                    ));
+                }
+            }
+            for key in self.items.keys() {
+                if !other.items.contains_key(key) {
+                    return Err(Message::error_with_param(
+                        MessageCategory::Datastore,
+                        "datastore_locked_removed_item",
+                        "key",
+                        key.as_str().to_string(),
+                    ));
+                }
+            }
+        }
+
+        let mut items = self.items.clone();
+        items.extend(other.items.iter().map(|(k, v)| (k.clone(), v.clone())));
+
+        // The merged result uses self's description; the definition is rebuilt from the
+        // merged item set so it accurately reflects all keys present after merging.
+        Ok(Self::new_from_items(self.definition.description(), items))
     }
 }
 

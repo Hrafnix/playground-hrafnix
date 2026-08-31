@@ -284,3 +284,144 @@ fn test_editable_variable_object_print() {
         "Variable Object Frozen (Test)\n    ├── v_p1 (D1) String - \"edited\"\n    ├── v_p2 (D2) Boolean - \"true\"\n    ├── v_p3 (D3) File - \"test.ext\"\n    ├── v_p4_v1 (D4) Integer - \"1\"\n    ├── v_p4_v2 (D4) Integer - \"2\"\n    ├── v_p4_v3 (D4) Integer - \"3\"\n    ├── v_p4_v4 (D4) Integer - \"4\"\n    ├── v_p4_v5 (D4) Integer - \"5\"\n    ├── v_p4_v6 (D4) Integer - \"6\"\n    ├── v_p4_v7 (D4) Integer - \"7\"\n    ├── v_p4_v8 (D4) Integer - \"8\"\n    ├── v_p5_v1 (D5) Number - \"1.0\"\n    ├── v_p5_v2 (D5) Number - \"2.0\"\n    ├── v_p5_v3 (D5) Number - \"3.0\"\n    ├── v_p5_v4 (D5) Number - \"4.0\"\n    ├── v_p5_v5 (D5) Number - \"5.0\"\n    ├── v_p5_v6 (D5) Number - \"6.0\"\n    ├── v_p5_v7 (D5) Number - \"7.0\"\n    ├── v_p5_v8 (D5) Number - \"8.0\"\n    ├── v_p5_v9 (D5) Number - \"9.0\"\n    ├── v_p6 (D6) Choice - \"test\"\n    ├── v_p7 (D7) Table 1 rows\n    │   ├── data\n    │   │   └── Row 0\n    │   │       ├── col1 \"100.0\"\n    │   │       └── col2 \"200.0\"\n    │   └── Parameter \"\"\n    └── v_p8 (D8) Map\n        └── key1\n            ├── col1 (C1) String - \"test 1\"\n            ├── col2 (C2) Number - \"55.0\"\n            └── col3 (C3) Table 1 rows\n                ├── data\n                │   └── Row 0\n                │       ├── col3_1 \"150.0\"\n                │       └── col3_2 \"250.0\"\n                └── Parameter \"\"\n"
     );
 }
+
+#[test]
+fn test_variable_object_merge_unlocked() {
+    // Why: Unlocked merge should update existing items and add new ones from other.
+    let base = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Base")
+            .with(
+                VariableKey::new("v_a".into()).unwrap(),
+                StringDefinition::new("A"),
+            )
+            .with(
+                VariableKey::new("v_b".into()).unwrap(),
+                StringDefinition::new("B"),
+            )
+            .finish(),
+    );
+    let mut editable_base = base.thaw();
+    editable_set_value(&mut editable_base, "v_a", "hello").unwrap();
+    editable_set_value(&mut editable_base, "v_b", "world").unwrap();
+    let base = editable_base.freeze();
+
+    let other = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Other")
+            .with(
+                VariableKey::new("v_a".into()).unwrap(),
+                StringDefinition::new("A"),
+            )
+            .with(
+                VariableKey::new("v_c".into()).unwrap(),
+                StringDefinition::new("C"),
+            )
+            .finish(),
+    );
+    let mut editable_other = other.thaw();
+    editable_set_value(&mut editable_other, "v_a", "updated").unwrap();
+    editable_set_value(&mut editable_other, "v_c", "new").unwrap();
+    let other = editable_other.freeze();
+
+    let merged = base.merge(&other, false).unwrap();
+
+    // v_a updated from other, v_b retained from base, v_c added from other
+    assert_eq!(
+        merged.get("v_a").unwrap().get_string().unwrap().value().as_ref(),
+        "updated"
+    );
+    assert_eq!(
+        merged.get("v_b").unwrap().get_string().unwrap().value().as_ref(),
+        "world"
+    );
+    assert_eq!(
+        merged.get("v_c").unwrap().get_string().unwrap().value().as_ref(),
+        "new"
+    );
+    assert_ne!(merged.hash(), base.hash());
+}
+
+#[test]
+fn test_variable_object_merge_locked_same_keys() {
+    // Why: Locked merge with matching keys should succeed and update values.
+    let base = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Base")
+            .with(
+                VariableKey::new("v_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+
+    let other = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Other")
+            .with(
+                VariableKey::new("v_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+    let mut editable_other = other.thaw();
+    editable_set_value(&mut editable_other, "v_x", "updated").unwrap();
+    let other = editable_other.freeze();
+
+    let merged = base.merge(&other, true).unwrap();
+
+    assert_eq!(
+        merged.get("v_x").unwrap().get_string().unwrap().value().as_ref(),
+        "updated"
+    );
+}
+
+#[test]
+fn test_variable_object_merge_locked_new_item_error() {
+    // Why: Locked merge should error if other has keys not in self.
+    let base = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Base")
+            .with(
+                VariableKey::new("v_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+    let other = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Other")
+            .with(
+                VariableKey::new("v_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .with(
+                VariableKey::new("v_y".into()).unwrap(),
+                StringDefinition::new("Y"),
+            )
+            .finish(),
+    );
+
+    assert!(base.merge(&other, true).is_err());
+}
+
+#[test]
+fn test_variable_object_merge_locked_removed_item_error() {
+    // Why: Locked merge should error if self has keys absent from other.
+    let base = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Base")
+            .with(
+                VariableKey::new("v_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .with(
+                VariableKey::new("v_y".into()).unwrap(),
+                StringDefinition::new("Y"),
+            )
+            .finish(),
+    );
+    let other = VariableObjectFrozen::new(
+        VariableObjectDefinition::builder("Other")
+            .with(
+                VariableKey::new("v_x".into()).unwrap(),
+                StringDefinition::new("X"),
+            )
+            .finish(),
+    );
+
+    assert!(base.merge(&other, true).is_err());
+}
