@@ -70,13 +70,17 @@ impl FrozenStore {
 impl PartialEq<&FrozenStore> for FrozenStore {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&FrozenStore) -> bool {
-        self == *other
+        self.parameter == other.parameter
+            && self.variable == other.variable
+            && self.global == other.global
     }
 }
 
 impl PartialEq<FrozenStore> for &FrozenStore {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &FrozenStore) -> bool {
-        *self == other
+        self.parameter == other.parameter
+            && self.variable == other.variable
+            && self.global == other.global
     }
 }
