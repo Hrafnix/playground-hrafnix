@@ -8,8 +8,10 @@ publish.workspace = true
 
 [dependencies]
 datastore.workspace = true
+expression_engine.workspace = true
 keys.workspace = true
 phf.workspace = true
+units.workspace = true
 
 [lints]
 workspace = true

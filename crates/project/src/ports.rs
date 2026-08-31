@@ -5,4 +5,6 @@ pub enum PortKind {
     SignalInput,
     /// A port that produces a signal output.
     SignalOutput,
+    /// A bidirectional one-dimensional mechanical port.
+    Translational,
 }

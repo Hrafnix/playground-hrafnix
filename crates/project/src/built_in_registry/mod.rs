@@ -6,8 +6,11 @@ pub mod registry;
 pub mod registry_entry;
 /// Built-in signal-processing components.
 pub mod signal;
+/// Built-in one-dimensional mechanical components.
+pub mod translational;
 
 pub use category::*;
 pub use registry::*;
 pub use registry_entry::*;
 pub use signal::*;
+pub use translational::*;

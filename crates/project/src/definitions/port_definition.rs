@@ -82,6 +82,12 @@ impl PortDefinition {
     pub const fn rotation(&self) -> Rotation {
         self.rotation
     }
+
+    /// Returns whether this input port must be connected.
+    #[must_use]
+    pub const fn required(&self) -> bool {
+        self.required
+    }
 }
 
 /// Creates a [`PortDefinition`] and normalizes its icon-relative coordinates at

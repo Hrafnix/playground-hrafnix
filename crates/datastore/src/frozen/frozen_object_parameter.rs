@@ -5,7 +5,7 @@ use crate::frozen::{
 };
 use crate::traits::TreePrint;
 use keys::parameter_key::ParameterKey;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
@@ -202,6 +202,24 @@ impl ParameterObjectFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemFrozen)> {
         self.items.iter()
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let definition = self.definition.launder(store);
+        let items = self
+            .items
+            .iter()
+            .map(|(key, value)| (key.launder(store), value.launder(store)))
+            .collect();
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
     }
 
     /// Returns a reference to the object definition.

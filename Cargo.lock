@@ -511,8 +511,10 @@ name = "project"
 version = "0.1.0"
 dependencies = [
  "datastore",
+ "expression_engine",
  "keys",
  "phf",
+ "units",
 ]
 
 [[package]]

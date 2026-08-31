@@ -1,18 +1,21 @@
 use crate::definitions::{IconDefinition, PortDefinition};
+use crate::{Component, ComponentComputeError, Computed};
 use datastore::compile_time::{ParameterObjectCompileTime, VariableObjectCompileTime};
+use expression_engine::prelude::ExpressionEngine;
 use keys::ConstComponentKey;
+use std::fmt::Debug;
 
 /// Re-exports the [`component_key!`] macro for use in [`built_in_component_definition!`].
 #[allow(unused_imports)]
 pub(crate) use keys::component_key as __component_key;
 
 /// Static metadata shared by a built-in component version.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BuiltInComponentDefinition {
     /// Stable identifier shared by all versions of the component.
     id: ConstComponentKey,
     /// Version of this component definition.
-    version: u32,
+    version: u8,
     /// Human-readable description of this component version.
     display_name: &'static str,
     /// Compile-time parameter schema.
@@ -30,7 +33,7 @@ impl BuiltInComponentDefinition {
     #[must_use]
     pub(crate) const fn __new(
         id: ConstComponentKey,
-        version: u32,
+        version: u8,
         display_name: &'static str,
         parameters: ParameterObjectCompileTime,
         variables: VariableObjectCompileTime,
@@ -56,7 +59,7 @@ impl BuiltInComponentDefinition {
 
     /// Returns the component version.
     #[must_use]
-    pub const fn version(&self) -> u32 {
+    pub const fn version(&self) -> u8 {
         self.version
     }
 
@@ -112,7 +115,7 @@ impl BuiltInComponentDefinition {
 ///
 /// # Arguments
 /// - `id`: `&'static str` stable identifier shared by every version of the component.
-/// - `version`: `u32` version of this definition.
+/// - `version`: `u8` version of this definition.
 /// - `display_name`: `&'static str` human-readable display name of this version.
 /// - `parameters`: [`ParameterObjectCompileTime`] schema for user-configurable values.
 /// - `variables`: [`VariableObjectCompileTime`] schema for values managed by the
@@ -216,9 +219,25 @@ macro_rules! built_in_component_definition {
 pub(crate) use built_in_component_definition;
 
 /// A trait for built-in components.
-pub trait BuiltInComponent {
+pub trait BuiltInComponentTrait: Debug + Send + Sync {
     /// Returns the definition of the built-in component.
     fn definition(&self) -> &'static BuiltInComponentDefinition;
+
+    /// Creates an editable component using this definition's defaults.
+    fn instantiate(&self) -> Component {
+        Component::new(self.definition())
+    }
+
+    /// Evaluates an editable component into its version-specific runtime form.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when evaluation fails or the component is incompatible.
+    fn compute(
+        &self,
+        component: &Component,
+        engine: &ExpressionEngine,
+    ) -> Result<Box<dyn Computed>, ComponentComputeError>;
 }
 
 #[cfg(test)]
@@ -227,6 +246,7 @@ mod tests {
     use crate::definitions::icon_definition::icon_definition;
     use crate::definitions::port_definition::port_definition;
 
+    #[derive(Debug)]
     struct ComponentV1;
 
     static PORTS: &[PortDefinition] = &[
@@ -260,15 +280,23 @@ mod tests {
         PORTS,
     );
 
-    impl BuiltInComponent for ComponentV1 {
+    impl BuiltInComponentTrait for ComponentV1 {
         fn definition(&self) -> &'static BuiltInComponentDefinition {
             &V1_DEFINITION
+        }
+
+        fn compute(
+            &self,
+            _component: &Component,
+            _engine: &ExpressionEngine,
+        ) -> Result<Box<dyn Computed>, ComponentComputeError> {
+            Err(ComponentComputeError::DefinitionMismatch)
         }
     }
 
     #[test]
     fn component_exposes_its_definition() {
-        let component: &dyn BuiltInComponent = &ComponentV1;
+        let component: &dyn BuiltInComponentTrait = &ComponentV1;
         let definition = component.definition();
 
         assert_eq!(definition.id(), "example");
