@@ -171,6 +171,49 @@ impl GlobalObjectDefinitionBuilder {
         self.items.insert(key, parameter.into());
     }
 
+    /// Returns a new builder with the item inserted at the specified index.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// If the key already exists, its previous position is removed before
+    /// inserting it at the requested index. The index is clamped to the
+    /// current number of keys.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn with_at<K: Into<GlobalKey>, T: Into<ItemDefinitionType>>(
+        mut self,
+        index: usize,
+        key: K,
+        parameter: T,
+    ) -> Self {
+        self.insert_at(index, key, parameter);
+        self
+    }
+
+    /// Inserts an item into the current builder at the specified index.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// If the key already exists, its previous position is removed before
+    /// inserting it at the requested index. The index is clamped to the
+    /// current number of keys.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn insert_at<K: Into<GlobalKey>, T: Into<ItemDefinitionType>>(
+        &mut self,
+        index: usize,
+        key: K,
+        parameter: T,
+    ) {
+        let key = key.into();
+
+        if let Some(pos) = self.ordered_keys.iter().position(|k| k == &key) {
+            self.ordered_keys.remove(pos);
+        }
+
+        let index = index.min(self.ordered_keys.len());
+        self.ordered_keys.insert(index, key.clone());
+
+        self.items.insert(key, parameter.into());
+    }
+
     /// Returns a new builder with the item removed.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
