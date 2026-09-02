@@ -99,3 +99,21 @@ fn test_table_definition_deduplicates_column_keys() {
         Some("Replacement length".into())
     );
 }
+
+#[test]
+fn test_table_definition_with_default() {
+    let table_def = TableDefinition::new_with_default(
+        "A table",
+        vec![
+            (store_key!("col1"), NumberDefinition::new("Column 1")),
+            (store_key!("col2"), NumberDefinition::new("Column 2")),
+        ],
+        vec![vec!["42"], vec!["1", "2", "3"]],
+    );
+
+    let default_table = table_def.default_table().expect("default table");
+    assert_eq!(default_table[0][0].as_ref(), "42");
+    assert_eq!(default_table[0][1].as_ref(), "");
+    assert_eq!(default_table[1].len(), 2);
+    assert_eq!(default_table[1][1].as_ref(), "2");
+}

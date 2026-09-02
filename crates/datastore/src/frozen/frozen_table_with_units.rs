@@ -33,10 +33,11 @@ impl TableWithUnitsFrozen {
             .iter()
             .map(|(_, col_def)| col_def.preferred_units().string_id().into())
             .collect();
+        let rows = definition.default_table().unwrap_or_default().to_vec();
         let mut table = Self {
             definition,
             units,
-            rows: Vec::new(),
+            rows,
             parameter: ShareableString::new(""),
             hash: [0u8; 32],
         };

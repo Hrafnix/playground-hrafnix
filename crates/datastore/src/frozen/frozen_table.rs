@@ -21,9 +21,10 @@ impl TableFrozen {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: TableDefinition) -> Self {
+        let rows = definition.default_table().unwrap_or_default().to_vec();
         let mut s = Self {
             definition,
-            rows: Vec::new(),
+            rows,
             parameter: ShareableString::new(""),
             hash: [0u8; 32],
         };

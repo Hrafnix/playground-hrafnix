@@ -80,3 +80,27 @@ fn test_table_with_units_definition_deduplicates_column_keys() {
         Some(units::UnitId::Length_Foot)
     );
 }
+
+#[test]
+fn test_table_with_units_definition_with_default() {
+    let table_def = TableWithUnitsDefinition::new_with_default(
+        "Measurements",
+        vec![
+            (
+                store_key!("length"),
+                NumberWithUnitsDefinition::new("Length", units::UnitId::Length_Meter),
+            ),
+            (
+                store_key!("duration"),
+                NumberWithUnitsDefinition::new("Duration", units::UnitId::Time_Second),
+            ),
+        ],
+        vec![vec!["12"], vec!["3", "4", "5"]],
+    );
+
+    let default_table = table_def.default_table().expect("default table");
+    assert_eq!(default_table[0][0].as_ref(), "12");
+    assert_eq!(default_table[0][1].as_ref(), "");
+    assert_eq!(default_table[1].len(), 2);
+    assert_eq!(default_table[1][1].as_ref(), "4");
+}

@@ -124,3 +124,17 @@ fn test_table_with_units_frozen_equality() {
     assert_ne!(table_one, different);
     assert_ne!(table_one, &different);
 }
+
+#[test]
+fn test_table_with_units_frozen_uses_definition_default_table() {
+    let table = TableWithUnitsFrozen::new(TableWithUnitsDefinition::new_with_default(
+        "Measurements",
+        vec![(
+            store_key!("length"),
+            NumberWithUnitsDefinition::new("Length", UnitId::Length_Meter),
+        )],
+        vec![vec!["12"]],
+    ));
+
+    assert_eq!(table.cell_by_index(0, 0).map(AsRef::as_ref), Some("12"));
+}

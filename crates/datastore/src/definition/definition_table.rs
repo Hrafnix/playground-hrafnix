@@ -14,6 +14,8 @@ pub struct TableDefinition {
     ordered_keys: Vec<StoreKey>,
     /// Column definitions keyed by a column name.
     columns: Arc<BTreeMap<StoreKey, NumberDefinition>>,
+    /// Optional default row data.
+    default_table: Option<Vec<Vec<ShareableString>>>,
 }
 
 impl TableDefinition {
@@ -38,7 +40,34 @@ impl TableDefinition {
             description: description.into(),
             ordered_keys,
             columns: Arc::new(items),
+            default_table: None,
         }
+    }
+
+    /// Creates a new `TableDefinition` with a default table.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_default<
+        S1: Into<ShareableString>,
+        S2: Into<ShareableString>,
+        K: Into<StoreKey>,
+    >(
+        description: S1,
+        columns: Vec<(K, NumberDefinition)>,
+        default_table: Vec<Vec<S2>>,
+    ) -> Self {
+        let mut definition = Self::new(description, columns);
+        let column_count = definition.count();
+        definition.default_table = Some(
+            default_table
+                .into_iter()
+                .map(|row| {
+                    let mut row: Vec<_> = row.into_iter().map(Into::into).collect();
+                    row.resize(column_count, ShareableString::default());
+                    row
+                })
+                .collect(),
+        );
+        definition
     }
 
     /// Returns the description of the table.
@@ -134,6 +163,12 @@ impl TableDefinition {
         &self.description
     }
 
+    /// Returns the default table rows, if configured.
+    #[must_use]
+    pub fn default_table(&self) -> Option<&[Vec<ShareableString>]> {
+        self.default_table.as_deref()
+    }
+
     /// Returns a new `TableDefinition` with strings laundered through the provided store.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
@@ -147,6 +182,12 @@ impl TableDefinition {
                     .collect(),
             ),
             ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
+            default_table: self.default_table.as_ref().map(|table| {
+                table
+                    .iter()
+                    .map(|row| row.iter().map(|cell| store.launder(cell)).collect())
+                    .collect()
+            }),
         }
     }
 }
