@@ -214,6 +214,96 @@ impl ParameterObjectDefinitionBuilder {
         self.items.insert(key, parameter.into());
     }
 
+    /// Returns a new builder with the item inserted before the reference key.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// If the reference key does not exist, the item is appended to the end
+    /// of the ordered keys.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn with_before<
+        R: Into<ParameterKey>,
+        K: Into<ParameterKey>,
+        T: Into<ItemDefinitionType>,
+    >(
+        mut self,
+        reference: R,
+        key: K,
+        parameter: T,
+    ) -> Self {
+        self.insert_before(reference, key, parameter);
+        self
+    }
+
+    /// Inserts an item into the current builder before the reference key.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// If the reference key does not exist, the item is appended to the end
+    /// of the ordered keys.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn insert_before<
+        R: Into<ParameterKey>,
+        K: Into<ParameterKey>,
+        T: Into<ItemDefinitionType>,
+    >(
+        &mut self,
+        reference: R,
+        key: K,
+        parameter: T,
+    ) {
+        let reference = reference.into();
+        let index = self
+            .ordered_keys
+            .iter()
+            .position(|k| k == &reference)
+            .unwrap_or(self.ordered_keys.len());
+
+        self.insert_at(index, key, parameter);
+    }
+
+    /// Returns a new builder with the item inserted after the reference key.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// If the reference key does not exist, the item is appended to the end
+    /// of the ordered keys.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn with_after<R: Into<ParameterKey>, K: Into<ParameterKey>, T: Into<ItemDefinitionType>>(
+        mut self,
+        reference: R,
+        key: K,
+        parameter: T,
+    ) -> Self {
+        self.insert_after(reference, key, parameter);
+        self
+    }
+
+    /// Inserts an item into the current builder after the reference key.
+    ///
+    /// This method will overwrite existing items with the same keys.
+    /// If the reference key does not exist, the item is appended to the end
+    /// of the ordered keys.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn insert_after<
+        R: Into<ParameterKey>,
+        K: Into<ParameterKey>,
+        T: Into<ItemDefinitionType>,
+    >(
+        &mut self,
+        reference: R,
+        key: K,
+        parameter: T,
+    ) {
+        let reference = reference.into();
+        let index = self
+            .ordered_keys
+            .iter()
+            .position(|k| k == &reference)
+            .map_or(self.ordered_keys.len(), |pos| pos.saturating_add(1));
+
+        self.insert_at(index, key, parameter);
+    }
+
     /// Returns a new builder with the item removed.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
