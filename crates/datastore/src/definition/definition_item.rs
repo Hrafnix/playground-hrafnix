@@ -68,6 +68,13 @@ impl From<FileDefinition> for ItemDefinitionType {
     }
 }
 
+impl From<FolderDefinition> for ItemDefinitionType {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: FolderDefinition) -> Self {
+        ItemDefinitionType::Folder(definition)
+    }
+}
+
 impl From<IntegerDefinition> for ItemDefinitionType {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn from(definition: IntegerDefinition) -> Self {
