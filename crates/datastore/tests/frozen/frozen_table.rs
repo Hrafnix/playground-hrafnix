@@ -75,3 +75,14 @@ fn test_table_frozen_equality() {
     assert_eq!(&table_frozen_1, table_frozen_2);
     assert_ne!(table_frozen_1, &table_frozen_3);
 }
+
+#[test]
+fn test_table_frozen_uses_definition_default_table() {
+    let table = TableFrozen::new(TableDefinition::new_with_default(
+        "A table",
+        vec![(store_key!("col1"), NumberDefinition::new("Column 1"))],
+        vec![vec!["42"]],
+    ));
+
+    assert_eq!(table.cell_by_index(0, 0).map(AsRef::as_ref), Some("42"));
+}

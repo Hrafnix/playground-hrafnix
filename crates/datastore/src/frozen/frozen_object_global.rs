@@ -5,7 +5,7 @@ use crate::frozen::{
 };
 use crate::traits::TreePrint;
 use keys::global_key::GlobalKey;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
@@ -207,10 +207,48 @@ impl GlobalObjectFrozen {
         self.items.iter()
     }
 
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let mut object = Self {
+            definition: self.definition.launder(store),
+            items: self
+                .items
+                .iter()
+                .map(|(key, value)| (key.launder(store), value.launder(store)))
+                .collect(),
+            hash: [0u8; 32],
+        };
+        object.update_hash();
+        object
+    }
+
     /// Returns a reference to the object definition.
     #[must_use]
     pub const fn definition(&self) -> &GlobalObjectDefinition {
         &self.definition
+    }
+
+    /// Merges `other` into this `GlobalObjectFrozen` at the top level.
+    ///
+    /// Replaces items whose keys exist in both objects and whose definitions match.
+    /// Keys found in only one object and items with mismatched definitions are left unchanged.
+    /// Nested items, including maps, are replaced rather than recursively merged.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn merge_from(&mut self, other: &Self) {
+        let mut changed = false;
+        for (key, item) in &other.items {
+            if let Some(existing) = self.items.get_mut(key) {
+                if existing.definition() == item.definition() {
+                    existing.clone_from(item);
+                    changed = true;
+                }
+            }
+        }
+
+        if changed {
+            self.update_hash();
+        }
     }
 }
 

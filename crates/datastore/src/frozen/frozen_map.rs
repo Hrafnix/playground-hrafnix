@@ -1,4 +1,4 @@
-use crate::definition::{MapDefinition, MapItemDefinition};
+use crate::definition::{MapDefinition, MapItemDefault, MapItemDefinition};
 use crate::editable::{MapEditable, MapEntryEditable, MapItemEditable};
 use crate::frozen::{
     BooleanFrozen, ChoiceFrozen, FileFrozen, IntegerFrozen, NumberFrozen, NumberWithUnitsFrozen,
@@ -7,7 +7,7 @@ use crate::frozen::{
 use crate::traits::TreePrint;
 use keys::store_key::StoreKey;
 use message::message::{Message, MessageCategory};
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents an item within a frozen map entry.
@@ -36,6 +36,102 @@ pub enum MapItemFrozen {
 }
 
 impl MapItemFrozen {
+    /// Creates a map item initialized from its definition's default value.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new(definition: &MapItemDefinition) -> Self {
+        match definition {
+            MapItemDefinition::Boolean(value) => Self::Boolean(BooleanFrozen::new(value.clone())),
+            MapItemDefinition::Choice(value) => Self::Choice(ChoiceFrozen::new(value.clone())),
+            MapItemDefinition::File(value) => Self::File(FileFrozen::new(value.clone())),
+            MapItemDefinition::Integer(value) => Self::Integer(IntegerFrozen::new(value.clone())),
+            MapItemDefinition::Number(value) => Self::Number(NumberFrozen::new(value.clone())),
+            MapItemDefinition::NumberWithUnits(value) => {
+                Self::NumberWithUnits(NumberWithUnitsFrozen::new(value.clone()))
+            }
+            MapItemDefinition::String(value) => Self::String(StringFrozen::new(value.clone())),
+            MapItemDefinition::Table(value) => Self::Table(TableFrozen::new(value.clone())),
+            MapItemDefinition::TableWithUnits(value) => {
+                Self::TableWithUnits(TableWithUnitsFrozen::new(value.clone()))
+            }
+            MapItemDefinition::Unit(value) => Self::Unit(UnitFrozen::new(value.clone())),
+        }
+    }
+
+    /// Creates a map item initialized from an entry-specific default value.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn new_with_default(definition: &MapItemDefinition, default: &MapItemDefault) -> Self {
+        match (definition, default) {
+            (MapItemDefinition::Boolean(definition), MapItemDefault::Scalar(value)) => {
+                Self::Boolean(BooleanFrozen::new_with_value(
+                    definition.clone(),
+                    value.clone(),
+                ))
+            }
+            (MapItemDefinition::Choice(definition), MapItemDefault::Scalar(value)) => Self::Choice(
+                ChoiceFrozen::new_with_value(definition.clone(), value.clone()),
+            ),
+            (MapItemDefinition::File(definition), MapItemDefault::Scalar(value)) => Self::File(
+                FileFrozen::new_with_value(definition.clone(), value.clone()),
+            ),
+            (MapItemDefinition::Integer(definition), MapItemDefault::Scalar(value)) => {
+                Self::Integer(IntegerFrozen::new_with_value(
+                    definition.clone(),
+                    value.clone(),
+                ))
+            }
+            (MapItemDefinition::Number(definition), MapItemDefault::Scalar(value)) => Self::Number(
+                NumberFrozen::new_with_value(definition.clone(), value.clone()),
+            ),
+            (MapItemDefinition::NumberWithUnits(definition), MapItemDefault::Scalar(value)) => {
+                Self::NumberWithUnits(NumberWithUnitsFrozen::new_with_value(
+                    definition.clone(),
+                    value.clone(),
+                    definition.preferred_units().string_id().into(),
+                ))
+            }
+            (MapItemDefinition::String(definition), MapItemDefault::Scalar(value)) => Self::String(
+                StringFrozen::new_with_value(definition.clone(), value.clone()),
+            ),
+            (MapItemDefinition::Table(definition), MapItemDefault::Table(rows)) => {
+                Self::Table(TableFrozen::new_from_rows(definition.clone(), rows.clone()))
+            }
+            (MapItemDefinition::TableWithUnits(definition), MapItemDefault::Table(rows)) => {
+                let units = definition
+                    .iter()
+                    .map(|(_, column)| column.preferred_units().string_id().into())
+                    .collect();
+                Self::TableWithUnits(TableWithUnitsFrozen::new_from_rows(
+                    definition.clone(),
+                    rows.clone(),
+                    units,
+                ))
+            }
+            (MapItemDefinition::Unit(definition), MapItemDefault::Scalar(value)) => Self::Unit(
+                UnitFrozen::new_with_value(definition.clone(), value.clone()),
+            ),
+            _ => Self::new(definition),
+        }
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        match self {
+            Self::Boolean(value) => Self::Boolean(value.launder(store)),
+            Self::Choice(value) => Self::Choice(value.launder(store)),
+            Self::File(value) => Self::File(value.launder(store)),
+            Self::Integer(value) => Self::Integer(value.launder(store)),
+            Self::Number(value) => Self::Number(value.launder(store)),
+            Self::NumberWithUnits(value) => Self::NumberWithUnits(value.launder(store)),
+            Self::String(value) => Self::String(value.launder(store)),
+            Self::Table(value) => Self::Table(value.launder(store)),
+            Self::TableWithUnits(value) => Self::TableWithUnits(value.launder(store)),
+            Self::Unit(value) => Self::Unit(value.launder(store)),
+        }
+    }
+
     /// Returns the string value if this item is a string value.
     #[must_use]
     pub const fn get_string(&self) -> Option<&StringFrozen> {
@@ -228,82 +324,31 @@ impl MapEntryFrozen {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(item_type: &BTreeMap<StoreKey, MapItemDefinition>) -> Self {
-        let mut items = BTreeMap::new();
-        for (key, item_definition) in item_type {
-            match item_definition {
-                MapItemDefinition::Boolean(boolean_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::Boolean(BooleanFrozen::new(boolean_definition.clone())),
-                    );
-                }
-                MapItemDefinition::Choice(choice_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::Choice(ChoiceFrozen::new(choice_definition.clone())),
-                    );
-                }
-                MapItemDefinition::File(file_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::File(FileFrozen::new(file_definition.clone())),
-                    );
-                }
-                MapItemDefinition::Integer(integer_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::Integer(IntegerFrozen::new(integer_definition.clone())),
-                    );
-                }
-                MapItemDefinition::Number(number_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::Number(NumberFrozen::new(number_definition.clone())),
-                    );
-                }
-                MapItemDefinition::NumberWithUnits(number_with_units_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::NumberWithUnits(NumberWithUnitsFrozen::new(
-                            number_with_units_definition.clone(),
-                        )),
-                    );
-                }
-                MapItemDefinition::String(basic_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::String(StringFrozen::new(basic_definition.clone())),
-                    );
-                }
-                MapItemDefinition::Table(table_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::Table(TableFrozen::new(table_definition.clone())),
-                    );
-                }
-                MapItemDefinition::TableWithUnits(table_with_units_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::TableWithUnits(TableWithUnitsFrozen::new(
-                            table_with_units_definition.clone(),
-                        )),
-                    );
-                }
-                MapItemDefinition::Unit(unit_definition) => {
-                    items.insert(
-                        key.clone(),
-                        MapItemFrozen::Unit(UnitFrozen::new(unit_definition.clone())),
-                    );
-                }
-            }
-        }
+        Self::new_from_items(
+            item_type
+                .iter()
+                .map(|(key, definition)| (key.clone(), MapItemFrozen::new(definition)))
+                .collect(),
+        )
+    }
 
-        let mut s = Self {
-            items,
-            hash: [0u8; 32],
-        };
-        s.update_hash();
-        s
+    /// Creates a new map entry with entry-specific defaults overlaid on schema defaults.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn new_with_defaults(definition: &MapDefinition, defaults: &[MapItemDefault]) -> Self {
+        Self::new_from_items(
+            definition
+                .iter()
+                .enumerate()
+                .map(|(index, (key, item_definition))| {
+                    let item = defaults.get(index).map_or_else(
+                        || MapItemFrozen::new(item_definition),
+                        |default| MapItemFrozen::new_with_default(item_definition, default),
+                    );
+                    (key.clone(), item)
+                })
+                .collect(),
+        )
     }
 
     /// Creates a new `MapEntryFrozen` from a set of items.
@@ -334,6 +379,17 @@ impl MapEntryFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> MapEntryEditable {
         MapEntryEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        Self::new_from_items(
+            self.items
+                .iter()
+                .map(|(key, value)| (key.launder(store), value.launder(store)))
+                .collect(),
+        )
     }
 
     /// Recomputes and stores the BLAKE3 hash of all items in this map entry.
@@ -468,9 +524,23 @@ impl MapFrozen {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: MapDefinition) -> Self {
+        let items = definition
+            .default_map()
+            .map(|entries| {
+                entries
+                    .iter()
+                    .map(|(key, defaults)| {
+                        (
+                            key.clone(),
+                            MapEntryFrozen::new_with_defaults(&definition, defaults),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
         let mut s = Self {
             definition,
-            items: BTreeMap::new(),
+            items,
             hash: [0u8; 32],
         };
         s.update_hash();
@@ -540,6 +610,22 @@ impl MapFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> MapEditable {
         MapEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let mut map = Self {
+            definition: self.definition.launder(store),
+            items: self
+                .items
+                .iter()
+                .map(|(key, value)| (key.launder(store), value.launder(store)))
+                .collect(),
+            hash: [0u8; 32],
+        };
+        map.update_hash();
+        map
     }
 
     /// Recomputes and stores the BLAKE3 hash of all entries in this map.

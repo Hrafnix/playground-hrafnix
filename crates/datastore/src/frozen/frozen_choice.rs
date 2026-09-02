@@ -1,7 +1,7 @@
 use crate::definition::ChoiceDefinition;
 use crate::editable::ChoiceEditable;
 use crate::traits::TreePrint;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 
 /// Represents a choice data value in the frozen data.
 #[derive(Debug, Clone, PartialEq)]
@@ -63,6 +63,12 @@ impl ChoiceFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> ChoiceEditable {
         ChoiceEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        Self::new_with_value(self.definition.launder(store), store.launder(&self.value))
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.

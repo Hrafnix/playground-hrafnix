@@ -1,7 +1,7 @@
 use crate::definition::TableDefinition;
 use crate::editable::TableEditable;
 use crate::traits::TreePrint;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 
 /// Represents a table of data in the frozen data.
 #[derive(Debug, Clone, PartialEq)]
@@ -21,9 +21,10 @@ impl TableFrozen {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new(definition: TableDefinition) -> Self {
+        let rows = definition.default_table().unwrap_or_default().to_vec();
         let mut s = Self {
             definition,
-            rows: Vec::new(),
+            rows,
             parameter: ShareableString::new(""),
             hash: [0u8; 32],
         };
@@ -64,6 +65,24 @@ impl TableFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> TableEditable {
         TableEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let rows = self
+            .rows
+            .iter()
+            .map(|row| row.iter().map(|value| store.launder(value)).collect())
+            .collect();
+        let mut table = Self {
+            definition: self.definition.launder(store),
+            rows,
+            parameter: store.launder(&self.parameter),
+            hash: [0u8; 32],
+        };
+        table.update_hash();
+        table
     }
 
     /// Recomputes and stores the BLAKE3 hash of all rows.

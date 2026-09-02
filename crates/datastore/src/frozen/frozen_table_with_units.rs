@@ -1,7 +1,7 @@
 use crate::definition::TableWithUnitsDefinition;
 use crate::editable::TableWithUnitsEditable;
 use crate::traits::TreePrint;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 
 /// Represents a table of number-with-units data in the frozen data.
 ///
@@ -33,10 +33,11 @@ impl TableWithUnitsFrozen {
             .iter()
             .map(|(_, col_def)| col_def.preferred_units().string_id().into())
             .collect();
+        let rows = definition.default_table().unwrap_or_default().to_vec();
         let mut table = Self {
             definition,
             units,
-            rows: Vec::new(),
+            rows,
             parameter: ShareableString::new(""),
             hash: [0u8; 32],
         };
@@ -85,6 +86,24 @@ impl TableWithUnitsFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> TableWithUnitsEditable {
         TableWithUnitsEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let mut table = Self {
+            definition: self.definition.launder(store),
+            units: self.units.iter().map(|unit| store.launder(unit)).collect(),
+            rows: self
+                .rows
+                .iter()
+                .map(|row| row.iter().map(|value| store.launder(value)).collect())
+                .collect(),
+            parameter: store.launder(&self.parameter),
+            hash: [0u8; 32],
+        };
+        table.update_hash();
+        table
     }
 
     /// Recomputes and stores the BLAKE3 hash of all column units and row cells.

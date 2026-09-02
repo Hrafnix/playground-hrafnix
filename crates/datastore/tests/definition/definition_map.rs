@@ -1,4 +1,5 @@
 use datastore::prelude::*;
+use std::collections::BTreeMap;
 
 #[test]
 fn test_map_definition() {
@@ -135,4 +136,47 @@ fn test_map_definition_deduplicates_column_keys() {
     } else {
         panic!("Expected map item definition for 'length' to be a NumberDefinition");
     }
+}
+
+#[test]
+fn test_map_definition_with_defaults() {
+    let defaults = BTreeMap::from([(
+        store_key!("first").into(),
+        vec![MapItemDefault::scalar("Default name")],
+    )]);
+    let definition = MapDefinition::new_with_default(
+        "A map",
+        vec![(store_key!("name"), StringDefinition::new("Name"))],
+        defaults,
+    );
+
+    assert_eq!(definition.default_map().unwrap().len(), 1);
+}
+
+#[test]
+fn test_map_definition_accepts_unmatched_defaults() {
+    let too_many_items = BTreeMap::from([(
+        store_key!("first").into(),
+        vec![
+            MapItemDefault::scalar("value"),
+            MapItemDefault::scalar("extra"),
+        ],
+    )]);
+    let definition = MapDefinition::new_with_default(
+        "A map",
+        vec![(store_key!("name"), StringDefinition::new("Name"))],
+        too_many_items,
+    );
+    assert_eq!(definition.default_map().unwrap()["first"].len(), 2);
+
+    let wrong_type = BTreeMap::from([(
+        store_key!("first").into(),
+        vec![MapItemDefault::table(vec![vec!["value"]])],
+    )]);
+    let definition = MapDefinition::new_with_default(
+        "A map",
+        vec![(store_key!("name"), StringDefinition::new("Name"))],
+        wrong_type,
+    );
+    assert_eq!(definition.default_map().unwrap()["first"].len(), 1);
 }

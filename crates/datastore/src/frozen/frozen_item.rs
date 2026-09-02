@@ -5,6 +5,7 @@ use crate::frozen::{
     TableWithUnitsFrozen, UnitFrozen,
 };
 use crate::traits::TreePrint;
+use shareable_string::SharedStringStore;
 
 /// Represents a parameter value in the frozen data.
 #[derive(Debug, Clone, PartialEq)]
@@ -40,6 +41,27 @@ pub enum ItemFrozen {
 }
 
 impl ItemFrozen {
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        match self {
+            Self::Boolean(value) => Self::Boolean(value.launder(store)),
+            Self::Choice(value) => Self::Choice(value.launder(store)),
+            Self::File(value) => Self::File(value.launder(store)),
+            Self::Folder(value) => Self::Folder(value.launder(store)),
+            Self::Integer(value) => Self::Integer(value.launder(store)),
+            Self::Map(value) => Self::Map(value.launder(store)),
+            Self::Number(value) => Self::Number(value.launder(store)),
+            Self::NumberWithUnits(value) => Self::NumberWithUnits(value.launder(store)),
+            Self::String(value) => Self::String(value.launder(store)),
+            Self::Table(value) => Self::Table(value.launder(store)),
+            Self::TableWithUnits(value) => Self::TableWithUnits(value.launder(store)),
+            Self::Unit(value) => Self::Unit(value.launder(store)),
+            Self::Tab(value) => Self::Tab(value.launder(store)),
+            Self::Separator(value) => Self::Separator(value.launder(store)),
+        }
+    }
+
     /// Returns the parameter definition.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]

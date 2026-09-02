@@ -5,7 +5,7 @@ use crate::frozen::{
 };
 use crate::traits::TreePrint;
 use keys::parameter_key::ParameterKey;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
@@ -204,10 +204,50 @@ impl ParameterObjectFrozen {
         self.items.iter()
     }
 
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let definition = self.definition.launder(store);
+        let items = self
+            .items
+            .iter()
+            .map(|(key, value)| (key.launder(store), value.launder(store)))
+            .collect();
+        let mut s = Self {
+            definition,
+            items,
+            hash: [0u8; 32],
+        };
+        s.update_hash();
+        s
+    }
+
     /// Returns a reference to the object definition.
     #[must_use]
     pub const fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
+    }
+
+    /// Merges `other` into this `ParameterObjectFrozen` at the top level.
+    ///
+    /// Replaces items whose keys exist in both objects and whose definitions match.
+    /// Keys found in only one object and items with mismatched definitions are left unchanged.
+    /// Nested items, including maps, are replaced rather than recursively merged.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn merge_from(&mut self, other: &Self) {
+        let mut changed = false;
+        for (key, item) in &other.items {
+            if let Some(existing) = self.items.get_mut(key) {
+                if existing.definition() == item.definition() {
+                    existing.clone_from(item);
+                    changed = true;
+                }
+            }
+        }
+
+        if changed {
+            self.update_hash();
+        }
     }
 }
 
