@@ -5,7 +5,7 @@ use crate::frozen::{
 };
 use crate::traits::TreePrint;
 use keys::global_key::GlobalKey;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
@@ -205,6 +205,22 @@ impl GlobalObjectFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn iter(&self) -> impl Iterator<Item = (&GlobalKey, &ItemFrozen)> {
         self.items.iter()
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        let mut object = Self {
+            definition: self.definition.launder(store),
+            items: self
+                .items
+                .iter()
+                .map(|(key, value)| (key.launder(store), value.launder(store)))
+                .collect(),
+            hash: [0u8; 32],
+        };
+        object.update_hash();
+        object
     }
 
     /// Returns a reference to the object definition.

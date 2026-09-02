@@ -1,6 +1,7 @@
 use crate::definition::SeparatorDefinition;
 use crate::editable::SeparatorEditable;
 use crate::traits::TreePrint;
+use shareable_string::SharedStringStore;
 
 /// Represents a separator structural element in the frozen data.
 #[derive(Debug, Clone, PartialEq)]
@@ -42,6 +43,12 @@ impl SeparatorFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> SeparatorEditable {
         SeparatorEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        Self::new(self.definition.launder(store))
     }
 
     /// Recomputes and stores the BLAKE3 hash.

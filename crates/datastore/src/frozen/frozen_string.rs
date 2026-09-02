@@ -1,7 +1,7 @@
 use crate::definition::StringDefinition;
 use crate::editable::StringEditable;
 use crate::traits::TreePrint;
-use shareable_string::ShareableString;
+use shareable_string::{ShareableString, SharedStringStore};
 
 /// Represents a string data value in the frozen data.
 #[derive(Debug, Clone, PartialEq)]
@@ -63,6 +63,12 @@ impl StringFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn thaw(&self) -> StringEditable {
         StringEditable::new(self)
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        Self::new_with_value(self.definition.launder(store), store.launder(&self.value))
     }
 
     /// Recomputes and stores the BLAKE3 hash of the current value.
