@@ -209,6 +209,28 @@ impl ParameterObjectFrozen {
     pub const fn definition(&self) -> &ParameterObjectDefinition {
         &self.definition
     }
+
+    /// Merges `other` into this `ParameterObjectFrozen` at the top level.
+    ///
+    /// Replaces items whose keys exist in both objects and whose definitions match.
+    /// Keys found in only one object and items with mismatched definitions are left unchanged.
+    /// Nested items, including maps, are replaced rather than recursively merged.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn merge_from(&mut self, other: &Self) {
+        let mut changed = false;
+        for (key, item) in &other.items {
+            if let Some(existing) = self.items.get_mut(key) {
+                if existing.definition() == item.definition() {
+                    existing.clone_from(item);
+                    changed = true;
+                }
+            }
+        }
+
+        if changed {
+            self.update_hash();
+        }
+    }
 }
 
 impl PartialEq<&ParameterObjectFrozen> for ParameterObjectFrozen {
