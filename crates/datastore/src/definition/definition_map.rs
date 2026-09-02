@@ -9,6 +9,70 @@ use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+/// A default value for an item in a map entry.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MapItemDefault {
+    /// A default value for a scalar map item.
+    Scalar(ShareableString),
+    /// Default rows for a table map item.
+    Table(Vec<Vec<ShareableString>>),
+}
+
+impl MapItemDefault {
+    /// Creates a scalar default value.
+    #[must_use]
+    pub fn scalar<S: Into<ShareableString>>(value: S) -> Self {
+        Self::Scalar(value.into())
+    }
+
+    /// Creates a table default value.
+    #[must_use]
+    pub fn table<S: Into<ShareableString>>(rows: Vec<Vec<S>>) -> Self {
+        Self::Table(
+            rows.into_iter()
+                .map(|row| row.into_iter().map(Into::into).collect())
+                .collect(),
+        )
+    }
+
+    /// Normalizes table rows to the corresponding map item definition's column count.
+    fn normalized(self, definition: Option<&MapItemDefinition>) -> Self {
+        let column_count = match definition {
+            Some(MapItemDefinition::Table(table)) => table.count(),
+            Some(MapItemDefinition::TableWithUnits(table)) => table.count(),
+            _ => return self,
+        };
+
+        match self {
+            Self::Table(rows) => Self::Table(
+                rows.into_iter()
+                    .map(|mut row| {
+                        row.resize(column_count, ShareableString::default());
+                        row
+                    })
+                    .collect(),
+            ),
+            scalar @ Self::Scalar(_) => scalar,
+        }
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    fn launder(&self, store: &SharedStringStore) -> Self {
+        match self {
+            Self::Scalar(value) => Self::Scalar(store.launder(value)),
+            Self::Table(rows) => Self::Table(
+                rows.iter()
+                    .map(|row| row.iter().map(|value| store.launder(value)).collect())
+                    .collect(),
+            ),
+        }
+    }
+}
+
+/// Default values for one map entry, in the map definition's item order.
+pub type MapEntryDefault = Vec<MapItemDefault>;
+
 /// The definition of an item within a map entry.
 #[derive(Debug, Clone, PartialEq)]
 pub enum MapItemDefinition {
@@ -169,6 +233,8 @@ pub struct MapDefinition {
     ordered_keys: Vec<StoreKey>,
     /// Schema of the map entries, keyed by item name.
     item_type: Arc<BTreeMap<StoreKey, MapItemDefinition>>,
+    /// Optional default map entries.
+    default_map: Option<BTreeMap<StoreKey, MapEntryDefault>>,
 }
 
 impl MapDefinition {
@@ -193,7 +259,43 @@ impl MapDefinition {
             description: description.into(),
             ordered_keys,
             item_type: Arc::new(items),
+            default_map: None,
         }
+    }
+
+    /// Creates a new `MapDefinition` with default map entries.
+    ///
+    /// Items omitted from a default entry inherit the default from their item definition.
+    /// Extra items and defaults whose scalar/table kind does not match the corresponding
+    /// definition are ignored when the map is materialized.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_default<
+        S1: Into<ShareableString>,
+        K: Into<StoreKey>,
+        I: Into<MapItemDefinition>,
+    >(
+        description: S1,
+        item_type: Vec<(K, I)>,
+        default_map: BTreeMap<StoreKey, MapEntryDefault>,
+    ) -> Self {
+        let mut definition = Self::new(description, item_type);
+        let item_definitions: Vec<_> = definition.iter().map(|(_, item)| item).collect();
+        definition.default_map = Some(
+            default_map
+                .into_iter()
+                .map(|(key, entry)| {
+                    let entry = entry
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, default)| {
+                            default.normalized(item_definitions.get(index).copied())
+                        })
+                        .collect();
+                    (key, entry)
+                })
+                .collect(),
+        );
+        definition
     }
 
     /// Returns the description of the map.
@@ -260,6 +362,12 @@ impl MapDefinition {
         &self.item_type
     }
 
+    /// Returns the default map entries, if configured.
+    #[must_use]
+    pub const fn default_map(&self) -> Option<&BTreeMap<StoreKey, MapEntryDefault>> {
+        self.default_map.as_ref()
+    }
+
     /// Returns a reference to the description.
     #[must_use]
     pub const fn description_ref(&self) -> &ShareableString {
@@ -279,6 +387,17 @@ impl MapDefinition {
                     .collect(),
             ),
             ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
+            default_map: self.default_map.as_ref().map(|entries| {
+                entries
+                    .iter()
+                    .map(|(entry_key, entry)| {
+                        (
+                            entry_key.launder(store),
+                            entry.iter().map(|value| value.launder(store)).collect(),
+                        )
+                    })
+                    .collect()
+            }),
         }
     }
 }

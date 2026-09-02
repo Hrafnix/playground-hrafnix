@@ -289,3 +289,57 @@ fn test_map_frozen_new_from_items_schema_mismatch_error() {
 
     assert!(MapFrozen::new_from_items("A map", entries).is_err());
 }
+
+#[test]
+fn test_map_frozen_materializes_definition_defaults() {
+    let table_definition = TableDefinition::new(
+        "Values",
+        vec![(store_key!("value"), NumberDefinition::new("Value"))],
+    );
+    let defaults = BTreeMap::from([(
+        store_key!("first").into(),
+        vec![
+            MapItemDefault::scalar("Default name"),
+            MapItemDefault::scalar("schema default"),
+            MapItemDefault::table(vec![vec!["42"]]),
+        ],
+    )]);
+    let definition = MapDefinition::new_with_default(
+        "A map",
+        vec![
+            (
+                store_key!("name"),
+                MapItemDefinition::String(StringDefinition::new("Name")),
+            ),
+            (
+                store_key!("inherited"),
+                MapItemDefinition::String(StringDefinition::new_with_default(
+                    "Inherited",
+                    "schema default",
+                )),
+            ),
+            (
+                store_key!("values"),
+                MapItemDefinition::Table(table_definition),
+            ),
+        ],
+        defaults,
+    );
+
+    let map = MapFrozen::new(definition);
+    let entry = map.get("first").unwrap();
+    assert_eq!(entry.get_string("name").unwrap().value(), "Default name");
+    assert_eq!(
+        entry.get_string("inherited").unwrap().value(),
+        "schema default"
+    );
+    assert_eq!(
+        entry
+            .get_table("values")
+            .unwrap()
+            .cell_by_name(0, "value")
+            .unwrap()
+            .as_ref(),
+        "42"
+    );
+}

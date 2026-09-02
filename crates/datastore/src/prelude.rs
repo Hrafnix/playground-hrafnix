@@ -40,11 +40,11 @@ pub use crate::compile_time::{
 pub use crate::definition::{
     BooleanDefinition, ChoiceDefinition, ChoiceItemDefinition, FileDefinition,
     GlobalObjectDefinition, GlobalObjectDefinitionBuilder, IntegerConstraint,
-    IntegerConstraintEnum, IntegerDefinition, ItemDefinitionType, MapDefinition, MapItemDefinition,
-    NumberConstraint, NumberConstraintEnum, NumberDefinition, NumberWithUnitsDefinition,
-    ParameterObjectDefinition, ParameterObjectDefinitionBuilder, StringDefinition, TableDefinition,
-    TableWithUnitsDefinition, UnitDefinition, VariableObjectDefinition,
-    VariableObjectDefinitionBuilder,
+    IntegerConstraintEnum, IntegerDefinition, ItemDefinitionType, MapDefinition, MapEntryDefault,
+    MapItemDefault, MapItemDefinition, NumberConstraint, NumberConstraintEnum, NumberDefinition,
+    NumberWithUnitsDefinition, ParameterObjectDefinition, ParameterObjectDefinitionBuilder,
+    StringDefinition, TableDefinition, TableWithUnitsDefinition, UnitDefinition,
+    VariableObjectDefinition, VariableObjectDefinitionBuilder,
 };
 
 // Shareable strings
