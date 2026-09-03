@@ -21,6 +21,7 @@ pub enum PortKind {
 
 impl PortKind {
     /// Returns the port kind with the given stable identifier.
+    #[must_use]
     pub fn from_id(id: &str) -> Option<Self> {
         match id {
             "signal_input" => Some(Self::SignalInput),
@@ -36,6 +37,7 @@ impl PortKind {
     }
 
     /// Returns the stable string representation of this port kind.
+    #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::SignalInput => "signal_input",
