@@ -3,21 +3,21 @@ use crate::definitions::built_in_component_definition::built_in_component_defini
 use crate::definitions::icon_definition::icon_definition;
 use crate::definitions::port_definition::port_definition;
 use component_common::{PortKind, Rotation};
-use datastore::{item_compile_time, number_compile_time};
+use datastore::{const_item, const_number};
 
 /// Version 1 definition of the gain component.
 pub static GAIN_V1: BuiltInComponentDefinition = built_in_component_definition!(
     "gain",
     1,
     "Gain",
-    datastore::parameter_object_compile_time!(
+    datastore::const_parameter_object!(
         "Parameters",
         [(
             "p_gain",
-            item_compile_time!(number = number_compile_time!("Gain", default = "1.0")),
+            const_item!(number = const_number!("Gain", default = "1.0")),
         ),]
     ),
-    datastore::variable_object_compile_time!("Variables", []),
+    datastore::const_variable_object!("Variables", []),
     icon_definition!(include_str!("gain.svg"), (32, 32)),
     [
         port_definition!(
