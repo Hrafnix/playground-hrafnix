@@ -3,8 +3,8 @@ use crate::definition::{
     IntegerConstraintEnum as IntegerConstraintEnumDefinition, IntegerDefinition,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time integer constraint variants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IntegerConstraintEnum {
     /// Minimum value constraint.
     Min {
@@ -35,37 +35,40 @@ pub enum IntegerConstraintEnum {
     None,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time integer constraint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IntegerConstraint {
     /// The actual constraint variant (none, min, max, or range).
     pub(crate) constraint_enum: IntegerConstraintEnum,
 }
 
 impl IntegerConstraint {
-    #[must_use]
     /// Creates a new constraint with no bounds.
+    #[must_use]
     pub const fn none() -> Self {
         Self {
             constraint_enum: IntegerConstraintEnum::None,
         }
     }
-    #[must_use]
+
     /// Creates a new minimum constraint.
+    #[must_use]
     pub const fn min(min: i64, inclusive: bool) -> Self {
         Self {
             constraint_enum: IntegerConstraintEnum::Min { min, inclusive },
         }
     }
-    #[must_use]
+
     /// Creates a new maximum constraint.
+    #[must_use]
     pub const fn max(max: i64, inclusive: bool) -> Self {
         Self {
             constraint_enum: IntegerConstraintEnum::Max { max, inclusive },
         }
     }
-    #[must_use]
+
     /// Creates a new range constraint.
+    #[must_use]
     pub const fn range(a: i64, b: i64, a_inclusive: bool, b_inclusive: bool) -> Self {
         let (min, max, min_inclusive, max_inclusive) = if a > b {
             (b, a, b_inclusive, a_inclusive)
@@ -132,8 +135,8 @@ impl IntegerConstraintEnum {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time representation of an integer parameter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IntegerCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -210,18 +213,21 @@ impl IntegerCompileTime {
             default_value,
         }
     }
-    #[must_use]
+
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the constraint.
+    #[must_use]
     pub const fn constraint(&self) -> IntegerConstraintEnum {
         self.constraint.constraint_enum
     }
-    #[must_use]
+
     /// Returns the default value.
+    #[must_use]
     pub const fn default_value(&self) -> &'static str {
         self.default_value
     }

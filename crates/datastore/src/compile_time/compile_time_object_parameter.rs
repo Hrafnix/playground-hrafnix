@@ -3,8 +3,8 @@ use crate::compile_time::compile_time_common::assert_unique_keys;
 use crate::definition::ParameterObjectDefinition;
 use keys::parameter_key::ConstParameterKey;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
 /// Compile-time representation of a parameter object.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ParameterObjectCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -28,41 +28,48 @@ impl ParameterObjectCompileTime {
         Self { description, items }
     }
 
-    #[must_use]
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the keyed items.
+    #[must_use]
     pub const fn items(&self) -> &'static [(ConstParameterKey, ItemCompileTime)] {
         self.items
     }
-    #[must_use]
+
     /// Returns the number of entries.
+    #[must_use]
     pub const fn count(&self) -> usize {
         self.items.len()
     }
-    #[must_use]
+
     /// Returns true if the given value is present.
+    #[must_use]
     pub fn contains(&self, key: &str) -> bool {
         self.get(key).is_some()
     }
-    #[must_use]
+
     /// Returns the value associated with the given key.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&ItemCompileTime> {
         self.items
             .iter()
             .find_map(|(item_key, item)| (item_key.as_str() == key).then_some(item))
     }
+
     /// Returns an iterator over the keys.
     pub fn keys(&self) -> impl Iterator<Item = ConstParameterKey> + '_ {
         self.items.iter().map(|(key, _)| *key)
     }
+
     /// Returns an iterator over the entries.
     pub fn iter(&self) -> impl Iterator<Item = &(ConstParameterKey, ItemCompileTime)> + '_ {
         self.items.iter()
     }
+
     /// Converts this compile-time parameter object into a runtime definition.
     #[must_use]
     pub fn into_definition(self) -> ParameterObjectDefinition {

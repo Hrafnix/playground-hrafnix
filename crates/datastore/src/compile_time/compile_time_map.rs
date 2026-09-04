@@ -64,6 +64,7 @@ impl MapItemCompileTime {
     pub const fn __boolean(value: BooleanCompileTime) -> Self {
         Self::Boolean(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(choice = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -74,6 +75,7 @@ impl MapItemCompileTime {
     pub const fn __choice(value: ChoiceCompileTime) -> Self {
         Self::Choice(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(file = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -83,6 +85,7 @@ impl MapItemCompileTime {
     pub const fn __file(value: FileCompileTime) -> Self {
         Self::File(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(integer = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -93,6 +96,7 @@ impl MapItemCompileTime {
     pub const fn __integer(value: IntegerCompileTime) -> Self {
         Self::Integer(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(number = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -103,6 +107,7 @@ impl MapItemCompileTime {
     pub const fn __number(value: NumberCompileTime) -> Self {
         Self::Number(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(number_with_units = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -113,6 +118,7 @@ impl MapItemCompileTime {
     pub const fn __number_with_units(value: NumberWithUnitsCompileTime) -> Self {
         Self::NumberWithUnits(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(string = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -122,6 +128,7 @@ impl MapItemCompileTime {
     pub const fn __string(value: StringCompileTime) -> Self {
         Self::String(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(table = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -132,6 +139,7 @@ impl MapItemCompileTime {
     pub const fn __table(value: TableCompileTime) -> Self {
         Self::Table(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(table_with_units = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -142,6 +150,7 @@ impl MapItemCompileTime {
     pub const fn __table_with_units(value: TableWithUnitsCompileTime) -> Self {
         Self::TableWithUnits(value)
     }
+
     /// Hidden wrapper for the `map_item_compile_time!(unit = value)` arm.
     ///
     /// This is an implementation detail; call `map_item_compile_time!` instead.
@@ -179,8 +188,8 @@ impl MapItemCompileTime {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
 /// Compile-time representation of a map.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MapCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -205,41 +214,48 @@ impl MapCompileTime {
         Self { description, items }
     }
 
-    #[must_use]
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the keyed items.
+    #[must_use]
     pub const fn items(&self) -> &'static [(ConstStoreKey, MapItemCompileTime)] {
         self.items
     }
-    #[must_use]
+
     /// Returns the number of entries.
+    #[must_use]
     pub const fn count(&self) -> usize {
         self.items.len()
     }
-    #[must_use]
+
     /// Returns true if the given key is present.
+    #[must_use]
     pub fn contains_key(&self, key: &str) -> bool {
         self.get(key).is_some()
     }
-    #[must_use]
+
     /// Returns the value associated with the given key.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&MapItemCompileTime> {
         self.items
             .iter()
             .find_map(|(item_key, item)| (item_key.as_str() == key).then_some(item))
     }
+
     /// Returns an iterator over the keys.
     pub fn keys(&self) -> impl Iterator<Item = ConstStoreKey> + '_ {
         self.items.iter().map(|(key, _)| *key)
     }
+
     /// Returns an iterator over the entries.
     pub fn iter(&self) -> impl Iterator<Item = &(ConstStoreKey, MapItemCompileTime)> + '_ {
         self.items.iter()
     }
+
     /// Converts this compile-time map into a runtime definition.
     #[must_use]
     pub fn into_definition(self) -> MapDefinition {
