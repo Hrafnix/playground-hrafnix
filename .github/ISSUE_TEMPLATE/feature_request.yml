@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest an improvement or new capability
+title: "[Feature]: "
+type: Feature
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a new issue, search existing issues to verify that it is not a duplicate.
+        If information is missing, we will work with you to gather the relevant details.
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Duplicate check
+      options:
+        - label: I searched existing issues for similar feature requests.
+          required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Concisely summarize the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What problem are we trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How should we solve the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: further-details
+    attributes:
+      label: Further details
+      description: Include relevant use cases, benefits, goals, or other context.
+  - type: textarea
+    id: references
+    attributes:
+      label: Links or references
+      description: Add any relevant links or references.

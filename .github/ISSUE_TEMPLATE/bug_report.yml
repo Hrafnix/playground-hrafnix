@@ -1,0 +1,86 @@
+name: Bug report
+description: Report unexpected behavior or a regression
+title: "[Bug]: "
+type: Bug
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before opening a new issue, search existing issues to verify that it is not a duplicate.
+        If information is missing, we will work with you to gather the relevant details.
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Duplicate check
+      options:
+        - label: I searched existing issues for similar bug reports.
+          required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Concisely summarize the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Explain how to reproduce the issue. Include a minimal example when possible.
+      placeholder: |
+        1. Run ...
+        2. Call ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current behavior
+      description: What actually happens?
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: input
+    id: affected-crate
+    attributes:
+      label: Affected crate or component
+      description: Name the crate or component where the problem occurs.
+      placeholder: "For example: expression_engine"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Provide the details needed to reproduce the problem.
+      placeholder: |
+        Commit or version:
+        Operating system:
+        rustc version:
+        Enabled Cargo features:
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Paste logs as code blocks and attach any relevant screenshots.
+  - type: textarea
+    id: possible-fix
+    attributes:
+      label: Possible fix
+      description: If known, describe a possible fix or link to the responsible code.
+  - type: textarea
+    id: references
+    attributes:
+      label: Links or references
+      description: Add any relevant links or references.
