@@ -192,7 +192,7 @@ macro_rules! define_unit_ids {
             $documentation:literal
         ),
     )*) => {
-        /// Identifiers for the units supported by the calculator.
+        /// Identifiers for the units supported by Hrafnix.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         #[repr(u16)]
         #[allow(non_camel_case_types)]
