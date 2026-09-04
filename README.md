@@ -1,9 +1,8 @@
-# Playground Calculator
+# Hrafnix
 
-A personal project for messing around with how to build a data-driven expression engine in Rust.
+Pronounced RAF-niks.
 
-Data is stored in a shallow tree (one to two levels deep) of objects, which can be frozen (immutable) or editable (mutable). 
-The frozen objects can be evaluated into expressions, which can then be evaluated to produce a value.
+Hrafnix is an experimental Rust simulation engine.
 
 ## What's in here
 
