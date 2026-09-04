@@ -1,7 +1,7 @@
 use crate::definition::StringDefinition;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time representation of a string parameter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StringCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -41,13 +41,14 @@ impl StringCompileTime {
         }
     }
 
-    #[must_use]
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the default value.
+    #[must_use]
     pub const fn default_value(&self) -> &'static str {
         self.default_value
     }

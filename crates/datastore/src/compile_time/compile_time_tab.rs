@@ -1,7 +1,7 @@
 use crate::definition::TabDefinition;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time representation of a tab.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TabCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -18,8 +18,8 @@ impl TabCompileTime {
         Self { description }
     }
 
-    #[must_use]
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }

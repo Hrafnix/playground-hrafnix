@@ -75,6 +75,7 @@ impl ItemCompileTime {
     pub const fn __boolean(value: BooleanCompileTime) -> Self {
         Self::Boolean(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(choice = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -85,6 +86,7 @@ impl ItemCompileTime {
     pub const fn __choice(value: ChoiceCompileTime) -> Self {
         Self::Choice(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(file = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -94,6 +96,7 @@ impl ItemCompileTime {
     pub const fn __file(value: FileCompileTime) -> Self {
         Self::File(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(folder = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -103,6 +106,7 @@ impl ItemCompileTime {
     pub const fn __folder(value: FolderCompileTime) -> Self {
         Self::Folder(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(integer = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -113,6 +117,7 @@ impl ItemCompileTime {
     pub const fn __integer(value: IntegerCompileTime) -> Self {
         Self::Integer(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(map = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -123,6 +128,7 @@ impl ItemCompileTime {
     pub const fn __map(value: MapCompileTime) -> Self {
         Self::Map(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(number = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -133,6 +139,7 @@ impl ItemCompileTime {
     pub const fn __number(value: NumberCompileTime) -> Self {
         Self::Number(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(number_with_units = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -143,6 +150,7 @@ impl ItemCompileTime {
     pub const fn __number_with_units(value: NumberWithUnitsCompileTime) -> Self {
         Self::NumberWithUnits(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(string = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -152,6 +160,7 @@ impl ItemCompileTime {
     pub const fn __string(value: StringCompileTime) -> Self {
         Self::String(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(table = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -162,6 +171,7 @@ impl ItemCompileTime {
     pub const fn __table(value: TableCompileTime) -> Self {
         Self::Table(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(table_with_units = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -172,6 +182,7 @@ impl ItemCompileTime {
     pub const fn __table_with_units(value: TableWithUnitsCompileTime) -> Self {
         Self::TableWithUnits(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(unit = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -182,6 +193,7 @@ impl ItemCompileTime {
     pub const fn __unit(value: UnitCompileTime) -> Self {
         Self::Unit(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(tab = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.
@@ -192,6 +204,7 @@ impl ItemCompileTime {
     pub const fn __tab(value: TabCompileTime) -> Self {
         Self::Tab(value)
     }
+
     /// Hidden wrapper for the `item_compile_time!(separator = value)` arm.
     ///
     /// This is an implementation detail; call `item_compile_time!` instead.

@@ -1,8 +1,8 @@
 use crate::definition::UnitDefinition;
 use units::UnitFamilyId;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time representation of a unit parameter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UnitCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -48,18 +48,21 @@ impl UnitCompileTime {
             default_value,
         }
     }
-    #[must_use]
+
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the unit family.
+    #[must_use]
     pub const fn unit_family(&self) -> UnitFamilyId {
         self.unit_family
     }
-    #[must_use]
+
     /// Returns the default value.
+    #[must_use]
     pub const fn default_value(&self) -> &'static str {
         self.default_value
     }

@@ -1,7 +1,7 @@
 use crate::definition::FolderDefinition;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// Compile-time representation of a folder parameter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FolderCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -47,18 +47,20 @@ impl FolderCompileTime {
         }
     }
 
-    #[must_use]
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns whether this value is treated as input.
+    #[must_use]
     pub const fn is_input(&self) -> bool {
         self.is_input
     }
-    #[must_use]
+
     /// Returns the default value.
+    #[must_use]
     pub const fn default_value(&self) -> &'static str {
         self.default_value
     }

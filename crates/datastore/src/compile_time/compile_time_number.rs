@@ -1,8 +1,8 @@
 use crate::compile_time::{NumberConstraint, NumberConstraintEnum};
 use crate::definition::NumberDefinition;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
 /// Compile-time representation of a number parameter.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct NumberCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -79,18 +79,21 @@ impl NumberCompileTime {
             default_value,
         }
     }
-    #[must_use]
+
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the constraint.
+    #[must_use]
     pub const fn constraint(&self) -> NumberConstraintEnum {
         self.constraint.constraint_enum
     }
-    #[must_use]
+
     /// Returns the default value.
+    #[must_use]
     pub const fn default_value(&self) -> &'static str {
         self.default_value
     }

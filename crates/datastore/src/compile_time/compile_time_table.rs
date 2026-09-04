@@ -3,8 +3,8 @@ use crate::compile_time::compile_time_common::assert_unique_keys;
 use crate::definition::TableDefinition;
 use keys::store_key::ConstStoreKey;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
 /// Compile-time representation of a table.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TableCompileTime {
     /// Human-readable description for this compile-time value.
     description: &'static str,
@@ -31,56 +31,66 @@ impl TableCompileTime {
             columns,
         }
     }
-    #[must_use]
+
     /// Returns the description.
+    #[must_use]
     pub const fn description(&self) -> &'static str {
         self.description
     }
-    #[must_use]
+
     /// Returns the keyed columns.
+    #[must_use]
     pub const fn columns(&self) -> &'static [(ConstStoreKey, NumberCompileTime)] {
         self.columns
     }
-    #[must_use]
+
     /// Returns the number of entries.
+    #[must_use]
     pub const fn count(&self) -> usize {
         self.columns.len()
     }
-    #[must_use]
+
     /// Returns true if the given key is present.
+    #[must_use]
     pub fn contains_key(&self, key: &str) -> bool {
         self.get(key).is_some()
     }
-    #[must_use]
+
     /// Returns the value associated with the given key.
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&NumberCompileTime> {
         self.columns
             .iter()
             .find_map(|(column_key, column)| (column_key.as_str() == key).then_some(column))
     }
-    #[must_use]
+
     /// Returns the value at the given index.
+    #[must_use]
     pub fn get_by_index(&self, index: usize) -> Option<&NumberCompileTime> {
         match self.columns.get(index) {
             Some((_, column)) => Some(column),
             None => None,
         }
     }
-    #[must_use]
+
     /// Returns the index of the column with the given key.
+    #[must_use]
     pub fn get_column_index_by_name(&self, key: &str) -> Option<usize> {
         self.columns
             .iter()
             .position(|(column_key, _)| column_key.as_str() == key)
     }
+
     /// Returns an iterator over the keys.
     pub fn keys(&self) -> impl Iterator<Item = ConstStoreKey> + '_ {
         self.columns.iter().map(|(key, _)| *key)
     }
+
     /// Returns an iterator over the entries.
     pub fn iter(&self) -> impl Iterator<Item = &(ConstStoreKey, NumberCompileTime)> + '_ {
         self.columns.iter()
     }
+
     /// Converts this compile-time table into a runtime definition.
     #[must_use]
     pub fn into_definition(self) -> TableDefinition {
