@@ -1,5 +1,4 @@
 use crate::definition::FileDefinition;
-use crate::traits::TreePrint;
 
 /// Compile-time representation of a file parameter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,42 +95,6 @@ impl FileCompileTime {
                 self.default_value,
             )
         }
-    }
-}
-
-impl PartialEq<&FileCompileTime> for FileCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn eq(&self, other: &&FileCompileTime) -> bool {
-        self == *other
-    }
-}
-
-impl PartialEq<FileCompileTime> for &FileCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn eq(&self, other: &FileCompileTime) -> bool {
-        *self == other
-    }
-}
-
-impl TreePrint for FileCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn tree_print(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        label: &str,
-        prefix: &str,
-        last: bool,
-    ) -> std::fmt::Result {
-        writeln!(
-            f,
-            "{}{}{} ({}) File - default: \"{}\" [{}]",
-            prefix,
-            Self::branch_char(last),
-            label,
-            self.description,
-            self.default_value,
-            self.extension_filter
-        )
     }
 }
 

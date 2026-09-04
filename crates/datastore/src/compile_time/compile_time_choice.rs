@@ -1,6 +1,5 @@
 use crate::compile_time::compile_time_common::const_str_eq;
 use crate::definition::{ChoiceDefinition, ChoiceItemDefinition};
-use crate::traits::TreePrint;
 use keys::store_key::ConstStoreKey;
 
 /// Compile-time representation of a single choice item.
@@ -167,46 +166,6 @@ impl ChoiceCompileTime {
         } else {
             ChoiceDefinition::new_with_default(self.description, choices, self.default_value)
         }
-    }
-}
-
-impl PartialEq<&ChoiceCompileTime> for ChoiceCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn eq(&self, other: &&ChoiceCompileTime) -> bool {
-        self == *other
-    }
-}
-
-impl PartialEq<ChoiceCompileTime> for &ChoiceCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn eq(&self, other: &ChoiceCompileTime) -> bool {
-        *self == other
-    }
-}
-
-impl TreePrint for ChoiceCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn tree_print(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        label: &str,
-        prefix: &str,
-        last: bool,
-    ) -> std::fmt::Result {
-        writeln!(
-            f,
-            "{}{}{} ({}) Choice - default: \"{}\" [{}]",
-            prefix,
-            Self::branch_char(last),
-            label,
-            self.description,
-            self.default_value,
-            self.choices
-                .iter()
-                .map(|choice| format!("{} ({})", choice.id(), choice.description()))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
     }
 }
 

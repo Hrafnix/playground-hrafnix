@@ -1,5 +1,4 @@
 use crate::definition::BooleanDefinition;
-use crate::traits::TreePrint;
 
 /// Compile-time representation of a boolean parameter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,46 +78,6 @@ impl BooleanCompileTime {
         } else {
             BooleanDefinition::new_with_default(self.description, self.default_value == "true")
         }
-    }
-}
-
-impl PartialEq<&BooleanCompileTime> for BooleanCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn eq(&self, other: &&BooleanCompileTime) -> bool {
-        self == *other
-    }
-}
-
-impl PartialEq<BooleanCompileTime> for &BooleanCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn eq(&self, other: &BooleanCompileTime) -> bool {
-        *self == other
-    }
-}
-
-impl TreePrint for BooleanCompileTime {
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn tree_print(
-        &self,
-        f: &mut std::fmt::Formatter<'_>,
-        label: &str,
-        prefix: &str,
-        last: bool,
-    ) -> std::fmt::Result {
-        writeln!(
-            f,
-            "{}{}{} ({}) Boolean - default: \"{}\" [{}]",
-            prefix,
-            Self::branch_char(last),
-            label,
-            self.description,
-            self.default_value,
-            [self.true_description, self.false_description]
-                .iter()
-                .map(|choice| format!("{} ({})", choice.to_lowercase(), choice))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
     }
 }
 
