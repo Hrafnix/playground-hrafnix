@@ -81,6 +81,43 @@ impl SharedStringTranslationMap {
         }
     }
 
+    /// Returns the number of translation keys in the map.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn len(&self) -> usize {
+        self.data.read().len()
+    }
+
+    /// Returns `true` if the map contains no translation keys.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_empty(&self) -> bool {
+        self.data.read().is_empty()
+    }
+
+    /// Returns `true` if the map contains the given translation key.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn contains_key<K>(&self, key: K) -> bool
+    where
+        K: AsRef<str>,
+    {
+        self.data.read().contains_key(key.as_ref())
+    }
+
+    /// Returns the languages available for the given translation key.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn languages_for_key<K>(&self, key: K) -> Option<Vec<ShareableString>>
+    where
+        K: AsRef<str>,
+    {
+        self.data
+            .read()
+            .get(key.as_ref())
+            .map(|translations| translations.keys().cloned().collect())
+    }
+
     /// Returns the fallback language.
     #[must_use]
     pub const fn get_fallback_language(&self) -> &ShareableString {
@@ -274,5 +311,35 @@ mod tests {
             .get_translation("greeting", "en", Some(&params))
             .unwrap();
         assert_eq!(translation.as_str(), "Hello, Junie!");
+    }
+
+    #[test]
+    fn test_translation_map_read_operations() {
+        let map = SharedStringTranslationMap::new();
+
+        assert_eq!(map.len(), 0);
+        assert!(map.is_empty());
+        assert!(!map.contains_key("greeting"));
+        assert_eq!(map.languages_for_key("greeting"), None);
+
+        map.set_translation("greeting", "en", "Hello");
+        map.set_translation("greeting", "es", "Hola");
+        map.set_translation("farewell", "en", "Goodbye");
+
+        assert_eq!(map.len(), 2);
+        assert!(!map.is_empty());
+        assert!(map.contains_key("greeting"));
+
+        let mut languages = map
+            .languages_for_key("greeting")
+            .expect("greeting should have languages");
+        languages.sort_by(|left, right| left.as_str().cmp(right.as_str()));
+        assert_eq!(
+            languages
+                .iter()
+                .map(ShareableString::as_str)
+                .collect::<Vec<_>>(),
+            ["en", "es"]
+        );
     }
 }
