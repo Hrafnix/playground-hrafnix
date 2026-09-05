@@ -13,9 +13,9 @@ pub struct NumberCompileTime {
 }
 
 impl NumberCompileTime {
-    /// Hidden backing constructor for `number_compile_time!(description)`.
+    /// Hidden backing constructor for `const_number!(description)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter. This arm creates a number with no
     /// constraint and no default value.
     #[doc(hidden)]
@@ -25,9 +25,9 @@ impl NumberCompileTime {
         Self::__new_with_constraint(description, NumberConstraint::none())
     }
 
-    /// Hidden backing constructor for `number_compile_time!(description, default = default_value)`.
+    /// Hidden backing constructor for `const_number!(description, default = default_value)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter and `default_value` is the decimal string
     /// default. This arm creates a number with no constraint.
     #[doc(hidden)]
@@ -44,9 +44,9 @@ impl NumberCompileTime {
         )
     }
 
-    /// Hidden backing constructor for `number_compile_time!(description, constraint = constraint)`.
+    /// Hidden backing constructor for `const_number!(description, constraint = constraint)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter and `constraint` is the [`NumberConstraint`]
     /// bound on the accepted value. This arm creates a number with no default value.
     #[doc(hidden)]
@@ -63,9 +63,9 @@ impl NumberCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `number_compile_time!(description, constraint = constraint, default = default_value)`.
+    /// `const_number!(description, constraint = constraint, default = default_value)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter, `constraint` is the [`NumberConstraint`] bound
     /// on the accepted value, and `default_value` is the decimal string default.
     #[doc(hidden)]
@@ -125,10 +125,10 @@ impl NumberCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// number_compile_time!(description)
-/// number_compile_time!(description, default = default_value)
-/// number_compile_time!(description, constraint = constraint)
-/// number_compile_time!(description, constraint = constraint, default = default_value)
+/// const_number!(description)
+/// const_number!(description, default = default_value)
+/// const_number!(description, constraint = constraint)
+/// const_number!(description, constraint = constraint, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -146,7 +146,7 @@ impl NumberCompileTime {
 /// use datastore::compile_time::{NumberCompileTime, NumberConstraint};
 /// use datastore::prelude::*;
 ///
-/// const WEIGHT: NumberCompileTime = number_compile_time!(
+/// const WEIGHT: NumberCompileTime = const_number!(
 ///     "Weight",
 ///     constraint = NumberConstraint::min(0.0, true),
 ///     default = "1.5"
@@ -156,7 +156,7 @@ impl NumberCompileTime {
 /// let _definition = WEIGHT.into_definition();
 /// ```
 #[macro_export]
-macro_rules! number_compile_time {
+macro_rules! const_number {
     ($description:expr) => {
         const {
             #[allow(clippy::disallowed_methods)]

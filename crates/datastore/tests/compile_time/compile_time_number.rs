@@ -3,13 +3,13 @@ use datastore::prelude::*;
 
 #[test]
 fn number_compile_time_converts_all_macro_forms() {
-    let number = number_compile_time!("Number");
-    let default = number_compile_time!("Number default", default = "1.5");
-    let minimum = number_compile_time!(
+    let number = const_number!("Number");
+    let default = const_number!("Number default", default = "1.5");
+    let minimum = const_number!(
         "Number minimum",
         constraint = NumberConstraint::min(1.0, true)
     );
-    let range = number_compile_time!(
+    let range = const_number!(
         "Number range",
         constraint = NumberConstraint::range(10.0, 0.0, false, true),
         default = "5"

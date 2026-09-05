@@ -16,9 +16,9 @@ pub struct NumberWithUnitsCompileTime {
 }
 
 impl NumberWithUnitsCompileTime {
-    /// Hidden backing constructor for `number_with_units_compile_time!(description, preferred_units)`.
+    /// Hidden backing constructor for `const_number_with_units!(description, preferred_units)`.
     ///
-    /// This is an implementation detail; call `number_with_units_compile_time!` instead.
+    /// This is an implementation detail; call `const_number_with_units!` instead.
     /// `description` names the parameter and `preferred_units` is the [`UnitId`] the value
     /// is displayed and, by default, entered in. This arm creates a number-with-units value
     /// with no constraint and no default value.
@@ -30,9 +30,9 @@ impl NumberWithUnitsCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `number_with_units_compile_time!(description, preferred_units, default = default_value)`.
+    /// `const_number_with_units!(description, preferred_units, default = default_value)`.
     ///
-    /// This is an implementation detail; call `number_with_units_compile_time!` instead.
+    /// This is an implementation detail; call `const_number_with_units!` instead.
     /// `description` names the parameter, `default_value` is the decimal string default, and
     /// `preferred_units` is the [`UnitId`] the value is displayed and, by default, entered
     /// in. This arm creates a number-with-units value with no constraint.
@@ -53,9 +53,9 @@ impl NumberWithUnitsCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `number_with_units_compile_time!(description, preferred_units, constraint = constraint)`.
+    /// `const_number_with_units!(description, preferred_units, constraint = constraint)`.
     ///
-    /// This is an implementation detail; call `number_with_units_compile_time!` instead.
+    /// This is an implementation detail; call `const_number_with_units!` instead.
     /// `description` names the parameter, `constraint` is the [`NumberConstraint`] bound on
     /// the accepted value (expressed in the parameter's base unit), and `preferred_units` is
     /// the [`UnitId`] the value is displayed and, by default, entered in. This arm creates a
@@ -76,9 +76,9 @@ impl NumberWithUnitsCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `number_with_units_compile_time!(description, preferred_units, constraint = constraint, default = default_value)`.
+    /// `const_number_with_units!(description, preferred_units, constraint = constraint, default = default_value)`.
     ///
-    /// This is an implementation detail; call `number_with_units_compile_time!` instead.
+    /// This is an implementation detail; call `const_number_with_units!` instead.
     /// `description` names the parameter, `constraint` is the [`NumberConstraint`] bound on
     /// the accepted value (expressed in the parameter's base unit), `default_value` is the
     /// decimal string default, and `preferred_units` is the [`UnitId`] the value is
@@ -154,10 +154,10 @@ impl NumberWithUnitsCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// number_with_units_compile_time!(description, preferred_units)
-/// number_with_units_compile_time!(description, preferred_units, default = default_value)
-/// number_with_units_compile_time!(description, preferred_units, constraint = constraint)
-/// number_with_units_compile_time!(
+/// const_number_with_units!(description, preferred_units)
+/// const_number_with_units!(description, preferred_units, default = default_value)
+/// const_number_with_units!(description, preferred_units, constraint = constraint)
+/// const_number_with_units!(
 ///     description,
 ///     preferred_units,
 ///     constraint = constraint,
@@ -183,7 +183,7 @@ impl NumberWithUnitsCompileTime {
 /// use datastore::prelude::*;
 /// use units::UnitId;
 ///
-/// const LENGTH: NumberWithUnitsCompileTime = number_with_units_compile_time!(
+/// const LENGTH: NumberWithUnitsCompileTime = const_number_with_units!(
 ///     "Length",
 ///     UnitId::Length_Meter,
 ///     constraint = NumberConstraint::min(0.0, true),
@@ -194,7 +194,7 @@ impl NumberWithUnitsCompileTime {
 /// let _definition = LENGTH.into_definition();
 /// ```
 #[macro_export]
-macro_rules! number_with_units_compile_time {
+macro_rules! const_number_with_units {
     ($description:expr, $preferred_units:expr) => {
         const {
             #[allow(clippy::disallowed_methods)]

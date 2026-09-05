@@ -4,15 +4,14 @@ use units::UnitId;
 
 #[test]
 fn number_with_units_compile_time_converts_all_macro_forms() {
-    let number = number_with_units_compile_time!("Length", UnitId::Length_Meter);
-    let default =
-        number_with_units_compile_time!("Length default", UnitId::Length_Meter, default = "2");
-    let maximum = number_with_units_compile_time!(
+    let number = const_number_with_units!("Length", UnitId::Length_Meter);
+    let default = const_number_with_units!("Length default", UnitId::Length_Meter, default = "2");
+    let maximum = const_number_with_units!(
         "Length maximum",
         UnitId::Length_Meter,
         constraint = NumberConstraint::max(3.0, false)
     );
-    let range = number_with_units_compile_time!(
+    let range = const_number_with_units!(
         "Length range",
         UnitId::Length_Meter,
         constraint = NumberConstraint::range(0.0, 2.0, true, false),

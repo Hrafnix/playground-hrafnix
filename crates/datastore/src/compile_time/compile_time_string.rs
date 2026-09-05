@@ -10,9 +10,9 @@ pub struct StringCompileTime {
 }
 
 impl StringCompileTime {
-    /// Hidden backing constructor for `string_compile_time!(description)`.
+    /// Hidden backing constructor for `const_string!(description)`.
     ///
-    /// This is an implementation detail; call `string_compile_time!` instead.
+    /// This is an implementation detail; call `const_string!` instead.
     /// `description` names the parameter and this arm creates a string with no
     /// default value.
     #[doc(hidden)]
@@ -24,9 +24,9 @@ impl StringCompileTime {
         }
     }
 
-    /// Hidden backing constructor for `string_compile_time!(description, default = default_value)`.
+    /// Hidden backing constructor for `const_string!(description, default = default_value)`.
     ///
-    /// This is an implementation detail; call `string_compile_time!` instead.
+    /// This is an implementation detail; call `const_string!` instead.
     /// `description` names the parameter and `default_value` supplies the default
     /// text returned when the parameter is unset.
     #[doc(hidden)]
@@ -73,8 +73,8 @@ impl StringCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// string_compile_time!(description)
-/// string_compile_time!(description, default = default_value)
+/// const_string!(description)
+/// const_string!(description, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -87,13 +87,13 @@ impl StringCompileTime {
 /// use datastore::compile_time::StringCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const NAME: StringCompileTime = string_compile_time!("Name", default = "Untitled");
+/// const NAME: StringCompileTime = const_string!("Name", default = "Untitled");
 /// assert_eq!(NAME.default_value(), "Untitled");
 ///
 /// let _definition = NAME.into_definition();
 /// ```
 #[macro_export]
-macro_rules! string_compile_time {
+macro_rules! const_string {
     ($description:expr) => {
         const {
             #[allow(clippy::disallowed_methods)]

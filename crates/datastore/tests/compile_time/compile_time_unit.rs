@@ -3,8 +3,8 @@ use units::UnitFamilyId;
 
 #[test]
 fn unit_compile_time_preserves_family_and_default() {
-    let unit = unit_compile_time!("Unit", UnitFamilyId::Length);
-    let default = unit_compile_time!(
+    let unit = const_unit!("Unit", UnitFamilyId::Length);
+    let default = const_unit!(
         "Unit default",
         UnitFamilyId::Length,
         default = "u_length_meter"

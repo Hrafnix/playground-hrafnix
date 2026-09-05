@@ -2,8 +2,8 @@ use datastore::prelude::*;
 
 #[test]
 fn boolean_compile_time_converts_with_and_without_default() {
-    let boolean = boolean_compile_time!("Boolean");
-    let default = boolean_compile_time!("Boolean default", default = false);
+    let boolean = const_boolean!("Boolean");
+    let default = const_boolean!("Boolean default", default = false);
 
     assert_eq!(BooleanCompileTime::ids(), ["true", "false"]);
     assert_eq!(boolean.description(), "Boolean");

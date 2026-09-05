@@ -14,9 +14,9 @@ pub struct BooleanCompileTime {
 }
 
 impl BooleanCompileTime {
-    /// Hidden backing constructor for `boolean_compile_time!(description)`.
+    /// Hidden backing constructor for `const_boolean!(description)`.
     ///
-    /// This is an implementation detail; call `boolean_compile_time!` instead.
+    /// This is an implementation detail; call `const_boolean!` instead.
     /// `description` names the parameter and this arm creates a boolean with no
     /// default value.
     #[doc(hidden)]
@@ -30,9 +30,9 @@ impl BooleanCompileTime {
         }
     }
 
-    /// Hidden backing constructor for `boolean_compile_time!(description, default = default_value)`.
+    /// Hidden backing constructor for `const_boolean!(description, default = default_value)`.
     ///
-    /// This is an implementation detail; call `boolean_compile_time!` instead.
+    /// This is an implementation detail; call `const_boolean!` instead.
     /// `description` names the parameter and `default_value` selects the initial
     /// `true`/`false` state.
     #[doc(hidden)]
@@ -94,8 +94,8 @@ impl BooleanCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// boolean_compile_time!(description)
-/// boolean_compile_time!(description, default = default_value)
+/// const_boolean!(description)
+/// const_boolean!(description, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -109,14 +109,14 @@ impl BooleanCompileTime {
 /// use datastore::prelude::*;
 ///
 /// const ENABLE_FEATURE: BooleanCompileTime =
-///     boolean_compile_time!("Enable feature", default = true);
+///     const_boolean!("Enable feature", default = true);
 /// assert_eq!(ENABLE_FEATURE.description(), "Enable feature");
 /// assert_eq!(ENABLE_FEATURE.default_value(), "true");
 ///
 /// let _definition = ENABLE_FEATURE.into_definition();
 /// ```
 #[macro_export]
-macro_rules! boolean_compile_time {
+macro_rules! const_boolean {
     ($description:expr) => {
         const {
             #[allow(clippy::disallowed_methods)]

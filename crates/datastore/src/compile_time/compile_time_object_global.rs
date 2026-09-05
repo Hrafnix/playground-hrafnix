@@ -13,12 +13,12 @@ pub struct GlobalObjectCompileTime {
 }
 
 impl GlobalObjectCompileTime {
-    /// Hidden backing constructor for `global_object_compile_time!(description, items)`.
+    /// Hidden backing constructor for `const_global_object!(description, items)`.
     ///
-    /// This is an implementation detail; call `global_object_compile_time!` instead.
+    /// This is an implementation detail; call `const_global_object!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
     /// `(ConstGlobalKey, ItemCompileTime)` key/item pairs, typically built with the
-    /// `global_key!` macro and `item_compile_time!`.
+    /// `global_key!` macro and `const_item!`.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
@@ -96,24 +96,24 @@ impl GlobalObjectCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// global_object_compile_time!(description, items)
-/// global_object_compile_time!(description, [("key", item), ...])
+/// const_global_object!(description, items)
+/// const_global_object!(description, [("key", item), ...])
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
 /// - `items`: `&'static [(ConstGlobalKey, ItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with `global_key!` and `item_compile_time!`.
+///   pairs, typically built with `global_key!` and `const_item!`.
 ///
 /// # Examples
 /// ```rust
 /// use datastore::prelude::*;
 ///
-/// const SETTINGS: GlobalObjectCompileTime = global_object_compile_time!(
+/// const SETTINGS: GlobalObjectCompileTime = const_global_object!(
 ///     "Settings",
 ///     [(
 ///         "g_project_name",
-///         item_compile_time!(string = string_compile_time!("Project name")),
+///         const_item!(string = const_string!("Project name")),
 ///     )],
 /// );
 /// assert_eq!(SETTINGS.count(), 1);
@@ -125,22 +125,22 @@ impl GlobalObjectCompileTime {
 /// ```compile_fail
 /// use datastore::prelude::*;
 ///
-/// const SETTINGS: GlobalObjectCompileTime = global_object_compile_time!(
+/// const SETTINGS: GlobalObjectCompileTime = const_global_object!(
 ///     "Settings",
 ///     [
 ///         (
 ///             "g_project_name",
-///             item_compile_time!(string = string_compile_time!("Project name")),
+///             const_item!(string = const_string!("Project name")),
 ///         ),
 ///         (
 ///             "g_project_name",
-///             item_compile_time!(string = string_compile_time!("Duplicate")),
+///             const_item!(string = const_string!("Duplicate")),
 ///         ),
 ///     ],
 /// );
 /// ```
 #[macro_export]
-macro_rules! global_object_compile_time {
+macro_rules! const_global_object {
     ($description:expr, [$(($key:literal, $item:expr $(,)?)),* $(,)?] $(,)?) => {
         const {
             #[allow(clippy::disallowed_methods)]

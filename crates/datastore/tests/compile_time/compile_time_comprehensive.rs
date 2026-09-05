@@ -1,38 +1,29 @@
 use datastore::prelude::*;
 
 const TABLE_COLUMNS: &[(ConstStoreKey, NumberCompileTime)] = &[
-    (
-        store_key!("width"),
-        number_compile_time!("Width", default = "10"),
-    ),
+    (store_key!("width"), const_number!("Width", default = "10")),
     (
         store_key!("height"),
-        number_compile_time!("Height", default = "20"),
+        const_number!("Height", default = "20"),
     ),
 ];
-const TABLE: TableCompileTime = table_compile_time!("Dimensions", TABLE_COLUMNS);
+const TABLE: TableCompileTime = const_table!("Dimensions", TABLE_COLUMNS);
 const MAP_ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[
     (
         store_key!("name"),
-        map_item_compile_time!(string = string_compile_time!("Name")),
+        const_map_item!(string = const_string!("Name")),
     ),
-    (
-        store_key!("dimensions"),
-        map_item_compile_time!(table = TABLE),
-    ),
+    (store_key!("dimensions"), const_map_item!(table = TABLE)),
 ];
-const MAP: MapCompileTime = map_compile_time!("Shapes", MAP_ITEMS);
-const OBJECT: GlobalObjectCompileTime = global_object_compile_time!(
+const MAP: MapCompileTime = const_map!("Shapes", MAP_ITEMS);
+const OBJECT: GlobalObjectCompileTime = const_global_object!(
     "Settings",
     [
-        (
-            "g_heading",
-            item_compile_time!(tab = tab_compile_time!("General")),
-        ),
-        ("g_shapes", item_compile_time!(map = MAP)),
+        ("g_heading", const_item!(tab = const_tab!("General")),),
+        ("g_shapes", const_item!(map = MAP)),
         (
             "g_divider",
-            item_compile_time!(separator = separator_compile_time!("Advanced")),
+            const_item!(separator = const_separator!("Advanced")),
         ),
     ],
 );

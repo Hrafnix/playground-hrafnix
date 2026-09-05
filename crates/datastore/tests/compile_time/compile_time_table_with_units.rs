@@ -4,14 +4,14 @@ use units::UnitId;
 const COLUMNS: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[
     (
         store_key!("length"),
-        number_with_units_compile_time!("Length", UnitId::Length_Meter, default = "1"),
+        const_number_with_units!("Length", UnitId::Length_Meter, default = "1"),
     ),
     (
         store_key!("area"),
-        number_with_units_compile_time!("Area", UnitId::Area_SquareMeter),
+        const_number_with_units!("Area", UnitId::Area_SquareMeter),
     ),
 ];
-const TABLE: TableWithUnitsCompileTime = table_with_units_compile_time!("Measurements", COLUMNS);
+const TABLE: TableWithUnitsCompileTime = const_table_with_units!("Measurements", COLUMNS);
 
 #[test]
 fn table_with_units_compile_time_preserves_columns_and_order() {
@@ -37,11 +37,11 @@ fn table_with_units_compile_time_rejects_duplicate_keys() {
     const DUPLICATES: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[
         (
             store_key!("duplicate"),
-            number_with_units_compile_time!("First", UnitId::Length_Meter),
+            const_number_with_units!("First", UnitId::Length_Meter),
         ),
         (
             store_key!("duplicate"),
-            number_with_units_compile_time!("Second", UnitId::Length_Meter),
+            const_number_with_units!("Second", UnitId::Length_Meter),
         ),
     ];
     #[allow(clippy::disallowed_methods)]

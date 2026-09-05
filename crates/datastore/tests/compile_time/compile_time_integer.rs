@@ -3,17 +3,17 @@ use datastore::prelude::*;
 
 #[test]
 fn integer_compile_time_converts_all_macro_forms() {
-    let integer = integer_compile_time!("Integer");
-    let default = integer_compile_time!("Integer default", default = "5");
-    let maximum = integer_compile_time!(
+    let integer = const_integer!("Integer");
+    let default = const_integer!("Integer default", default = "5");
+    let maximum = const_integer!(
         "Integer maximum",
         constraint = IntegerConstraint::max(10, false)
     );
-    let minimum = integer_compile_time!(
+    let minimum = const_integer!(
         "Integer minimum",
         constraint = IntegerConstraint::min(0, true)
     );
-    let range = integer_compile_time!(
+    let range = const_integer!(
         "Integer range",
         constraint = IntegerConstraint::range(10, 0, false, true),
         default = "5"

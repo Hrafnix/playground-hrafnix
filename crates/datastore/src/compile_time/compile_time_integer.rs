@@ -147,9 +147,9 @@ pub struct IntegerCompileTime {
 }
 
 impl IntegerCompileTime {
-    /// Hidden backing constructor for `integer_compile_time!(description)`.
+    /// Hidden backing constructor for `const_integer!(description)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter. This arm creates an integer with no
     /// constraint and no default value.
     #[doc(hidden)]
@@ -159,9 +159,9 @@ impl IntegerCompileTime {
         Self::__new_with_constraint(description, IntegerConstraint::none())
     }
 
-    /// Hidden backing constructor for `integer_compile_time!(description, default = default_value)`.
+    /// Hidden backing constructor for `const_integer!(description, default = default_value)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter and `default_value` is the decimal string
     /// default. This arm creates an integer with no constraint.
     #[doc(hidden)]
@@ -178,9 +178,9 @@ impl IntegerCompileTime {
         )
     }
 
-    /// Hidden backing constructor for `integer_compile_time!(description, constraint = constraint)`.
+    /// Hidden backing constructor for `const_integer!(description, constraint = constraint)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter and `constraint` is the [`IntegerConstraint`]
     /// bound on the accepted value. This arm creates an integer with no default value.
     #[doc(hidden)]
@@ -197,9 +197,9 @@ impl IntegerCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `integer_compile_time!(description, constraint = constraint, default = default_value)`.
+    /// `const_integer!(description, constraint = constraint, default = default_value)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter, `constraint` is the [`IntegerConstraint`] bound
     /// on the accepted value, and `default_value` is the decimal string default.
     #[doc(hidden)]
@@ -259,10 +259,10 @@ impl IntegerCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// integer_compile_time!(description)
-/// integer_compile_time!(description, default = default_value)
-/// integer_compile_time!(description, constraint = constraint)
-/// integer_compile_time!(description, constraint = constraint, default = default_value)
+/// const_integer!(description)
+/// const_integer!(description, default = default_value)
+/// const_integer!(description, constraint = constraint)
+/// const_integer!(description, constraint = constraint, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -280,7 +280,7 @@ impl IntegerCompileTime {
 /// use datastore::compile_time::{IntegerCompileTime, IntegerConstraint};
 /// use datastore::prelude::*;
 ///
-/// const COUNT: IntegerCompileTime = integer_compile_time!(
+/// const COUNT: IntegerCompileTime = const_integer!(
 ///     "Item count",
 ///     constraint = IntegerConstraint::range(0, 100, true, true),
 ///     default = "10"
@@ -290,7 +290,7 @@ impl IntegerCompileTime {
 /// let _definition = COUNT.into_definition();
 /// ```
 #[macro_export]
-macro_rules! integer_compile_time {
+macro_rules! const_integer {
     ($description:expr) => {
         const {
             #[allow(clippy::disallowed_methods)]

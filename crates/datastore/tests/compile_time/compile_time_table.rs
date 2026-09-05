@@ -1,16 +1,13 @@
 use datastore::prelude::*;
 
 const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] = &[
-    (
-        store_key!("width"),
-        number_compile_time!("Width", default = "10"),
-    ),
+    (store_key!("width"), const_number!("Width", default = "10")),
     (
         store_key!("height"),
-        number_compile_time!("Height", default = "20"),
+        const_number!("Height", default = "20"),
     ),
 ];
-const TABLE: TableCompileTime = table_compile_time!("Dimensions", COLUMNS);
+const TABLE: TableCompileTime = const_table!("Dimensions", COLUMNS);
 
 #[test]
 fn table_compile_time_preserves_columns_and_order() {
@@ -35,8 +32,8 @@ fn table_compile_time_preserves_columns_and_order() {
 #[should_panic(expected = "TableCompileTime column keys must be unique")]
 fn table_compile_time_rejects_duplicate_keys() {
     const DUPLICATES: &[(ConstStoreKey, NumberCompileTime)] = &[
-        (store_key!("duplicate"), number_compile_time!("First")),
-        (store_key!("duplicate"), number_compile_time!("Second")),
+        (store_key!("duplicate"), const_number!("First")),
+        (store_key!("duplicate"), const_number!("Second")),
     ];
     #[allow(clippy::disallowed_methods)]
     let _ = TableCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);

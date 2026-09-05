@@ -4,15 +4,14 @@ use datastore::prelude::*;
 fn parameter_object_compile_time_converts_both_macro_forms() {
     const ITEMS: &[(ConstParameterKey, ItemCompileTime)] = &[(
         parameter_key!("p_name"),
-        item_compile_time!(string = string_compile_time!("Name")),
+        const_item!(string = const_string!("Name")),
     )];
-    const FROM_SLICE: ParameterObjectCompileTime =
-        parameter_object_compile_time!("Parameters", ITEMS);
-    const FROM_LITERALS: ParameterObjectCompileTime = parameter_object_compile_time!(
+    const FROM_SLICE: ParameterObjectCompileTime = const_parameter_object!("Parameters", ITEMS);
+    const FROM_LITERALS: ParameterObjectCompileTime = const_parameter_object!(
         "Parameters",
         [(
             "p_enabled",
-            item_compile_time!(boolean = boolean_compile_time!("Enabled")),
+            const_item!(boolean = const_boolean!("Enabled")),
         )],
     );
 
@@ -39,11 +38,11 @@ fn parameter_object_compile_time_rejects_duplicate_keys() {
     const DUPLICATES: &[(ConstParameterKey, ItemCompileTime)] = &[
         (
             parameter_key!("p_duplicate"),
-            item_compile_time!(string = string_compile_time!("First")),
+            const_item!(string = const_string!("First")),
         ),
         (
             parameter_key!("p_duplicate"),
-            item_compile_time!(string = string_compile_time!("Second")),
+            const_item!(string = const_string!("Second")),
         ),
     ];
     #[allow(clippy::disallowed_methods)]

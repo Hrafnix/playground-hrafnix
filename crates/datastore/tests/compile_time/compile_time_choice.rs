@@ -1,10 +1,10 @@
 use datastore::prelude::*;
 
 const CHOICES: &[ChoiceItemCompileTime] = &[
-    choice_item_compile_time!("small", "Small"),
-    choice_item_compile_time!("large", "Large"),
+    const_choice_item!("small", "Small"),
+    const_choice_item!("large", "Large"),
 ];
-const CHOICE: ChoiceCompileTime = choice_compile_time!("Size", CHOICES, default = "large");
+const CHOICE: ChoiceCompileTime = const_choice!("Size", CHOICES, default = "large");
 
 #[test]
 fn choice_compile_time_preserves_order_and_default() {
@@ -32,8 +32,8 @@ fn choice_compile_time_preserves_order_and_default() {
 #[should_panic(expected = "ChoiceCompileTime choice ids must be unique")]
 fn choice_compile_time_rejects_duplicate_ids() {
     const DUPLICATES: &[ChoiceItemCompileTime] = &[
-        choice_item_compile_time!("duplicate", "First"),
-        choice_item_compile_time!("duplicate", "Second"),
+        const_choice_item!("duplicate", "First"),
+        const_choice_item!("duplicate", "Second"),
     ];
     #[allow(clippy::disallowed_methods)]
     let _ = ChoiceCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);

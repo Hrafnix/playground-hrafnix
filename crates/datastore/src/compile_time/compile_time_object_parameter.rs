@@ -13,9 +13,9 @@ pub struct ParameterObjectCompileTime {
 }
 
 impl ParameterObjectCompileTime {
-    /// Hidden backing constructor for `parameter_object_compile_time!(description, items)`.
+    /// Hidden backing constructor for `const_parameter_object!(description, items)`.
     ///
-    /// This is an implementation detail; call `parameter_object_compile_time!` instead.
+    /// This is an implementation detail; call `const_parameter_object!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
     /// `(ConstParameterKey, ItemCompileTime)` key/item pairs.
     #[doc(hidden)]
@@ -96,24 +96,24 @@ impl ParameterObjectCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// parameter_object_compile_time!(description, items)
-/// parameter_object_compile_time!(description, [("key", item), ...])
+/// const_parameter_object!(description, items)
+/// const_parameter_object!(description, [("key", item), ...])
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
 /// - `items`: `&'static [(ConstParameterKey, ItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with `parameter_key!` and `item_compile_time!`.
+///   pairs, typically built with `parameter_key!` and `const_item!`.
 ///
 /// # Examples
 /// ```rust
 /// use datastore::prelude::*;
 ///
-/// const SETTINGS: ParameterObjectCompileTime = parameter_object_compile_time!(
+/// const SETTINGS: ParameterObjectCompileTime = const_parameter_object!(
 ///     "Parameters",
 ///     [(
 ///         "p_thickness",
-///         item_compile_time!(number = number_compile_time!("Thickness", default = "1")),
+///         const_item!(number = const_number!("Thickness", default = "1")),
 ///     )],
 /// );
 /// assert_eq!(SETTINGS.count(), 1);
@@ -125,22 +125,22 @@ impl ParameterObjectCompileTime {
 /// ```compile_fail
 /// use datastore::prelude::*;
 ///
-/// const SETTINGS: ParameterObjectCompileTime = parameter_object_compile_time!(
+/// const SETTINGS: ParameterObjectCompileTime = const_parameter_object!(
 ///     "Settings",
 ///     [
 ///         (
 ///             "p_project_name",
-///             item_compile_time!(string = string_compile_time!("Project name")),
+///             const_item!(string = const_string!("Project name")),
 ///         ),
 ///         (
 ///             "p_project_name",
-///             item_compile_time!(string = string_compile_time!("Duplicate")),
+///             const_item!(string = const_string!("Duplicate")),
 ///         ),
 ///     ],
 /// );
 /// ```
 #[macro_export]
-macro_rules! parameter_object_compile_time {
+macro_rules! const_parameter_object {
     ($description:expr, [$(($key:literal, $item:expr $(,)?)),* $(,)?] $(,)?) => {
         const {
             #[allow(clippy::disallowed_methods)]

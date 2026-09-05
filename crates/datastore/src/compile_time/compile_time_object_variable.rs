@@ -13,9 +13,9 @@ pub struct VariableObjectCompileTime {
 }
 
 impl VariableObjectCompileTime {
-    /// Hidden backing constructor for `variable_object_compile_time!(description, items)`.
+    /// Hidden backing constructor for `const_variable_object!(description, items)`.
     ///
-    /// This is an implementation detail; call `variable_object_compile_time!` instead.
+    /// This is an implementation detail; call `const_variable_object!` instead.
     /// `description` names the top-level object and `items` is the ordered slice of
     /// `(ConstVariableKey, ItemCompileTime)` key/item pairs.
     #[doc(hidden)]
@@ -96,24 +96,24 @@ impl VariableObjectCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// variable_object_compile_time!(description, items)
-/// variable_object_compile_time!(description, [("key", item), ...])
+/// const_variable_object!(description, items)
+/// const_variable_object!(description, [("key", item), ...])
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the object.
 /// - `items`: `&'static [(ConstVariableKey, ItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with `variable_key!` and `item_compile_time!`.
+///   pairs, typically built with `variable_key!` and `const_item!`.
 ///
 /// # Examples
 /// ```rust
 /// use datastore::prelude::*;
 ///
-/// const RESULTS: VariableObjectCompileTime = variable_object_compile_time!(
+/// const RESULTS: VariableObjectCompileTime = const_variable_object!(
 ///     "Results",
 ///     [(
 ///         "v_result",
-///         item_compile_time!(number = number_compile_time!("Result")),
+///         const_item!(number = const_number!("Result")),
 ///     )],
 /// );
 /// assert_eq!(RESULTS.count(), 1);
@@ -125,22 +125,22 @@ impl VariableObjectCompileTime {
 /// ```compile_fail
 /// use datastore::prelude::*;
 ///
-/// const SETTINGS: VariableObjectCompileTime = variable_object_compile_time!(
+/// const SETTINGS: VariableObjectCompileTime = const_variable_object!(
 ///     "Settings",
 ///     [
 ///         (
 ///             "v_project_name",
-///             item_compile_time!(string = string_compile_time!("Project name")),
+///             const_item!(string = const_string!("Project name")),
 ///         ),
 ///         (
 ///             "v_project_name",
-///             item_compile_time!(string = string_compile_time!("Duplicate")),
+///             const_item!(string = const_string!("Duplicate")),
 ///         ),
 ///     ],
 /// );
 /// ```
 #[macro_export]
-macro_rules! variable_object_compile_time {
+macro_rules! const_variable_object {
     ($description:expr, [$(($key:literal, $item:expr $(,)?)),* $(,)?] $(,)?) => {
         const {
             #[allow(clippy::disallowed_methods)]
