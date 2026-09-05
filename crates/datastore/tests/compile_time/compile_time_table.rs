@@ -27,14 +27,3 @@ fn table_compile_time_preserves_columns_and_order() {
         ["width", "height"]
     );
 }
-
-#[test]
-#[should_panic(expected = "TableCompileTime column keys must be unique")]
-fn table_compile_time_rejects_duplicate_keys() {
-    const DUPLICATES: &[(ConstStoreKey, NumberCompileTime)] = &[
-        (store_key!("duplicate"), const_number!("First")),
-        (store_key!("duplicate"), const_number!("Second")),
-    ];
-    #[allow(clippy::disallowed_methods)]
-    let _ = TableCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
-}

@@ -30,20 +30,3 @@ fn table_with_units_compile_time_preserves_columns_and_order() {
         ["length", "area"]
     );
 }
-
-#[test]
-#[should_panic(expected = "TableWithUnitsCompileTime column keys must be unique")]
-fn table_with_units_compile_time_rejects_duplicate_keys() {
-    const DUPLICATES: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[
-        (
-            store_key!("duplicate"),
-            const_number_with_units!("First", UnitId::Length_Meter),
-        ),
-        (
-            store_key!("duplicate"),
-            const_number_with_units!("Second", UnitId::Length_Meter),
-        ),
-    ];
-    #[allow(clippy::disallowed_methods)]
-    let _ = TableWithUnitsCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
-}

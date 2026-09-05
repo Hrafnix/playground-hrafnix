@@ -429,3 +429,26 @@ macro_rules! const_map {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{const_string, store_key};
+
+    #[test]
+    #[should_panic(expected = "MapCompileTime item keys must be unique")]
+    fn map_compile_time_rejects_duplicate_keys() {
+        const DUPLICATES: &[(ConstStoreKey, MapItemCompileTime)] = &[
+            (
+                store_key!("duplicate"),
+                const_map_item!(string = const_string!("First")),
+            ),
+            (
+                store_key!("duplicate"),
+                const_map_item!(string = const_string!("Second")),
+            ),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = MapCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
+}

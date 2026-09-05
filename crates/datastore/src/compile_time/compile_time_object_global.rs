@@ -159,3 +159,26 @@ macro_rules! const_global_object {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{const_item, const_string, global_key};
+
+    #[test]
+    #[should_panic(expected = "GlobalObjectCompileTime item keys must be unique")]
+    fn global_object_compile_time_rejects_duplicate_keys() {
+        const DUPLICATES: &[(ConstGlobalKey, ItemCompileTime)] = &[
+            (
+                global_key!("g_duplicate"),
+                const_item!(string = const_string!("First")),
+            ),
+            (
+                global_key!("g_duplicate"),
+                const_item!(string = const_string!("Second")),
+            ),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = GlobalObjectCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
+}

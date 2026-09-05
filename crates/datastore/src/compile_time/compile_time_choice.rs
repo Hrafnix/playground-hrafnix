@@ -277,3 +277,19 @@ macro_rules! const_choice {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "ChoiceCompileTime choice ids must be unique")]
+    fn choice_compile_time_rejects_duplicate_ids() {
+        const DUPLICATES: &[ChoiceItemCompileTime] = &[
+            const_choice_item!("duplicate", "First"),
+            const_choice_item!("duplicate", "Second"),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = ChoiceCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
+}

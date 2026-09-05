@@ -159,3 +159,26 @@ macro_rules! const_parameter_object {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{const_item, const_string, parameter_key};
+
+    #[test]
+    #[should_panic(expected = "ParameterObjectCompileTime item keys must be unique")]
+    fn parameter_object_compile_time_rejects_duplicate_keys() {
+        const DUPLICATES: &[(ConstParameterKey, ItemCompileTime)] = &[
+            (
+                parameter_key!("p_duplicate"),
+                const_item!(string = const_string!("First")),
+            ),
+            (
+                parameter_key!("p_duplicate"),
+                const_item!(string = const_string!("Second")),
+            ),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = ParameterObjectCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
+}

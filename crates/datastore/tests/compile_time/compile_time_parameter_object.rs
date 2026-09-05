@@ -31,20 +31,3 @@ fn parameter_object_compile_time_converts_both_macro_forms() {
         ["p_enabled"]
     );
 }
-
-#[test]
-#[should_panic(expected = "ParameterObjectCompileTime item keys must be unique")]
-fn parameter_object_compile_time_rejects_duplicate_keys() {
-    const DUPLICATES: &[(ConstParameterKey, ItemCompileTime)] = &[
-        (
-            parameter_key!("p_duplicate"),
-            const_item!(string = const_string!("First")),
-        ),
-        (
-            parameter_key!("p_duplicate"),
-            const_item!(string = const_string!("Second")),
-        ),
-    ];
-    #[allow(clippy::disallowed_methods)]
-    let _ = ParameterObjectCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
-}
