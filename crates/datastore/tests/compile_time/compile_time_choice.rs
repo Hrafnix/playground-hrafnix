@@ -35,5 +35,6 @@ fn choice_compile_time_rejects_duplicate_ids() {
         choice_item_compile_time!("duplicate", "First"),
         choice_item_compile_time!("duplicate", "Second"),
     ];
+    #[allow(clippy::disallowed_methods)]
     let _ = ChoiceCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

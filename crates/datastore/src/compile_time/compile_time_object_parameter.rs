@@ -143,6 +143,7 @@ impl ParameterObjectCompileTime {
 macro_rules! parameter_object_compile_time {
     ($description:expr, [$(($key:literal, $item:expr $(,)?)),* $(,)?] $(,)?) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::ParameterObjectCompileTime::__new(
                 $description,
                 &[
@@ -152,6 +153,9 @@ macro_rules! parameter_object_compile_time {
         }
     };
     ($description:expr, $items:expr) => {
-        const { $crate::compile_time::ParameterObjectCompileTime::__new($description, $items) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ParameterObjectCompileTime::__new($description, $items)
+        }
     };
 }

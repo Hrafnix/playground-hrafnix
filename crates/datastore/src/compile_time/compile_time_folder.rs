@@ -111,10 +111,14 @@ impl FolderCompileTime {
 #[macro_export]
 macro_rules! folder_compile_time {
     ($description:expr, $is_input:expr) => {
-        const { $crate::compile_time::FolderCompileTime::__new($description, $is_input) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::FolderCompileTime::__new($description, $is_input)
+        }
     };
     ($description:expr, $is_input:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::FolderCompileTime::__new_with_default(
                 $description,
                 $is_input,

@@ -44,5 +44,6 @@ fn table_with_units_compile_time_rejects_duplicate_keys() {
             number_with_units_compile_time!("Second", UnitId::Length_Meter),
         ),
     ];
+    #[allow(clippy::disallowed_methods)]
     let _ = TableWithUnitsCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

@@ -149,6 +149,9 @@ impl TableCompileTime {
 #[macro_export]
 macro_rules! table_compile_time {
     ($description:expr, $columns:expr) => {
-        const { $crate::compile_time::TableCompileTime::__new($description, $columns) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::TableCompileTime::__new($description, $columns)
+        }
     };
 }

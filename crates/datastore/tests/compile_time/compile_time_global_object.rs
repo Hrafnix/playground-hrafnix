@@ -142,5 +142,6 @@ fn global_object_compile_time_rejects_duplicate_keys() {
             item_compile_time!(string = string_compile_time!("Second")),
         ),
     ];
+    #[allow(clippy::disallowed_methods)]
     let _ = GlobalObjectCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

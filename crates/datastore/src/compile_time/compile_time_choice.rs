@@ -199,6 +199,7 @@ impl ChoiceCompileTime {
 macro_rules! choice_item_compile_time {
     ($id:literal, $description:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::ChoiceItemCompileTime::__new(
                 $crate::prelude::store_key!($id),
                 $description,
@@ -260,10 +261,14 @@ macro_rules! choice_item_compile_time {
 #[macro_export]
 macro_rules! choice_compile_time {
     ($description:expr, $choices:expr) => {
-        const { $crate::compile_time::ChoiceCompileTime::__new($description, $choices) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ChoiceCompileTime::__new($description, $choices)
+        }
     };
     ($description:expr, $choices:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::ChoiceCompileTime::__new_with_default(
                 $description,
                 $choices,

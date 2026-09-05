@@ -319,34 +319,64 @@ impl MapCompileTime {
 #[macro_export]
 macro_rules! map_item_compile_time {
     (boolean = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__boolean($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__boolean($value)
+        }
     };
     (choice = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__choice($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__choice($value)
+        }
     };
     (file = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__file($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__file($value)
+        }
     };
     (integer = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__integer($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__integer($value)
+        }
     };
     (number = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__number($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__number($value)
+        }
     };
     (number_with_units = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__number_with_units($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__number_with_units($value)
+        }
     };
     (string = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__string($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__string($value)
+        }
     };
     (table = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__table($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__table($value)
+        }
     };
     (table_with_units = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__table_with_units($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__table_with_units($value)
+        }
     };
     (unit = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__unit($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__unit($value)
+        }
     };
 }
 
@@ -393,6 +423,9 @@ macro_rules! map_item_compile_time {
 #[macro_export]
 macro_rules! map_compile_time {
     ($description:expr, $items:expr) => {
-        const { $crate::compile_time::MapCompileTime::__new($description, $items) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapCompileTime::__new($description, $items)
+        }
     };
 }

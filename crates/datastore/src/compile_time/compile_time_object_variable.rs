@@ -143,6 +143,7 @@ impl VariableObjectCompileTime {
 macro_rules! variable_object_compile_time {
     ($description:expr, [$(($key:literal, $item:expr $(,)?)),* $(,)?] $(,)?) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::VariableObjectCompileTime::__new(
                 $description,
                 &[
@@ -152,6 +153,9 @@ macro_rules! variable_object_compile_time {
         }
     };
     ($description:expr, $items:expr) => {
-        const { $crate::compile_time::VariableObjectCompileTime::__new($description, $items) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::VariableObjectCompileTime::__new($description, $items)
+        }
     };
 }

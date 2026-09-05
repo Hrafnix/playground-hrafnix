@@ -117,10 +117,14 @@ impl UnitCompileTime {
 #[macro_export]
 macro_rules! unit_compile_time {
     ($description:expr, $unit_family:expr) => {
-        const { $crate::compile_time::UnitCompileTime::__new($description, $unit_family) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::UnitCompileTime::__new($description, $unit_family)
+        }
     };
     ($description:expr, $unit_family:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::UnitCompileTime::__new_with_default(
                 $description,
                 $unit_family,

@@ -135,11 +135,13 @@ impl FileCompileTime {
 macro_rules! file_compile_time {
     ($description:expr, $extension_filter:expr, $is_input:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::FileCompileTime::__new($description, $extension_filter, $is_input)
         }
     };
     ($description:expr, $extension_filter:expr, $is_input:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::FileCompileTime::__new_with_default(
                 $description,
                 $extension_filter,

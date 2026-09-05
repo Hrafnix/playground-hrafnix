@@ -25,6 +25,7 @@ impl NumberWithUnitsCompileTime {
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(description: &'static str, preferred_units: UnitId) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint(description, NumberConstraint::none(), preferred_units)
     }
 
@@ -42,6 +43,7 @@ impl NumberWithUnitsCompileTime {
         default_value: &'static str,
         preferred_units: UnitId,
     ) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint_and_default(
             description,
             NumberConstraint::none(),
@@ -195,11 +197,13 @@ impl NumberWithUnitsCompileTime {
 macro_rules! number_with_units_compile_time {
     ($description:expr, $preferred_units:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberWithUnitsCompileTime::__new($description, $preferred_units)
         }
     };
     ($description:expr, $preferred_units:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberWithUnitsCompileTime::__new_with_default(
                 $description,
                 $default_value,
@@ -209,6 +213,7 @@ macro_rules! number_with_units_compile_time {
     };
     ($description:expr, $preferred_units:expr, constraint = $constraint:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberWithUnitsCompileTime::__new_with_constraint(
                 $description,
                 $constraint,
@@ -218,6 +223,7 @@ macro_rules! number_with_units_compile_time {
     };
     ($description:expr, $preferred_units:expr, constraint = $constraint:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberWithUnitsCompileTime::__new_with_constraint_and_default(
                 $description,
                 $constraint,

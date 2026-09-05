@@ -95,10 +95,14 @@ impl StringCompileTime {
 #[macro_export]
 macro_rules! string_compile_time {
     ($description:expr) => {
-        const { $crate::compile_time::StringCompileTime::__new($description) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::StringCompileTime::__new($description)
+        }
     };
     ($description:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::StringCompileTime::__new_with_default(
                 $description,
                 $default_value,

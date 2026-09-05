@@ -38,5 +38,6 @@ fn table_compile_time_rejects_duplicate_keys() {
         (store_key!("duplicate"), number_compile_time!("First")),
         (store_key!("duplicate"), number_compile_time!("Second")),
     ];
+    #[allow(clippy::disallowed_methods)]
     let _ = TableCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

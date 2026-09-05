@@ -155,6 +155,7 @@ impl IntegerCompileTime {
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(description: &'static str) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint(description, IntegerConstraint::none())
     }
 
@@ -169,6 +170,7 @@ impl IntegerCompileTime {
         description: &'static str,
         default_value: &'static str,
     ) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint_and_default(
             description,
             IntegerConstraint::none(),
@@ -290,10 +292,14 @@ impl IntegerCompileTime {
 #[macro_export]
 macro_rules! integer_compile_time {
     ($description:expr) => {
-        const { $crate::compile_time::IntegerCompileTime::__new($description) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::IntegerCompileTime::__new($description)
+        }
     };
     ($description:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::IntegerCompileTime::__new_with_default(
                 $description,
                 $default_value,
@@ -302,6 +308,7 @@ macro_rules! integer_compile_time {
     };
     ($description:expr, constraint = $constraint:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::IntegerCompileTime::__new_with_constraint(
                 $description,
                 $constraint,
@@ -310,6 +317,7 @@ macro_rules! integer_compile_time {
     };
     ($description:expr, constraint = $constraint:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::IntegerCompileTime::__new_with_constraint_and_default(
                 $description,
                 $constraint,
