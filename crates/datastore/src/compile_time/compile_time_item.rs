@@ -6,7 +6,7 @@ use crate::compile_time::{
 };
 use crate::definition::ItemDefinitionType;
 
-/// Compile-time representation of a heterogeneous item. Use the `item_compile_time!` macro
+/// Compile-time representation of a heterogeneous item. Use the `const_item!` macro
 /// to construct values; Rust enum variants remain public for matching.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ItemCompileTime {
@@ -66,9 +66,9 @@ item_from!(TabCompileTime, Tab);
 item_from!(SeparatorCompileTime, Separator);
 
 impl ItemCompileTime {
-    /// Hidden wrapper for the `item_compile_time!(boolean = value)` arm.
+    /// Hidden wrapper for the `const_item!(boolean = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`BooleanCompileTime`] (a `true`/`false` toggle) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
@@ -76,9 +76,9 @@ impl ItemCompileTime {
         Self::Boolean(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(choice = value)` arm.
+    /// Hidden wrapper for the `const_item!(choice = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`ChoiceCompileTime`] (a single-select value chosen from a fixed list) as an
     /// [`ItemCompileTime`].
     #[doc(hidden)]
@@ -87,9 +87,9 @@ impl ItemCompileTime {
         Self::Choice(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(file = value)` arm.
+    /// Hidden wrapper for the `const_item!(file = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`FileCompileTime`] (a file-picker parameter) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
@@ -97,9 +97,9 @@ impl ItemCompileTime {
         Self::File(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(folder = value)` arm.
+    /// Hidden wrapper for the `const_item!(folder = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`FolderCompileTime`] (a folder-picker parameter) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
@@ -107,9 +107,9 @@ impl ItemCompileTime {
         Self::Folder(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(integer = value)` arm.
+    /// Hidden wrapper for the `const_item!(integer = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps an [`IntegerCompileTime`] (an integer value with an optional constraint) as an
     /// [`ItemCompileTime`].
     #[doc(hidden)]
@@ -118,9 +118,9 @@ impl ItemCompileTime {
         Self::Integer(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(map = value)` arm.
+    /// Hidden wrapper for the `const_item!(map = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`MapCompileTime`] (a nested, dynamically keyed collection of map items) as
     /// an [`ItemCompileTime`].
     #[doc(hidden)]
@@ -129,9 +129,9 @@ impl ItemCompileTime {
         Self::Map(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(number = value)` arm.
+    /// Hidden wrapper for the `const_item!(number = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`NumberCompileTime`] (an `f64` value with an optional constraint) as an
     /// [`ItemCompileTime`].
     #[doc(hidden)]
@@ -140,9 +140,9 @@ impl ItemCompileTime {
         Self::Number(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(number_with_units = value)` arm.
+    /// Hidden wrapper for the `const_item!(number_with_units = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`NumberWithUnitsCompileTime`] (an `f64` value with a preferred unit and an
     /// optional constraint) as an [`ItemCompileTime`].
     #[doc(hidden)]
@@ -151,9 +151,9 @@ impl ItemCompileTime {
         Self::NumberWithUnits(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(string = value)` arm.
+    /// Hidden wrapper for the `const_item!(string = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`StringCompileTime`] (a free-form text value) as an [`ItemCompileTime`].
     #[doc(hidden)]
     #[must_use]
@@ -161,9 +161,9 @@ impl ItemCompileTime {
         Self::String(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(table = value)` arm.
+    /// Hidden wrapper for the `const_item!(table = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`TableCompileTime`] (a table of unit-less numeric columns) as an
     /// [`ItemCompileTime`].
     #[doc(hidden)]
@@ -172,9 +172,9 @@ impl ItemCompileTime {
         Self::Table(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(table_with_units = value)` arm.
+    /// Hidden wrapper for the `const_item!(table_with_units = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`TableWithUnitsCompileTime`] (a table of numeric columns, each with its own
     /// preferred unit) as an [`ItemCompileTime`].
     #[doc(hidden)]
@@ -183,9 +183,9 @@ impl ItemCompileTime {
         Self::TableWithUnits(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(unit = value)` arm.
+    /// Hidden wrapper for the `const_item!(unit = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`UnitCompileTime`] (a value chosen from the units of a unit family) as an
     /// [`ItemCompileTime`].
     #[doc(hidden)]
@@ -194,9 +194,9 @@ impl ItemCompileTime {
         Self::Unit(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(tab = value)` arm.
+    /// Hidden wrapper for the `const_item!(tab = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`TabCompileTime`] (a layout-only tab heading; stores no value) as an
     /// [`ItemCompileTime`].
     #[doc(hidden)]
@@ -205,9 +205,9 @@ impl ItemCompileTime {
         Self::Tab(value)
     }
 
-    /// Hidden wrapper for the `item_compile_time!(separator = value)` arm.
+    /// Hidden wrapper for the `const_item!(separator = value)` arm.
     ///
-    /// This is an implementation detail; call `item_compile_time!` instead.
+    /// This is an implementation detail; call `const_item!` instead.
     /// Wraps a [`SeparatorCompileTime`] (a layout-only visual divider; stores no value) as
     /// an [`ItemCompileTime`].
     #[doc(hidden)]
@@ -245,8 +245,8 @@ impl ItemCompileTime {
 }
 
 /// Wraps a compile-time value as an [`ItemCompileTime`] for use inside
-/// `global_object_compile_time!`, `parameter_object_compile_time!`, and
-/// `variable_object_compile_time!` item lists.
+/// `const_global_object!`, `const_parameter_object!`, and
+/// `const_variable_object!` item lists.
 ///
 /// Expansion is wrapped in a `const` block, so `value` must be a const-compatible
 /// (`'static`) expression; construction is validated at compile time even when the result
@@ -254,20 +254,20 @@ impl ItemCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// item_compile_time!(boolean = value)
-/// item_compile_time!(choice = value)
-/// item_compile_time!(file = value)
-/// item_compile_time!(folder = value)
-/// item_compile_time!(integer = value)
-/// item_compile_time!(map = value)
-/// item_compile_time!(number = value)
-/// item_compile_time!(number_with_units = value)
-/// item_compile_time!(string = value)
-/// item_compile_time!(table = value)
-/// item_compile_time!(table_with_units = value)
-/// item_compile_time!(unit = value)
-/// item_compile_time!(tab = value)
-/// item_compile_time!(separator = value)
+/// const_item!(boolean = value)
+/// const_item!(choice = value)
+/// const_item!(file = value)
+/// const_item!(folder = value)
+/// const_item!(integer = value)
+/// const_item!(map = value)
+/// const_item!(number = value)
+/// const_item!(number_with_units = value)
+/// const_item!(string = value)
+/// const_item!(table = value)
+/// const_item!(table_with_units = value)
+/// const_item!(unit = value)
+/// const_item!(tab = value)
+/// const_item!(separator = value)
 /// ```
 ///
 /// # Arguments
@@ -294,54 +294,194 @@ impl ItemCompileTime {
 /// use datastore::compile_time::ItemCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const NAME: ItemCompileTime = item_compile_time!(string = string_compile_time!("Name"));
+/// const NAME: ItemCompileTime = const_item!(string = const_string!("Name"));
 /// const READY: ItemCompileTime =
-///     item_compile_time!(boolean = boolean_compile_time!("Ready", default = false));
+///     const_item!(boolean = const_boolean!("Ready", default = false));
 /// let _definition = NAME.into_definition();
 /// let _definition = READY.into_definition();
 /// ```
 #[macro_export]
-macro_rules! item_compile_time {
+macro_rules! const_item {
     (boolean = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__boolean($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__boolean($value)
+        }
     };
     (choice = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__choice($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__choice($value)
+        }
     };
     (file = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__file($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__file($value)
+        }
     };
     (folder = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__folder($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__folder($value)
+        }
     };
     (integer = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__integer($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__integer($value)
+        }
     };
     (map = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__map($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__map($value)
+        }
     };
     (number = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__number($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__number($value)
+        }
     };
     (number_with_units = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__number_with_units($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__number_with_units($value)
+        }
     };
     (string = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__string($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__string($value)
+        }
     };
     (table = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__table($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__table($value)
+        }
     };
     (table_with_units = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__table_with_units($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__table_with_units($value)
+        }
     };
     (unit = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__unit($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__unit($value)
+        }
     };
     (tab = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__tab($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__tab($value)
+        }
     };
     (separator = $value:expr) => {
-        const { $crate::compile_time::ItemCompileTime::__separator($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ItemCompileTime::__separator($value)
+        }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{
+        const_boolean, const_choice, const_choice_item, const_file, const_folder, const_integer,
+        const_map, const_number, const_number_with_units, const_separator, const_string, const_tab,
+        const_table, const_table_with_units, const_unit,
+    };
+    use units::{UnitFamilyId, UnitId};
+
+    #[test]
+    fn from_implementations_cover_every_item_variant() {
+        #[allow(clippy::disallowed_methods)]
+        let tab = const_tab!("Tab");
+        #[allow(clippy::disallowed_methods)]
+        let separator = const_separator!("Separator");
+        let items: [ItemCompileTime; 14] = [
+            const_boolean!("Boolean").into(),
+            const_choice!("Choice", &[const_choice_item!("choice", "Choice")]).into(),
+            const_file!("File", "*", true).into(),
+            const_folder!("Folder", true).into(),
+            const_integer!("Integer").into(),
+            const_map!("Map", &[]).into(),
+            const_number!("Number").into(),
+            const_number_with_units!("Number with units", UnitId::Length_Meter).into(),
+            const_string!("String").into(),
+            const_table!("Table", &[]).into(),
+            const_table_with_units!("Table with units", &[]).into(),
+            const_unit!("Unit", UnitFamilyId::Length).into(),
+            tab.into(),
+            separator.into(),
+        ];
+
+        assert!(matches!(items[0], ItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], ItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], ItemCompileTime::File(_)));
+        assert!(matches!(items[3], ItemCompileTime::Folder(_)));
+        assert!(matches!(items[4], ItemCompileTime::Integer(_)));
+        assert!(matches!(items[5], ItemCompileTime::Map(_)));
+        assert!(matches!(items[6], ItemCompileTime::Number(_)));
+        assert!(matches!(items[7], ItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[8], ItemCompileTime::String(_)));
+        assert!(matches!(items[9], ItemCompileTime::Table(_)));
+        assert!(matches!(items[10], ItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[11], ItemCompileTime::Unit(_)));
+        assert!(matches!(items[12], ItemCompileTime::Tab(_)));
+        assert!(matches!(items[13], ItemCompileTime::Separator(_)));
+    }
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_wrappers_run_at_runtime() {
+        let items = [
+            ItemCompileTime::__boolean(std::hint::black_box(const_boolean!("Boolean"))),
+            ItemCompileTime::__choice(std::hint::black_box(const_choice!(
+                "Choice",
+                &[const_choice_item!("choice", "Choice")]
+            ))),
+            ItemCompileTime::__file(std::hint::black_box(const_file!("File", "*", true))),
+            ItemCompileTime::__folder(std::hint::black_box(const_folder!("Folder", true))),
+            ItemCompileTime::__integer(std::hint::black_box(const_integer!("Integer"))),
+            ItemCompileTime::__map(std::hint::black_box(const_map!("Map", &[]))),
+            ItemCompileTime::__number(std::hint::black_box(const_number!("Number"))),
+            ItemCompileTime::__number_with_units(std::hint::black_box(const_number_with_units!(
+                "Number with units",
+                UnitId::Length_Meter
+            ))),
+            ItemCompileTime::__string(std::hint::black_box(const_string!("String"))),
+            ItemCompileTime::__table(std::hint::black_box(const_table!("Table", &[]))),
+            ItemCompileTime::__table_with_units(std::hint::black_box(const_table_with_units!(
+                "Table with units",
+                &[]
+            ))),
+            ItemCompileTime::__unit(std::hint::black_box(const_unit!(
+                "Unit",
+                UnitFamilyId::Length
+            ))),
+            ItemCompileTime::__tab(std::hint::black_box(const_tab!("Tab"))),
+            ItemCompileTime::__separator(std::hint::black_box(const_separator!("Separator"))),
+        ];
+
+        assert!(matches!(items[0], ItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], ItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], ItemCompileTime::File(_)));
+        assert!(matches!(items[3], ItemCompileTime::Folder(_)));
+        assert!(matches!(items[4], ItemCompileTime::Integer(_)));
+        assert!(matches!(items[5], ItemCompileTime::Map(_)));
+        assert!(matches!(items[6], ItemCompileTime::Number(_)));
+        assert!(matches!(items[7], ItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[8], ItemCompileTime::String(_)));
+        assert!(matches!(items[9], ItemCompileTime::Table(_)));
+        assert!(matches!(items[10], ItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[11], ItemCompileTime::Unit(_)));
+        assert!(matches!(items[12], ItemCompileTime::Tab(_)));
+        assert!(matches!(items[13], ItemCompileTime::Separator(_)));
+    }
 }

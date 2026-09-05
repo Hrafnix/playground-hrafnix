@@ -14,9 +14,9 @@ pub struct FileCompileTime {
 }
 
 impl FileCompileTime {
-    /// Hidden backing constructor for `file_compile_time!(description, extension_filter, is_input)`.
+    /// Hidden backing constructor for `const_file!(description, extension_filter, is_input)`.
     ///
-    /// This is an implementation detail; call `file_compile_time!` instead.
+    /// This is an implementation detail; call `const_file!` instead.
     /// `description` names the file parameter, `extension_filter` controls the
     /// dialog filter used to pick files, and `is_input` controls whether the file
     /// is treated as an input that can be chosen in a file picker and included
@@ -36,9 +36,9 @@ impl FileCompileTime {
         }
     }
 
-    /// Hidden backing constructor for `file_compile_time!(description, extension_filter, is_input, default = default_value)`.
+    /// Hidden backing constructor for `const_file!(description, extension_filter, is_input, default = default_value)`.
     ///
-    /// This is an implementation detail; call `file_compile_time!` instead.
+    /// This is an implementation detail; call `const_file!` instead.
     /// `description` names the file parameter, `extension_filter` controls the
     /// dialog filter used to pick files, `is_input` controls whether the file is
     /// treated as an input, and `default_value` provides the default file path.
@@ -106,8 +106,8 @@ impl FileCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// file_compile_time!(description, extension_filter, is_input)
-/// file_compile_time!(description, extension_filter, is_input, default = default_value)
+/// const_file!(description, extension_filter, is_input)
+/// const_file!(description, extension_filter, is_input, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -125,21 +125,23 @@ impl FileCompileTime {
 /// use datastore::prelude::*;
 ///
 /// const INPUT_FILE: FileCompileTime =
-///     file_compile_time!("Input data file", "*.csv", true, default = "data.csv");
+///     const_file!("Input data file", "*.csv", true, default = "data.csv");
 /// assert_eq!(INPUT_FILE.extension_filter(), "*.csv");
 /// assert!(INPUT_FILE.is_input());
 ///
 /// let _definition = INPUT_FILE.into_definition();
 /// ```
 #[macro_export]
-macro_rules! file_compile_time {
+macro_rules! const_file {
     ($description:expr, $extension_filter:expr, $is_input:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::FileCompileTime::__new($description, $extension_filter, $is_input)
         }
     };
     ($description:expr, $extension_filter:expr, $is_input:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::FileCompileTime::__new_with_default(
                 $description,
                 $extension_filter,
@@ -148,4 +150,28 @@ macro_rules! file_compile_time {
             )
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default = FileCompileTime::__new(std::hint::black_box("Input"), "*.csv", true);
+        let with_default = FileCompileTime::__new_with_default(
+            std::hint::black_box("Output"),
+            "*.json",
+            false,
+            std::hint::black_box("output.json"),
+        );
+
+        assert_eq!(without_default.description(), "Input");
+        assert_eq!(without_default.extension_filter(), "*.csv");
+        assert!(without_default.is_input());
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.description(), "Output");
+        assert_eq!(with_default.default_value(), "output.json");
+    }
 }

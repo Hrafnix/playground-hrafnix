@@ -1,4 +1,6 @@
+use datastore::definition::{FolderDefinition, SeparatorDefinition, TabDefinition};
 use datastore::prelude::*;
+use units::UnitFamilyId;
 
 #[test]
 fn test_parameter_object_definition_basic() {
@@ -213,10 +215,62 @@ fn test_parameter_object_definition_print() {
                 ],
             ),
         )
+        .with(
+            ParameterKey::new("p_p9".into()).unwrap(),
+            FolderDefinition::new("D9", true),
+        )
+        .with(
+            ParameterKey::new("p_p10".into()).unwrap(),
+            SeparatorDefinition::new("D10"),
+        )
+        .with(
+            ParameterKey::new("p_p11".into()).unwrap(),
+            TabDefinition::new("D11"),
+        )
+        .with(
+            ParameterKey::new("p_p12".into()).unwrap(),
+            UnitDefinition::new("D12", UnitFamilyId::Length),
+        )
         .finish();
 
     assert_eq!(
         format!("{def_1}"),
-        "Parameter Object Definition (Test)\n    ├── p_p1 (D1) String - default: \"\"\n    ├── p_p2 (D2) Boolean - default: \"\" [true (True), false (False)]\n    ├── p_p3 (D3) File - default: \"\" [ext]\n    ├── p_p4_v1 (D4) Integer - default: \"\"\n    ├── p_p4_v2 (D4) Integer - default: \"\" [Min(0, inclusive)]\n    ├── p_p4_v3 (D4) Integer - default: \"\" [Min(20, exclusive)]\n    ├── p_p4_v4 (D4) Integer - default: \"\" [Max(10, inclusive)]\n    ├── p_p4_v5 (D4) Integer - default: \"\" [Range(0, 10, inclusive, inclusive)]\n    ├── p_p4_v6 (D4) Integer - default: \"\" [Range(32, 80, exclusive, inclusive)]\n    ├── p_p4_v7 (D4) Integer - default: \"\" [Range(10, 150, exclusive, inclusive)]\n    ├── p_p4_v8 (D4) Integer - default: \"\" [Range(40, 100, exclusive, exclusive)]\n    ├── p_p5_v1 (D5) Number - default: \"\"\n    ├── p_p5_v2 (D5) Number - default: \"\" [Min(1.0, inclusive)]\n    ├── p_p5_v3 (D5) Number - default: \"\" [Max(21.0, exclusive)]\n    ├── p_p5_v4 (D5) Number - default: \"\" [Max(11.0, inclusive)]\n    ├── p_p5_v5 (D5) Number - default: \"\" [Max(100.0, exclusive)]\n    ├── p_p5_v6 (D5) Number - default: \"\" [Range(2.0, 12.0, inclusive, exclusive)]\n    ├── p_p5_v7 (D5) Number - default: \"\" [Range(3.0, 99.0, exclusive, exclusive)]\n    ├── p_p5_v8 (D5) Number - default: \"\" [Range(5.0, 70.0, exclusive, inclusive)]\n    ├── p_p5_v9 (D5) Number - default: \"\" [Range(6.0, 1200.0, inclusive, inclusive)]\n    ├── p_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n    ├── p_p7 (D7) Table\n    │   ├── col1 (C1) Number - default: \"\"\n    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n    └── p_p8 (D8) Map\n        ├── col1 (C1) String - default: \"\"\n        ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n        └── col3 (C3) Table\n            ├── col3_1 (C3_1) Number - default: \"\"\n            └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n"
+        concat!(
+            "Parameter Object Definition (Test)\n",
+            "    ├── p_p1 (D1) String - default: \"\"\n",
+            "    ├── p_p2 (D2) Boolean - default: \"\" [true (True), false (False)]\n",
+            "    ├── p_p3 (D3) File - default: \"\" [ext]\n",
+            "    ├── p_p4_v1 (D4) Integer - default: \"\"\n",
+            "    ├── p_p4_v2 (D4) Integer - default: \"\" [Min(0, inclusive)]\n",
+            "    ├── p_p4_v3 (D4) Integer - default: \"\" [Min(20, exclusive)]\n",
+            "    ├── p_p4_v4 (D4) Integer - default: \"\" [Max(10, inclusive)]\n",
+            "    ├── p_p4_v5 (D4) Integer - default: \"\" [Range(0, 10, inclusive, inclusive)]\n",
+            "    ├── p_p4_v6 (D4) Integer - default: \"\" [Range(32, 80, exclusive, inclusive)]\n",
+            "    ├── p_p4_v7 (D4) Integer - default: \"\" [Range(10, 150, exclusive, inclusive)]\n",
+            "    ├── p_p4_v8 (D4) Integer - default: \"\" [Range(40, 100, exclusive, exclusive)]\n",
+            "    ├── p_p5_v1 (D5) Number - default: \"\"\n",
+            "    ├── p_p5_v2 (D5) Number - default: \"\" [Min(1.0, inclusive)]\n",
+            "    ├── p_p5_v3 (D5) Number - default: \"\" [Max(21.0, exclusive)]\n",
+            "    ├── p_p5_v4 (D5) Number - default: \"\" [Max(11.0, inclusive)]\n",
+            "    ├── p_p5_v5 (D5) Number - default: \"\" [Max(100.0, exclusive)]\n",
+            "    ├── p_p5_v6 (D5) Number - default: \"\" [Range(2.0, 12.0, inclusive, exclusive)]\n",
+            "    ├── p_p5_v7 (D5) Number - default: \"\" [Range(3.0, 99.0, exclusive, exclusive)]\n",
+            "    ├── p_p5_v8 (D5) Number - default: \"\" [Range(5.0, 70.0, exclusive, inclusive)]\n",
+            "    ├── p_p5_v9 (D5) Number - default: \"\" [Range(6.0, 1200.0, inclusive, inclusive)]\n",
+            "    ├── p_p6 (D6) Choice - default: \"\" [option_1 (Option 1), option_2 (Option 2)]\n",
+            "    ├── p_p7 (D7) Table\n",
+            "    │   ├── col1 (C1) Number - default: \"\"\n",
+            "    │   └── col2 (C2) Number - default: \"\" [Min(1.52, inclusive)]\n",
+            "    ├── p_p8 (D8) Map\n",
+            "    │   ├── col1 (C1) String - default: \"\"\n",
+            "    │   ├── col2 (C2) Number - default: \"\" [Max(1.0, inclusive)]\n",
+            "    │   └── col3 (C3) Table\n",
+            "    │       ├── col3_1 (C3_1) Number - default: \"\"\n",
+            "    │       └── col3_2 (C3_2) Number - default: \"\" [Range(0.0, 10.0, inclusive, exclusive)]\n",
+            "    ├── p_p9 (D9) Folder - default: \"\"\n",
+            "    ├── p_p10 (D10) Separator\n",
+            "    ├── p_p11 (D11) Tab\n",
+            "    └── p_p12 (D12) Unit - default: \"\" [u_length_meter (m), u_length_kilometer (km), u_length_centimeter (cm), u_length_millimeter (mm), u_length_foot (ft), u_length_inch (in), u_length_yard (yd), u_length_mile (mi)]\n",
+        )
     );
 }

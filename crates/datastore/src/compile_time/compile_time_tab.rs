@@ -8,9 +8,9 @@ pub struct TabCompileTime {
 }
 
 impl TabCompileTime {
-    /// Hidden backing constructor for `tab_compile_time!(description)`.
+    /// Hidden backing constructor for `const_tab!(description)`.
     ///
-    /// This is an implementation detail; call `tab_compile_time!` instead.
+    /// This is an implementation detail; call `const_tab!` instead.
     /// `description` names the layout-only tab heading.
     #[doc(hidden)]
     #[must_use]
@@ -40,7 +40,7 @@ impl TabCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// tab_compile_time!(description)
+/// const_tab!(description)
 /// ```
 ///
 /// # Arguments
@@ -51,14 +51,27 @@ impl TabCompileTime {
 /// use datastore::compile_time::TabCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const GENERAL: TabCompileTime = tab_compile_time!("General");
+/// const GENERAL: TabCompileTime = const_tab!("General");
 /// assert_eq!(GENERAL.description(), "General");
 ///
 /// let _definition = GENERAL.into_definition();
 /// ```
 #[macro_export]
-macro_rules! tab_compile_time {
+macro_rules! const_tab {
     ($description:expr) => {
         const { $crate::compile_time::TabCompileTime::__new($description) }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        let tab = TabCompileTime::__new(std::hint::black_box("General"));
+
+        assert_eq!(tab.description(), "General");
+    }
 }

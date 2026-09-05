@@ -13,12 +13,12 @@ pub struct TableWithUnitsCompileTime {
 }
 
 impl TableWithUnitsCompileTime {
-    /// Hidden backing constructor for `table_with_units_compile_time!(description, columns)`.
+    /// Hidden backing constructor for `const_table_with_units!(description, columns)`.
     ///
-    /// This is an implementation detail; call `table_with_units_compile_time!` instead.
+    /// This is an implementation detail; call `const_table_with_units!` instead.
     /// `description` names the table and `columns` is the ordered slice of
     /// `(ConstStoreKey, NumberWithUnitsCompileTime)` column key/definition pairs, typically
-    /// built with the `store_key!` macro and `number_with_units_compile_time!`.
+    /// built with the `store_key!` macro and `const_number_with_units!`.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
@@ -121,14 +121,14 @@ impl TableWithUnitsCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// table_with_units_compile_time!(description, columns)
+/// const_table_with_units!(description, columns)
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the table.
 /// - `columns`: `&'static [(ConstStoreKey, NumberWithUnitsCompileTime)]` ordered slice of
 ///   column key/definition pairs, typically built with the `store_key!` macro and
-///   `number_with_units_compile_time!`.
+///   `const_number_with_units!`.
 ///
 /// # Examples
 /// ```rust
@@ -139,22 +139,62 @@ impl TableWithUnitsCompileTime {
 /// const COLUMNS: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[
 ///     (
 ///         store_key!("length"),
-///         number_with_units_compile_time!("Length", UnitId::Length_Meter),
+///         const_number_with_units!("Length", UnitId::Length_Meter),
 ///     ),
 ///     (
 ///         store_key!("area"),
-///         number_with_units_compile_time!("Area", UnitId::Area_SquareMeter),
+///         const_number_with_units!("Area", UnitId::Area_SquareMeter),
 ///     ),
 /// ];
 /// const MEASUREMENTS: TableWithUnitsCompileTime =
-///     table_with_units_compile_time!("Measurements", COLUMNS);
+///     const_table_with_units!("Measurements", COLUMNS);
 /// assert_eq!(MEASUREMENTS.count(), 2);
 ///
 /// let _definition = MEASUREMENTS.into_definition();
 /// ```
 #[macro_export]
-macro_rules! table_with_units_compile_time {
+macro_rules! const_table_with_units {
     ($description:expr, $columns:expr) => {
-        const { $crate::compile_time::TableWithUnitsCompileTime::__new($description, $columns) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::TableWithUnitsCompileTime::__new($description, $columns)
+        }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{const_number_with_units, store_key};
+    use units::UnitId;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const COLUMNS: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[(
+            store_key!("length"),
+            const_number_with_units!("Length", UnitId::Length_Meter),
+        )];
+        let table = TableWithUnitsCompileTime::__new(std::hint::black_box("Measurements"), COLUMNS);
+
+        assert_eq!(table.description(), "Measurements");
+        assert_eq!(table.columns(), COLUMNS);
+    }
+
+    #[test]
+    #[should_panic(expected = "TableWithUnitsCompileTime column keys must be unique")]
+    fn table_with_units_compile_time_rejects_duplicate_keys() {
+        const DUPLICATES: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[
+            (
+                store_key!("duplicate"),
+                const_number_with_units!("First", UnitId::Length_Meter),
+            ),
+            (
+                store_key!("duplicate"),
+                const_number_with_units!("Second", UnitId::Length_Meter),
+            ),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = TableWithUnitsCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
 }

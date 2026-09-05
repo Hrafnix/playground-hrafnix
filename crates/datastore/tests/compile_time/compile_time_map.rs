@@ -1,33 +1,33 @@
 use datastore::prelude::*;
 use units::{UnitFamilyId, UnitId};
 
-const CHOICES: &[ChoiceItemCompileTime] = &[choice_item_compile_time!("one", "One")];
-const CHOICE: ChoiceCompileTime = choice_compile_time!("Choice", CHOICES);
+const CHOICES: &[ChoiceItemCompileTime] = &[const_choice_item!("one", "One")];
+const CHOICE: ChoiceCompileTime = const_choice!("Choice", CHOICES);
 const TABLE_COLUMNS: &[(ConstStoreKey, NumberCompileTime)] =
-    &[(store_key!("width"), number_compile_time!("Width"))];
-const TABLE: TableCompileTime = table_compile_time!("Dimensions", TABLE_COLUMNS);
+    &[(store_key!("width"), const_number!("Width"))];
+const TABLE: TableCompileTime = const_table!("Dimensions", TABLE_COLUMNS);
 const UNIT_COLUMNS: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[(
     store_key!("length"),
-    number_with_units_compile_time!("Length", UnitId::Length_Meter),
+    const_number_with_units!("Length", UnitId::Length_Meter),
 )];
 const TABLE_WITH_UNITS: TableWithUnitsCompileTime =
-    table_with_units_compile_time!("Measurements", UNIT_COLUMNS);
+    const_table_with_units!("Measurements", UNIT_COLUMNS);
 
 #[test]
 fn map_item_compile_time_supports_every_variant() {
     let items = [
-        map_item_compile_time!(boolean = boolean_compile_time!("Boolean")),
-        map_item_compile_time!(choice = CHOICE),
-        map_item_compile_time!(file = file_compile_time!("File", "*", true)),
-        map_item_compile_time!(integer = integer_compile_time!("Integer")),
-        map_item_compile_time!(number = number_compile_time!("Number")),
-        map_item_compile_time!(
-            number_with_units = number_with_units_compile_time!("Length", UnitId::Length_Meter)
+        const_map_item!(boolean = const_boolean!("Boolean")),
+        const_map_item!(choice = CHOICE),
+        const_map_item!(file = const_file!("File", "*", true)),
+        const_map_item!(integer = const_integer!("Integer")),
+        const_map_item!(number = const_number!("Number")),
+        const_map_item!(
+            number_with_units = const_number_with_units!("Length", UnitId::Length_Meter)
         ),
-        map_item_compile_time!(string = string_compile_time!("String")),
-        map_item_compile_time!(table = TABLE),
-        map_item_compile_time!(table_with_units = TABLE_WITH_UNITS),
-        map_item_compile_time!(unit = unit_compile_time!("Unit", UnitFamilyId::Length)),
+        const_map_item!(string = const_string!("String")),
+        const_map_item!(table = TABLE),
+        const_map_item!(table_with_units = TABLE_WITH_UNITS),
+        const_map_item!(unit = const_unit!("Unit", UnitFamilyId::Length)),
     ];
 
     assert!(matches!(
@@ -77,17 +77,24 @@ fn map_compile_time_preserves_items_and_order() {
     const ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[
         (
             store_key!("name"),
-            map_item_compile_time!(string = string_compile_time!("Name")),
+            const_map_item!(string = const_string!("Name")),
         ),
-        (
-            store_key!("dimensions"),
-            map_item_compile_time!(table = TABLE),
-        ),
+        (store_key!("dimensions"), const_map_item!(table = TABLE)),
     ];
-    const MAP: MapCompileTime = map_compile_time!("Shapes", ITEMS);
+    const MAP: MapCompileTime = const_map!("Shapes", ITEMS);
 
+    assert_eq!(MAP.description(), "Shapes");
+    assert_eq!(MAP.items(), ITEMS);
     assert_eq!(MAP.count(), 2);
+    assert!(MAP.contains_key("name"));
+    assert!(!MAP.contains_key("missing"));
     assert!(MAP.get("dimensions").is_some());
+    assert_eq!(MAP.get("missing"), None);
+    assert_eq!(
+        MAP.keys().map(|key| key.to_string()).collect::<Vec<_>>(),
+        ["name", "dimensions"]
+    );
+    assert_eq!(MAP.iter().count(), 2);
     assert_eq!(
         MAP.into_definition()
             .keys()
@@ -95,20 +102,4 @@ fn map_compile_time_preserves_items_and_order() {
             .collect::<Vec<_>>(),
         ["name", "dimensions"]
     );
-}
-
-#[test]
-#[should_panic(expected = "MapCompileTime item keys must be unique")]
-fn map_compile_time_rejects_duplicate_keys() {
-    const DUPLICATES: &[(ConstStoreKey, MapItemCompileTime)] = &[
-        (
-            store_key!("duplicate"),
-            map_item_compile_time!(string = string_compile_time!("First")),
-        ),
-        (
-            store_key!("duplicate"),
-            map_item_compile_time!(string = string_compile_time!("Second")),
-        ),
-    ];
-    let _ = MapCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

@@ -12,9 +12,9 @@ pub struct ChoiceItemCompileTime {
 }
 
 impl ChoiceItemCompileTime {
-    /// Hidden backing constructor for `choice_item_compile_time!("id", description)`.
+    /// Hidden backing constructor for `const_choice_item!("id", description)`.
     ///
-    /// This is an implementation detail; call `choice_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_choice_item!` instead.
     /// The macro validates its string literal as a [`ConstStoreKey`] before passing it
     /// as `id`. The id uniquely identifies the option and is compared against the
     /// parameter's stored value to determine the active choice. `description` is the
@@ -56,9 +56,9 @@ pub struct ChoiceCompileTime {
 }
 
 impl ChoiceCompileTime {
-    /// Hidden backing constructor for `choice_compile_time!(description, choices)`.
+    /// Hidden backing constructor for `const_choice!(description, choices)`.
     ///
-    /// This is an implementation detail; call `choice_compile_time!` instead.
+    /// This is an implementation detail; call `const_choice!` instead.
     /// `description` names the parameter and `choices` is the ordered slice of
     /// [`ChoiceItemCompileTime`] options. This arm creates a choice with no default
     /// value selected.
@@ -76,9 +76,9 @@ impl ChoiceCompileTime {
         }
     }
 
-    /// Hidden backing constructor for `choice_compile_time!(description, choices, default = default_value)`.
+    /// Hidden backing constructor for `const_choice!(description, choices, default = default_value)`.
     ///
-    /// This is an implementation detail; call `choice_compile_time!` instead.
+    /// This is an implementation detail; call `const_choice!` instead.
     /// `description` names the parameter, `choices` is the ordered slice of
     /// [`ChoiceItemCompileTime`] options, and `default_value` is the id of the choice
     /// selected by default (must match one of the ids in `choices`).
@@ -170,7 +170,7 @@ impl ChoiceCompileTime {
 }
 
 /// Creates a [`ChoiceItemCompileTime`], the compile-time metadata for a single selectable
-/// option of a `choice_compile_time!` parameter.
+/// option of a `const_choice!` parameter.
 ///
 /// Expansion is wrapped in a `const` block, so both arguments must be const-compatible
 /// (`'static`) expressions; construction is validated at compile time even when the result
@@ -178,7 +178,7 @@ impl ChoiceCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// choice_item_compile_time!("id", description)
+/// const_choice_item!("id", description)
 /// ```
 ///
 /// # Arguments
@@ -192,13 +192,14 @@ impl ChoiceCompileTime {
 /// use datastore::compile_time::ChoiceItemCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const SMALL: ChoiceItemCompileTime = choice_item_compile_time!("small", "Small");
+/// const SMALL: ChoiceItemCompileTime = const_choice_item!("small", "Small");
 /// assert_eq!(SMALL.description(), "Small");
 /// ```
 #[macro_export]
-macro_rules! choice_item_compile_time {
+macro_rules! const_choice_item {
     ($id:literal, $description:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::ChoiceItemCompileTime::__new(
                 $crate::prelude::store_key!($id),
                 $description,
@@ -219,14 +220,14 @@ macro_rules! choice_item_compile_time {
 ///
 /// # Syntax
 /// ```text
-/// choice_compile_time!(description, choices)
-/// choice_compile_time!(description, choices, default = default_value)
+/// const_choice!(description, choices)
+/// const_choice!(description, choices, default = default_value)
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the parameter.
 /// - `choices`: `&'static [ChoiceItemCompileTime]` ordered slice of options, typically built
-///   with [`choice_item_compile_time!`].
+///   with [`const_choice_item!`].
 /// - `default_value` (optional): `&'static str` id of the choice selected by default; must
 ///   match one of the ids in `choices`. When omitted, the parameter has no default.
 ///
@@ -236,10 +237,10 @@ macro_rules! choice_item_compile_time {
 /// use datastore::prelude::*;
 ///
 /// const SIZES: &[ChoiceItemCompileTime] = &[
-///     choice_item_compile_time!("small", "Small"),
-///     choice_item_compile_time!("large", "Large"),
+///     const_choice_item!("small", "Small"),
+///     const_choice_item!("large", "Large"),
 /// ];
-/// const SIZE: ChoiceCompileTime = choice_compile_time!("Size", SIZES, default = "small");
+/// const SIZE: ChoiceCompileTime = const_choice!("Size", SIZES, default = "small");
 /// assert_eq!(SIZE.default_value(), "small");
 /// assert!(SIZE.contains("large"));
 ///
@@ -252,18 +253,22 @@ macro_rules! choice_item_compile_time {
 /// use datastore::prelude::*;
 ///
 /// const SIZES: &[ChoiceItemCompileTime] = &[
-///     choice_item_compile_time!("small", "Small"),
-///     choice_item_compile_time!("small", "Duplicate"),
+///     const_choice_item!("small", "Small"),
+///     const_choice_item!("small", "Duplicate"),
 /// ];
-/// const SIZE: ChoiceCompileTime = choice_compile_time!("Size", SIZES);
+/// const SIZE: ChoiceCompileTime = const_choice!("Size", SIZES);
 /// ```
 #[macro_export]
-macro_rules! choice_compile_time {
+macro_rules! const_choice {
     ($description:expr, $choices:expr) => {
-        const { $crate::compile_time::ChoiceCompileTime::__new($description, $choices) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::ChoiceCompileTime::__new($description, $choices)
+        }
     };
     ($description:expr, $choices:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::ChoiceCompileTime::__new_with_default(
                 $description,
                 $choices,
@@ -271,4 +276,46 @@ macro_rules! choice_compile_time {
             )
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::store_key;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let choices = Box::leak(Box::new([
+            ChoiceItemCompileTime::__new(store_key!("first"), std::hint::black_box("First")),
+            ChoiceItemCompileTime::__new(store_key!("second"), std::hint::black_box("Second")),
+        ]));
+        let item = ChoiceItemCompileTime::__new(
+            store_key!("runtime_choice"),
+            std::hint::black_box("Runtime choice"),
+        );
+        let without_default = ChoiceCompileTime::__new(std::hint::black_box("Choice"), choices);
+        let with_default = ChoiceCompileTime::__new_with_default(
+            std::hint::black_box("Defaulted choice"),
+            choices,
+            "second",
+        );
+
+        assert_eq!(item.id(), store_key!("runtime_choice"));
+        assert_eq!(item.description(), "Runtime choice");
+        assert_eq!(without_default.choices(), choices);
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.default_value(), "second");
+    }
+
+    #[test]
+    #[should_panic(expected = "ChoiceCompileTime choice ids must be unique")]
+    fn choice_compile_time_rejects_duplicate_ids() {
+        const DUPLICATES: &[ChoiceItemCompileTime] = &[
+            const_choice_item!("duplicate", "First"),
+            const_choice_item!("duplicate", "Second"),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = ChoiceCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
 }

@@ -13,20 +13,21 @@ pub struct NumberCompileTime {
 }
 
 impl NumberCompileTime {
-    /// Hidden backing constructor for `number_compile_time!(description)`.
+    /// Hidden backing constructor for `const_number!(description)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter. This arm creates a number with no
     /// constraint and no default value.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(description: &'static str) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint(description, NumberConstraint::none())
     }
 
-    /// Hidden backing constructor for `number_compile_time!(description, default = default_value)`.
+    /// Hidden backing constructor for `const_number!(description, default = default_value)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter and `default_value` is the decimal string
     /// default. This arm creates a number with no constraint.
     #[doc(hidden)]
@@ -35,6 +36,7 @@ impl NumberCompileTime {
         description: &'static str,
         default_value: &'static str,
     ) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint_and_default(
             description,
             NumberConstraint::none(),
@@ -42,9 +44,9 @@ impl NumberCompileTime {
         )
     }
 
-    /// Hidden backing constructor for `number_compile_time!(description, constraint = constraint)`.
+    /// Hidden backing constructor for `const_number!(description, constraint = constraint)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter and `constraint` is the [`NumberConstraint`]
     /// bound on the accepted value. This arm creates a number with no default value.
     #[doc(hidden)]
@@ -61,9 +63,9 @@ impl NumberCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `number_compile_time!(description, constraint = constraint, default = default_value)`.
+    /// `const_number!(description, constraint = constraint, default = default_value)`.
     ///
-    /// This is an implementation detail; call `number_compile_time!` instead.
+    /// This is an implementation detail; call `const_number!` instead.
     /// `description` names the parameter, `constraint` is the [`NumberConstraint`] bound
     /// on the accepted value, and `default_value` is the decimal string default.
     #[doc(hidden)]
@@ -123,10 +125,10 @@ impl NumberCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// number_compile_time!(description)
-/// number_compile_time!(description, default = default_value)
-/// number_compile_time!(description, constraint = constraint)
-/// number_compile_time!(description, constraint = constraint, default = default_value)
+/// const_number!(description)
+/// const_number!(description, default = default_value)
+/// const_number!(description, constraint = constraint)
+/// const_number!(description, constraint = constraint, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -144,7 +146,7 @@ impl NumberCompileTime {
 /// use datastore::compile_time::{NumberCompileTime, NumberConstraint};
 /// use datastore::prelude::*;
 ///
-/// const WEIGHT: NumberCompileTime = number_compile_time!(
+/// const WEIGHT: NumberCompileTime = const_number!(
 ///     "Weight",
 ///     constraint = NumberConstraint::min(0.0, true),
 ///     default = "1.5"
@@ -154,12 +156,16 @@ impl NumberCompileTime {
 /// let _definition = WEIGHT.into_definition();
 /// ```
 #[macro_export]
-macro_rules! number_compile_time {
+macro_rules! const_number {
     ($description:expr) => {
-        const { $crate::compile_time::NumberCompileTime::__new($description) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::NumberCompileTime::__new($description)
+        }
     };
     ($description:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberCompileTime::__new_with_default(
                 $description,
                 $default_value,
@@ -168,6 +174,7 @@ macro_rules! number_compile_time {
     };
     ($description:expr, constraint = $constraint:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberCompileTime::__new_with_constraint(
                 $description,
                 $constraint,
@@ -176,6 +183,7 @@ macro_rules! number_compile_time {
     };
     ($description:expr, constraint = $constraint:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::NumberCompileTime::__new_with_constraint_and_default(
                 $description,
                 $constraint,
@@ -183,4 +191,44 @@ macro_rules! number_compile_time {
             )
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let plain = NumberCompileTime::__new(std::hint::black_box("Plain"));
+        let defaulted =
+            NumberCompileTime::__new_with_default(std::hint::black_box("Defaulted"), "1.5");
+        let constrained = NumberCompileTime::__new_with_constraint(
+            std::hint::black_box("Constrained"),
+            NumberConstraint::min(0.0, true),
+        );
+        let constrained_defaulted = NumberCompileTime::__new_with_constraint_and_default(
+            std::hint::black_box("Both"),
+            NumberConstraint::max(100.0, false),
+            "50",
+        );
+
+        assert_eq!(plain.constraint(), NumberConstraintEnum::None);
+        assert_eq!(defaulted.default_value(), "1.5");
+        assert_eq!(
+            constrained.constraint(),
+            NumberConstraintEnum::Min {
+                min: 0.0,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constrained_defaulted.constraint(),
+            NumberConstraintEnum::Max {
+                max: 100.0,
+                inclusive: false
+            }
+        );
+        assert_eq!(constrained_defaulted.default_value(), "50");
+    }
 }

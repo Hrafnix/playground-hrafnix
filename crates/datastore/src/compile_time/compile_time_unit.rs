@@ -13,9 +13,9 @@ pub struct UnitCompileTime {
 }
 
 impl UnitCompileTime {
-    /// Hidden backing constructor for `unit_compile_time!(description, unit_family)`.
+    /// Hidden backing constructor for `const_unit!(description, unit_family)`.
     ///
-    /// This is an implementation detail; call `unit_compile_time!` instead.
+    /// This is an implementation detail; call `const_unit!` instead.
     /// `description` names the parameter and `unit_family` is the [`UnitFamilyId`] the
     /// value may be selected from. This arm creates a unit value with no default.
     #[doc(hidden)]
@@ -29,9 +29,9 @@ impl UnitCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `unit_compile_time!(description, unit_family, default = default_value)`.
+    /// `const_unit!(description, unit_family, default = default_value)`.
     ///
-    /// This is an implementation detail; call `unit_compile_time!` instead.
+    /// This is an implementation detail; call `const_unit!` instead.
     /// `description` names the parameter, `unit_family` is the [`UnitFamilyId`] the value
     /// may be selected from, and `default_value` is the string id of the default unit
     /// (which must belong to `unit_family`).
@@ -87,8 +87,8 @@ impl UnitCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// unit_compile_time!(description, unit_family)
-/// unit_compile_time!(description, unit_family, default = default_value)
+/// const_unit!(description, unit_family)
+/// const_unit!(description, unit_family, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -105,7 +105,7 @@ impl UnitCompileTime {
 /// use datastore::prelude::*;
 /// use units::UnitFamilyId;
 ///
-/// const LENGTH_UNIT: UnitCompileTime = unit_compile_time!(
+/// const LENGTH_UNIT: UnitCompileTime = const_unit!(
 ///     "Preferred length unit",
 ///     UnitFamilyId::Length,
 ///     default = "u_length_meter"
@@ -115,12 +115,16 @@ impl UnitCompileTime {
 /// let _definition = LENGTH_UNIT.into_definition();
 /// ```
 #[macro_export]
-macro_rules! unit_compile_time {
+macro_rules! const_unit {
     ($description:expr, $unit_family:expr) => {
-        const { $crate::compile_time::UnitCompileTime::__new($description, $unit_family) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::UnitCompileTime::__new($description, $unit_family)
+        }
     };
     ($description:expr, $unit_family:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::UnitCompileTime::__new_with_default(
                 $description,
                 $unit_family,
@@ -128,4 +132,25 @@ macro_rules! unit_compile_time {
             )
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default =
+            UnitCompileTime::__new(std::hint::black_box("Length"), UnitFamilyId::Length);
+        let with_default = UnitCompileTime::__new_with_default(
+            std::hint::black_box("Length"),
+            UnitFamilyId::Length,
+            "u_length_meter",
+        );
+
+        assert_eq!(without_default.unit_family(), UnitFamilyId::Length);
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.default_value(), "u_length_meter");
+    }
 }

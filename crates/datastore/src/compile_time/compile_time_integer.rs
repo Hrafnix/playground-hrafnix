@@ -147,20 +147,21 @@ pub struct IntegerCompileTime {
 }
 
 impl IntegerCompileTime {
-    /// Hidden backing constructor for `integer_compile_time!(description)`.
+    /// Hidden backing constructor for `const_integer!(description)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter. This arm creates an integer with no
     /// constraint and no default value.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(description: &'static str) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint(description, IntegerConstraint::none())
     }
 
-    /// Hidden backing constructor for `integer_compile_time!(description, default = default_value)`.
+    /// Hidden backing constructor for `const_integer!(description, default = default_value)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter and `default_value` is the decimal string
     /// default. This arm creates an integer with no constraint.
     #[doc(hidden)]
@@ -169,6 +170,7 @@ impl IntegerCompileTime {
         description: &'static str,
         default_value: &'static str,
     ) -> Self {
+        #[allow(clippy::disallowed_methods)]
         Self::__new_with_constraint_and_default(
             description,
             IntegerConstraint::none(),
@@ -176,9 +178,9 @@ impl IntegerCompileTime {
         )
     }
 
-    /// Hidden backing constructor for `integer_compile_time!(description, constraint = constraint)`.
+    /// Hidden backing constructor for `const_integer!(description, constraint = constraint)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter and `constraint` is the [`IntegerConstraint`]
     /// bound on the accepted value. This arm creates an integer with no default value.
     #[doc(hidden)]
@@ -195,9 +197,9 @@ impl IntegerCompileTime {
     }
 
     /// Hidden backing constructor for
-    /// `integer_compile_time!(description, constraint = constraint, default = default_value)`.
+    /// `const_integer!(description, constraint = constraint, default = default_value)`.
     ///
-    /// This is an implementation detail; call `integer_compile_time!` instead.
+    /// This is an implementation detail; call `const_integer!` instead.
     /// `description` names the parameter, `constraint` is the [`IntegerConstraint`] bound
     /// on the accepted value, and `default_value` is the decimal string default.
     #[doc(hidden)]
@@ -257,10 +259,10 @@ impl IntegerCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// integer_compile_time!(description)
-/// integer_compile_time!(description, default = default_value)
-/// integer_compile_time!(description, constraint = constraint)
-/// integer_compile_time!(description, constraint = constraint, default = default_value)
+/// const_integer!(description)
+/// const_integer!(description, default = default_value)
+/// const_integer!(description, constraint = constraint)
+/// const_integer!(description, constraint = constraint, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -278,7 +280,7 @@ impl IntegerCompileTime {
 /// use datastore::compile_time::{IntegerCompileTime, IntegerConstraint};
 /// use datastore::prelude::*;
 ///
-/// const COUNT: IntegerCompileTime = integer_compile_time!(
+/// const COUNT: IntegerCompileTime = const_integer!(
 ///     "Item count",
 ///     constraint = IntegerConstraint::range(0, 100, true, true),
 ///     default = "10"
@@ -288,12 +290,16 @@ impl IntegerCompileTime {
 /// let _definition = COUNT.into_definition();
 /// ```
 #[macro_export]
-macro_rules! integer_compile_time {
+macro_rules! const_integer {
     ($description:expr) => {
-        const { $crate::compile_time::IntegerCompileTime::__new($description) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::IntegerCompileTime::__new($description)
+        }
     };
     ($description:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::IntegerCompileTime::__new_with_default(
                 $description,
                 $default_value,
@@ -302,6 +308,7 @@ macro_rules! integer_compile_time {
     };
     ($description:expr, constraint = $constraint:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::IntegerCompileTime::__new_with_constraint(
                 $description,
                 $constraint,
@@ -310,6 +317,7 @@ macro_rules! integer_compile_time {
     };
     ($description:expr, constraint = $constraint:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::IntegerCompileTime::__new_with_constraint_and_default(
                 $description,
                 $constraint,
@@ -317,4 +325,109 @@ macro_rules! integer_compile_time {
             )
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn integer_constraint_constructors_and_converters_cover_every_variant() {
+        let constraints = [
+            IntegerConstraint::none(),
+            IntegerConstraint::min(std::hint::black_box(1), true),
+            IntegerConstraint::max(std::hint::black_box(9), false),
+            IntegerConstraint::range(std::hint::black_box(1), 9, true, false),
+        ];
+
+        assert_eq!(constraints[0].constraint_enum, IntegerConstraintEnum::None);
+        assert_eq!(
+            constraints[1].constraint_enum,
+            IntegerConstraintEnum::Min {
+                min: 1,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constraints[2].constraint_enum,
+            IntegerConstraintEnum::Max {
+                max: 9,
+                inclusive: false
+            }
+        );
+        assert_eq!(
+            constraints[3].constraint_enum,
+            IntegerConstraintEnum::Range {
+                min: 1,
+                max: 9,
+                min_inclusive: true,
+                max_inclusive: false
+            }
+        );
+
+        for constraint in constraints {
+            let expected = constraint.constraint_enum.into_definition();
+            assert_eq!(constraint.into_definition().constraint_enum, expected);
+        }
+    }
+
+    #[test]
+    fn integer_range_normalizes_reversed_and_equal_bounds() {
+        let reversed = IntegerConstraint::range(std::hint::black_box(9), 1, false, true);
+        assert_eq!(
+            reversed.constraint_enum,
+            IntegerConstraintEnum::Range {
+                min: 1,
+                max: 9,
+                min_inclusive: true,
+                max_inclusive: false
+            }
+        );
+
+        let equal = IntegerConstraint::range(std::hint::black_box(5), 5, false, false);
+        assert_eq!(
+            equal.constraint_enum,
+            IntegerConstraintEnum::Range {
+                min: 5,
+                max: 5,
+                min_inclusive: true,
+                max_inclusive: true
+            }
+        );
+    }
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let plain = IntegerCompileTime::__new(std::hint::black_box("Plain"));
+        let defaulted =
+            IntegerCompileTime::__new_with_default(std::hint::black_box("Defaulted"), "10");
+        let constrained = IntegerCompileTime::__new_with_constraint(
+            std::hint::black_box("Constrained"),
+            IntegerConstraint::min(0, true),
+        );
+        let constrained_defaulted = IntegerCompileTime::__new_with_constraint_and_default(
+            std::hint::black_box("Both"),
+            IntegerConstraint::max(100, false),
+            "50",
+        );
+
+        assert_eq!(plain.constraint(), IntegerConstraintEnum::None);
+        assert_eq!(defaulted.default_value(), "10");
+        assert_eq!(
+            constrained.constraint(),
+            IntegerConstraintEnum::Min {
+                min: 0,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constrained_defaulted.constraint(),
+            IntegerConstraintEnum::Max {
+                max: 100,
+                inclusive: false
+            }
+        );
+        assert_eq!(constrained_defaulted.default_value(), "50");
+    }
 }

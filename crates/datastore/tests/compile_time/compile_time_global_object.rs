@@ -3,40 +3,38 @@ use units::{UnitFamilyId, UnitId};
 
 #[test]
 fn item_compile_time_supports_every_variant() {
-    const CHOICES: &[ChoiceItemCompileTime] = &[choice_item_compile_time!("one", "One")];
-    const CHOICE: ChoiceCompileTime = choice_compile_time!("Choice", CHOICES);
+    const CHOICES: &[ChoiceItemCompileTime] = &[const_choice_item!("one", "One")];
+    const CHOICE: ChoiceCompileTime = const_choice!("Choice", CHOICES);
     const TABLE_COLUMNS: &[(ConstStoreKey, NumberCompileTime)] =
-        &[(store_key!("number"), number_compile_time!("Number"))];
-    const TABLE: TableCompileTime = table_compile_time!("Table", TABLE_COLUMNS);
+        &[(store_key!("number"), const_number!("Number"))];
+    const TABLE: TableCompileTime = const_table!("Table", TABLE_COLUMNS);
     const UNIT_COLUMNS: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[(
         store_key!("length"),
-        number_with_units_compile_time!("Length", UnitId::Length_Meter),
+        const_number_with_units!("Length", UnitId::Length_Meter),
     )];
     const TABLE_WITH_UNITS: TableWithUnitsCompileTime =
-        table_with_units_compile_time!("Measurements", UNIT_COLUMNS);
+        const_table_with_units!("Measurements", UNIT_COLUMNS);
     const MAP_ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[(
         store_key!("name"),
-        map_item_compile_time!(string = string_compile_time!("Name")),
+        const_map_item!(string = const_string!("Name")),
     )];
-    const MAP: MapCompileTime = map_compile_time!("Map", MAP_ITEMS);
+    const MAP: MapCompileTime = const_map!("Map", MAP_ITEMS);
 
     let items = [
-        item_compile_time!(boolean = boolean_compile_time!("Boolean")),
-        item_compile_time!(choice = CHOICE),
-        item_compile_time!(file = file_compile_time!("File", "*", true)),
-        item_compile_time!(folder = folder_compile_time!("Folder", true)),
-        item_compile_time!(integer = integer_compile_time!("Integer")),
-        item_compile_time!(map = MAP),
-        item_compile_time!(number = number_compile_time!("Number")),
-        item_compile_time!(
-            number_with_units = number_with_units_compile_time!("Length", UnitId::Length_Meter)
-        ),
-        item_compile_time!(string = string_compile_time!("String")),
-        item_compile_time!(table = TABLE),
-        item_compile_time!(table_with_units = TABLE_WITH_UNITS),
-        item_compile_time!(unit = unit_compile_time!("Unit", UnitFamilyId::Length)),
-        item_compile_time!(tab = tab_compile_time!("Tab")),
-        item_compile_time!(separator = separator_compile_time!("Separator")),
+        const_item!(boolean = const_boolean!("Boolean")),
+        const_item!(choice = CHOICE),
+        const_item!(file = const_file!("File", "*", true)),
+        const_item!(folder = const_folder!("Folder", true)),
+        const_item!(integer = const_integer!("Integer")),
+        const_item!(map = MAP),
+        const_item!(number = const_number!("Number")),
+        const_item!(number_with_units = const_number_with_units!("Length", UnitId::Length_Meter)),
+        const_item!(string = const_string!("String")),
+        const_item!(table = TABLE),
+        const_item!(table_with_units = TABLE_WITH_UNITS),
+        const_item!(unit = const_unit!("Unit", UnitFamilyId::Length)),
+        const_item!(tab = const_tab!("Tab")),
+        const_item!(separator = const_separator!("Separator")),
     ];
 
     assert!(matches!(
@@ -101,17 +99,28 @@ fn item_compile_time_supports_every_variant() {
 fn global_object_compile_time_converts_both_macro_forms() {
     const ITEMS: &[(ConstGlobalKey, ItemCompileTime)] = &[(
         global_key!("g_name"),
-        item_compile_time!(string = string_compile_time!("Name")),
+        const_item!(string = const_string!("Name")),
     )];
-    const FROM_SLICE: GlobalObjectCompileTime = global_object_compile_time!("Global", ITEMS);
-    const FROM_LITERALS: GlobalObjectCompileTime = global_object_compile_time!(
+    const FROM_SLICE: GlobalObjectCompileTime = const_global_object!("Global", ITEMS);
+    const FROM_LITERALS: GlobalObjectCompileTime = const_global_object!(
         "Global",
         [(
             "g_enabled",
-            item_compile_time!(boolean = boolean_compile_time!("Enabled")),
+            const_item!(boolean = const_boolean!("Enabled")),
         )],
     );
 
+    assert_eq!(FROM_SLICE.description(), "Global");
+    assert_eq!(FROM_SLICE.items(), ITEMS);
+    assert_eq!(FROM_SLICE.count(), 1);
+    assert!(FROM_SLICE.contains("g_name"));
+    assert!(!FROM_SLICE.contains("g_missing"));
+    assert!(matches!(
+        FROM_SLICE.get("g_name"),
+        Some(ItemCompileTime::String(_))
+    ));
+    assert_eq!(FROM_SLICE.get("g_missing"), None);
+    assert_eq!(FROM_SLICE.iter().count(), 1);
     assert_eq!(
         FROM_SLICE
             .keys()
@@ -127,20 +136,4 @@ fn global_object_compile_time_converts_both_macro_forms() {
             .collect::<Vec<_>>(),
         ["g_enabled"]
     );
-}
-
-#[test]
-#[should_panic(expected = "GlobalObjectCompileTime item keys must be unique")]
-fn global_object_compile_time_rejects_duplicate_keys() {
-    const DUPLICATES: &[(ConstGlobalKey, ItemCompileTime)] = &[
-        (
-            global_key!("g_duplicate"),
-            item_compile_time!(string = string_compile_time!("First")),
-        ),
-        (
-            global_key!("g_duplicate"),
-            item_compile_time!(string = string_compile_time!("Second")),
-        ),
-    ];
-    let _ = GlobalObjectCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

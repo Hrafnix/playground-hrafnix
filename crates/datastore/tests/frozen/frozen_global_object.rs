@@ -1,4 +1,6 @@
+use datastore::definition::{FolderDefinition, SeparatorDefinition, TabDefinition};
 use datastore::prelude::*;
+use units::{UnitFamilyId, UnitId};
 
 #[test]
 fn test_object_frozen_basic() {
@@ -17,6 +19,38 @@ fn test_object_frozen_basic() {
     assert!(frozen_1.definition().contains("g_p1"));
     assert!(frozen_1.definition().contains_str("g_p1"));
     assert_ne!(frozen_1.hash(), [0u8; 32]);
+}
+
+#[test]
+fn test_object_frozen_ordered_iter_and_print() {
+    let frozen = GlobalObjectFrozen::new(
+        GlobalObjectDefinition::builder("Ordered")
+            .with(
+                GlobalKey::new("g_z".into()).unwrap(),
+                StringDefinition::new("First"),
+            )
+            .with(
+                GlobalKey::new("g_a".into()).unwrap(),
+                StringDefinition::new("Second"),
+            )
+            .finish(),
+    );
+
+    assert_eq!(
+        frozen
+            .ordered_iter()
+            .map(|(key, _)| key.as_str())
+            .collect::<Vec<_>>(),
+        ["g_z", "g_a"]
+    );
+    assert_eq!(
+        format!("{frozen}"),
+        concat!(
+            "Global Object Frozen (Ordered)\n",
+            "    ├── g_z (First) String - \"\"\n",
+            "    └── g_a (Second) String - \"\"\n",
+        )
+    );
 }
 
 #[test]
@@ -223,12 +257,64 @@ fn test_editable_global_object_print() {
                     ],
                 ),
             )
+            .with(
+                GlobalKey::new("g_p9".into()).unwrap(),
+                FolderDefinition::new("D9", true),
+            )
+            .with(
+                GlobalKey::new("g_p10".into()).unwrap(),
+                NumberWithUnitsDefinition::new("D10", UnitId::Length_Meter),
+            )
+            .with(
+                GlobalKey::new("g_p11".into()).unwrap(),
+                SeparatorDefinition::new("D11"),
+            )
+            .with(
+                GlobalKey::new("g_p12".into()).unwrap(),
+                TabDefinition::new("D12"),
+            )
+            .with(
+                GlobalKey::new("g_p13".into()).unwrap(),
+                UnitDefinition::new("D13", UnitFamilyId::Length),
+            )
             .finish(),
     );
 
     assert_eq!(
         format!("{frozen_1}"),
-        "Global Object Frozen (Test)\n    ├── g_p1 (D1) String - \"\"\n    ├── g_p2 (D2) Boolean - \"\"\n    ├── g_p3 (D3) File - \"\"\n    ├── g_p4_v1 (D4) Integer - \"\"\n    ├── g_p4_v2 (D4) Integer - \"\"\n    ├── g_p4_v3 (D4) Integer - \"\"\n    ├── g_p4_v4 (D4) Integer - \"\"\n    ├── g_p4_v5 (D4) Integer - \"\"\n    ├── g_p4_v6 (D4) Integer - \"\"\n    ├── g_p4_v7 (D4) Integer - \"\"\n    ├── g_p4_v8 (D4) Integer - \"\"\n    ├── g_p5_v1 (D5) Number - \"\"\n    ├── g_p5_v2 (D5) Number - \"\"\n    ├── g_p5_v3 (D5) Number - \"\"\n    ├── g_p5_v4 (D5) Number - \"\"\n    ├── g_p5_v5 (D5) Number - \"\"\n    ├── g_p5_v6 (D5) Number - \"\"\n    ├── g_p5_v7 (D5) Number - \"\"\n    ├── g_p5_v8 (D5) Number - \"\"\n    ├── g_p5_v9 (D5) Number - \"\"\n    ├── g_p6 (D6) Choice - \"\"\n    ├── g_p7 (D7) Table 0 rows\n    │   ├── data\n    │   └── Parameter \"\"\n    └── g_p8 (D8) Map\n"
+        concat!(
+            "Global Object Frozen (Test)\n",
+            "    ├── g_p1 (D1) String - \"\"\n",
+            "    ├── g_p2 (D2) Boolean - \"\"\n",
+            "    ├── g_p3 (D3) File - \"\"\n",
+            "    ├── g_p4_v1 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v2 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v3 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v4 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v5 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v6 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v7 (D4) Integer - \"\"\n",
+            "    ├── g_p4_v8 (D4) Integer - \"\"\n",
+            "    ├── g_p5_v1 (D5) Number - \"\"\n",
+            "    ├── g_p5_v2 (D5) Number - \"\"\n",
+            "    ├── g_p5_v3 (D5) Number - \"\"\n",
+            "    ├── g_p5_v4 (D5) Number - \"\"\n",
+            "    ├── g_p5_v5 (D5) Number - \"\"\n",
+            "    ├── g_p5_v6 (D5) Number - \"\"\n",
+            "    ├── g_p5_v7 (D5) Number - \"\"\n",
+            "    ├── g_p5_v8 (D5) Number - \"\"\n",
+            "    ├── g_p5_v9 (D5) Number - \"\"\n",
+            "    ├── g_p6 (D6) Choice - \"\"\n",
+            "    ├── g_p7 (D7) Table 0 rows\n",
+            "    │   ├── data\n",
+            "    │   └── Parameter \"\"\n",
+            "    ├── g_p8 (D8) Map\n",
+            "    ├── g_p9 (D9) Folder - \"\"\n",
+            "    ├── g_p10 (D10) Number - \"\"\n",
+            "    ├── g_p11 (D11) Separator\n",
+            "    ├── g_p12 (D12) Tab\n",
+            "    └── g_p13 (D13) Unit - \"\"\n",
+        )
     );
 
     let mut editable_1 = frozen_1.thaw();
@@ -278,10 +364,64 @@ fn test_editable_global_object_print() {
     map_table.add_row(1);
     map_table.set_cell(0, "col3_1", "150.0").unwrap();
     map_table.set_cell(0, "col3_2", "250.0").unwrap();
+
+    editable_set_value(&mut editable_1, "g_p9", "output/files").unwrap();
+    editable_set_value(&mut editable_1, "g_p10", "10.0").unwrap();
+    editable_set_value(
+        &mut editable_1,
+        "g_p13",
+        UnitId::Length_Centimeter.string_id().as_str(),
+    )
+    .unwrap();
+
     let frozen_1 = editable_1.freeze();
 
     assert_eq!(
         format!("{frozen_1}"),
-        "Global Object Frozen (Test)\n    ├── g_p1 (D1) String - \"edited\"\n    ├── g_p2 (D2) Boolean - \"true\"\n    ├── g_p3 (D3) File - \"test.ext\"\n    ├── g_p4_v1 (D4) Integer - \"1\"\n    ├── g_p4_v2 (D4) Integer - \"2\"\n    ├── g_p4_v3 (D4) Integer - \"3\"\n    ├── g_p4_v4 (D4) Integer - \"4\"\n    ├── g_p4_v5 (D4) Integer - \"5\"\n    ├── g_p4_v6 (D4) Integer - \"6\"\n    ├── g_p4_v7 (D4) Integer - \"7\"\n    ├── g_p4_v8 (D4) Integer - \"8\"\n    ├── g_p5_v1 (D5) Number - \"1.0\"\n    ├── g_p5_v2 (D5) Number - \"2.0\"\n    ├── g_p5_v3 (D5) Number - \"3.0\"\n    ├── g_p5_v4 (D5) Number - \"4.0\"\n    ├── g_p5_v5 (D5) Number - \"5.0\"\n    ├── g_p5_v6 (D5) Number - \"6.0\"\n    ├── g_p5_v7 (D5) Number - \"7.0\"\n    ├── g_p5_v8 (D5) Number - \"8.0\"\n    ├── g_p5_v9 (D5) Number - \"9.0\"\n    ├── g_p6 (D6) Choice - \"test\"\n    ├── g_p7 (D7) Table 1 rows\n    │   ├── data\n    │   │   └── Row 0\n    │   │       ├── col1 \"100.0\"\n    │   │       └── col2 \"200.0\"\n    │   └── Parameter \"\"\n    └── g_p8 (D8) Map\n        └── key1\n            ├── col1 (C1) String - \"test 1\"\n            ├── col2 (C2) Number - \"55.0\"\n            └── col3 (C3) Table 1 rows\n                ├── data\n                │   └── Row 0\n                │       ├── col3_1 \"150.0\"\n                │       └── col3_2 \"250.0\"\n                └── Parameter \"\"\n"
+        concat!(
+            "Global Object Frozen (Test)\n",
+            "    ├── g_p1 (D1) String - \"edited\"\n",
+            "    ├── g_p2 (D2) Boolean - \"true\"\n",
+            "    ├── g_p3 (D3) File - \"test.ext\"\n",
+            "    ├── g_p4_v1 (D4) Integer - \"1\"\n",
+            "    ├── g_p4_v2 (D4) Integer - \"2\"\n",
+            "    ├── g_p4_v3 (D4) Integer - \"3\"\n",
+            "    ├── g_p4_v4 (D4) Integer - \"4\"\n",
+            "    ├── g_p4_v5 (D4) Integer - \"5\"\n",
+            "    ├── g_p4_v6 (D4) Integer - \"6\"\n",
+            "    ├── g_p4_v7 (D4) Integer - \"7\"\n",
+            "    ├── g_p4_v8 (D4) Integer - \"8\"\n",
+            "    ├── g_p5_v1 (D5) Number - \"1.0\"\n",
+            "    ├── g_p5_v2 (D5) Number - \"2.0\"\n",
+            "    ├── g_p5_v3 (D5) Number - \"3.0\"\n",
+            "    ├── g_p5_v4 (D5) Number - \"4.0\"\n",
+            "    ├── g_p5_v5 (D5) Number - \"5.0\"\n",
+            "    ├── g_p5_v6 (D5) Number - \"6.0\"\n",
+            "    ├── g_p5_v7 (D5) Number - \"7.0\"\n",
+            "    ├── g_p5_v8 (D5) Number - \"8.0\"\n",
+            "    ├── g_p5_v9 (D5) Number - \"9.0\"\n",
+            "    ├── g_p6 (D6) Choice - \"test\"\n",
+            "    ├── g_p7 (D7) Table 1 rows\n",
+            "    │   ├── data\n",
+            "    │   │   └── Row 0\n",
+            "    │   │       ├── col1 \"100.0\"\n",
+            "    │   │       └── col2 \"200.0\"\n",
+            "    │   └── Parameter \"\"\n",
+            "    ├── g_p8 (D8) Map\n",
+            "    │   └── key1\n",
+            "    │       ├── col1 (C1) String - \"test 1\"\n",
+            "    │       ├── col2 (C2) Number - \"55.0\"\n",
+            "    │       └── col3 (C3) Table 1 rows\n",
+            "    │           ├── data\n",
+            "    │           │   └── Row 0\n",
+            "    │           │       ├── col3_1 \"150.0\"\n",
+            "    │           │       └── col3_2 \"250.0\"\n",
+            "    │           └── Parameter \"\"\n",
+            "    ├── g_p9 (D9) Folder - \"output/files\"\n",
+            "    ├── g_p10 (D10) Number - \"10.0\"\n",
+            "    ├── g_p11 (D11) Separator\n",
+            "    ├── g_p12 (D12) Tab\n",
+            "    └── g_p13 (D13) Unit - \"u_length_centimeter\"\n",
+        )
     );
 }

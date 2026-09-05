@@ -7,7 +7,7 @@ use crate::compile_time::{
 use crate::definition::{MapDefinition, MapItemDefinition};
 use keys::store_key::ConstStoreKey;
 
-/// Compile-time representation of a map item. Use the `map_item_compile_time!` macro to
+/// Compile-time representation of a map item. Use the `const_map_item!` macro to
 /// construct values; Rust enum variants remain public for matching.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MapItemCompileTime {
@@ -55,9 +55,9 @@ map_item_from!(TableWithUnitsCompileTime, TableWithUnits);
 map_item_from!(UnitCompileTime, Unit);
 
 impl MapItemCompileTime {
-    /// Hidden wrapper for the `map_item_compile_time!(boolean = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(boolean = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`BooleanCompileTime`] (a `true`/`false` toggle) as a `MapItemCompileTime`.
     #[doc(hidden)]
     #[must_use]
@@ -65,9 +65,9 @@ impl MapItemCompileTime {
         Self::Boolean(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(choice = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(choice = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`ChoiceCompileTime`] (a single-select value chosen from a fixed list) as a
     /// `MapItemCompileTime`.
     #[doc(hidden)]
@@ -76,9 +76,9 @@ impl MapItemCompileTime {
         Self::Choice(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(file = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(file = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`FileCompileTime`] (a file-picker parameter) as a `MapItemCompileTime`.
     #[doc(hidden)]
     #[must_use]
@@ -86,9 +86,9 @@ impl MapItemCompileTime {
         Self::File(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(integer = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(integer = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps an [`IntegerCompileTime`] (an integer value with an optional constraint) as a
     /// `MapItemCompileTime`.
     #[doc(hidden)]
@@ -97,9 +97,9 @@ impl MapItemCompileTime {
         Self::Integer(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(number = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(number = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`NumberCompileTime`] (an `f64` value with an optional constraint) as a
     /// `MapItemCompileTime`.
     #[doc(hidden)]
@@ -108,9 +108,9 @@ impl MapItemCompileTime {
         Self::Number(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(number_with_units = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(number_with_units = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`NumberWithUnitsCompileTime`] (an `f64` value with a preferred unit and an
     /// optional constraint) as a `MapItemCompileTime`.
     #[doc(hidden)]
@@ -119,9 +119,9 @@ impl MapItemCompileTime {
         Self::NumberWithUnits(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(string = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(string = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`StringCompileTime`] (a free-form text value) as a `MapItemCompileTime`.
     #[doc(hidden)]
     #[must_use]
@@ -129,9 +129,9 @@ impl MapItemCompileTime {
         Self::String(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(table = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(table = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`TableCompileTime`] (a table of unit-less numeric columns) as a
     /// `MapItemCompileTime`.
     #[doc(hidden)]
@@ -140,9 +140,9 @@ impl MapItemCompileTime {
         Self::Table(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(table_with_units = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(table_with_units = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`TableWithUnitsCompileTime`] (a table of numeric columns, each with its own
     /// preferred unit) as a `MapItemCompileTime`.
     #[doc(hidden)]
@@ -151,9 +151,9 @@ impl MapItemCompileTime {
         Self::TableWithUnits(value)
     }
 
-    /// Hidden wrapper for the `map_item_compile_time!(unit = value)` arm.
+    /// Hidden wrapper for the `const_map_item!(unit = value)` arm.
     ///
-    /// This is an implementation detail; call `map_item_compile_time!` instead.
+    /// This is an implementation detail; call `const_map_item!` instead.
     /// Wraps a [`UnitCompileTime`] (a value chosen from the units of a unit family) as a
     /// `MapItemCompileTime`.
     #[doc(hidden)]
@@ -198,12 +198,12 @@ pub struct MapCompileTime {
 }
 
 impl MapCompileTime {
-    /// Hidden backing constructor for `map_compile_time!(description, items)`.
+    /// Hidden backing constructor for `const_map!(description, items)`.
     ///
-    /// This is an implementation detail; call `map_compile_time!` instead.
+    /// This is an implementation detail; call `const_map!` instead.
     /// `description` names the map and `items` is the ordered slice of
     /// `(ConstStoreKey, MapItemCompileTime)` key/item pairs, typically built with the
-    /// `store_key!` macro and `map_item_compile_time!`.
+    /// `store_key!` macro and `const_map_item!`.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
@@ -270,10 +270,10 @@ impl MapCompileTime {
 }
 
 /// Wraps a compile-time value as a [`MapItemCompileTime`] for use inside
-/// `map_compile_time!` entry lists.
+/// `const_map!` entry lists.
 ///
 /// Maps only accept leaf value kinds; the container and layout-only kinds available to
-/// `item_compile_time!` (`folder`, `map`, `tab`, `separator`) are not accepted here.
+/// `const_item!` (`folder`, `map`, `tab`, `separator`) are not accepted here.
 ///
 /// Expansion is wrapped in a `const` block, so `value` must be a const-compatible
 /// (`'static`) expression; construction is validated at compile time even when the result
@@ -281,16 +281,16 @@ impl MapCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// map_item_compile_time!(boolean = value)
-/// map_item_compile_time!(choice = value)
-/// map_item_compile_time!(file = value)
-/// map_item_compile_time!(integer = value)
-/// map_item_compile_time!(number = value)
-/// map_item_compile_time!(number_with_units = value)
-/// map_item_compile_time!(string = value)
-/// map_item_compile_time!(table = value)
-/// map_item_compile_time!(table_with_units = value)
-/// map_item_compile_time!(unit = value)
+/// const_map_item!(boolean = value)
+/// const_map_item!(choice = value)
+/// const_map_item!(file = value)
+/// const_map_item!(integer = value)
+/// const_map_item!(number = value)
+/// const_map_item!(number_with_units = value)
+/// const_map_item!(string = value)
+/// const_map_item!(table = value)
+/// const_map_item!(table_with_units = value)
+/// const_map_item!(unit = value)
 /// ```
 ///
 /// # Arguments
@@ -313,40 +313,70 @@ impl MapCompileTime {
 /// use datastore::compile_time::MapItemCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const NAME: MapItemCompileTime = map_item_compile_time!(string = string_compile_time!("Name"));
+/// const NAME: MapItemCompileTime = const_map_item!(string = const_string!("Name"));
 /// let _definition = NAME.into_definition();
 /// ```
 #[macro_export]
-macro_rules! map_item_compile_time {
+macro_rules! const_map_item {
     (boolean = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__boolean($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__boolean($value)
+        }
     };
     (choice = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__choice($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__choice($value)
+        }
     };
     (file = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__file($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__file($value)
+        }
     };
     (integer = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__integer($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__integer($value)
+        }
     };
     (number = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__number($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__number($value)
+        }
     };
     (number_with_units = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__number_with_units($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__number_with_units($value)
+        }
     };
     (string = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__string($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__string($value)
+        }
     };
     (table = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__table($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__table($value)
+        }
     };
     (table_with_units = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__table_with_units($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__table_with_units($value)
+        }
     };
     (unit = $value:expr) => {
-        const { $crate::compile_time::MapItemCompileTime::__unit($value) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapItemCompileTime::__unit($value)
+        }
     };
 }
 
@@ -362,13 +392,13 @@ macro_rules! map_item_compile_time {
 ///
 /// # Syntax
 /// ```text
-/// map_compile_time!(description, items)
+/// const_map!(description, items)
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the map.
 /// - `items`: `&'static [(ConstStoreKey, MapItemCompileTime)]` ordered slice of key/item
-///   pairs, typically built with the `store_key!` macro and `map_item_compile_time!`.
+///   pairs, typically built with the `store_key!` macro and `const_map_item!`.
 ///
 /// # Examples
 /// ```rust
@@ -378,21 +408,125 @@ macro_rules! map_item_compile_time {
 /// const SHAPE_ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[
 ///     (
 ///         store_key!("name"),
-///         map_item_compile_time!(string = string_compile_time!("Name")),
+///         const_map_item!(string = const_string!("Name")),
 ///     ),
 ///     (
 ///         store_key!("width"),
-///         map_item_compile_time!(number = number_compile_time!("Width", default = "10")),
+///         const_map_item!(number = const_number!("Width", default = "10")),
 ///     ),
 /// ];
-/// const SHAPES: MapCompileTime = map_compile_time!("Shapes", SHAPE_ITEMS);
+/// const SHAPES: MapCompileTime = const_map!("Shapes", SHAPE_ITEMS);
 /// assert_eq!(SHAPES.count(), 2);
 ///
 /// let _definition = SHAPES.into_definition();
 /// ```
 #[macro_export]
-macro_rules! map_compile_time {
+macro_rules! const_map {
     ($description:expr, $items:expr) => {
-        const { $crate::compile_time::MapCompileTime::__new($description, $items) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::MapCompileTime::__new($description, $items)
+        }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{
+        const_boolean, const_choice, const_choice_item, const_file, const_integer, const_number,
+        const_number_with_units, const_string, const_table, const_table_with_units, const_unit,
+        store_key,
+    };
+    use units::{UnitFamilyId, UnitId};
+
+    #[test]
+    fn from_implementations_cover_every_map_item_variant() {
+        let items: [MapItemCompileTime; 10] = [
+            const_boolean!("Boolean").into(),
+            const_choice!("Choice", &[const_choice_item!("choice", "Choice")]).into(),
+            const_file!("File", "*", true).into(),
+            const_integer!("Integer").into(),
+            const_number!("Number").into(),
+            const_number_with_units!("Number with units", UnitId::Length_Meter).into(),
+            const_string!("String").into(),
+            const_table!("Table", &[]).into(),
+            const_table_with_units!("Table with units", &[]).into(),
+            const_unit!("Unit", UnitFamilyId::Length).into(),
+        ];
+
+        assert!(matches!(items[0], MapItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], MapItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], MapItemCompileTime::File(_)));
+        assert!(matches!(items[3], MapItemCompileTime::Integer(_)));
+        assert!(matches!(items[4], MapItemCompileTime::Number(_)));
+        assert!(matches!(items[5], MapItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[6], MapItemCompileTime::String(_)));
+        assert!(matches!(items[7], MapItemCompileTime::Table(_)));
+        assert!(matches!(items[8], MapItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[9], MapItemCompileTime::Unit(_)));
+    }
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_wrappers_and_constructor_run_at_runtime() {
+        const MAP_ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[(
+            store_key!("name"),
+            const_map_item!(string = const_string!("Name")),
+        )];
+        let items = [
+            MapItemCompileTime::__boolean(std::hint::black_box(const_boolean!("Boolean"))),
+            MapItemCompileTime::__choice(std::hint::black_box(const_choice!(
+                "Choice",
+                &[const_choice_item!("choice", "Choice")]
+            ))),
+            MapItemCompileTime::__file(std::hint::black_box(const_file!("File", "*", true))),
+            MapItemCompileTime::__integer(std::hint::black_box(const_integer!("Integer"))),
+            MapItemCompileTime::__number(std::hint::black_box(const_number!("Number"))),
+            MapItemCompileTime::__number_with_units(std::hint::black_box(
+                const_number_with_units!("Number with units", UnitId::Length_Meter),
+            )),
+            MapItemCompileTime::__string(std::hint::black_box(const_string!("String"))),
+            MapItemCompileTime::__table(std::hint::black_box(const_table!("Table", &[]))),
+            MapItemCompileTime::__table_with_units(std::hint::black_box(const_table_with_units!(
+                "Table with units",
+                &[]
+            ))),
+            MapItemCompileTime::__unit(std::hint::black_box(const_unit!(
+                "Unit",
+                UnitFamilyId::Length
+            ))),
+        ];
+        let map = MapCompileTime::__new(std::hint::black_box("Map"), MAP_ITEMS);
+
+        assert!(matches!(items[0], MapItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], MapItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], MapItemCompileTime::File(_)));
+        assert!(matches!(items[3], MapItemCompileTime::Integer(_)));
+        assert!(matches!(items[4], MapItemCompileTime::Number(_)));
+        assert!(matches!(items[5], MapItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[6], MapItemCompileTime::String(_)));
+        assert!(matches!(items[7], MapItemCompileTime::Table(_)));
+        assert!(matches!(items[8], MapItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[9], MapItemCompileTime::Unit(_)));
+        assert_eq!(map.description(), "Map");
+        assert_eq!(map.items(), MAP_ITEMS);
+    }
+
+    #[test]
+    #[should_panic(expected = "MapCompileTime item keys must be unique")]
+    fn map_compile_time_rejects_duplicate_keys() {
+        const DUPLICATES: &[(ConstStoreKey, MapItemCompileTime)] = &[
+            (
+                store_key!("duplicate"),
+                const_map_item!(string = const_string!("First")),
+            ),
+            (
+                store_key!("duplicate"),
+                const_map_item!(string = const_string!("Second")),
+            ),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = MapCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
 }

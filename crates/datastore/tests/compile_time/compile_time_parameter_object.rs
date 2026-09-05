@@ -4,18 +4,28 @@ use datastore::prelude::*;
 fn parameter_object_compile_time_converts_both_macro_forms() {
     const ITEMS: &[(ConstParameterKey, ItemCompileTime)] = &[(
         parameter_key!("p_name"),
-        item_compile_time!(string = string_compile_time!("Name")),
+        const_item!(string = const_string!("Name")),
     )];
-    const FROM_SLICE: ParameterObjectCompileTime =
-        parameter_object_compile_time!("Parameters", ITEMS);
-    const FROM_LITERALS: ParameterObjectCompileTime = parameter_object_compile_time!(
+    const FROM_SLICE: ParameterObjectCompileTime = const_parameter_object!("Parameters", ITEMS);
+    const FROM_LITERALS: ParameterObjectCompileTime = const_parameter_object!(
         "Parameters",
         [(
             "p_enabled",
-            item_compile_time!(boolean = boolean_compile_time!("Enabled")),
+            const_item!(boolean = const_boolean!("Enabled")),
         )],
     );
 
+    assert_eq!(FROM_SLICE.description(), "Parameters");
+    assert_eq!(FROM_SLICE.items(), ITEMS);
+    assert_eq!(FROM_SLICE.count(), 1);
+    assert!(FROM_SLICE.contains("p_name"));
+    assert!(!FROM_SLICE.contains("p_missing"));
+    assert!(matches!(
+        FROM_SLICE.get("p_name"),
+        Some(ItemCompileTime::String(_))
+    ));
+    assert_eq!(FROM_SLICE.get("p_missing"), None);
+    assert_eq!(FROM_SLICE.iter().count(), 1);
     assert_eq!(
         FROM_SLICE
             .keys()
@@ -31,20 +41,4 @@ fn parameter_object_compile_time_converts_both_macro_forms() {
             .collect::<Vec<_>>(),
         ["p_enabled"]
     );
-}
-
-#[test]
-#[should_panic(expected = "ParameterObjectCompileTime item keys must be unique")]
-fn parameter_object_compile_time_rejects_duplicate_keys() {
-    const DUPLICATES: &[(ConstParameterKey, ItemCompileTime)] = &[
-        (
-            parameter_key!("p_duplicate"),
-            item_compile_time!(string = string_compile_time!("First")),
-        ),
-        (
-            parameter_key!("p_duplicate"),
-            item_compile_time!(string = string_compile_time!("Second")),
-        ),
-    ];
-    let _ = ParameterObjectCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
 }

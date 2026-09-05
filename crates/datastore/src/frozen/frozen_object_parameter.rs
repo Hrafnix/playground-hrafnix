@@ -204,6 +204,14 @@ impl ParameterObjectFrozen {
         self.items.iter()
     }
 
+    /// Returns an iterator over the key-item pairs in definition order.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn ordered_iter(&self) -> impl Iterator<Item = (&ParameterKey, &ItemFrozen)> {
+        self.definition
+            .keys()
+            .filter_map(|key| self.items.get(key).map(|item| (key, item)))
+    }
+
     /// Returns a copy whose strings are interned in `store`.
     #[must_use]
     pub fn launder(&self, store: &SharedStringStore) -> Self {
@@ -282,7 +290,7 @@ impl TreePrint for ParameterObjectFrozen {
 
         let child_prefix = Self::child_prefix(prefix, last);
 
-        let mut item_iter = self.items.iter().peekable();
+        let mut item_iter = self.ordered_iter().peekable();
 
         while let Some((key, item)) = item_iter.next() {
             let is_last = item_iter.peek().is_none();

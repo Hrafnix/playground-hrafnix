@@ -12,9 +12,9 @@ pub struct FolderCompileTime {
 }
 
 impl FolderCompileTime {
-    /// Hidden backing constructor for `folder_compile_time!(description, is_input)`.
+    /// Hidden backing constructor for `const_folder!(description, is_input)`.
     ///
-    /// This is an implementation detail; call `folder_compile_time!` instead.
+    /// This is an implementation detail; call `const_folder!` instead.
     /// `description` names the folder, and `is_input` controls whether the folder
     /// is treated as an input that can be chosen in a folder picker and included
     /// when archiving the project.
@@ -28,9 +28,9 @@ impl FolderCompileTime {
         }
     }
 
-    /// Hidden backing constructor for `folder_compile_time!(description, is_input, default = default_value)`.
+    /// Hidden backing constructor for `const_folder!(description, is_input, default = default_value)`.
     ///
-    /// This is an implementation detail; call `folder_compile_time!` instead.
+    /// This is an implementation detail; call `const_folder!` instead.
     /// `description` names the folder, `is_input` controls whether it is treated
     /// as an input folder, and `default_value` provides the default folder path.
     #[doc(hidden)]
@@ -85,8 +85,8 @@ impl FolderCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// folder_compile_time!(description, is_input)
-/// folder_compile_time!(description, is_input, default = default_value)
+/// const_folder!(description, is_input)
+/// const_folder!(description, is_input, default = default_value)
 /// ```
 ///
 /// # Arguments
@@ -102,19 +102,23 @@ impl FolderCompileTime {
 /// use datastore::prelude::*;
 ///
 /// const OUTPUT_FOLDER: FolderCompileTime =
-///     folder_compile_time!("Output folder", false, default = "out");
+///     const_folder!("Output folder", false, default = "out");
 /// assert!(!OUTPUT_FOLDER.is_input());
 /// assert_eq!(OUTPUT_FOLDER.default_value(), "out");
 ///
 /// let _definition = OUTPUT_FOLDER.into_definition();
 /// ```
 #[macro_export]
-macro_rules! folder_compile_time {
+macro_rules! const_folder {
     ($description:expr, $is_input:expr) => {
-        const { $crate::compile_time::FolderCompileTime::__new($description, $is_input) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::FolderCompileTime::__new($description, $is_input)
+        }
     };
     ($description:expr, $is_input:expr, default = $default_value:expr) => {
         const {
+            #[allow(clippy::disallowed_methods)]
             $crate::compile_time::FolderCompileTime::__new_with_default(
                 $description,
                 $is_input,
@@ -122,4 +126,27 @@ macro_rules! folder_compile_time {
             )
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default = FolderCompileTime::__new(std::hint::black_box("Input"), true);
+        let with_default = FolderCompileTime::__new_with_default(
+            std::hint::black_box("Output"),
+            false,
+            std::hint::black_box("out"),
+        );
+
+        assert_eq!(without_default.description(), "Input");
+        assert!(without_default.is_input());
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.description(), "Output");
+        assert!(!with_default.is_input());
+        assert_eq!(with_default.default_value(), "out");
+    }
 }

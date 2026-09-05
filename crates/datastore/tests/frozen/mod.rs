@@ -1,7 +1,15 @@
-mod frozen_basic;
+mod frozen_boolean;
+mod frozen_choice;
+mod frozen_file;
+mod frozen_folder;
 mod frozen_global_object;
 mod frozen_map;
+mod frozen_number;
+mod frozen_number_with_units;
 mod frozen_parameter_object;
+mod frozen_separator;
+mod frozen_string;
+mod frozen_tab;
 mod frozen_table;
 mod frozen_table_with_units;
 mod frozen_unit;

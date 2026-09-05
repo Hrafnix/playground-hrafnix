@@ -8,9 +8,9 @@ pub struct SeparatorCompileTime {
 }
 
 impl SeparatorCompileTime {
-    /// Hidden backing constructor for `separator_compile_time!(description)`.
+    /// Hidden backing constructor for `const_separator!(description)`.
     ///
-    /// This is an implementation detail; call `separator_compile_time!` instead.
+    /// This is an implementation detail; call `const_separator!` instead.
     /// `description` names the layout-only visual divider.
     #[doc(hidden)]
     #[must_use]
@@ -40,7 +40,7 @@ impl SeparatorCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// separator_compile_time!(description)
+/// const_separator!(description)
 /// ```
 ///
 /// # Arguments
@@ -51,14 +51,27 @@ impl SeparatorCompileTime {
 /// use datastore::compile_time::SeparatorCompileTime;
 /// use datastore::prelude::*;
 ///
-/// const DIVIDER: SeparatorCompileTime = separator_compile_time!("General settings");
+/// const DIVIDER: SeparatorCompileTime = const_separator!("General settings");
 /// assert_eq!(DIVIDER.description(), "General settings");
 ///
 /// let _definition = DIVIDER.into_definition();
 /// ```
 #[macro_export]
-macro_rules! separator_compile_time {
+macro_rules! const_separator {
     ($description:expr) => {
         const { $crate::compile_time::SeparatorCompileTime::__new($description) }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        let separator = SeparatorCompileTime::__new(std::hint::black_box("Advanced"));
+
+        assert_eq!(separator.description(), "Advanced");
+    }
 }

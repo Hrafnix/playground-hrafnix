@@ -13,12 +13,12 @@ pub struct TableCompileTime {
 }
 
 impl TableCompileTime {
-    /// Hidden backing constructor for `table_compile_time!(description, columns)`.
+    /// Hidden backing constructor for `const_table!(description, columns)`.
     ///
-    /// This is an implementation detail; call `table_compile_time!` instead.
+    /// This is an implementation detail; call `const_table!` instead.
     /// `description` names the table and `columns` is the ordered slice of
     /// `(ConstStoreKey, NumberCompileTime)` column key/definition pairs, typically built
-    /// with the `store_key!` macro and `number_compile_time!`.
+    /// with the `store_key!` macro and `const_number!`.
     #[doc(hidden)]
     #[must_use]
     pub const fn __new(
@@ -117,14 +117,14 @@ impl TableCompileTime {
 ///
 /// # Syntax
 /// ```text
-/// table_compile_time!(description, columns)
+/// const_table!(description, columns)
 /// ```
 ///
 /// # Arguments
 /// - `description`: `&'static str` human-readable description of the table.
 /// - `columns`: `&'static [(ConstStoreKey, NumberCompileTime)]` ordered slice of column
 ///   key/definition pairs, typically built with the `store_key!` macro and
-///   `number_compile_time!`.
+///   `const_number!`.
 ///
 /// # Examples
 /// ```rust
@@ -134,21 +134,52 @@ impl TableCompileTime {
 /// const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] = &[
 ///     (
 ///         store_key!("width"),
-///         number_compile_time!("Width", default = "10"),
+///         const_number!("Width", default = "10"),
 ///     ),
 ///     (
 ///         store_key!("height"),
-///         number_compile_time!("Height", default = "20"),
+///         const_number!("Height", default = "20"),
 ///     ),
 /// ];
-/// const DIMENSIONS: TableCompileTime = table_compile_time!("Dimensions", COLUMNS);
+/// const DIMENSIONS: TableCompileTime = const_table!("Dimensions", COLUMNS);
 /// assert_eq!(DIMENSIONS.count(), 2);
 ///
 /// let _definition = DIMENSIONS.into_definition();
 /// ```
 #[macro_export]
-macro_rules! table_compile_time {
+macro_rules! const_table {
     ($description:expr, $columns:expr) => {
-        const { $crate::compile_time::TableCompileTime::__new($description, $columns) }
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::TableCompileTime::__new($description, $columns)
+        }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{const_number, store_key};
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] =
+            &[(store_key!("width"), const_number!("Width"))];
+        let table = TableCompileTime::__new(std::hint::black_box("Dimensions"), COLUMNS);
+
+        assert_eq!(table.description(), "Dimensions");
+        assert_eq!(table.columns(), COLUMNS);
+    }
+
+    #[test]
+    #[should_panic(expected = "TableCompileTime column keys must be unique")]
+    fn table_compile_time_rejects_duplicate_keys() {
+        const DUPLICATES: &[(ConstStoreKey, NumberCompileTime)] = &[
+            (store_key!("duplicate"), const_number!("First")),
+            (store_key!("duplicate"), const_number!("Second")),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = TableCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
 }
