@@ -154,6 +154,82 @@ fn default_conditional_function_accepts_computed_branches() {
 }
 
 #[test]
+fn default_trigonometric_functions_preserve_decimal_arguments() {
+    assert_float_expression(
+        "sin(0.125) + cos(0.375) - tan(0.25)",
+        0.7998404340765056_f64,
+    );
+}
+
+#[test]
+fn default_range_functions_combine_decimal_places_without_losing_precision() {
+    assert_float_expression(
+        "clamp(12.345, 1.125, 9.875) - min(3.625, 4.875) + max(0.125, 0.25)",
+        6.5,
+    );
+}
+
+#[test]
+fn default_logarithmic_functions_accept_fractional_decimal_values() {
+    assert_float_expression("sqrt(2.25) + log10(0.01) + log2(0.125) + exp(0.0)", -2.5);
+}
+
+#[test]
+fn default_rounding_functions_handle_values_near_decimal_boundaries() {
+    assert_float_expression(
+        "ceil(1.0001) + floor(2.9999) + round(3.4999) + round(3.5001)",
+        11.0,
+    );
+}
+
+#[test]
+fn default_numeric_conversions_handle_decimal_places_inside_arithmetic() {
+    assert_float_expression("to_float(to_int(123.987)) / 8.0", 15.375);
+}
+
+#[test]
+fn decimal_trigonometric_expression_matches_golden_value() {
+    assert_float_expression(
+        "sin(0.123456789) + cos(0.987654321) - tan(0.314159265)",
+        0.348_873_117_208_259_14,
+    );
+}
+
+#[test]
+fn decimal_inverse_trigonometric_expression_matches_golden_value() {
+    assert_float_expression(
+        "arcsin(0.333333333) + arccos(0.666666667) + arctan(0.777777777) \
+         + arctan2(0.123456789, 0.987654321)",
+        1.966_303_741_012_579_9,
+    );
+}
+
+#[test]
+fn decimal_hyperbolic_expression_matches_golden_value() {
+    assert_float_expression(
+        "sinh(0.125) + cosh(0.375) - tanh(0.625)",
+        0.641_866_399_596_32,
+    );
+}
+
+#[test]
+fn decimal_logarithmic_expression_matches_golden_value() {
+    assert_float_expression(
+        "sqrt(12.3456789) + log(1.23456789) + log2(3.14159265) \
+         + log10(98.7654321) + exp(0.123456789)",
+        8.501_865_061_314_87,
+    );
+}
+
+#[test]
+fn decimal_angle_conversion_expression_matches_golden_value() {
+    assert_float_expression(
+        "to_degrees(0.123456789) + to_radians(12.3456789)",
+        7.289_025_707_136_118,
+    );
+}
+
+#[test]
 fn registered_function_is_invoked_during_evaluation() {
     // Why: Test that a registered custom function is invoked and its result used during evaluation.
     let frozen = ParameterObjectDefinition::builder("Test Object")
