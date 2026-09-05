@@ -43,6 +43,116 @@ fn build_parameter(definition: ParameterObjectDefinition) -> ParameterObjectInpu
     ParameterObjectInputData::new(&ParameterObjectFrozen::new(definition))
 }
 
+fn evaluate_number_expression(expression: &str) -> ComputedItem {
+    let data = build_parameter(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_result"),
+                NumberDefinition::new_with_default("A number parameter", expression),
+            )
+            .finish(),
+    );
+
+    ExpressionEngine::new()
+        .evaluate_parameters(&data)
+        .expect("evaluation should succeed")
+        .get("p_result")
+        .expect("p_result should be computed")
+        .clone()
+}
+
+fn evaluate_integer_expression(expression: &str) -> ComputedItem {
+    let data = build_parameter(
+        ParameterObjectDefinition::builder("Test Object")
+            .with(
+                parameter_key!("p_result"),
+                IntegerDefinition::new_with_default("An integer parameter", expression),
+            )
+            .finish(),
+    );
+
+    ExpressionEngine::new()
+        .evaluate_parameters(&data)
+        .expect("evaluation should succeed")
+        .get("p_result")
+        .expect("p_result should be computed")
+        .clone()
+}
+
+fn assert_float_expression(expression: &str, expected: f64) {
+    match evaluate_number_expression(expression) {
+        ComputedItem::Float(actual) => assert!(
+            actual.sub(expected).abs() <= f64::EPSILON,
+            "expected expression `{expression}` to equal {expected}, got {actual}"
+        ),
+        other => panic!("expected expression `{expression}` to produce a float, got {other:?}"),
+    }
+}
+
+fn assert_integer_expression(expression: &str, expected: i64) {
+    match evaluate_integer_expression(expression) {
+        ComputedItem::Integer(actual) => assert_eq!(
+            actual, expected,
+            "expression `{expression}` produced the wrong integer"
+        ),
+        other => panic!("expected expression `{expression}` to produce an integer, got {other:?}"),
+    }
+}
+
+#[test]
+fn default_trigonometric_functions_combine_with_arithmetic() {
+    assert_float_expression("2.0 * sin(g_pi / 2.0) + cos(0.0) - tan(g_pi / 4.0)", 2.0);
+}
+
+#[test]
+fn default_inverse_trigonometric_functions_can_be_nested() {
+    assert_float_expression(
+        "to_degrees(arcsin(1.0) + arccos(0.0) + arctan(1.0) + arctan2(1.0, 1.0))",
+        270.0,
+    );
+}
+
+#[test]
+fn default_rounding_and_absolute_functions_preserve_float_math() {
+    assert_float_expression(
+        "ceil(2.1) + floor(3.9) + round(4.5) + abs(-3.0) / 2.0",
+        12.5,
+    );
+}
+
+#[test]
+fn default_min_max_clamp_and_abs_functions_compose_with_integer_math() {
+    assert_integer_expression("max(2, min(9, 4 + 3)) + clamp(-5, -2, 2) + abs(-3)", 8);
+}
+
+#[test]
+fn default_root_logarithm_and_exponential_functions_can_be_chained() {
+    assert_float_expression(
+        "sqrt(81.0) + log(exp(2.0)) + log2(8.0) + log10(100.0)",
+        16.0,
+    );
+}
+
+#[test]
+fn default_hyperbolic_functions_work_with_power_and_subtraction() {
+    assert_float_expression("cosh(1.0)^2.0 - sinh(1.0)^2.0 + tanh(0.0)", 1.0);
+}
+
+#[test]
+fn default_angle_conversion_functions_work_inside_larger_expressions() {
+    assert_float_expression("to_degrees(g_pi) / 2.0 + to_radians(180.0) / g_pi", 91.0);
+}
+
+#[test]
+fn default_length_and_numeric_conversion_functions_can_be_nested() {
+    assert_float_expression("to_float(to_int(5.9) + len(\"four\")) / 3.0", 3.0);
+}
+
+#[test]
+fn default_conditional_function_accepts_computed_branches() {
+    assert_integer_expression("if(2 + 2 == 4, max(3, 7) * 2, min(8, 9))", 14);
+}
+
 #[test]
 fn registered_function_is_invoked_during_evaluation() {
     // Why: Test that a registered custom function is invoked and its result used during evaluation.
