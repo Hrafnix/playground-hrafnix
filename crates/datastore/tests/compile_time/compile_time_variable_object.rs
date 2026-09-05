@@ -15,6 +15,17 @@ fn variable_object_compile_time_converts_both_macro_forms() {
         )],
     );
 
+    assert_eq!(FROM_SLICE.description(), "Variables");
+    assert_eq!(FROM_SLICE.items(), ITEMS);
+    assert_eq!(FROM_SLICE.count(), 1);
+    assert!(FROM_SLICE.contains("v_result"));
+    assert!(!FROM_SLICE.contains("v_missing"));
+    assert!(matches!(
+        FROM_SLICE.get("v_result"),
+        Some(ItemCompileTime::Number(_))
+    ));
+    assert_eq!(FROM_SLICE.get("v_missing"), None);
+    assert_eq!(FROM_SLICE.iter().count(), 1);
     assert_eq!(
         FROM_SLICE
             .keys()

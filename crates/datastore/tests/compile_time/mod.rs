@@ -2,6 +2,7 @@ mod compile_time_boolean;
 mod compile_time_choice;
 mod compile_time_comprehensive;
 mod compile_time_file;
+mod compile_time_folder;
 mod compile_time_global_object;
 mod compile_time_integer;
 mod compile_time_map;

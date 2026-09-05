@@ -332,6 +332,71 @@ mod tests {
     use super::*;
 
     #[test]
+    fn integer_constraint_constructors_and_converters_cover_every_variant() {
+        let constraints = [
+            IntegerConstraint::none(),
+            IntegerConstraint::min(std::hint::black_box(1), true),
+            IntegerConstraint::max(std::hint::black_box(9), false),
+            IntegerConstraint::range(std::hint::black_box(1), 9, true, false),
+        ];
+
+        assert_eq!(constraints[0].constraint_enum, IntegerConstraintEnum::None);
+        assert_eq!(
+            constraints[1].constraint_enum,
+            IntegerConstraintEnum::Min {
+                min: 1,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constraints[2].constraint_enum,
+            IntegerConstraintEnum::Max {
+                max: 9,
+                inclusive: false
+            }
+        );
+        assert_eq!(
+            constraints[3].constraint_enum,
+            IntegerConstraintEnum::Range {
+                min: 1,
+                max: 9,
+                min_inclusive: true,
+                max_inclusive: false
+            }
+        );
+
+        for constraint in constraints {
+            let expected = constraint.constraint_enum.into_definition();
+            assert_eq!(constraint.into_definition().constraint_enum, expected);
+        }
+    }
+
+    #[test]
+    fn integer_range_normalizes_reversed_and_equal_bounds() {
+        let reversed = IntegerConstraint::range(std::hint::black_box(9), 1, false, true);
+        assert_eq!(
+            reversed.constraint_enum,
+            IntegerConstraintEnum::Range {
+                min: 1,
+                max: 9,
+                min_inclusive: true,
+                max_inclusive: false
+            }
+        );
+
+        let equal = IntegerConstraint::range(std::hint::black_box(5), 5, false, false);
+        assert_eq!(
+            equal.constraint_enum,
+            IntegerConstraintEnum::Range {
+                min: 5,
+                max: 5,
+                min_inclusive: true,
+                max_inclusive: true
+            }
+        );
+    }
+
+    #[test]
     #[allow(clippy::disallowed_methods)]
     fn hidden_constructors_run_at_runtime() {
         let plain = IntegerCompileTime::__new(std::hint::black_box("Plain"));

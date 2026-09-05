@@ -110,6 +110,17 @@ fn global_object_compile_time_converts_both_macro_forms() {
         )],
     );
 
+    assert_eq!(FROM_SLICE.description(), "Global");
+    assert_eq!(FROM_SLICE.items(), ITEMS);
+    assert_eq!(FROM_SLICE.count(), 1);
+    assert!(FROM_SLICE.contains("g_name"));
+    assert!(!FROM_SLICE.contains("g_missing"));
+    assert!(matches!(
+        FROM_SLICE.get("g_name"),
+        Some(ItemCompileTime::String(_))
+    ));
+    assert_eq!(FROM_SLICE.get("g_missing"), None);
+    assert_eq!(FROM_SLICE.iter().count(), 1);
     assert_eq!(
         FROM_SLICE
             .keys()

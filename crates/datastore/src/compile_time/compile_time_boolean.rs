@@ -142,12 +142,15 @@ mod tests {
     #[allow(clippy::disallowed_methods)]
     fn hidden_constructors_run_at_runtime() {
         let without_default = BooleanCompileTime::__new(std::hint::black_box("Enabled"));
-        let with_default =
+        let default_true =
             BooleanCompileTime::__new_with_default(std::hint::black_box("Visible"), true);
+        let default_false =
+            BooleanCompileTime::__new_with_default(std::hint::black_box("Hidden"), false);
 
         assert_eq!(without_default.description(), "Enabled");
         assert_eq!(without_default.default_value(), "");
-        assert_eq!(with_default.description(), "Visible");
-        assert_eq!(with_default.default_value(), "true");
+        assert_eq!(default_true.description(), "Visible");
+        assert_eq!(default_true.default_value(), "true");
+        assert_eq!(default_false.default_value(), "false");
     }
 }

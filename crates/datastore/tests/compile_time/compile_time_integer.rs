@@ -19,8 +19,12 @@ fn integer_compile_time_converts_all_macro_forms() {
         default = "5"
     );
 
+    assert_eq!(integer.description(), "Integer");
     assert_eq!(integer.constraint(), IntegerConstraintEnum::None);
+    assert_eq!(integer.default_value(), "");
+    assert_eq!(integer.into_definition().default_value(), "");
     assert_eq!(default.default_value(), "5");
+    assert_eq!(default.into_definition().default_value(), "5");
     assert_eq!(
         maximum.constraint(),
         IntegerConstraintEnum::Max {

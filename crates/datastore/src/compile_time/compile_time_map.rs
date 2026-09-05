@@ -441,6 +441,33 @@ mod tests {
     use units::{UnitFamilyId, UnitId};
 
     #[test]
+    fn from_implementations_cover_every_map_item_variant() {
+        let items: [MapItemCompileTime; 10] = [
+            const_boolean!("Boolean").into(),
+            const_choice!("Choice", &[const_choice_item!("choice", "Choice")]).into(),
+            const_file!("File", "*", true).into(),
+            const_integer!("Integer").into(),
+            const_number!("Number").into(),
+            const_number_with_units!("Number with units", UnitId::Length_Meter).into(),
+            const_string!("String").into(),
+            const_table!("Table", &[]).into(),
+            const_table_with_units!("Table with units", &[]).into(),
+            const_unit!("Unit", UnitFamilyId::Length).into(),
+        ];
+
+        assert!(matches!(items[0], MapItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], MapItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], MapItemCompileTime::File(_)));
+        assert!(matches!(items[3], MapItemCompileTime::Integer(_)));
+        assert!(matches!(items[4], MapItemCompileTime::Number(_)));
+        assert!(matches!(items[5], MapItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[6], MapItemCompileTime::String(_)));
+        assert!(matches!(items[7], MapItemCompileTime::Table(_)));
+        assert!(matches!(items[8], MapItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[9], MapItemCompileTime::Unit(_)));
+    }
+
+    #[test]
     #[allow(clippy::disallowed_methods)]
     fn hidden_wrappers_and_constructor_run_at_runtime() {
         const MAP_ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[(

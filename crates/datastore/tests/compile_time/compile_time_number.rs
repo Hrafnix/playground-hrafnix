@@ -15,8 +15,12 @@ fn number_compile_time_converts_all_macro_forms() {
         default = "5"
     );
 
+    assert_eq!(number.description(), "Number");
     assert_eq!(number.constraint(), NumberConstraintEnum::None);
+    assert_eq!(number.default_value(), "");
+    assert_eq!(number.into_definition().default_value(), "");
     assert_eq!(default.default_value(), "1.5");
+    assert_eq!(default.into_definition().default_value(), "1.5");
     assert_eq!(
         minimum.constraint(),
         NumberConstraintEnum::Min {

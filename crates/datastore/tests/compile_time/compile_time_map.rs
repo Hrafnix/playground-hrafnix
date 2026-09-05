@@ -83,8 +83,18 @@ fn map_compile_time_preserves_items_and_order() {
     ];
     const MAP: MapCompileTime = const_map!("Shapes", ITEMS);
 
+    assert_eq!(MAP.description(), "Shapes");
+    assert_eq!(MAP.items(), ITEMS);
     assert_eq!(MAP.count(), 2);
+    assert!(MAP.contains_key("name"));
+    assert!(!MAP.contains_key("missing"));
     assert!(MAP.get("dimensions").is_some());
+    assert_eq!(MAP.get("missing"), None);
+    assert_eq!(
+        MAP.keys().map(|key| key.to_string()).collect::<Vec<_>>(),
+        ["name", "dimensions"]
+    );
+    assert_eq!(MAP.iter().count(), 2);
     assert_eq!(
         MAP.into_definition()
             .keys()

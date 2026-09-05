@@ -15,6 +15,17 @@ fn parameter_object_compile_time_converts_both_macro_forms() {
         )],
     );
 
+    assert_eq!(FROM_SLICE.description(), "Parameters");
+    assert_eq!(FROM_SLICE.items(), ITEMS);
+    assert_eq!(FROM_SLICE.count(), 1);
+    assert!(FROM_SLICE.contains("p_name"));
+    assert!(!FROM_SLICE.contains("p_missing"));
+    assert!(matches!(
+        FROM_SLICE.get("p_name"),
+        Some(ItemCompileTime::String(_))
+    ));
+    assert_eq!(FROM_SLICE.get("p_missing"), None);
+    assert_eq!(FROM_SLICE.iter().count(), 1);
     assert_eq!(
         FROM_SLICE
             .keys()

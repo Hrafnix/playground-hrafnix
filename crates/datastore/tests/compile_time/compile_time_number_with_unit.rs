@@ -18,8 +18,13 @@ fn number_with_units_compile_time_converts_all_macro_forms() {
         default = "1"
     );
 
+    assert_eq!(number.description(), "Length");
     assert_eq!(number.constraint(), NumberConstraintEnum::None);
+    assert_eq!(number.preferred_units(), UnitId::Length_Meter);
+    assert_eq!(number.default_value(), "");
+    assert_eq!(number.into_definition().default_value(), "");
     assert_eq!(default.default_value(), "2");
+    assert_eq!(default.into_definition().default_value(), "2");
     assert_eq!(
         maximum.constraint(),
         NumberConstraintEnum::Max {

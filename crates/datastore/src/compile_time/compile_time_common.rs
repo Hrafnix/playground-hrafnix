@@ -205,3 +205,111 @@ impl NumberConstraintEnum {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn const_string_equality_covers_equal_different_and_length_mismatch() {
+        assert!(const_str_eq(
+            std::hint::black_box("same"),
+            std::hint::black_box("same")
+        ));
+        assert!(!const_str_eq(
+            std::hint::black_box("left"),
+            std::hint::black_box("lest")
+        ));
+        assert!(!const_str_eq(
+            std::hint::black_box("short"),
+            std::hint::black_box("shorter")
+        ));
+    }
+
+    #[test]
+    fn number_constraint_constructors_and_converters_cover_every_variant() {
+        let constraints = [
+            NumberConstraint::none(),
+            NumberConstraint::min(std::hint::black_box(1.0), true),
+            NumberConstraint::max(std::hint::black_box(9.0), false),
+            NumberConstraint::range(std::hint::black_box(1.0), 9.0, true, false),
+        ];
+
+        assert_eq!(constraints[0].constraint_enum, NumberConstraintEnum::None);
+        assert_eq!(
+            constraints[1].constraint_enum,
+            NumberConstraintEnum::Min {
+                min: 1.0,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constraints[2].constraint_enum,
+            NumberConstraintEnum::Max {
+                max: 9.0,
+                inclusive: false
+            }
+        );
+        assert_eq!(
+            constraints[3].constraint_enum,
+            NumberConstraintEnum::Range {
+                min: 1.0,
+                max: 9.0,
+                min_inclusive: true,
+                max_inclusive: false
+            }
+        );
+
+        for constraint in constraints {
+            let expected = constraint.constraint_enum.into_definition();
+            assert_eq!(constraint.into_definition().constraint_enum, expected);
+        }
+    }
+
+    #[test]
+    fn number_range_normalizes_reversed_and_degenerate_bounds() {
+        let reversed = NumberConstraint::range(std::hint::black_box(9.0), 1.0, false, true);
+        assert_eq!(
+            reversed.constraint_enum,
+            NumberConstraintEnum::Range {
+                min: 1.0,
+                max: 9.0,
+                min_inclusive: true,
+                max_inclusive: false
+            }
+        );
+
+        for value in [0.0, -0.0, 1.0, -1.0] {
+            let range = NumberConstraint::range(std::hint::black_box(value), value, false, true);
+            let NumberConstraintEnum::Range {
+                min,
+                max,
+                min_inclusive,
+                max_inclusive,
+            } = range.constraint_enum
+            else {
+                panic!("expected a range");
+            };
+            assert!(min < value);
+            assert!(max > value);
+            assert!(min_inclusive);
+            assert!(!max_inclusive);
+        }
+
+        let infinite = NumberConstraint::range(
+            std::hint::black_box(f64::INFINITY),
+            f64::INFINITY,
+            true,
+            false,
+        );
+        assert_eq!(
+            infinite.constraint_enum,
+            NumberConstraintEnum::Range {
+                min: f64::INFINITY,
+                max: f64::INFINITY,
+                min_inclusive: false,
+                max_inclusive: true
+            }
+        );
+    }
+}

@@ -399,6 +399,45 @@ mod tests {
     use units::{UnitFamilyId, UnitId};
 
     #[test]
+    fn from_implementations_cover_every_item_variant() {
+        #[allow(clippy::disallowed_methods)]
+        let tab = const_tab!("Tab");
+        #[allow(clippy::disallowed_methods)]
+        let separator = const_separator!("Separator");
+        let items: [ItemCompileTime; 14] = [
+            const_boolean!("Boolean").into(),
+            const_choice!("Choice", &[const_choice_item!("choice", "Choice")]).into(),
+            const_file!("File", "*", true).into(),
+            const_folder!("Folder", true).into(),
+            const_integer!("Integer").into(),
+            const_map!("Map", &[]).into(),
+            const_number!("Number").into(),
+            const_number_with_units!("Number with units", UnitId::Length_Meter).into(),
+            const_string!("String").into(),
+            const_table!("Table", &[]).into(),
+            const_table_with_units!("Table with units", &[]).into(),
+            const_unit!("Unit", UnitFamilyId::Length).into(),
+            tab.into(),
+            separator.into(),
+        ];
+
+        assert!(matches!(items[0], ItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], ItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], ItemCompileTime::File(_)));
+        assert!(matches!(items[3], ItemCompileTime::Folder(_)));
+        assert!(matches!(items[4], ItemCompileTime::Integer(_)));
+        assert!(matches!(items[5], ItemCompileTime::Map(_)));
+        assert!(matches!(items[6], ItemCompileTime::Number(_)));
+        assert!(matches!(items[7], ItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[8], ItemCompileTime::String(_)));
+        assert!(matches!(items[9], ItemCompileTime::Table(_)));
+        assert!(matches!(items[10], ItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[11], ItemCompileTime::Unit(_)));
+        assert!(matches!(items[12], ItemCompileTime::Tab(_)));
+        assert!(matches!(items[13], ItemCompileTime::Separator(_)));
+    }
+
+    #[test]
     #[allow(clippy::disallowed_methods)]
     fn hidden_wrappers_run_at_runtime() {
         let items = [
