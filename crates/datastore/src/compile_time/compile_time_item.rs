@@ -387,3 +387,62 @@ macro_rules! const_item {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::{
+        const_boolean, const_choice, const_choice_item, const_file, const_folder, const_integer,
+        const_map, const_number, const_number_with_units, const_separator, const_string, const_tab,
+        const_table, const_table_with_units, const_unit,
+    };
+    use units::{UnitFamilyId, UnitId};
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_wrappers_run_at_runtime() {
+        let items = [
+            ItemCompileTime::__boolean(std::hint::black_box(const_boolean!("Boolean"))),
+            ItemCompileTime::__choice(std::hint::black_box(const_choice!(
+                "Choice",
+                &[const_choice_item!("choice", "Choice")]
+            ))),
+            ItemCompileTime::__file(std::hint::black_box(const_file!("File", "*", true))),
+            ItemCompileTime::__folder(std::hint::black_box(const_folder!("Folder", true))),
+            ItemCompileTime::__integer(std::hint::black_box(const_integer!("Integer"))),
+            ItemCompileTime::__map(std::hint::black_box(const_map!("Map", &[]))),
+            ItemCompileTime::__number(std::hint::black_box(const_number!("Number"))),
+            ItemCompileTime::__number_with_units(std::hint::black_box(const_number_with_units!(
+                "Number with units",
+                UnitId::Length_Meter
+            ))),
+            ItemCompileTime::__string(std::hint::black_box(const_string!("String"))),
+            ItemCompileTime::__table(std::hint::black_box(const_table!("Table", &[]))),
+            ItemCompileTime::__table_with_units(std::hint::black_box(const_table_with_units!(
+                "Table with units",
+                &[]
+            ))),
+            ItemCompileTime::__unit(std::hint::black_box(const_unit!(
+                "Unit",
+                UnitFamilyId::Length
+            ))),
+            ItemCompileTime::__tab(std::hint::black_box(const_tab!("Tab"))),
+            ItemCompileTime::__separator(std::hint::black_box(const_separator!("Separator"))),
+        ];
+
+        assert!(matches!(items[0], ItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], ItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], ItemCompileTime::File(_)));
+        assert!(matches!(items[3], ItemCompileTime::Folder(_)));
+        assert!(matches!(items[4], ItemCompileTime::Integer(_)));
+        assert!(matches!(items[5], ItemCompileTime::Map(_)));
+        assert!(matches!(items[6], ItemCompileTime::Number(_)));
+        assert!(matches!(items[7], ItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[8], ItemCompileTime::String(_)));
+        assert!(matches!(items[9], ItemCompileTime::Table(_)));
+        assert!(matches!(items[10], ItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[11], ItemCompileTime::Unit(_)));
+        assert!(matches!(items[12], ItemCompileTime::Tab(_)));
+        assert!(matches!(items[13], ItemCompileTime::Separator(_)));
+    }
+}

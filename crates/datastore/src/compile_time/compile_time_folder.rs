@@ -127,3 +127,26 @@ macro_rules! const_folder {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default = FolderCompileTime::__new(std::hint::black_box("Input"), true);
+        let with_default = FolderCompileTime::__new_with_default(
+            std::hint::black_box("Output"),
+            false,
+            std::hint::black_box("out"),
+        );
+
+        assert_eq!(without_default.description(), "Input");
+        assert!(without_default.is_input());
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.description(), "Output");
+        assert!(!with_default.is_input());
+        assert_eq!(with_default.default_value(), "out");
+    }
+}

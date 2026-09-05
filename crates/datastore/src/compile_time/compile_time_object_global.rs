@@ -166,6 +166,19 @@ mod tests {
     use crate::prelude::{const_item, const_string, global_key};
 
     #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const ITEMS: &[(ConstGlobalKey, ItemCompileTime)] = &[(
+            global_key!("g_name"),
+            const_item!(string = const_string!("Name")),
+        )];
+        let object = GlobalObjectCompileTime::__new(std::hint::black_box("Globals"), ITEMS);
+
+        assert_eq!(object.description(), "Globals");
+        assert_eq!(object.items(), ITEMS);
+    }
+
+    #[test]
     #[should_panic(expected = "GlobalObjectCompileTime item keys must be unique")]
     fn global_object_compile_time_rejects_duplicate_keys() {
         const DUPLICATES: &[(ConstGlobalKey, ItemCompileTime)] = &[

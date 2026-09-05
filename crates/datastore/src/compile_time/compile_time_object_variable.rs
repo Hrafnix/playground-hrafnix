@@ -166,6 +166,19 @@ mod tests {
     use crate::prelude::{const_item, const_string, variable_key};
 
     #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const ITEMS: &[(ConstVariableKey, ItemCompileTime)] = &[(
+            variable_key!("v_name"),
+            const_item!(string = const_string!("Name")),
+        )];
+        let object = VariableObjectCompileTime::__new(std::hint::black_box("Variables"), ITEMS);
+
+        assert_eq!(object.description(), "Variables");
+        assert_eq!(object.items(), ITEMS);
+    }
+
+    #[test]
     #[should_panic(expected = "VariableObjectCompileTime item keys must be unique")]
     fn variable_object_compile_time_rejects_duplicate_keys() {
         const DUPLICATES: &[(ConstVariableKey, ItemCompileTime)] = &[

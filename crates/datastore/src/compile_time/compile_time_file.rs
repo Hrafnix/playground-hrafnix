@@ -151,3 +151,27 @@ macro_rules! const_file {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default = FileCompileTime::__new(std::hint::black_box("Input"), "*.csv", true);
+        let with_default = FileCompileTime::__new_with_default(
+            std::hint::black_box("Output"),
+            "*.json",
+            false,
+            std::hint::black_box("output.json"),
+        );
+
+        assert_eq!(without_default.description(), "Input");
+        assert_eq!(without_default.extension_filter(), "*.csv");
+        assert!(without_default.is_input());
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.description(), "Output");
+        assert_eq!(with_default.default_value(), "output.json");
+    }
+}

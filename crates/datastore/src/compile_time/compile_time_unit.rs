@@ -133,3 +133,24 @@ macro_rules! const_unit {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default =
+            UnitCompileTime::__new(std::hint::black_box("Length"), UnitFamilyId::Length);
+        let with_default = UnitCompileTime::__new_with_default(
+            std::hint::black_box("Length"),
+            UnitFamilyId::Length,
+            "u_length_meter",
+        );
+
+        assert_eq!(without_default.unit_family(), UnitFamilyId::Length);
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.default_value(), "u_length_meter");
+    }
+}

@@ -110,3 +110,23 @@ macro_rules! const_string {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default = StringCompileTime::__new(std::hint::black_box("Name"));
+        let with_default = StringCompileTime::__new_with_default(
+            std::hint::black_box("Title"),
+            std::hint::black_box("Untitled"),
+        );
+
+        assert_eq!(without_default.description(), "Name");
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.description(), "Title");
+        assert_eq!(with_default.default_value(), "Untitled");
+    }
+}

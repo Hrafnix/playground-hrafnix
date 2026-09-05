@@ -162,6 +162,17 @@ mod tests {
     use crate::prelude::{const_number, store_key};
 
     #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] =
+            &[(store_key!("width"), const_number!("Width"))];
+        let table = TableCompileTime::__new(std::hint::black_box("Dimensions"), COLUMNS);
+
+        assert_eq!(table.description(), "Dimensions");
+        assert_eq!(table.columns(), COLUMNS);
+    }
+
+    #[test]
     #[should_panic(expected = "TableCompileTime column keys must be unique")]
     fn table_compile_time_rejects_duplicate_keys() {
         const DUPLICATES: &[(ConstStoreKey, NumberCompileTime)] = &[

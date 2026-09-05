@@ -169,6 +169,19 @@ mod tests {
     use units::UnitId;
 
     #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const COLUMNS: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[(
+            store_key!("length"),
+            const_number_with_units!("Length", UnitId::Length_Meter),
+        )];
+        let table = TableWithUnitsCompileTime::__new(std::hint::black_box("Measurements"), COLUMNS);
+
+        assert_eq!(table.description(), "Measurements");
+        assert_eq!(table.columns(), COLUMNS);
+    }
+
+    #[test]
     #[should_panic(expected = "TableWithUnitsCompileTime column keys must be unique")]
     fn table_with_units_compile_time_rejects_duplicate_keys() {
         const DUPLICATES: &[(ConstStoreKey, NumberWithUnitsCompileTime)] = &[

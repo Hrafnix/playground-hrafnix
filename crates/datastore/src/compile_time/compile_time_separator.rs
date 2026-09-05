@@ -62,3 +62,16 @@ macro_rules! const_separator {
         const { $crate::compile_time::SeparatorCompileTime::__new($description) }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        let separator = SeparatorCompileTime::__new(std::hint::black_box("Advanced"));
+
+        assert_eq!(separator.description(), "Advanced");
+    }
+}

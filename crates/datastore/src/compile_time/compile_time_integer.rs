@@ -326,3 +326,43 @@ macro_rules! const_integer {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let plain = IntegerCompileTime::__new(std::hint::black_box("Plain"));
+        let defaulted =
+            IntegerCompileTime::__new_with_default(std::hint::black_box("Defaulted"), "10");
+        let constrained = IntegerCompileTime::__new_with_constraint(
+            std::hint::black_box("Constrained"),
+            IntegerConstraint::min(0, true),
+        );
+        let constrained_defaulted = IntegerCompileTime::__new_with_constraint_and_default(
+            std::hint::black_box("Both"),
+            IntegerConstraint::max(100, false),
+            "50",
+        );
+
+        assert_eq!(plain.constraint(), IntegerConstraintEnum::None);
+        assert_eq!(defaulted.default_value(), "10");
+        assert_eq!(
+            constrained.constraint(),
+            IntegerConstraintEnum::Min {
+                min: 0,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constrained_defaulted.constraint(),
+            IntegerConstraintEnum::Max {
+                max: 100,
+                inclusive: false
+            }
+        );
+        assert_eq!(constrained_defaulted.default_value(), "50");
+    }
+}

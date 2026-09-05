@@ -192,3 +192,43 @@ macro_rules! const_number {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let plain = NumberCompileTime::__new(std::hint::black_box("Plain"));
+        let defaulted =
+            NumberCompileTime::__new_with_default(std::hint::black_box("Defaulted"), "1.5");
+        let constrained = NumberCompileTime::__new_with_constraint(
+            std::hint::black_box("Constrained"),
+            NumberConstraint::min(0.0, true),
+        );
+        let constrained_defaulted = NumberCompileTime::__new_with_constraint_and_default(
+            std::hint::black_box("Both"),
+            NumberConstraint::max(100.0, false),
+            "50",
+        );
+
+        assert_eq!(plain.constraint(), NumberConstraintEnum::None);
+        assert_eq!(defaulted.default_value(), "1.5");
+        assert_eq!(
+            constrained.constraint(),
+            NumberConstraintEnum::Min {
+                min: 0.0,
+                inclusive: true
+            }
+        );
+        assert_eq!(
+            constrained_defaulted.constraint(),
+            NumberConstraintEnum::Max {
+                max: 100.0,
+                inclusive: false
+            }
+        );
+        assert_eq!(constrained_defaulted.default_value(), "50");
+    }
+}

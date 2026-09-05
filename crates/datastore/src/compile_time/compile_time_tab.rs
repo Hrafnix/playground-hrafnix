@@ -62,3 +62,16 @@ macro_rules! const_tab {
         const { $crate::compile_time::TabCompileTime::__new($description) }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        let tab = TabCompileTime::__new(std::hint::black_box("General"));
+
+        assert_eq!(tab.description(), "General");
+    }
+}

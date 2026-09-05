@@ -281,6 +281,32 @@ macro_rules! const_choice {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::prelude::store_key;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let choices = Box::leak(Box::new([
+            ChoiceItemCompileTime::__new(store_key!("first"), std::hint::black_box("First")),
+            ChoiceItemCompileTime::__new(store_key!("second"), std::hint::black_box("Second")),
+        ]));
+        let item = ChoiceItemCompileTime::__new(
+            store_key!("runtime_choice"),
+            std::hint::black_box("Runtime choice"),
+        );
+        let without_default = ChoiceCompileTime::__new(std::hint::black_box("Choice"), choices);
+        let with_default = ChoiceCompileTime::__new_with_default(
+            std::hint::black_box("Defaulted choice"),
+            choices,
+            "second",
+        );
+
+        assert_eq!(item.id(), store_key!("runtime_choice"));
+        assert_eq!(item.description(), "Runtime choice");
+        assert_eq!(without_default.choices(), choices);
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.default_value(), "second");
+    }
 
     #[test]
     #[should_panic(expected = "ChoiceCompileTime choice ids must be unique")]

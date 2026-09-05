@@ -166,6 +166,19 @@ mod tests {
     use crate::prelude::{const_item, const_string, parameter_key};
 
     #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructor_runs_at_runtime() {
+        const ITEMS: &[(ConstParameterKey, ItemCompileTime)] = &[(
+            parameter_key!("p_name"),
+            const_item!(string = const_string!("Name")),
+        )];
+        let object = ParameterObjectCompileTime::__new(std::hint::black_box("Parameters"), ITEMS);
+
+        assert_eq!(object.description(), "Parameters");
+        assert_eq!(object.items(), ITEMS);
+    }
+
+    #[test]
     #[should_panic(expected = "ParameterObjectCompileTime item keys must be unique")]
     fn parameter_object_compile_time_rejects_duplicate_keys() {
         const DUPLICATES: &[(ConstParameterKey, ItemCompileTime)] = &[

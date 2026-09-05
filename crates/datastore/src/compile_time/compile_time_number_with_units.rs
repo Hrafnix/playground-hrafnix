@@ -233,3 +233,50 @@ macro_rules! const_number_with_units {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let unit = UnitId::Length_Meter;
+        let plain = NumberWithUnitsCompileTime::__new(std::hint::black_box("Plain"), unit);
+        let defaulted = NumberWithUnitsCompileTime::__new_with_default(
+            std::hint::black_box("Defaulted"),
+            "1.5",
+            unit,
+        );
+        let constrained = NumberWithUnitsCompileTime::__new_with_constraint(
+            std::hint::black_box("Constrained"),
+            NumberConstraint::min(0.0, true),
+            unit,
+        );
+        let constrained_defaulted = NumberWithUnitsCompileTime::__new_with_constraint_and_default(
+            std::hint::black_box("Both"),
+            NumberConstraint::max(100.0, false),
+            "50",
+            unit,
+        );
+
+        assert_eq!(plain.preferred_units(), unit);
+        assert_eq!(plain.constraint(), NumberConstraintEnum::None);
+        assert_eq!(defaulted.default_value(), "1.5");
+        assert!(matches!(
+            constrained.constraint(),
+            NumberConstraintEnum::Min {
+                min: 0.0,
+                inclusive: true
+            }
+        ));
+        assert!(matches!(
+            constrained_defaulted.constraint(),
+            NumberConstraintEnum::Max {
+                max: 100.0,
+                inclusive: false
+            }
+        ));
+        assert_eq!(constrained_defaulted.default_value(), "50");
+    }
+}

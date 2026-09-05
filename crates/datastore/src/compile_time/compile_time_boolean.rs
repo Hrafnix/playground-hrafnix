@@ -133,3 +133,21 @@ macro_rules! const_boolean {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_constructors_run_at_runtime() {
+        let without_default = BooleanCompileTime::__new(std::hint::black_box("Enabled"));
+        let with_default =
+            BooleanCompileTime::__new_with_default(std::hint::black_box("Visible"), true);
+
+        assert_eq!(without_default.description(), "Enabled");
+        assert_eq!(without_default.default_value(), "");
+        assert_eq!(with_default.description(), "Visible");
+        assert_eq!(with_default.default_value(), "true");
+    }
+}

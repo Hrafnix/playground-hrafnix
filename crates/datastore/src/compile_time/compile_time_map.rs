@@ -433,7 +433,58 @@ macro_rules! const_map {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::{const_string, store_key};
+    use crate::prelude::{
+        const_boolean, const_choice, const_choice_item, const_file, const_integer, const_number,
+        const_number_with_units, const_string, const_table, const_table_with_units, const_unit,
+        store_key,
+    };
+    use units::{UnitFamilyId, UnitId};
+
+    #[test]
+    #[allow(clippy::disallowed_methods)]
+    fn hidden_wrappers_and_constructor_run_at_runtime() {
+        const MAP_ITEMS: &[(ConstStoreKey, MapItemCompileTime)] = &[(
+            store_key!("name"),
+            const_map_item!(string = const_string!("Name")),
+        )];
+        let items = [
+            MapItemCompileTime::__boolean(std::hint::black_box(const_boolean!("Boolean"))),
+            MapItemCompileTime::__choice(std::hint::black_box(const_choice!(
+                "Choice",
+                &[const_choice_item!("choice", "Choice")]
+            ))),
+            MapItemCompileTime::__file(std::hint::black_box(const_file!("File", "*", true))),
+            MapItemCompileTime::__integer(std::hint::black_box(const_integer!("Integer"))),
+            MapItemCompileTime::__number(std::hint::black_box(const_number!("Number"))),
+            MapItemCompileTime::__number_with_units(std::hint::black_box(
+                const_number_with_units!("Number with units", UnitId::Length_Meter),
+            )),
+            MapItemCompileTime::__string(std::hint::black_box(const_string!("String"))),
+            MapItemCompileTime::__table(std::hint::black_box(const_table!("Table", &[]))),
+            MapItemCompileTime::__table_with_units(std::hint::black_box(const_table_with_units!(
+                "Table with units",
+                &[]
+            ))),
+            MapItemCompileTime::__unit(std::hint::black_box(const_unit!(
+                "Unit",
+                UnitFamilyId::Length
+            ))),
+        ];
+        let map = MapCompileTime::__new(std::hint::black_box("Map"), MAP_ITEMS);
+
+        assert!(matches!(items[0], MapItemCompileTime::Boolean(_)));
+        assert!(matches!(items[1], MapItemCompileTime::Choice(_)));
+        assert!(matches!(items[2], MapItemCompileTime::File(_)));
+        assert!(matches!(items[3], MapItemCompileTime::Integer(_)));
+        assert!(matches!(items[4], MapItemCompileTime::Number(_)));
+        assert!(matches!(items[5], MapItemCompileTime::NumberWithUnits(_)));
+        assert!(matches!(items[6], MapItemCompileTime::String(_)));
+        assert!(matches!(items[7], MapItemCompileTime::Table(_)));
+        assert!(matches!(items[8], MapItemCompileTime::TableWithUnits(_)));
+        assert!(matches!(items[9], MapItemCompileTime::Unit(_)));
+        assert_eq!(map.description(), "Map");
+        assert_eq!(map.items(), MAP_ITEMS);
+    }
 
     #[test]
     #[should_panic(expected = "MapCompileTime item keys must be unique")]
