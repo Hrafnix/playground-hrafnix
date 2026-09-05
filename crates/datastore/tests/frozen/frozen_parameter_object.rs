@@ -8,7 +8,7 @@ fn test_parameter_object_definition_basic() {
     let frozen_1 = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
-                ParameterKey::new("p_p01".into()).unwrap(),
+                ParameterKey::new("p_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
@@ -16,9 +16,41 @@ fn test_parameter_object_definition_basic() {
 
     assert_eq!(frozen_1.definition().description().as_ref(), "Test Object");
     assert_eq!(frozen_1.definition().count(), 1);
-    assert!(frozen_1.definition().contains("p_p01"));
-    assert!(frozen_1.definition().contains_str("p_p01"));
+    assert!(frozen_1.definition().contains("p_p1"));
+    assert!(frozen_1.definition().contains_str("p_p1"));
     assert_ne!(frozen_1.hash(), [0u8; 32]);
+}
+
+#[test]
+fn test_parameter_object_frozen_ordered_iter_and_print() {
+    let frozen = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Ordered")
+            .with(
+                ParameterKey::new("p_z".into()).unwrap(),
+                StringDefinition::new("First"),
+            )
+            .with(
+                ParameterKey::new("p_a".into()).unwrap(),
+                StringDefinition::new("Second"),
+            )
+            .finish(),
+    );
+
+    assert_eq!(
+        frozen
+            .ordered_iter()
+            .map(|(key, _)| key.as_str())
+            .collect::<Vec<_>>(),
+        ["p_z", "p_a"]
+    );
+    assert_eq!(
+        format!("{frozen}"),
+        concat!(
+            "Parameter Object Frozen (Ordered)\n",
+            "    ├── p_z (First) String - \"\"\n",
+            "    └── p_a (Second) String - \"\"\n",
+        )
+    );
 }
 
 #[test]
@@ -27,7 +59,7 @@ fn test_parameter_object_definition_equality() {
     let frozen_1 = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
-                ParameterKey::new("p_p01".into()).unwrap(),
+                ParameterKey::new("p_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
@@ -35,7 +67,7 @@ fn test_parameter_object_definition_equality() {
     let frozen_2 = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
-                ParameterKey::new("p_p01".into()).unwrap(),
+                ParameterKey::new("p_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .finish(),
@@ -43,7 +75,7 @@ fn test_parameter_object_definition_equality() {
     let frozen_3 = ParameterObjectFrozen::new(
         ParameterObjectDefinition::builder("Test Object")
             .with(
-                ParameterKey::new("p_p01".into()).unwrap(),
+                ParameterKey::new("p_p1".into()).unwrap(),
                 StringDefinition::new("D2"),
             )
             .finish(),
@@ -61,111 +93,111 @@ fn test_editable_parameter_object_print() {
     let frozen_1 = ParameterObjectFrozen::new(
         ParameterObjectDefinitionBuilder::new("Test")
             .with(
-                ParameterKey::new("p_p01".into()).unwrap(),
+                ParameterKey::new("p_p1".into()).unwrap(),
                 StringDefinition::new("D1"),
             )
             .with(
-                ParameterKey::new("p_p02".into()).unwrap(),
+                ParameterKey::new("p_p2".into()).unwrap(),
                 BooleanDefinition::new("D2"),
             )
             .with(
-                ParameterKey::new("p_p03".into()).unwrap(),
+                ParameterKey::new("p_p3".into()).unwrap(),
                 FileDefinition::new("D3", "ext", false),
             )
             .with(
-                ParameterKey::new("p_p04_v1".into()).unwrap(),
+                ParameterKey::new("p_p4_v1".into()).unwrap(),
                 IntegerDefinition::new("D4"),
             )
             .with(
-                ParameterKey::new("p_p04_v2".into()).unwrap(),
+                ParameterKey::new("p_p4_v2".into()).unwrap(),
                 IntegerDefinition::new_with_constraint("D4", IntegerConstraint::min(0, true)),
             )
             .with(
-                ParameterKey::new("p_p04_v3".into()).unwrap(),
+                ParameterKey::new("p_p4_v3".into()).unwrap(),
                 IntegerDefinition::new_with_constraint("D4", IntegerConstraint::min(20, false)),
             )
             .with(
-                ParameterKey::new("p_p04_v4".into()).unwrap(),
+                ParameterKey::new("p_p4_v4".into()).unwrap(),
                 IntegerDefinition::new_with_constraint("D4", IntegerConstraint::max(10, true)),
             )
             .with(
-                ParameterKey::new("p_p04_v5".into()).unwrap(),
+                ParameterKey::new("p_p4_v5".into()).unwrap(),
                 IntegerDefinition::new_with_constraint(
                     "D4",
                     IntegerConstraint::range(0, 10, true, true),
                 ),
             )
             .with(
-                ParameterKey::new("p_p04_v6".into()).unwrap(),
+                ParameterKey::new("p_p4_v6".into()).unwrap(),
                 IntegerDefinition::new_with_constraint(
                     "D4",
                     IntegerConstraint::range(32, 80, false, true),
                 ),
             )
             .with(
-                ParameterKey::new("p_p04_v7".into()).unwrap(),
+                ParameterKey::new("p_p4_v7".into()).unwrap(),
                 IntegerDefinition::new_with_constraint(
                     "D4",
                     IntegerConstraint::range(10, 150, false, true),
                 ),
             )
             .with(
-                ParameterKey::new("p_p04_v8".into()).unwrap(),
+                ParameterKey::new("p_p4_v8".into()).unwrap(),
                 IntegerDefinition::new_with_constraint(
                     "D4",
                     IntegerConstraint::range(40, 100, false, false),
                 ),
             )
             .with(
-                ParameterKey::new("p_p05_v1".into()).unwrap(),
+                ParameterKey::new("p_p5_v1".into()).unwrap(),
                 NumberDefinition::new("D5"),
             )
             .with(
-                ParameterKey::new("p_p05_v2".into()).unwrap(),
+                ParameterKey::new("p_p5_v2".into()).unwrap(),
                 NumberDefinition::new_with_constraint("D5", NumberConstraint::min(1.0, true)),
             )
             .with(
-                ParameterKey::new("p_p05_v3".into()).unwrap(),
+                ParameterKey::new("p_p5_v3".into()).unwrap(),
                 NumberDefinition::new_with_constraint("D5", NumberConstraint::max(21.0, false)),
             )
             .with(
-                ParameterKey::new("p_p05_v4".into()).unwrap(),
+                ParameterKey::new("p_p5_v4".into()).unwrap(),
                 NumberDefinition::new_with_constraint("D5", NumberConstraint::max(11.0, true)),
             )
             .with(
-                ParameterKey::new("p_p05_v5".into()).unwrap(),
+                ParameterKey::new("p_p5_v5".into()).unwrap(),
                 NumberDefinition::new_with_constraint("D5", NumberConstraint::max(100.0, false)),
             )
             .with(
-                ParameterKey::new("p_p05_v6".into()).unwrap(),
+                ParameterKey::new("p_p5_v6".into()).unwrap(),
                 NumberDefinition::new_with_constraint(
                     "D5",
                     NumberConstraint::range(2.0, 12.0, true, false),
                 ),
             )
             .with(
-                ParameterKey::new("p_p05_v7".into()).unwrap(),
+                ParameterKey::new("p_p5_v7".into()).unwrap(),
                 NumberDefinition::new_with_constraint(
                     "D5",
                     NumberConstraint::range(3.0, 99.0, false, false),
                 ),
             )
             .with(
-                ParameterKey::new("p_p05_v8".into()).unwrap(),
+                ParameterKey::new("p_p5_v8".into()).unwrap(),
                 NumberDefinition::new_with_constraint(
                     "D5",
                     NumberConstraint::range(5.0, 70.0, false, true),
                 ),
             )
             .with(
-                ParameterKey::new("p_p05_v9".into()).unwrap(),
+                ParameterKey::new("p_p5_v9".into()).unwrap(),
                 NumberDefinition::new_with_constraint(
                     "D5",
                     NumberConstraint::range(6.0, 1200.0, true, true),
                 ),
             )
             .with(
-                ParameterKey::new("p_p06".into()).unwrap(),
+                ParameterKey::new("p_p6".into()).unwrap(),
                 ChoiceDefinition::new(
                     "D6",
                     vec![
@@ -175,7 +207,7 @@ fn test_editable_parameter_object_print() {
                 ),
             )
             .with(
-                ParameterKey::new("p_p07".into()).unwrap(),
+                ParameterKey::new("p_p7".into()).unwrap(),
                 TableDefinition::new(
                     "D7",
                     vec![
@@ -191,27 +223,7 @@ fn test_editable_parameter_object_print() {
                 ),
             )
             .with(
-                ParameterKey::new("p_p09".into()).unwrap(),
-                FolderDefinition::new("D9", true),
-            )
-            .with(
-                ParameterKey::new("p_p10".into()).unwrap(),
-                NumberWithUnitsDefinition::new("D10", UnitId::Length_Meter),
-            )
-            .with(
-                ParameterKey::new("p_p11".into()).unwrap(),
-                SeparatorDefinition::new("D11"),
-            )
-            .with(
-                ParameterKey::new("p_p12".into()).unwrap(),
-                TabDefinition::new("D12"),
-            )
-            .with(
-                ParameterKey::new("p_p13".into()).unwrap(),
-                UnitDefinition::new("D13", UnitFamilyId::Length),
-            )
-            .with(
-                ParameterKey::new("p_p08".into()).unwrap(),
+                ParameterKey::new("p_p8".into()).unwrap(),
                 MapDefinition::new(
                     "D8",
                     vec![
@@ -245,6 +257,26 @@ fn test_editable_parameter_object_print() {
                     ],
                 ),
             )
+            .with(
+                ParameterKey::new("p_p9".into()).unwrap(),
+                FolderDefinition::new("D9", true),
+            )
+            .with(
+                ParameterKey::new("p_p10".into()).unwrap(),
+                NumberWithUnitsDefinition::new("D10", UnitId::Length_Meter),
+            )
+            .with(
+                ParameterKey::new("p_p11".into()).unwrap(),
+                SeparatorDefinition::new("D11"),
+            )
+            .with(
+                ParameterKey::new("p_p12".into()).unwrap(),
+                TabDefinition::new("D12"),
+            )
+            .with(
+                ParameterKey::new("p_p13".into()).unwrap(),
+                UnitDefinition::new("D13", UnitFamilyId::Length),
+            )
             .finish(),
     );
 
@@ -252,32 +284,32 @@ fn test_editable_parameter_object_print() {
         format!("{frozen_1}"),
         concat!(
             "Parameter Object Frozen (Test)\n",
-            "    ├── p_p01 (D1) String - \"\"\n",
-            "    ├── p_p02 (D2) Boolean - \"\"\n",
-            "    ├── p_p03 (D3) File - \"\"\n",
-            "    ├── p_p04_v1 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v2 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v3 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v4 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v5 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v6 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v7 (D4) Integer - \"\"\n",
-            "    ├── p_p04_v8 (D4) Integer - \"\"\n",
-            "    ├── p_p05_v1 (D5) Number - \"\"\n",
-            "    ├── p_p05_v2 (D5) Number - \"\"\n",
-            "    ├── p_p05_v3 (D5) Number - \"\"\n",
-            "    ├── p_p05_v4 (D5) Number - \"\"\n",
-            "    ├── p_p05_v5 (D5) Number - \"\"\n",
-            "    ├── p_p05_v6 (D5) Number - \"\"\n",
-            "    ├── p_p05_v7 (D5) Number - \"\"\n",
-            "    ├── p_p05_v8 (D5) Number - \"\"\n",
-            "    ├── p_p05_v9 (D5) Number - \"\"\n",
-            "    ├── p_p06 (D6) Choice - \"\"\n",
-            "    ├── p_p07 (D7) Table 0 rows\n",
+            "    ├── p_p1 (D1) String - \"\"\n",
+            "    ├── p_p2 (D2) Boolean - \"\"\n",
+            "    ├── p_p3 (D3) File - \"\"\n",
+            "    ├── p_p4_v1 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v2 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v3 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v4 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v5 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v6 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v7 (D4) Integer - \"\"\n",
+            "    ├── p_p4_v8 (D4) Integer - \"\"\n",
+            "    ├── p_p5_v1 (D5) Number - \"\"\n",
+            "    ├── p_p5_v2 (D5) Number - \"\"\n",
+            "    ├── p_p5_v3 (D5) Number - \"\"\n",
+            "    ├── p_p5_v4 (D5) Number - \"\"\n",
+            "    ├── p_p5_v5 (D5) Number - \"\"\n",
+            "    ├── p_p5_v6 (D5) Number - \"\"\n",
+            "    ├── p_p5_v7 (D5) Number - \"\"\n",
+            "    ├── p_p5_v8 (D5) Number - \"\"\n",
+            "    ├── p_p5_v9 (D5) Number - \"\"\n",
+            "    ├── p_p6 (D6) Choice - \"\"\n",
+            "    ├── p_p7 (D7) Table 0 rows\n",
             "    │   ├── data\n",
             "    │   └── Parameter \"\"\n",
-            "    ├── p_p08 (D8) Map\n",
-            "    ├── p_p09 (D9) Folder - \"\"\n",
+            "    ├── p_p8 (D8) Map\n",
+            "    ├── p_p9 (D9) Folder - \"\"\n",
             "    ├── p_p10 (D10) Number - \"\"\n",
             "    ├── p_p11 (D11) Separator\n",
             "    ├── p_p12 (D12) Tab\n",
@@ -286,38 +318,34 @@ fn test_editable_parameter_object_print() {
     );
 
     let mut editable_1 = frozen_1.thaw();
-    editable_set_value(&mut editable_1, "p_p01", "edited").unwrap();
-    editable_set_value(&mut editable_1, "p_p02", "true").unwrap();
-    editable_set_value(&mut editable_1, "p_p03", "test.ext").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v1", "1").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v2", "2").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v3", "3").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v4", "4").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v5", "5").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v6", "6").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v7", "7").unwrap();
-    editable_set_value(&mut editable_1, "p_p04_v8", "8").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v1", "1.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v2", "2.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v3", "3.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v4", "4.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v5", "5.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v6", "6.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v7", "7.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v8", "8.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p05_v9", "9.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p06", "test").unwrap();
+    editable_set_value(&mut editable_1, "p_p1", "edited").unwrap();
+    editable_set_value(&mut editable_1, "p_p2", "true").unwrap();
+    editable_set_value(&mut editable_1, "p_p3", "test.ext").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v1", "1").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v2", "2").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v3", "3").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v4", "4").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v5", "5").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v6", "6").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v7", "7").unwrap();
+    editable_set_value(&mut editable_1, "p_p4_v8", "8").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v1", "1.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v2", "2.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v3", "3.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v4", "4.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v5", "5.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v6", "6.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v7", "7.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v8", "8.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p5_v9", "9.0").unwrap();
+    editable_set_value(&mut editable_1, "p_p6", "test").unwrap();
 
-    let table = editable_1
-        .get_mut("p_p07")
-        .unwrap()
-        .get_mut_table()
-        .unwrap();
+    let table = editable_1.get_mut("p_p7").unwrap().get_mut_table().unwrap();
     table.add_row(1);
     table.set_cell(0, "col1", "100.0").unwrap();
     table.set_cell(0, "col2", "200.0").unwrap();
 
-    let map = editable_1.get_mut("p_p08").unwrap().get_mut_map().unwrap();
+    let map = editable_1.get_mut("p_p8").unwrap().get_mut_map().unwrap();
     map.create(store_key!("key1"));
 
     let item = map.get_mut("key1").unwrap();
@@ -335,7 +363,7 @@ fn test_editable_parameter_object_print() {
     map_table.add_row(1);
     map_table.set_cell(0, "col3_1", "150.0").unwrap();
     map_table.set_cell(0, "col3_2", "250.0").unwrap();
-    editable_set_value(&mut editable_1, "p_p09", "output/files").unwrap();
+    editable_set_value(&mut editable_1, "p_p9", "output/files").unwrap();
     editable_set_value(&mut editable_1, "p_p10", "10.0").unwrap();
     editable_set_value(
         &mut editable_1,
@@ -350,34 +378,34 @@ fn test_editable_parameter_object_print() {
         format!("{frozen_1}"),
         concat!(
             "Parameter Object Frozen (Test)\n",
-            "    ├── p_p01 (D1) String - \"edited\"\n",
-            "    ├── p_p02 (D2) Boolean - \"true\"\n",
-            "    ├── p_p03 (D3) File - \"test.ext\"\n",
-            "    ├── p_p04_v1 (D4) Integer - \"1\"\n",
-            "    ├── p_p04_v2 (D4) Integer - \"2\"\n",
-            "    ├── p_p04_v3 (D4) Integer - \"3\"\n",
-            "    ├── p_p04_v4 (D4) Integer - \"4\"\n",
-            "    ├── p_p04_v5 (D4) Integer - \"5\"\n",
-            "    ├── p_p04_v6 (D4) Integer - \"6\"\n",
-            "    ├── p_p04_v7 (D4) Integer - \"7\"\n",
-            "    ├── p_p04_v8 (D4) Integer - \"8\"\n",
-            "    ├── p_p05_v1 (D5) Number - \"1.0\"\n",
-            "    ├── p_p05_v2 (D5) Number - \"2.0\"\n",
-            "    ├── p_p05_v3 (D5) Number - \"3.0\"\n",
-            "    ├── p_p05_v4 (D5) Number - \"4.0\"\n",
-            "    ├── p_p05_v5 (D5) Number - \"5.0\"\n",
-            "    ├── p_p05_v6 (D5) Number - \"6.0\"\n",
-            "    ├── p_p05_v7 (D5) Number - \"7.0\"\n",
-            "    ├── p_p05_v8 (D5) Number - \"8.0\"\n",
-            "    ├── p_p05_v9 (D5) Number - \"9.0\"\n",
-            "    ├── p_p06 (D6) Choice - \"test\"\n",
-            "    ├── p_p07 (D7) Table 1 rows\n",
+            "    ├── p_p1 (D1) String - \"edited\"\n",
+            "    ├── p_p2 (D2) Boolean - \"true\"\n",
+            "    ├── p_p3 (D3) File - \"test.ext\"\n",
+            "    ├── p_p4_v1 (D4) Integer - \"1\"\n",
+            "    ├── p_p4_v2 (D4) Integer - \"2\"\n",
+            "    ├── p_p4_v3 (D4) Integer - \"3\"\n",
+            "    ├── p_p4_v4 (D4) Integer - \"4\"\n",
+            "    ├── p_p4_v5 (D4) Integer - \"5\"\n",
+            "    ├── p_p4_v6 (D4) Integer - \"6\"\n",
+            "    ├── p_p4_v7 (D4) Integer - \"7\"\n",
+            "    ├── p_p4_v8 (D4) Integer - \"8\"\n",
+            "    ├── p_p5_v1 (D5) Number - \"1.0\"\n",
+            "    ├── p_p5_v2 (D5) Number - \"2.0\"\n",
+            "    ├── p_p5_v3 (D5) Number - \"3.0\"\n",
+            "    ├── p_p5_v4 (D5) Number - \"4.0\"\n",
+            "    ├── p_p5_v5 (D5) Number - \"5.0\"\n",
+            "    ├── p_p5_v6 (D5) Number - \"6.0\"\n",
+            "    ├── p_p5_v7 (D5) Number - \"7.0\"\n",
+            "    ├── p_p5_v8 (D5) Number - \"8.0\"\n",
+            "    ├── p_p5_v9 (D5) Number - \"9.0\"\n",
+            "    ├── p_p6 (D6) Choice - \"test\"\n",
+            "    ├── p_p7 (D7) Table 1 rows\n",
             "    │   ├── data\n",
             "    │   │   └── Row 0\n",
             "    │   │       ├── col1 \"100.0\"\n",
             "    │   │       └── col2 \"200.0\"\n",
             "    │   └── Parameter \"\"\n",
-            "    ├── p_p08 (D8) Map\n",
+            "    ├── p_p8 (D8) Map\n",
             "    │   └── key1\n",
             "    │       ├── col1 (C1) String - \"test 1\"\n",
             "    │       ├── col2 (C2) Number - \"55.0\"\n",
@@ -387,7 +415,7 @@ fn test_editable_parameter_object_print() {
             "    │           │       ├── col3_1 \"150.0\"\n",
             "    │           │       └── col3_2 \"250.0\"\n",
             "    │           └── Parameter \"\"\n",
-            "    ├── p_p09 (D9) Folder - \"output/files\"\n",
+            "    ├── p_p9 (D9) Folder - \"output/files\"\n",
             "    ├── p_p10 (D10) Number - \"10.0\"\n",
             "    ├── p_p11 (D11) Separator\n",
             "    ├── p_p12 (D12) Tab\n",
