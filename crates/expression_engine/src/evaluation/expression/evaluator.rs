@@ -17,7 +17,7 @@ use message::message::{Message, MessageCategory};
 use message::span::{Span, SpanSet};
 use shareable_string::ShareableString;
 use std::collections::BTreeMap;
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 use units::{UnitId, conversion::convert};
 
 /// Rejects floating-point values that cannot be safely represented in computed output.
@@ -255,14 +255,14 @@ fn evaluate_float_binary_operation(
                 ))
             } else {
                 Ok(ComputedItem::Float(finite_float(
-                    left_value.rem(right_value),
+                    libm::fmod(left_value, right_value),
                     source,
                     span,
                 )?))
             }
         }
         Operators::Power => Ok(ComputedItem::Float(finite_float(
-            left_value.powf(right_value),
+            libm::pow(left_value, right_value),
             source,
             span,
         )?)),

@@ -135,7 +135,10 @@ fn default_root_logarithm_and_exponential_functions_can_be_chained() {
 
 #[test]
 fn default_hyperbolic_functions_work_with_power_and_subtraction() {
-    assert_float_expression("cosh(1.0)^2.0 - sinh(1.0)^2.0 + tanh(0.0)", 1.0);
+    assert_float_expression(
+        "cosh(1.0)^2.0 - sinh(1.0)^2.0 + tanh(0.0)",
+        1.000_000_000_000_000_7,
+    );
 }
 
 #[test]
@@ -225,7 +228,7 @@ fn decimal_logarithmic_expression_matches_golden_value() {
 fn decimal_angle_conversion_expression_matches_golden_value() {
     assert_float_expression(
         "to_degrees(0.123456789) + to_radians(12.3456789)",
-        7.289_025_707_136_118,
+        7.289_025_707_136_119,
     );
 }
 
