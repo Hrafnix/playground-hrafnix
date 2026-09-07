@@ -6,7 +6,7 @@ use translation::generate_translation_map;
 
 const LANGUAGES: [&str; 7] = ["en", "zh", "de", "es", "fr", "ja", "ko"];
 
-const TRANSLATION_KEYS: [&str; 95] = [
+const TRANSLATION_KEYS: [&str; 117] = [
     "datastore_key_empty",
     "datastore_key_invalid_character",
     "datastore_key_invalid_prefix",
@@ -102,6 +102,28 @@ const TRANSLATION_KEYS: [&str; 95] = [
     "expression_engine_function_argument_must_be_string",
     "expression_engine_function_if_condition_must_be_boolean",
     "expression_engine_evaluation_custom_function_failed",
+    "hrafnix_about",
+    "hrafnix_language",
+    "hrafnix_new",
+    "hrafnix_format",
+    "hrafnix_simulate",
+    "hrafnix_usage",
+    "hrafnix_commands",
+    "hrafnix_options",
+    "hrafnix_arguments",
+    "hrafnix_help",
+    "hrafnix_version",
+    "hrafnix_supported_languages",
+    "hrafnix_error",
+    "hrafnix_error_invalid_input",
+    "hrafnix_error_unrecognized_subcommand",
+    "hrafnix_error_unexpected_argument",
+    "hrafnix_error_value_required",
+    "hrafnix_error_invalid_value",
+    "hrafnix_tip",
+    "hrafnix_error_similar_subcommand",
+    "hrafnix_error_similar_argument",
+    "hrafnix_more_information",
 ];
 
 #[test]
