@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:include schemaLocation="simulation-model.xsd"/>
+  <xs:element name="component">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="parameters" type="parameterDefinitionObjectType"/>
+        <xs:element name="variables" type="variableDefinitionObjectType"/>
+        <xs:element name="ports" type="portsType" minOccurs="0"/>
+        <xs:element name="components" type="componentsType"/>
+        <xs:element name="connections" type="connectionsType"/>
+      </xs:sequence>
+      <xs:attribute name="file-version" type="xs:unsignedShort" use="required"/>
+      <xs:attribute name="minimum-version" type="xs:string" use="required"/>
+      <xs:attribute name="recommended-version" type="xs:string" use="required"/>
+      <xs:attribute name="component-version" type="xs:unsignedShort" use="required"/>
+      <xs:attribute name="name" type="xs:string" use="required"/>
+      <xs:attribute name="icon" type="xs:string"/>
+      <xs:attribute name="length" type="xs:unsignedShort" use="required"/>
+      <xs:attribute name="width" type="xs:unsignedShort" use="required"/>
+    </xs:complexType>
+    <xs:key name="uniqueParameterKeys">
+      <xs:selector xpath="parameters/item"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+    <xs:key name="uniqueVariableKeys">
+      <xs:selector xpath="variables/item"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+  </xs:element>
+
+  <xs:complexType name="parameterDefinitionObjectType">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="parameterKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="description" type="xs:string" use="required"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="extension-filter" type="xs:string"/>
+          <xs:attribute name="is-input" type="xs:boolean"/>
+          <xs:attribute name="preferred-unit" type="xs:string"/>
+          <xs:attribute name="unit-family" type="unitFamilyType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="description" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="variableDefinitionObjectType">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="variableKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="description" type="xs:string" use="required"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="extension-filter" type="xs:string"/>
+          <xs:attribute name="is-input" type="xs:boolean"/>
+          <xs:attribute name="preferred-unit" type="xs:string"/>
+          <xs:attribute name="unit-family" type="unitFamilyType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="description" type="xs:string" use="required"/>
+  </xs:complexType>
+</xs:schema>

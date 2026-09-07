@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="model">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="model-settings" type="settingsType"/>
+        <xs:element name="parameters" type="parameterFrozenObjectType"/>
+        <xs:element name="variables" type="variableFrozenObjectType"/>
+        <xs:element name="components" type="componentsType"/>
+        <xs:element name="connections" type="connectionsType"/>
+      </xs:sequence>
+      <xs:attribute name="file-version" type="xs:unsignedShort" use="required"/>
+      <xs:attribute name="minimum-version" type="xs:string" use="required"/>
+      <xs:attribute name="built-version" type="xs:string" use="required"/>
+      <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+    <xs:key name="uniqueModelParameterKeys">
+      <xs:selector xpath="parameters/item"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+    <xs:key name="uniqueModelVariableKeys">
+      <xs:selector xpath="variables/item"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+  </xs:element>
+
+  <xs:complexType name="componentsType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="component-file" type="fileComponentType"/>
+      <xs:element name="component" type="builtInComponentType"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="fileComponentType">
+    <xs:complexContent>
+      <xs:extension base="instantiatedComponentType">
+        <xs:attribute name="component-version" type="xs:unsignedShort" use="required"/>
+        <xs:attribute name="source-blake3" type="blake3HashType" use="required"/>
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <xs:attribute name="package" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="builtInComponentType">
+    <xs:complexContent>
+      <xs:extension base="instantiatedComponentType">
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="version" type="xs:unsignedShort" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="instantiatedComponentType">
+    <xs:sequence>
+      <xs:element name="location" type="componentLocationType"/>
+      <xs:element name="icon" type="iconType" minOccurs="0"/>
+      <xs:element name="parameters" type="parameterFrozenObjectType"/>
+      <xs:element name="variables" type="variableFrozenObjectType"/>
+      <xs:element name="ports" type="portsType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="componentLocationType">
+    <xs:attribute name="x" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="y" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="width" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="height" type="xs:unsignedShort" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="iconType">
+    <xs:attribute name="path" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="settingsType">
+    <xs:sequence>
+      <xs:element name="setting" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="xs:string" use="required"/>
+          <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="parameterFrozenObjectType">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="parameterKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="description" type="xs:string" use="required"/>
+          <xs:attribute name="value" type="xs:string"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="extension-filter" type="xs:string"/>
+          <xs:attribute name="is-input" type="xs:boolean"/>
+          <xs:attribute name="preferred-unit" type="xs:string"/>
+          <xs:attribute name="units" type="xs:string"/>
+          <xs:attribute name="unit-family" type="unitFamilyType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="description" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="variableFrozenObjectType">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="variableKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="description" type="xs:string" use="required"/>
+          <xs:attribute name="value" type="xs:string"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="extension-filter" type="xs:string"/>
+          <xs:attribute name="is-input" type="xs:boolean"/>
+          <xs:attribute name="preferred-unit" type="xs:string"/>
+          <xs:attribute name="units" type="xs:string"/>
+          <xs:attribute name="unit-family" type="unitFamilyType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="description" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="portsType">
+    <xs:sequence>
+      <xs:element name="port" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="location" type="portLocationType"/>
+          </xs:sequence>
+          <xs:attribute name="id" type="identifierType" use="required"/>
+          <xs:attribute name="type" type="portType" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="portLocationType">
+    <xs:attribute name="x" type="normalizedCoordinateType" use="required"/>
+    <xs:attribute name="y" type="normalizedCoordinateType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="connectionsType">
+    <xs:sequence>
+      <xs:element name="connection" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="line">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="midpoint" minOccurs="1" maxOccurs="unbounded">
+                    <xs:complexType>
+                      <xs:attribute name="x" type="xs:unsignedShort" use="required"/>
+                      <xs:attribute name="y" type="xs:unsignedShort" use="required"/>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+          <xs:attribute name="from-component" type="xs:IDREF" use="required"/>
+          <xs:attribute name="from-port" type="identifierType" use="required"/>
+          <xs:attribute name="to-component" type="xs:IDREF" use="required"/>
+          <xs:attribute name="to-port" type="identifierType" use="required"/>
+          <xs:attribute name="style" type="lineStyleType" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="identifierType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="parameterKeyType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="p_[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="variableKeyType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="v_[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="normalizedCoordinateType">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0.0"/>
+      <xs:maxInclusive value="1.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="blake3HashType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-f]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="portType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="input"/>
+      <xs:enumeration value="output"/>
+      <xs:enumeration value="bidirectional"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="lineStyleType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="solid"/>
+      <xs:enumeration value="dashed"/>
+      <xs:enumeration value="dotted"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="itemType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="boolean"/>
+      <xs:enumeration value="file"/>
+      <xs:enumeration value="folder"/>
+      <xs:enumeration value="integer"/>
+      <xs:enumeration value="number"/>
+      <xs:enumeration value="number-with-units"/>
+      <xs:enumeration value="string"/>
+      <xs:enumeration value="unit"/>
+      <xs:enumeration value="tab"/>
+      <xs:enumeration value="separator"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="unitFamilyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="area"/>
+      <xs:enumeration value="current"/>
+      <xs:enumeration value="length"/>
+      <xs:enumeration value="luminous-intensity"/>
+      <xs:enumeration value="amount"/>
+      <xs:enumeration value="temperature"/>
+      <xs:enumeration value="time"/>
+      <xs:enumeration value="volume"/>
+      <xs:enumeration value="mass"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>

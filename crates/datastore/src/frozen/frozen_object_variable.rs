@@ -124,14 +124,28 @@ impl VariableObjectFrozen {
         description: S,
         items: BTreeMap<VariableKey, ItemFrozen>,
     ) -> Self {
+        Self::new_from_ordered_items(description, items)
+    }
+
+    /// Creates a new `VariableObjectFrozen` with a description and ordered items.
+    ///
+    /// Later entries with duplicate keys replace earlier values while preserving
+    /// the key's first position in the definition order.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_from_ordered_items<S: Into<ShareableString>>(
+        description: S,
+        items: impl IntoIterator<Item = (VariableKey, ItemFrozen)>,
+    ) -> Self {
         let mut builder = VariableObjectDefinition::builder(description);
-        for (k, v) in &items {
-            builder.insert(k.clone(), v.definition());
+        let mut frozen_items = BTreeMap::new();
+        for (key, item) in items {
+            builder.insert(key.clone(), item.definition());
+            frozen_items.insert(key, item);
         }
         let definition = builder.finish();
         let mut s = Self {
             definition,
-            items,
+            items: frozen_items,
             hash: [0u8; 32],
         };
         s.update_hash();
