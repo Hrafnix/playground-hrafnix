@@ -28,6 +28,10 @@ Don't expect much. This may not be stable anytime soon.
 cargo test --workspace
 ```
 
+## Developer Documentation
+
+[Developer Documentation](./dev/docs/index.md)
+
 ## License
 
 Dual-licensed under MIT or Apache-2.0, whichever you prefer.
