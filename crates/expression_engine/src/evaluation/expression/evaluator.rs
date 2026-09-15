@@ -1,6 +1,7 @@
 use crate::BasicDefinition::{
     Boolean, Choice, File, Folder, Integer, Number, NumberWithUnits, String, Unit,
 };
+use crate::computed_data::computed_item::canonicalize_f64;
 use crate::evaluation::create_error_message;
 use crate::evaluation::expression::ast::translator::{
     Expression, Literal, Operators, expression_span,
@@ -12,7 +13,6 @@ use crate::{
     BasicInputData, ComputedItem, ComputedTable, ComputedTableWithUnits, ObjectItemInputData,
     TableInputData, TableWithUnitsInputData,
 };
-use crate::computed_data::computed_item::canonicalize_f64;
 use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
 use message::message::{Message, MessageCategory};
 use message::span::{Span, SpanSet};
@@ -2808,7 +2808,8 @@ mod tests {
     fn float_literals_normalize_negative_zero_bits() {
         let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("-0.0"))]);
 
-        let (result, errors) = evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
         assert!(errors.is_empty());
         match result.get("x") {
@@ -2819,9 +2820,11 @@ mod tests {
 
     #[test]
     fn exact_float_expressions_preserve_expected_bits() {
-        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("1.5 + 2.25"))]);
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("1.5 + 2.25"))]);
 
-        let (result, errors) = evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
         assert!(errors.is_empty());
         match result.get("x") {
