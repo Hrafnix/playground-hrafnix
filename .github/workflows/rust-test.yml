@@ -13,8 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Update Rust
-        run: rustup update
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@1.85.0
       - name: Build Rust project
         run: cargo build ${{ matrix.profile == 'release' && '--release' || '' }}
       - name: Test Rust project

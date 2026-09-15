@@ -28,6 +28,14 @@ Don't expect much. This may not be stable anytime soon.
 cargo test --workspace
 ```
 
+## Floating-point determinism guardrails
+
+- Rust is pinned through `/home/runner/work/playground-hrafnix/playground-hrafnix/rust-toolchain.toml`, and CI installs that exact toolchain instead of updating to latest.
+- `/home/runner/work/playground-hrafnix/playground-hrafnix/.cargo/config.toml` keeps supported targets on explicit baseline CPUs instead of host-tuned code generation.
+- Expression evaluation and unit conversion normalize `-0.0` to `0.0` and reject non-finite values before they are stored as computed output.
+- Determinism-sensitive accumulation should stay on ordered collections and stable iteration order.
+- The release profile is the authoritative profile for determinism-sensitive behavior; debug builds remain useful for development and diagnostics.
+
 ## License
 
 Dual-licensed under MIT or Apache-2.0, whichever you prefer.

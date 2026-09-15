@@ -8,10 +8,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Update Rust
-        run: rustup update
-      - name: Add Clippy
-        run: rustup component add clippy
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@1.85.0
+        with:
+          components: clippy,rustfmt
       - name: Build Rust project
         run: cargo build
       - name: Rust Format check
