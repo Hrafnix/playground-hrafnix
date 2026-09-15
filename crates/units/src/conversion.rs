@@ -1,6 +1,11 @@
 use crate::unit_definitions::{UnitFamilyId, UnitId};
 use std::ops::{Add, Div, Mul, Sub};
 
+#[inline]
+fn canonicalize_f64(value: f64) -> f64 {
+    if value == 0.0 { 0.0 } else { value }
+}
+
 #[allow(
     clippy::match_same_arms,
     reason = "This is a simple conversion table, and the repetition is intentional."
@@ -89,6 +94,8 @@ const fn convert_to_base(unit: UnitId) -> f64 {
 /// Returns an error if the units are not compatible for conversion (i.e., they belong to different unit families).
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, String> {
+    let value = canonicalize_f64(value);
+
     if !value.is_finite() {
         return Err("Unit conversion input must be finite".into());
     }
@@ -130,6 +137,7 @@ pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, St
                 return Err("Units are not compatible for conversion".into());
             }
         };
+        let converted = canonicalize_f64(converted);
         return converted
             .is_finite()
             .then_some(converted)
@@ -139,7 +147,7 @@ pub fn convert(value: f64, from_unit: UnitId, to_unit: UnitId) -> Result<f64, St
     let from_base = convert_to_base(from_unit);
     let to_base = convert_to_base(to_unit);
 
-    let converted = value.mul(from_base.div(to_base));
+    let converted = canonicalize_f64(value.mul(from_base.div(to_base)));
     converted
         .is_finite()
         .then_some(converted)
@@ -261,6 +269,18 @@ mod tests {
     #[test]
     fn converts_concrete_units_to_unitless_values() {
         assert_eq!(convert(42.5, UnitId::Length_Meter, UnitId::None), Ok(42.5));
+    }
+
+    #[test]
+    fn converts_exact_ratio_with_expected_bits() {
+        let converted = convert(1.25, UnitId::Length_Meter, UnitId::Length_Centimeter).unwrap();
+        assert_eq!(converted.to_bits(), 125.0_f64.to_bits());
+    }
+
+    #[test]
+    fn normalizes_negative_zero_bits() {
+        let converted = convert(-0.0, UnitId::Length_Meter, UnitId::Length_Meter).unwrap();
+        assert_eq!(converted.to_bits(), 0.0_f64.to_bits());
     }
 
     #[test]

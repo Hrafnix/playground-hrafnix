@@ -2,6 +2,12 @@ use shareable_string::ShareableString;
 use std::fmt;
 use units::UnitId;
 
+/// Normalizes floating-point zeros so computed outputs do not retain `-0.0`.
+#[must_use]
+pub(crate) fn canonicalize_f64(value: f64) -> f64 {
+    if value == 0.0 { 0.0 } else { value }
+}
+
 /// Represents a computed table, consisting of column keys and rows of numeric values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ComputedTable {
@@ -13,8 +19,14 @@ pub struct ComputedTable {
 
 impl ComputedTable {
     /// Creates a new `ComputedTable` with the given column `keys` and numeric `rows`.
-    pub(crate) const fn new(keys: Vec<ShareableString>, rows: Vec<Vec<f64>>) -> Self {
-        Self { keys, rows }
+    pub(crate) fn new(keys: Vec<ShareableString>, rows: Vec<Vec<f64>>) -> Self {
+        Self {
+            keys,
+            rows: rows
+                .into_iter()
+                .map(|row| row.into_iter().map(canonicalize_f64).collect())
+                .collect(),
+        }
     }
 
     /// Returns a reference to the keys of the computed table.
@@ -216,6 +228,28 @@ pub enum ComputedItem {
     TableWithUnits(ComputedTableWithUnits),
     /// A unit identifier.
     Unit(UnitId),
+}
+
+impl ComputedItem {
+    /// Normalizes deterministic float representation throughout a computed item.
+    #[must_use]
+    pub(crate) fn canonicalized(self) -> Self {
+        match self {
+            Self::Float(value) => Self::Float(canonicalize_f64(value)),
+            Self::FloatWithUnit { value, unit } => Self::FloatWithUnit {
+                value: canonicalize_f64(value),
+                unit,
+            },
+            Self::Table(table) => Self::Table(table),
+            Self::TableWithUnits(table) => Self::TableWithUnits(table),
+            Self::Boolean(_)
+            | Self::Integer(_)
+            | Self::String(_)
+            | Self::Identifier(_)
+            | Self::Path(_)
+            | Self::Unit(_) => self,
+        }
+    }
 }
 
 impl fmt::Display for ComputedItem {
