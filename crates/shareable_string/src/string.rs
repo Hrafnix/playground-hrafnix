@@ -84,7 +84,10 @@ impl Hash for ShareableString {
 impl PartialEq for ShareableString {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &Self) -> bool {
-        self.ptr_eq(other) || (self.blake3_hash == other.blake3_hash && *self.data == *other.data)
+        self.ptr_eq(other)
+            || (self.data.len() == other.data.len()
+                && self.blake3_hash == other.blake3_hash
+                && *self.data == *other.data)
     }
 }
 
