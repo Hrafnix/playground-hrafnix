@@ -12,8 +12,13 @@ pub struct GlobalObjectComputedData {
 
 impl GlobalObjectComputedData {
     /// Creates a new `GlobalObjectComputedData` wrapping the given `data` map.
-    pub(crate) const fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
-        Self { data }
+    pub(crate) fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
+        Self {
+            data: data
+                .into_iter()
+                .map(|(key, item)| (key, item.canonicalized()))
+                .collect(),
+        }
     }
 
     /// Returns a reference to the data of the global object computed data.
@@ -36,7 +41,7 @@ impl GlobalObjectComputedData {
                 continue;
             }
 
-            self.data.insert(key, item);
+            self.data.insert(key, item.canonicalized());
         }
     }
 
@@ -57,8 +62,13 @@ pub struct ParameterObjectComputedData {
 
 impl ParameterObjectComputedData {
     /// Creates a new `ParameterObjectComputedData` wrapping the given `data` map.
-    pub(crate) const fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
-        Self { data }
+    pub(crate) fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
+        Self {
+            data: data
+                .into_iter()
+                .map(|(key, item)| (key, item.canonicalized()))
+                .collect(),
+        }
     }
 
     /// Returns a reference to the data of the parameter object computed data.
@@ -90,8 +100,13 @@ pub struct VariableObjectComputedData {
 
 impl VariableObjectComputedData {
     /// Creates a new `VariableObjectComputedData` wrapping the given `data` map.
-    pub(crate) const fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
-        Self { data }
+    pub(crate) fn new(data: BTreeMap<ShareableString, ComputedItem>) -> Self {
+        Self {
+            data: data
+                .into_iter()
+                .map(|(key, item)| (key, item.canonicalized()))
+                .collect(),
+        }
     }
 
     /// Returns a reference to the data of the variable object computed data.
