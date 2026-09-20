@@ -12,9 +12,9 @@ hotpath = ["dep:hotpath", "hotpath/hotpath"]
 hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
 
 [dependencies]
-
 hotpath = { workspace = true, optional = true }
 
+common.workspace = true
 keys.workspace = true
 
 [lints]

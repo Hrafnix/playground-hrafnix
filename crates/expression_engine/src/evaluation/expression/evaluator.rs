@@ -12,6 +12,7 @@ use crate::{
     BasicInputData, ComputedItem, ComputedTable, ComputedTableWithUnits, ObjectItemInputData,
     TableInputData, TableWithUnitsInputData,
 };
+use common::math::canonicalize_f64;
 use datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
 use message::message::{Message, MessageCategory};
 use message::span::{Span, SpanSet};
@@ -24,7 +25,7 @@ use units::{UnitId, conversion::convert};
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn finite_float(value: f64, source: &ShareableString, span: Span) -> Result<f64, Message> {
     if value.is_finite() {
-        Ok(value)
+        Ok(canonicalize_f64(value))
     } else {
         Err(create_error_message(
             MessageCategory::ExpressionEvaluation,
@@ -69,7 +70,7 @@ fn ensure_finite_computed_item(
         | ComputedItem::Unit(_) => {}
     }
 
-    Ok(item)
+    Ok(item.canonicalized())
 }
 
 /// Looks up `variable_name` in `computed_data`, returning its value or an evaluation error.
@@ -98,6 +99,7 @@ fn lookup_variable(
 /// Creates a computed float with unit metadata only when the unit is concrete.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
+    let value = canonicalize_f64(value);
     if unit == UnitId::None {
         ComputedItem::Float(value)
     } else {
@@ -1928,7 +1930,7 @@ fn evaluate_table_expression(
                             ));
                             continue;
                         };
-                        let data = *data;
+                        let data = canonicalize_f64(*data);
                         match column_definition.constraint() {
                             NumberConstraintEnum::Min { min, inclusive } => {
                                 if data < min || (!inclusive && data <= min) {
@@ -2067,7 +2069,7 @@ fn evaluate_table_expression(
 
             match evaluate_basic_expression(computed_data, functions, &basic_input_data) {
                 Ok(ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. }) => {
-                    evaluated_row.push(value);
+                    evaluated_row.push(canonicalize_f64(value));
                 }
                 Ok(other) => {
                     let cell_source = ShareableString::from(basic_data.as_str().to_string());
@@ -2800,6 +2802,35 @@ mod tests {
         assert!(errors.is_empty());
 
         check_number_float(&result["x"], 42.0);
+    }
+
+    #[test]
+    fn float_literals_normalize_negative_zero_bits() {
+        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("-0.0"))]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        match result.get("x") {
+            Some(ComputedItem::Float(value)) => assert_eq!(value.to_bits(), 0.0_f64.to_bits()),
+            other => panic!("expected normalized float output, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn exact_float_expressions_preserve_expected_bits() {
+        let input_data =
+            BTreeMap::from([("x".into(), create_number_basic_input_data("1.5 + 2.25"))]);
+
+        let (result, errors) =
+            evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(errors.is_empty());
+        match result.get("x") {
+            Some(ComputedItem::Float(value)) => assert_eq!(value.to_bits(), 3.75_f64.to_bits()),
+            other => panic!("expected exact float output, got {other:?}"),
+        }
     }
 
     #[test]
