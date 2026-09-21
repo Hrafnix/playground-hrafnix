@@ -81,16 +81,14 @@ impl TableWithUnitsDefinition {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
         let key = key.into();
-        self.columns.keys().any(|column_key| column_key == &key)
+        self.columns.contains_key(&key)
     }
 
     /// Returns a reference to the column definition for the specified key.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&NumberWithUnitsDefinition> {
         let key = key.into();
-        self.columns
-            .iter()
-            .find_map(|(column_key, column_def)| (column_key == &key).then_some(column_def))
+        self.columns.get(&key)
     }
 
     /// Returns a reference to the column definition for the specified index.

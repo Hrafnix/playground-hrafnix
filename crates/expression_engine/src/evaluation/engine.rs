@@ -76,14 +76,15 @@ impl ExpressionEngine {
         &mut self,
         globals: &GlobalObjectInputData,
     ) -> Result<(), Vec<Message>> {
+        let default_globals = default_globals();
         let (computed_data, errors) =
-            evaluator(default_globals().data(), &self.functions, globals.data());
+            evaluator(default_globals.data(), &self.functions, globals.data());
 
         if !errors.is_empty() {
             return Err(errors);
         }
 
-        let mut data = default_globals().data().clone();
+        let mut data = default_globals.data().clone();
         data.extend(computed_data);
         self.globals = GlobalObjectComputedData::new(data);
 

@@ -311,7 +311,7 @@ impl TreePrint for MapItemFrozen {
 }
 
 /// Represents a single entry's value within a frozen map, following the map's entry schema.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct MapEntryFrozen {
     /// The items in the map entry.
     items: BTreeMap<StoreKey, MapItemFrozen>,
@@ -470,6 +470,15 @@ impl MapEntryFrozen {
     }
 }
 
+impl PartialEq for MapEntryFrozen {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &Self) -> bool {
+        self.items.len() == other.items.len()
+            && self.hash == other.hash
+            && self.items == other.items
+    }
+}
+
 impl PartialEq<&MapEntryFrozen> for MapEntryFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &&MapEntryFrozen) -> bool {
@@ -509,7 +518,7 @@ impl TreePrint for MapEntryFrozen {
 }
 
 /// Represents a map of parameter in the frozen data.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct MapFrozen {
     /// The definition of the map.
     definition: MapDefinition,
@@ -680,6 +689,16 @@ impl MapFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn count(&self) -> usize {
         self.items.len()
+    }
+}
+
+impl PartialEq for MapFrozen {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &Self) -> bool {
+        self.items.len() == other.items.len()
+            && self.hash == other.hash
+            && self.definition == other.definition
+            && self.items == other.items
     }
 }
 

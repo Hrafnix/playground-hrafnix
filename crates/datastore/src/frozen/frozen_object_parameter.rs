@@ -9,7 +9,7 @@ use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct ParameterObjectFrozen {
     /// The definition of the object.
     definition: ParameterObjectDefinition,
@@ -256,6 +256,16 @@ impl ParameterObjectFrozen {
         if changed {
             self.update_hash();
         }
+    }
+}
+
+impl PartialEq for ParameterObjectFrozen {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &Self) -> bool {
+        self.items.len() == other.items.len()
+            && self.hash == other.hash
+            && self.definition == other.definition
+            && self.items == other.items
     }
 }
 

@@ -7,7 +7,7 @@ use shareable_string::{ShareableString, SharedStringStore};
 ///
 /// Cell values are stored as plain strings (`rows`). Units are stored once per
 /// column (`units`), in definition column order, rather than per cell.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct TableWithUnitsFrozen {
     /// Definition metadata for this table value.
     definition: TableWithUnitsDefinition,
@@ -229,6 +229,19 @@ impl TableWithUnitsFrozen {
     #[must_use]
     pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
+    }
+}
+
+impl PartialEq for TableWithUnitsFrozen {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &Self) -> bool {
+        self.units.len() == other.units.len()
+            && self.rows.len() == other.rows.len()
+            && self.hash == other.hash
+            && self.definition == other.definition
+            && self.units == other.units
+            && self.rows == other.rows
+            && self.parameter == other.parameter
     }
 }
 
