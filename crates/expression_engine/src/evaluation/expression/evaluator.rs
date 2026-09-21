@@ -81,8 +81,7 @@ fn lookup_variable(
     source: &ShareableString,
     span: Span,
 ) -> Result<ComputedItem, Message> {
-    let key = ShareableString::from(variable_name);
-    match computed_data.get(&key) {
+    match computed_data.get(variable_name) {
         Some(computed_item) => ensure_finite_computed_item(computed_item.clone(), source, span),
         None => Err(create_error_message(
             MessageCategory::ExpressionEvaluation,
