@@ -315,10 +315,7 @@ impl MapDefinition {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_str(&self, key: &str) -> Option<&MapItemDefinition> {
-        self.item_type
-            .iter()
-            .find(|(k, _)| k.as_str() == key)
-            .map(|(_, v)| v)
+        self.item_type.get(key)
     }
 
     /// Returns true if the map's entry schema contains an item with the specified key.
@@ -337,7 +334,7 @@ impl MapDefinition {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains_key_str(&self, key: &str) -> bool {
-        self.item_type.iter().any(|(k, _)| k.as_str() == key)
+        self.item_type.contains_key(key)
     }
 
     /// Returns an iterator over the map's entry item definitions.

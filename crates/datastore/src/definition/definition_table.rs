@@ -81,24 +81,14 @@ impl TableDefinition {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
         let key = key.into();
-        for column_key in self.columns.keys() {
-            if column_key == &key {
-                return true;
-            }
-        }
-        false
+        self.columns.contains_key(&key)
     }
 
     /// Returns a reference to the column definition for the specified key.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&NumberDefinition> {
         let key = key.into();
-        for (column_key, column_def) in self.columns.iter() {
-            if column_key == &key {
-                return Some(column_def);
-            }
-        }
-        None
+        self.columns.get(&key)
     }
 
     /// Returns a reference to the column definition for the specified index.
