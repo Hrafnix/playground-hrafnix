@@ -4,7 +4,7 @@ use crate::traits::TreePrint;
 use shareable_string::{ShareableString, SharedStringStore};
 
 /// Represents a table of data in the frozen data.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct TableFrozen {
     /// Definition metadata for this table value.
     definition: TableDefinition,
@@ -175,6 +175,17 @@ impl TableFrozen {
     #[must_use]
     pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
+    }
+}
+
+impl PartialEq for TableFrozen {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &Self) -> bool {
+        self.rows.len() == other.rows.len()
+            && self.hash == other.hash
+            && self.definition == other.definition
+            && self.rows == other.rows
+            && self.parameter == other.parameter
     }
 }
 

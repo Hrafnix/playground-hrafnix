@@ -9,7 +9,7 @@ use shareable_string::{ShareableString, SharedStringStore};
 use std::collections::BTreeMap;
 
 /// Represents a set of items for an object in the frozen data.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct GlobalObjectFrozen {
     /// The definition of the object.
     definition: GlobalObjectDefinition,
@@ -257,6 +257,16 @@ impl GlobalObjectFrozen {
         if changed {
             self.update_hash();
         }
+    }
+}
+
+impl PartialEq for GlobalObjectFrozen {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &Self) -> bool {
+        self.items.len() == other.items.len()
+            && self.hash == other.hash
+            && self.definition == other.definition
+            && self.items == other.items
     }
 }
 
