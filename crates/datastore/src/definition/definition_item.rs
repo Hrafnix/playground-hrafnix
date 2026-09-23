@@ -160,6 +160,34 @@ impl ItemDefinitionType {
             Self::Separator(def) => Self::Separator(def.launder(store)),
         }
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Looser than `==`: descriptions and default values are ignored, and floating-point
+    /// constraint bounds are compared with a tolerance. The variant and any structure that
+    /// affects value validity (constraints, choice IDs, columns, map items, unit families,
+    /// file filters, input flags) must still match.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean(_), Self::Boolean(_))
+            | (Self::String(_), Self::String(_))
+            | (Self::Tab(_), Self::Tab(_))
+            | (Self::Separator(_), Self::Separator(_)) => true,
+            (Self::Choice(a), Self::Choice(b)) => a.is_merge_compatible(b),
+            (Self::File(a), Self::File(b)) => a.is_merge_compatible(b),
+            (Self::Folder(a), Self::Folder(b)) => a.is_merge_compatible(b),
+            (Self::Integer(a), Self::Integer(b)) => a.is_merge_compatible(b),
+            (Self::Map(a), Self::Map(b)) => a.is_merge_compatible(b),
+            (Self::Number(a), Self::Number(b)) => a.is_merge_compatible(b),
+            (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.is_merge_compatible(b),
+            (Self::Table(a), Self::Table(b)) => a.is_merge_compatible(b),
+            (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.is_merge_compatible(b),
+            (Self::Unit(a), Self::Unit(b)) => a.is_merge_compatible(b),
+            _ => false,
+        }
+    }
 }
 
 impl PartialEq<&ItemDefinitionType> for ItemDefinitionType {

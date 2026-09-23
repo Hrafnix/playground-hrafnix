@@ -177,6 +177,19 @@ impl TableWithUnitsDefinition {
             }),
         }
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; columns must match in order and be merge compatible.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.ordered_keys == other.ordered_keys
+            && self
+                .iter()
+                .zip(other.iter())
+                .all(|((_, a), (_, b))| a.is_merge_compatible(b))
+    }
 }
 
 impl PartialEq<&TableWithUnitsDefinition> for TableWithUnitsDefinition {

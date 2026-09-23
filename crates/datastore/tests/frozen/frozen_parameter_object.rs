@@ -1,5 +1,7 @@
 use datastore::definition::{FolderDefinition, SeparatorDefinition, TabDefinition};
 use datastore::prelude::*;
+use keys::store_key;
+use std::collections::BTreeMap;
 use units::{UnitFamilyId, UnitId};
 
 #[test]
@@ -422,4 +424,121 @@ fn test_editable_parameter_object_print() {
             "    └── p_p13 (D13) Unit - \"u_length_centimeter\"\n",
         )
     );
+}
+
+#[test]
+fn test_parameter_object_merge_from_copies_values_and_keeps_definitions() {
+    // Why: Merging should accept compatible definitions, copy only values, and keep existing definitions.
+    let key = |name: &str| ParameterKey::new(name.into()).unwrap();
+    let mut target = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Target")
+            .with(
+                key("p_n"),
+                NumberDefinition::new_with_constraint_and_default(
+                    "Old number",
+                    NumberConstraint::range(0.1 + 0.2, 1.0, true, true),
+                    "0.5",
+                ),
+            )
+            .with(
+                key("p_s"),
+                StringDefinition::new_with_default("Old string", "a"),
+            )
+            .with(
+                key("p_i"),
+                IntegerDefinition::new_with_constraint_and_default(
+                    "Int",
+                    IntegerConstraint::min(0, true),
+                    "1",
+                ),
+            )
+            .finish(),
+    );
+    let source = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Source")
+            .with(
+                key("p_n"),
+                NumberDefinition::new_with_constraint_and_default(
+                    "New number",
+                    NumberConstraint::range(0.3, 1.0, true, true),
+                    "0.75",
+                ),
+            )
+            .with(
+                key("p_s"),
+                StringDefinition::new_with_default("New string", "b"),
+            )
+            .with(
+                key("p_i"),
+                IntegerDefinition::new_with_constraint_and_default(
+                    "Int",
+                    IntegerConstraint::min(5, true),
+                    "7",
+                ),
+            )
+            .finish(),
+    );
+
+    let original_hash = target.hash();
+    target.merge_from(&source);
+    assert_ne!(target.hash(), original_hash);
+
+    let number = target.get("p_n").unwrap().get_number().unwrap();
+    assert_eq!(number.value(), "0.75");
+    assert_eq!(number.definition().description(), "Old number");
+
+    let string = target.get("p_s").unwrap().get_string().unwrap();
+    assert_eq!(string.value(), "b");
+    assert_eq!(string.definition().description(), "Old string");
+
+    // Integer constraints differ, so the value is left unchanged.
+    let ItemFrozen::Integer(integer) = target.get("p_i").unwrap() else {
+        panic!("expected integer");
+    };
+    assert_eq!(integer.value(), "1");
+
+    // Merging again changes nothing.
+    let merged_hash = target.hash();
+    target.merge_from(&source);
+    assert_eq!(target.hash(), merged_hash);
+}
+
+#[test]
+fn test_parameter_object_merge_from_rebuilds_map_entries_with_existing_definition() {
+    // Why: Merged map entries should use the target's map item definitions.
+    let key = ParameterKey::new("p_m".into()).unwrap();
+    let mut target = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Target")
+            .with(
+                key.clone(),
+                MapDefinition::new(
+                    "Old map",
+                    vec![(store_key!("s"), StringDefinition::new("Old item"))],
+                ),
+            )
+            .finish(),
+    );
+    let source = ParameterObjectFrozen::new(
+        ParameterObjectDefinition::builder("Source")
+            .with(
+                key,
+                MapDefinition::new_with_default(
+                    "New map",
+                    vec![(store_key!("s"), StringDefinition::new("New item"))],
+                    BTreeMap::from([(
+                        StoreKey::from(store_key!("e1")),
+                        vec![MapItemDefault::scalar("hello")],
+                    )]),
+                ),
+            )
+            .finish(),
+    );
+
+    target.merge_from(&source);
+
+    let map = target.get("p_m").unwrap().get_map().unwrap();
+    assert_eq!(map.definition().description(), "Old map");
+    let item = map.get("e1").unwrap().get_string("s").unwrap();
+    assert_eq!(item.value(), "hello");
+    assert_eq!(item.definition().description(), "Old item");
 }

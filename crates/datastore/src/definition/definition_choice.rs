@@ -162,6 +162,21 @@ impl ChoiceDefinition {
     pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; the set of choice IDs must match.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        let ids = |def: &Self| {
+            def.choices
+                .iter()
+                .map(ChoiceItemDefinition::id)
+                .collect::<std::collections::BTreeSet<_>>()
+        };
+        ids(self) == ids(other)
+    }
 }
 
 impl PartialEq<&ChoiceDefinition> for ChoiceDefinition {

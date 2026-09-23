@@ -160,6 +160,16 @@ impl NumberWithUnitsDefinition {
             .map(|id| id.description().into())
             .collect()
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; constraint bounds are compared with a tolerance
+    /// and preferred units only need to share a unit family.
+    #[must_use]
+    pub const fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.preferred_units.family_id().to_u8() == other.preferred_units.family_id().to_u8()
+            && self.constraint.is_merge_compatible(&other.constraint)
+    }
 }
 
 impl PartialEq<&NumberWithUnitsDefinition> for NumberWithUnitsDefinition {

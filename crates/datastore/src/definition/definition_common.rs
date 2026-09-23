@@ -30,6 +30,31 @@ pub enum NumberConstraintEnum {
     None,
 }
 
+/// Maximum distance, in units in the last place (ULPs), between two constraint bounds
+/// for them to be considered equal when checking merge compatibility.
+///
+/// One ULP is one `f64::next_up` step, so this tolerance scales with the magnitude of
+/// the bounds and absorbs rounding noise (e.g. `0.1 + 0.2` vs `0.3`) without treating
+/// genuinely different values as equal.
+const MERGE_BOUND_MAX_ULPS: u64 = 4;
+
+/// Maps an `f64` onto a monotonic `u64` line so that adjacent floats differ by exactly one.
+///
+/// `-0.0` and `0.0` map to adjacent values.
+const fn ordered_bits(value: f64) -> u64 {
+    let bits = value.to_bits();
+    if bits >> 63 == 0 {
+        bits | (1 << 63)
+    } else {
+        !bits
+    }
+}
+
+/// Returns true if `a` and `b` are within [`MERGE_BOUND_MAX_ULPS`] of each other.
+const fn bounds_approx_eq(a: f64, b: f64) -> bool {
+    ordered_bits(a).abs_diff(ordered_bits(b)) <= MERGE_BOUND_MAX_ULPS
+}
+
 /// Definition for an integer-based parameter constraint.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NumberConstraint {
@@ -138,5 +163,145 @@ impl NumberConstraint {
                 max_inclusive,
             },
         }
+    }
+
+    /// Returns true if the constraints match, comparing bounds within
+    /// a few ULPs (units in the last place) and inclusivity flags exactly.
+    #[must_use]
+    pub const fn is_merge_compatible(&self, other: &Self) -> bool {
+        match (&self.constraint_enum, &other.constraint_enum) {
+            (NumberConstraintEnum::None, NumberConstraintEnum::None) => true,
+            (
+                NumberConstraintEnum::Min {
+                    min: a,
+                    inclusive: ai,
+                },
+                NumberConstraintEnum::Min {
+                    min: b,
+                    inclusive: bi,
+                },
+            )
+            | (
+                NumberConstraintEnum::Max {
+                    max: a,
+                    inclusive: ai,
+                },
+                NumberConstraintEnum::Max {
+                    max: b,
+                    inclusive: bi,
+                },
+            ) => *ai == *bi && bounds_approx_eq(*a, *b),
+            (
+                NumberConstraintEnum::Range {
+                    min: a_min,
+                    max: a_max,
+                    min_inclusive: a_min_inc,
+                    max_inclusive: a_max_inc,
+                },
+                NumberConstraintEnum::Range {
+                    min: b_min,
+                    max: b_max,
+                    min_inclusive: b_min_inc,
+                    max_inclusive: b_max_inc,
+                },
+            ) => {
+                *a_min_inc == *b_min_inc
+                    && *a_max_inc == *b_max_inc
+                    && bounds_approx_eq(*a_min, *b_min)
+                    && bounds_approx_eq(*a_max, *b_max)
+            }
+            _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const fn ulps_up(value: f64, n: u64) -> f64 {
+        f64::from_bits(value.to_bits() + n)
+    }
+
+    fn min(value: f64) -> NumberConstraint {
+        NumberConstraint::min(value, true)
+    }
+
+    #[test]
+    fn ordered_bits_is_monotonic_across_zero() {
+        let values = [
+            f64::MIN,
+            -1.0,
+            -f64::MIN_POSITIVE,
+            -f64::from_bits(1),
+            -0.0,
+            0.0,
+            f64::from_bits(1),
+            f64::MIN_POSITIVE,
+            1.0,
+            f64::MAX,
+        ];
+        for pair in values.windows(2) {
+            assert!(ordered_bits(pair[0]) < ordered_bits(pair[1]), "{pair:?}");
+        }
+        assert_eq!(ordered_bits(0.0) - ordered_bits(-0.0), 1);
+        assert_eq!(ordered_bits(1.0_f64.next_up()) - ordered_bits(1.0), 1);
+        assert_eq!(ordered_bits((-1.0_f64).next_up()) - ordered_bits(-1.0), 1);
+    }
+
+    #[test]
+    fn bounds_approx_eq_uses_ulp_distance_at_every_magnitude() {
+        for base in [1e-300, 1e-12, 1.0, 1e20, 1e300] {
+            assert!(bounds_approx_eq(base, base));
+            assert!(bounds_approx_eq(base, ulps_up(base, MERGE_BOUND_MAX_ULPS)));
+            assert!(bounds_approx_eq(ulps_up(base, MERGE_BOUND_MAX_ULPS), base));
+            assert!(!bounds_approx_eq(
+                base,
+                ulps_up(base, MERGE_BOUND_MAX_ULPS + 1)
+            ));
+            assert!(bounds_approx_eq(
+                -base,
+                -ulps_up(base, MERGE_BOUND_MAX_ULPS)
+            ));
+            assert!(!bounds_approx_eq(
+                -base,
+                -ulps_up(base, MERGE_BOUND_MAX_ULPS + 1)
+            ));
+        }
+    }
+
+    #[test]
+    fn bounds_approx_eq_absorbs_rounding_noise_only() {
+        assert!(bounds_approx_eq(0.1 + 0.2, 0.3));
+        assert!(!bounds_approx_eq(1e-12, 1e-10));
+        assert!(!bounds_approx_eq(1.0, 1.000_000_000_5));
+        assert!(!bounds_approx_eq(0.3, 0.31));
+    }
+
+    #[test]
+    fn bounds_approx_eq_handles_zero_and_sign() {
+        assert!(bounds_approx_eq(-0.0, 0.0));
+        assert!(bounds_approx_eq(-f64::from_bits(1), f64::from_bits(1)));
+        assert!(!bounds_approx_eq(-1e-300, 1e-300));
+        assert!(!bounds_approx_eq(-1.0, 1.0));
+    }
+
+    #[test]
+    fn is_merge_compatible_applies_ulp_tolerance_to_every_bound() {
+        let edge = ulps_up(1.0, MERGE_BOUND_MAX_ULPS);
+        let past = ulps_up(1.0, MERGE_BOUND_MAX_ULPS + 1);
+
+        assert!(min(1.0).is_merge_compatible(&min(edge)));
+        assert!(!min(1.0).is_merge_compatible(&min(past)));
+
+        let max = |value| NumberConstraint::max(value, true);
+        assert!(max(1.0).is_merge_compatible(&max(edge)));
+        assert!(!max(1.0).is_merge_compatible(&max(past)));
+
+        let range = |lo, hi| NumberConstraint::range(lo, hi, true, true);
+        assert!(range(0.0, 1.0).is_merge_compatible(&range(0.0, edge)));
+        assert!(!range(0.0, 1.0).is_merge_compatible(&range(0.0, past)));
+        assert!(range(1.0, 2.0).is_merge_compatible(&range(edge, 2.0)));
+        assert!(!range(1.0, 2.0).is_merge_compatible(&range(past, 2.0)));
     }
 }

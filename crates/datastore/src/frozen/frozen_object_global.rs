@@ -239,18 +239,17 @@ impl GlobalObjectFrozen {
 
     /// Merges `other` into this `GlobalObjectFrozen` at the top level.
     ///
-    /// Replaces items whose keys exist in both objects and whose definitions match.
-    /// Keys found in only one object and items with mismatched definitions are left unchanged.
-    /// Nested items, including maps, are replaced rather than recursively merged.
+    /// Replaces items whose keys exist in both objects and whose definitions are merge compatible
+    /// (see [`ItemDefinitionType::is_merge_compatible`]). Only values are copied; existing items
+    /// keep their own definitions.
+    /// Keys found in only one object and items with incompatible definitions are left unchanged.
+    /// Map entries are replaced by `other`'s entries, rebuilt against the existing map definition.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn merge_from(&mut self, other: &Self) {
         let mut changed = false;
         for (key, item) in &other.items {
             if let Some(existing) = self.items.get_mut(key) {
-                if existing.definition() == item.definition() {
-                    existing.clone_from(item);
-                    changed = true;
-                }
+                changed |= existing.update_value_from(item);
             }
         }
 

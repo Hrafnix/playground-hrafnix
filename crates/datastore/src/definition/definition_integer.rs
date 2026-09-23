@@ -209,6 +209,59 @@ impl IntegerDefinition {
     pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; constraints must match exactly.
+    #[must_use]
+    pub const fn is_merge_compatible(&self, other: &Self) -> bool {
+        match (
+            &self.constraint.constraint_enum,
+            &other.constraint.constraint_enum,
+        ) {
+            (IntegerConstraintEnum::None, IntegerConstraintEnum::None) => true,
+            (
+                IntegerConstraintEnum::Min {
+                    min: self_min,
+                    inclusive: self_inclusive,
+                },
+                IntegerConstraintEnum::Min {
+                    min: other_min,
+                    inclusive: other_inclusive,
+                },
+            ) => *self_min == *other_min && *self_inclusive == *other_inclusive,
+            (
+                IntegerConstraintEnum::Max {
+                    max: self_max,
+                    inclusive: self_inclusive,
+                },
+                IntegerConstraintEnum::Max {
+                    max: other_max,
+                    inclusive: other_inclusive,
+                },
+            ) => *self_max == *other_max && *self_inclusive == *other_inclusive,
+            (
+                IntegerConstraintEnum::Range {
+                    min: self_min,
+                    max: self_max,
+                    min_inclusive: self_min_inclusive,
+                    max_inclusive: self_max_inclusive,
+                },
+                IntegerConstraintEnum::Range {
+                    min: other_min,
+                    max: other_max,
+                    min_inclusive: other_min_inclusive,
+                    max_inclusive: other_max_inclusive,
+                },
+            ) => {
+                *self_min == *other_min
+                    && *self_max == *other_max
+                    && *self_min_inclusive == *other_min_inclusive
+                    && *self_max_inclusive == *other_max_inclusive
+            }
+            _ => false,
+        }
+    }
 }
 
 impl PartialEq<&IntegerDefinition> for IntegerDefinition {

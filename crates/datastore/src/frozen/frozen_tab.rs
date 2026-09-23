@@ -77,6 +77,12 @@ impl TabFrozen {
     pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
+
+    /// Structural elements carry no value, so merging never modifies `self`.
+    #[allow(clippy::unused_self)]
+    pub(crate) const fn update_value_from(&mut self, _other: &Self) -> bool {
+        false
+    }
 }
 
 impl PartialEq<&TabFrozen> for TabFrozen {

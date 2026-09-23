@@ -79,6 +79,14 @@ impl FolderDefinition {
     pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; the input flag must match.
+    #[must_use]
+    pub const fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.is_input == other.is_input
+    }
 }
 
 impl PartialEq<&FolderDefinition> for FolderDefinition {

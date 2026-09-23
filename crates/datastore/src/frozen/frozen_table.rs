@@ -176,6 +176,19 @@ impl TableFrozen {
     pub const fn parameter(&self) -> &ShareableString {
         &self.parameter
     }
+
+    /// Copies the value from `other` into `self` if their definitions are merge compatible.
+    ///
+    /// `self` keeps its own definition. Returns true if `self` was modified.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub(crate) fn update_value_from(&mut self, other: &Self) -> bool {
+        if !self.definition.is_merge_compatible(&other.definition) || self.rows == other.rows {
+            return false;
+        }
+        self.rows.clone_from(&other.rows);
+        self.update_hash();
+        true
+    }
 }
 
 impl PartialEq for TableFrozen {
