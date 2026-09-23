@@ -266,6 +266,27 @@ impl MapItemFrozen {
     pub fn thaw(&self) -> MapItemEditable {
         MapItemEditable::new(self)
     }
+
+    /// Copies values from `other` into `self` if the variants match and their definitions are
+    /// merge compatible.
+    ///
+    /// `self` keeps its own definition. Returns true if `self` was modified.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub(crate) fn update_value_from(&mut self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean(a), Self::Boolean(b)) => a.update_value_from(b),
+            (Self::Choice(a), Self::Choice(b)) => a.update_value_from(b),
+            (Self::File(a), Self::File(b)) => a.update_value_from(b),
+            (Self::Integer(a), Self::Integer(b)) => a.update_value_from(b),
+            (Self::Number(a), Self::Number(b)) => a.update_value_from(b),
+            (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.update_value_from(b),
+            (Self::String(a), Self::String(b)) => a.update_value_from(b),
+            (Self::Table(a), Self::Table(b)) => a.update_value_from(b),
+            (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.update_value_from(b),
+            (Self::Unit(a), Self::Unit(b)) => a.update_value_from(b),
+            _ => false,
+        }
+    }
 }
 
 impl PartialEq<&MapItemFrozen> for MapItemFrozen {
@@ -467,6 +488,23 @@ impl MapEntryFrozen {
             .iter()
             .map(|(k, v)| (k.clone(), v.definition()))
             .collect()
+    }
+
+    /// Merges the values of items present in both entries.
+    ///
+    /// `self` keeps its own definition. Returns true if `self` was modified.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub(crate) fn update_value_from(&mut self, other: &Self) -> bool {
+        let mut changed = false;
+        for (key, other_item) in &other.items {
+            if let Some(item) = self.items.get_mut(key) {
+                changed |= item.update_value_from(other_item);
+            }
+        }
+        if changed {
+            self.update_hash();
+        }
+        changed
     }
 }
 
@@ -689,6 +727,39 @@ impl MapFrozen {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn count(&self) -> usize {
         self.items.len()
+    }
+
+    /// Replaces the entries of `self` with those of `other` if their definitions are merge compatible.
+    ///
+    /// Entries are rebuilt from `self`'s definition, then each item's value is merged from `other`.
+    ///
+    /// `self` keeps its own definition. Returns true if `self` was modified.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub(crate) fn update_value_from(&mut self, other: &Self) -> bool {
+        if !self.definition.is_merge_compatible(&other.definition) {
+            return false;
+        }
+
+        let items: BTreeMap<StoreKey, MapEntryFrozen> = other
+            .items
+            .iter()
+            .map(|(key, other_entry)| {
+                let mut entry = self
+                    .items
+                    .get(key)
+                    .cloned()
+                    .unwrap_or_else(|| MapEntryFrozen::new(self.definition.item_type()));
+                entry.update_value_from(other_entry);
+                (key.clone(), entry)
+            })
+            .collect();
+
+        if items == self.items {
+            return false;
+        }
+        self.items = items;
+        self.update_hash();
+        true
     }
 }
 

@@ -257,6 +257,31 @@ impl ItemFrozen {
             | Self::Unit(_) => None,
         }
     }
+
+    /// Copies values from `other` into `self` if the variants match and their definitions are
+    /// merge compatible.
+    ///
+    /// `self` keeps its own definition. Returns true if `self` was modified.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub(crate) fn update_value_from(&mut self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean(a), Self::Boolean(b)) => a.update_value_from(b),
+            (Self::Choice(a), Self::Choice(b)) => a.update_value_from(b),
+            (Self::File(a), Self::File(b)) => a.update_value_from(b),
+            (Self::Folder(a), Self::Folder(b)) => a.update_value_from(b),
+            (Self::Integer(a), Self::Integer(b)) => a.update_value_from(b),
+            (Self::Map(a), Self::Map(b)) => a.update_value_from(b),
+            (Self::Number(a), Self::Number(b)) => a.update_value_from(b),
+            (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.update_value_from(b),
+            (Self::String(a), Self::String(b)) => a.update_value_from(b),
+            (Self::Table(a), Self::Table(b)) => a.update_value_from(b),
+            (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.update_value_from(b),
+            (Self::Unit(a), Self::Unit(b)) => a.update_value_from(b),
+            (Self::Tab(a), Self::Tab(b)) => a.update_value_from(b),
+            (Self::Separator(a), Self::Separator(b)) => a.update_value_from(b),
+            _ => false,
+        }
+    }
 }
 
 impl TreePrint for ItemFrozen {

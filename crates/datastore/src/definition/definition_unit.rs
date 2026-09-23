@@ -120,6 +120,14 @@ impl UnitDefinition {
     pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; the unit family must match.
+    #[must_use]
+    pub const fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.unit_family.to_u8() == other.unit_family.to_u8()
+    }
 }
 
 impl PartialEq<&UnitDefinition> for UnitDefinition {

@@ -106,6 +106,15 @@ impl FileDefinition {
     pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; the extension filter and input flag must match.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.extension_filter == other.extension_filter && self.is_input == other.is_input
+    }
 }
 
 impl PartialEq<&FileDefinition> for FileDefinition {

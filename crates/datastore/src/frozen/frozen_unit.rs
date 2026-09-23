@@ -104,6 +104,19 @@ impl UnitFrozen {
     pub const fn hash(&self) -> [u8; 32] {
         self.hash
     }
+
+    /// Copies the value from `other` into `self` if their definitions are merge compatible.
+    ///
+    /// `self` keeps its own definition. Returns true if `self` was modified.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub(crate) fn update_value_from(&mut self, other: &Self) -> bool {
+        if !self.definition.is_merge_compatible(&other.definition) || self.value == other.value {
+            return false;
+        }
+        self.value.clone_from(&other.value);
+        self.update_hash();
+        true
+    }
 }
 
 impl PartialEq<&UnitFrozen> for UnitFrozen {

@@ -113,6 +113,14 @@ impl NumberDefinition {
     pub const fn default_value_ref(&self) -> &ShareableString {
         &self.default_value
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; constraint bounds are compared with a tolerance.
+    #[must_use]
+    pub const fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.constraint.is_merge_compatible(&other.constraint)
+    }
 }
 
 impl PartialEq<&NumberDefinition> for NumberDefinition {

@@ -179,6 +179,26 @@ impl MapItemDefinition {
             Self::Unit(def) => Self::Unit(def.launder(store)),
         }
     }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; the variant must match and its structure must be merge compatible.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean(_), Self::Boolean(_)) | (Self::String(_), Self::String(_)) => true,
+            (Self::Choice(a), Self::Choice(b)) => a.is_merge_compatible(b),
+            (Self::File(a), Self::File(b)) => a.is_merge_compatible(b),
+            (Self::Integer(a), Self::Integer(b)) => a.is_merge_compatible(b),
+            (Self::Number(a), Self::Number(b)) => a.is_merge_compatible(b),
+            (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.is_merge_compatible(b),
+            (Self::Table(a), Self::Table(b)) => a.is_merge_compatible(b),
+            (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.is_merge_compatible(b),
+            (Self::Unit(a), Self::Unit(b)) => a.is_merge_compatible(b),
+            _ => false,
+        }
+    }
 }
 
 impl PartialEq<&MapItemDefinition> for MapItemDefinition {
@@ -396,6 +416,19 @@ impl MapDefinition {
                     .collect()
             }),
         }
+    }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; entry items must match in order and be merge compatible.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.ordered_keys == other.ordered_keys
+            && self
+                .iter()
+                .zip(other.iter())
+                .all(|((_, a), (_, b))| a.is_merge_compatible(b))
     }
 }
 
