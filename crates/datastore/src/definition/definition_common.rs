@@ -49,16 +49,32 @@ impl NumberConstraint {
     }
 
     /// Creates a new `NumberConstraint` with a minimum value constraint.
+    ///
+    /// If `min` is not finite (i.e., it is NaN or infinite), the constraint will be treated as `None`.
     #[must_use]
     pub const fn min(min: f64, inclusive: bool) -> Self {
+        if !min.is_finite() {
+            return Self {
+                constraint_enum: NumberConstraintEnum::None,
+            };
+        }
+
         Self {
             constraint_enum: NumberConstraintEnum::Min { min, inclusive },
         }
     }
 
     /// Creates a new `NumberConstraint` with a maximum value constraint.
+    ///
+    /// If `max` is not finite (i.e., it is NaN or infinite), the constraint will be treated as `None`.
     #[must_use]
     pub const fn max(max: f64, inclusive: bool) -> Self {
+        if !max.is_finite() {
+            return Self {
+                constraint_enum: NumberConstraintEnum::None,
+            };
+        }
+
         Self {
             constraint_enum: NumberConstraintEnum::Max { max, inclusive },
         }
@@ -72,6 +88,9 @@ impl NumberConstraint {
     /// If `value_1` and `value_2` are equal (or within a hair's breadth of it due to
     /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`
     /// so `min` and `max` never end up equal.
+    ///
+    /// If `value_1` or `value_2` are not finite (i.e., they are NaN or infinite), the constraint
+    /// for that value will be treated as `None`.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn range(
@@ -85,6 +104,20 @@ impl NumberConstraint {
         } else {
             (value_1, value_2, value_1_inclusive, value_2_inclusive)
         };
+
+        // Make sure that if both min and/or max are finite.
+        // If infinite/NAN, we return a constraint that makes sense.
+        if !min.is_finite() && !max.is_finite() {
+            return Self::none();
+        }
+
+        if !min.is_finite() {
+            return Self::max(max, max_inclusive);
+        }
+
+        if !max.is_finite() {
+            return Self::min(min, min_inclusive);
+        }
 
         // If the range is degenerate (or within a hair's breadth of it due to
         // floating-point imprecision), widen it symmetrically by `f64::EPSILON`

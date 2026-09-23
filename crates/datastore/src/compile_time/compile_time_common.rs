@@ -95,16 +95,28 @@ impl NumberConstraint {
     }
 
     /// Creates a new `NumberConstraint` with a minimum value constraint.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `min` is not finite.
     #[must_use]
     pub const fn min(min: f64, inclusive: bool) -> Self {
+        assert!(min.is_finite(), "minimum constraint must be finite");
+
         Self {
             constraint_enum: NumberConstraintEnum::Min { min, inclusive },
         }
     }
 
     /// Creates a new `NumberConstraint` with a maximum value constraint.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `max` is not finite.
     #[must_use]
     pub const fn max(max: f64, inclusive: bool) -> Self {
+        assert!(max.is_finite(), "maximum constraint must be finite");
+
         Self {
             constraint_enum: NumberConstraintEnum::Max { max, inclusive },
         }
@@ -118,6 +130,10 @@ impl NumberConstraint {
     /// If `value_1` and `value_2` are equal (or within a hair's breadth of it due to
     /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`
     /// so `min` and `max` never end up equal.
+    ///
+    /// # Panics
+    ///
+    /// Panics if either bound is not finite.
     #[must_use]
     pub const fn range(
         value_1: f64,
@@ -125,6 +141,11 @@ impl NumberConstraint {
         value_1_inclusive: bool,
         value_2_inclusive: bool,
     ) -> Self {
+        assert!(
+            value_1.is_finite() && value_2.is_finite(),
+            "range bounds must both be finite"
+        );
+
         let (mut min, mut max, min_inclusive, max_inclusive) = if value_1 >= value_2 {
             (value_2, value_1, value_2_inclusive, value_1_inclusive)
         } else {
@@ -295,21 +316,29 @@ mod tests {
             assert!(min_inclusive);
             assert!(!max_inclusive);
         }
+    }
 
-        let infinite = NumberConstraint::range(
-            std::hint::black_box(f64::INFINITY),
-            f64::INFINITY,
-            true,
-            false,
-        );
-        assert_eq!(
-            infinite.constraint_enum,
-            NumberConstraintEnum::Range {
-                min: f64::INFINITY,
-                max: f64::INFINITY,
-                min_inclusive: false,
-                max_inclusive: true
-            }
-        );
+    #[test]
+    #[should_panic(expected = "minimum constraint must be finite")]
+    fn number_min_rejects_non_finite_bound() {
+        let _ = NumberConstraint::min(f64::INFINITY, true);
+    }
+
+    #[test]
+    #[should_panic(expected = "maximum constraint must be finite")]
+    fn number_max_rejects_non_finite_bound() {
+        let _ = NumberConstraint::max(f64::NEG_INFINITY, false);
+    }
+
+    #[test]
+    #[should_panic(expected = "range bounds must both be finite")]
+    fn number_range_rejects_non_finite_first_bound() {
+        let _ = NumberConstraint::range(f64::NAN, 1.0, true, false);
+    }
+
+    #[test]
+    #[should_panic(expected = "range bounds must both be finite")]
+    fn number_range_rejects_non_finite_second_bound() {
+        let _ = NumberConstraint::range(1.0, f64::INFINITY, true, false);
     }
 }
