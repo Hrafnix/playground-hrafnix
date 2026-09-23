@@ -154,8 +154,7 @@ fn test_definition_number_with_swap_range_constraint() {
 
 #[test]
 fn test_definition_number_with_degenerate_range_constraint() {
-    // Why: `NumberConstraint::range` must widen a degenerate (zero-width) range
-    // by `f64::EPSILON` on each side, rather than allowing `min == max`.
+    // Why: An inclusive single-value range `[5.0, 5.0]` is valid and must be kept as-is.
     let def = NumberDefinition::new_with_constraint(
         "A number parameter",
         NumberConstraint::range(5.0, 5.0, true, true),
@@ -164,10 +163,56 @@ fn test_definition_number_with_degenerate_range_constraint() {
     assert_eq!(
         def.constraint(),
         NumberConstraintEnum::Range {
-            min: 5.0 - f64::EPSILON,
-            max: 5.0 + f64::EPSILON,
+            min: 5.0,
+            max: 5.0,
             min_inclusive: true,
             max_inclusive: true
+        }
+    );
+}
+
+#[test]
+fn test_definition_number_with_empty_range_constraint_becomes_inclusive() {
+    // Why: Ranges containing no representable `f64` (equal bounds with an exclusive end,
+    // or exclusive adjacent floats) must be made inclusive on both ends so they stay satisfiable.
+    let next = f64::from_bits(5.0_f64.to_bits() + 1);
+    for (a, b, a_inclusive, b_inclusive) in [
+        (5.0, 5.0, false, true),
+        (5.0, 5.0, true, false),
+        (5.0, 5.0, false, false),
+        (5.0, next, false, false),
+    ] {
+        let def = NumberDefinition::new_with_constraint(
+            "A number parameter",
+            NumberConstraint::range(a, b, a_inclusive, b_inclusive),
+        );
+        assert_eq!(
+            def.constraint(),
+            NumberConstraintEnum::Range {
+                min: a,
+                max: b,
+                min_inclusive: true,
+                max_inclusive: true
+            }
+        );
+    }
+}
+
+#[test]
+fn test_definition_number_with_non_empty_exclusive_range_constraint_is_kept() {
+    // Why: An exclusive range with at least one float strictly between the bounds is valid.
+    let two_up = f64::from_bits(5.0_f64.to_bits() + 2);
+    let def = NumberDefinition::new_with_constraint(
+        "A number parameter",
+        NumberConstraint::range(5.0, two_up, false, false),
+    );
+    assert_eq!(
+        def.constraint(),
+        NumberConstraintEnum::Range {
+            min: 5.0,
+            max: two_up,
+            min_inclusive: false,
+            max_inclusive: false
         }
     );
 }
