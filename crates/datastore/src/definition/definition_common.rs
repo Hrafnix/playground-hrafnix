@@ -1,5 +1,3 @@
-use std::ops::{AddAssign, Sub, SubAssign};
-
 /// Definition for a number-based parameter constraint.
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumberConstraintEnum {
@@ -85,9 +83,9 @@ impl NumberConstraint {
     /// If `value_1` is greater than `value_2`, the two values are swapped along with
     /// their corresponding inclusivity flags, so the resulting range is always valid.
     ///
-    /// If `value_1` and `value_2` are equal (or within a hair's breadth of it due to
-    /// floating-point imprecision), the range is widened symmetrically by `f64::EPSILON`
-    /// so `min` and `max` never end up equal.
+    /// If the bounds and inclusivity flags describe a range containing no representable
+    /// `f64` (e.g. `(1.0, 1.0]`, or `(x, y)` where `y` is the next float after `x`), both
+    /// ends are made inclusive so the range is always satisfiable.
     ///
     /// If `value_1` or `value_2` are not finite (i.e., they are NaN or infinite), the constraint
     /// for that value will be treated as `None`.
@@ -99,7 +97,7 @@ impl NumberConstraint {
         value_1_inclusive: bool,
         value_2_inclusive: bool,
     ) -> Self {
-        let (mut min, mut max, min_inclusive, max_inclusive) = if value_1 >= value_2 {
+        let (min, max, min_inclusive, max_inclusive) = if value_1 >= value_2 {
             (value_2, value_1, value_2_inclusive, value_1_inclusive)
         } else {
             (value_1, value_2, value_1_inclusive, value_2_inclusive)
@@ -119,13 +117,18 @@ impl NumberConstraint {
             return Self::min(min, min_inclusive);
         }
 
-        // If the range is degenerate (or within a hair's breadth of it due to
-        // floating-point imprecision), widen it symmetrically by `f64::EPSILON`
-        // so `min` and `max` never end up equal.
-        if (max.sub(min)).abs() < f64::EPSILON {
-            min.sub_assign(f64::EPSILON);
-            max.add_assign(f64::EPSILON);
-        }
+        // Check if the range contains at least one representable f64 value.
+        let contains_value = match (min_inclusive, max_inclusive) {
+            (true, true) => min <= max,
+            (false, false) => min.next_up() < max,
+            _ => min < max,
+        };
+
+        let (min_inclusive, max_inclusive) = if contains_value {
+            (min_inclusive, max_inclusive)
+        } else {
+            (true, true)
+        };
 
         Self {
             constraint_enum: NumberConstraintEnum::Range {
