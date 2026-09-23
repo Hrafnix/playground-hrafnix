@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="model">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="metadata" type="metadataType" minOccurs="0"/>
+        <xs:element name="model-settings" type="settingsType"/>
+        <xs:element name="parameters" type="parameterFrozenObjectType"/>
+        <xs:element name="variables" type="variableFrozenObjectType"/>
+        <xs:element name="background-decorations" type="decorationsType" minOccurs="0"/>
+        <xs:element name="foreground-decorations" type="decorationsType" minOccurs="0"/>
+        <xs:element name="components" type="componentsType"/>
+        <xs:element name="connections" type="connectionsType"/>
+        <xs:element name="translations" type="translationsType" minOccurs="0"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="fileHeaderAttributes"/>
+    </xs:complexType>
+    <xs:key name="uniqueModelParameterKeys">
+      <xs:selector xpath="parameters/item"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+    <xs:key name="uniqueModelVariableKeys">
+      <xs:selector xpath="variables/item"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+    <xs:key name="uniqueModelSettingKeys">
+      <xs:selector xpath="model-settings/setting"/>
+      <xs:field xpath="@key"/>
+    </xs:key>
+    <xs:unique name="uniqueModelDecorationIds">
+      <xs:selector xpath="background-decorations/decoration|foreground-decorations/decoration"/>
+      <xs:field xpath="@id"/>
+    </xs:unique>
+    <xs:unique name="uniqueModelTranslationKeys">
+      <xs:selector xpath="translations/translation"/>
+      <xs:field xpath="@key"/>
+    </xs:unique>
+  </xs:element>
+
+  <!-- Shared by the model and component root elements. -->
+  <xs:attributeGroup name="fileHeaderAttributes">
+    <xs:attribute name="file-version" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="minimum-version" type="xs:string" use="required"/>
+    <xs:attribute name="recommended-version" type="xs:string" use="required"/>
+    <xs:attribute name="version" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="language" type="xs:language" use="required"/>
+  </xs:attributeGroup>
+
+  <xs:complexType name="metadataType">
+    <xs:sequence>
+      <xs:element name="author" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="description" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="decorationsType">
+    <xs:sequence>
+      <xs:element name="decoration" type="decorationType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="decorationType">
+    <xs:sequence>
+      <xs:element name="location" type="componentLocationType"/>
+      <xs:element name="style" type="styleType" minOccurs="0"/>
+      <xs:choice minOccurs="0">
+        <xs:element name="text" type="xs:string"/>
+        <xs:element name="image" type="imageType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="id" type="identifierType" use="required"/>
+    <xs:attribute name="type" type="decorationKindType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="styleType">
+    <xs:attribute name="fill-color" type="colorType"/>
+    <xs:attribute name="stroke-color" type="colorType"/>
+    <xs:attribute name="stroke-width" type="nonNegativeDecimalType"/>
+    <xs:attribute name="corner-radius" type="nonNegativeDecimalType"/>
+    <xs:attribute name="font-size" type="nonNegativeDecimalType"/>
+    <xs:attribute name="font-weight" type="fontWeightType"/>
+    <xs:attribute name="text-color" type="colorType"/>
+  </xs:complexType>
+
+  <xs:complexType name="imageType">
+    <xs:attribute name="path" type="xs:string" use="required"/>
+    <xs:attribute name="fit" type="imageFitType"/>
+  </xs:complexType>
+
+  <xs:complexType name="translationsType">
+    <xs:sequence>
+      <xs:element name="translation" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+              <xs:complexType>
+                <xs:attribute name="language" type="xs:language" use="required"/>
+                <xs:attribute name="value" type="xs:string" use="required"/>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+          <xs:attribute name="key" type="xs:string" use="required"/>
+          <xs:attribute name="language" type="xs:language" use="required"/>
+        </xs:complexType>
+        <xs:unique name="uniqueTranslationLanguages">
+          <xs:selector xpath="item"/>
+          <xs:field xpath="@language"/>
+        </xs:unique>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="componentsType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="component-file" type="fileComponentType"/>
+      <xs:element name="component" type="builtInComponentType"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="fileComponentType">
+    <xs:complexContent>
+      <xs:extension base="instantiatedComponentType">
+        <xs:attribute name="version" type="xs:unsignedShort" use="required"/>
+        <xs:attribute name="source-hash" type="sourceHashType" use="required"/>
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <xs:attribute name="package" type="packageReferenceType"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="builtInComponentType">
+    <xs:complexContent>
+      <xs:extension base="instantiatedComponentType">
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="version" type="xs:unsignedShort" use="required"/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="instantiatedComponentType">
+    <xs:sequence>
+      <xs:element name="location" type="componentLocationType"/>
+      <xs:element name="icon" type="iconType" minOccurs="0"/>
+      <xs:element name="parameters" type="parameterFrozenObjectType"/>
+      <xs:element name="variables" type="variableFrozenObjectType" minOccurs="0"/>
+      <xs:element name="ports" type="portsType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="componentLocationType">
+    <xs:attribute name="x" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="y" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="width" type="xs:unsignedShort" use="required"/>
+    <xs:attribute name="height" type="xs:unsignedShort" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="iconType">
+    <xs:attribute name="path" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="settingsType">
+    <xs:sequence>
+      <xs:element name="setting" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="settingKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="parameterFrozenObjectType">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="parameterKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="description" type="xs:string" use="required"/>
+          <xs:attribute name="value" type="xs:string"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="extension-filter" type="xs:string"/>
+          <xs:attribute name="is-input" type="xs:boolean"/>
+          <xs:attribute name="preferred-unit" type="xs:string"/>
+          <xs:attribute name="units" type="xs:string"/>
+          <xs:attribute name="unit-family" type="unitFamilyType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="variableFrozenObjectType">
+    <xs:sequence>
+      <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="key" type="variableKeyType" use="required"/>
+          <xs:attribute name="type" type="itemType" use="required"/>
+          <xs:attribute name="description" type="xs:string" use="required"/>
+          <xs:attribute name="value" type="xs:string"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="extension-filter" type="xs:string"/>
+          <xs:attribute name="is-input" type="xs:boolean"/>
+          <xs:attribute name="preferred-unit" type="xs:string"/>
+          <xs:attribute name="units" type="xs:string"/>
+          <xs:attribute name="unit-family" type="unitFamilyType"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="portsType">
+    <xs:sequence>
+      <xs:element name="port" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="location" type="portLocationType"/>
+          </xs:sequence>
+          <xs:attribute name="id" type="identifierType" use="required"/>
+          <xs:attribute name="type" type="portType" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="portLocationType">
+    <xs:attribute name="x" type="normalizedCoordinateType" use="required"/>
+    <xs:attribute name="y" type="normalizedCoordinateType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="connectionsType">
+    <xs:sequence>
+      <xs:element name="connection" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="line">
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="midpoint" minOccurs="1" maxOccurs="unbounded">
+                    <xs:complexType>
+                      <xs:attribute name="x" type="xs:unsignedShort" use="required"/>
+                      <xs:attribute name="y" type="xs:unsignedShort" use="required"/>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+          <xs:attribute name="from-component" type="xs:IDREF" use="required"/>
+          <xs:attribute name="from-port" type="identifierType" use="required"/>
+          <xs:attribute name="to-component" type="xs:IDREF" use="required"/>
+          <xs:attribute name="to-port" type="identifierType" use="required"/>
+          <xs:attribute name="style" type="lineStyleType" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="identifierType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="parameterKeyType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="p_[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="variableKeyType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="v_[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="normalizedCoordinateType">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0.0"/>
+      <xs:maxInclusive value="1.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="settingKeyType">
+    <xs:restriction base="xs:NCName">
+      <xs:pattern value="g_[a-z][0-9a-z_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- "algorithm:digest"; only blake3 is currently supported. -->
+  <xs:simpleType name="sourceHashType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="blake3:[0-9a-f]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Package name, optionally pinned to a version: "hrafnix.sensors" or "hrafnix.sensors@1.0". -->
+  <xs:simpleType name="packageReferenceType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[a-z][0-9a-z_\-]*(\.[a-z][0-9a-z_\-]*)*(@[0-9]+(\.[0-9]+){0,2})?"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="colorType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="nonNegativeDecimalType">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="decorationKindType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="rectangle"/>
+      <xs:enumeration value="rounded-rectangle"/>
+      <xs:enumeration value="frame"/>
+      <xs:enumeration value="text"/>
+      <xs:enumeration value="image"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="fontWeightType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="normal"/>
+      <xs:enumeration value="bold"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="imageFitType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="contain"/>
+      <xs:enumeration value="cover"/>
+      <xs:enumeration value="fill"/>
+      <xs:enumeration value="none"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="portType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="input"/>
+      <xs:enumeration value="output"/>
+      <xs:enumeration value="bidirectional"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="lineStyleType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="solid"/>
+      <xs:enumeration value="dashed"/>
+      <xs:enumeration value="dotted"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="itemType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="boolean"/>
+      <xs:enumeration value="file"/>
+      <xs:enumeration value="folder"/>
+      <xs:enumeration value="integer"/>
+      <xs:enumeration value="number"/>
+      <xs:enumeration value="number-with-units"/>
+      <xs:enumeration value="string"/>
+      <xs:enumeration value="unit"/>
+      <xs:enumeration value="tab"/>
+      <xs:enumeration value="separator"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="unitFamilyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none"/>
+      <xs:enumeration value="area"/>
+      <xs:enumeration value="current"/>
+      <xs:enumeration value="length"/>
+      <xs:enumeration value="luminous-intensity"/>
+      <xs:enumeration value="amount"/>
+      <xs:enumeration value="temperature"/>
+      <xs:enumeration value="time"/>
+      <xs:enumeration value="volume"/>
+      <xs:enumeration value="mass"/>
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
