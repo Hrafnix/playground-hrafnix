@@ -4,9 +4,9 @@ use clap::{
     Arg, ArgAction, Command, CommandFactory, Parser, Subcommand,
     error::{ContextKind, ContextValue, ErrorKind},
 };
-use shareable_string::{SharedStringStore, SharedStringTranslationMap};
+use hrafnix_shareable_string::{SharedStringStore, SharedStringTranslationMap};
+use hrafnix_translation::generate_translation_map;
 use std::env;
-use translation::generate_translation_map;
 
 /// Parses commands supplied to the Hrafnix command-line interface.
 #[derive(Debug, Parser)]

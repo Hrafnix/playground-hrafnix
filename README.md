@@ -8,13 +8,13 @@ Hrafnix is an experimental Rust simulation engine.
 
 It's a Cargo workspace split into seven crates:
 
-- `shareable_string` – interned, thread-safe strings and translation maps.
-- `keys` – strongly typed identifiers for stores, components, globals, parameters, variables, ports, and units.
-- `message` – messages, object paths, and source spans used for diagnostics.
-- `units` – unit definitions, conversions, and arithmetic.
-- `datastore` – models hierarchical data as `CompileTime`, `Definition`, `Frozen`, and `Editable` values.
-- `expression_engine` – converts datastore objects into inputs, evaluates their expressions, and returns computed data.
-- `translation` – the application's built-in English translation catalog.
+- `hrafnix_shareable_string` – interned, thread-safe strings and translation maps.
+- `hrafnix_keys` – strongly typed identifiers for stores, components, globals, parameters, variables, ports, and units.
+- `hrafnix_message` – messages, object paths, and source spans used for diagnostics.
+- `hrafnix_units` – unit definitions, conversions, and arithmetic.
+- `hrafnix_datastore` – models hierarchical data as `CompileTime`, `Definition`, `Frozen`, and `Editable` values.
+- `hrafnix_expression_engine` – converts datastore objects into inputs, evaluates their expressions, and returns computed data.
+- `hrafnix_translation` – the application's built-in English translation catalog.
 
 ## Status
 

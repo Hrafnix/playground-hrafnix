@@ -1,0 +1,13 @@
+[package]
+name = "hrafnix_translation"
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+hrafnix_shareable_string.workspace = true
+
+[lints]
+workspace = true

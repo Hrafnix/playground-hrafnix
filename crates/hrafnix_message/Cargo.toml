@@ -1,0 +1,20 @@
+[package]
+name = "hrafnix_message"
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+hotpath = ["dep:hotpath", "hotpath/hotpath"]
+hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
+
+[dependencies]
+hotpath = { workspace = true, optional = true }
+
+hrafnix_shareable_string.workspace = true
+
+[lints]
+workspace = true

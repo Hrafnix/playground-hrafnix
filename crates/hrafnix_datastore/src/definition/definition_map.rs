@@ -1,0 +1,479 @@
+use crate::definition::{
+    BooleanDefinition, ChoiceDefinition, FileDefinition, IntegerDefinition, NumberDefinition,
+    NumberWithUnitsDefinition, StringDefinition, TableDefinition, TableWithUnitsDefinition,
+    UnitDefinition,
+};
+use crate::traits::TreePrint;
+use hrafnix_keys::store_key::StoreKey;
+use hrafnix_shareable_string::{ShareableString, SharedStringStore};
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+/// A default value for an item in a map entry.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MapItemDefault {
+    /// A default value for a scalar map item.
+    Scalar(ShareableString),
+    /// Default rows for a table map item.
+    Table(Vec<Vec<ShareableString>>),
+}
+
+impl MapItemDefault {
+    /// Creates a scalar default value.
+    #[must_use]
+    pub fn scalar<S: Into<ShareableString>>(value: S) -> Self {
+        Self::Scalar(value.into())
+    }
+
+    /// Creates a table default value.
+    #[must_use]
+    pub fn table<S: Into<ShareableString>>(rows: Vec<Vec<S>>) -> Self {
+        Self::Table(
+            rows.into_iter()
+                .map(|row| row.into_iter().map(Into::into).collect())
+                .collect(),
+        )
+    }
+
+    /// Normalizes table rows to the corresponding map item definition's column count.
+    fn normalized(self, definition: Option<&MapItemDefinition>) -> Self {
+        let column_count = match definition {
+            Some(MapItemDefinition::Table(table)) => table.count(),
+            Some(MapItemDefinition::TableWithUnits(table)) => table.count(),
+            _ => return self,
+        };
+
+        match self {
+            Self::Table(rows) => Self::Table(
+                rows.into_iter()
+                    .map(|mut row| {
+                        row.resize(column_count, ShareableString::default());
+                        row
+                    })
+                    .collect(),
+            ),
+            scalar @ Self::Scalar(_) => scalar,
+        }
+    }
+
+    /// Returns a copy whose strings are interned in `store`.
+    #[must_use]
+    fn launder(&self, store: &SharedStringStore) -> Self {
+        match self {
+            Self::Scalar(value) => Self::Scalar(store.launder(value)),
+            Self::Table(rows) => Self::Table(
+                rows.iter()
+                    .map(|row| row.iter().map(|value| store.launder(value)).collect())
+                    .collect(),
+            ),
+        }
+    }
+}
+
+/// Default values for one map entry, in the map definition's item order.
+pub type MapEntryDefault = Vec<MapItemDefault>;
+
+/// The definition of an item within a map entry.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MapItemDefinition {
+    /// A boolean parameter.
+    Boolean(BooleanDefinition),
+    /// A choice parameter.
+    Choice(ChoiceDefinition),
+    /// A file parameter.
+    File(FileDefinition),
+    /// An integer parameter.
+    Integer(IntegerDefinition),
+    /// A number parameter.
+    Number(NumberDefinition),
+    /// A number with units parameter.
+    NumberWithUnits(NumberWithUnitsDefinition),
+    /// A string parameter.
+    String(StringDefinition),
+    /// A table parameter.
+    Table(TableDefinition),
+    /// A table parameter with units.
+    TableWithUnits(TableWithUnitsDefinition),
+    /// A unit parameter.
+    Unit(UnitDefinition),
+}
+
+impl From<BooleanDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: BooleanDefinition) -> Self {
+        Self::Boolean(definition)
+    }
+}
+
+impl From<ChoiceDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: ChoiceDefinition) -> Self {
+        Self::Choice(definition)
+    }
+}
+
+impl From<FileDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: FileDefinition) -> Self {
+        Self::File(definition)
+    }
+}
+
+impl From<IntegerDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: IntegerDefinition) -> Self {
+        Self::Integer(definition)
+    }
+}
+
+impl From<NumberDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: NumberDefinition) -> Self {
+        Self::Number(definition)
+    }
+}
+
+impl From<StringDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: StringDefinition) -> Self {
+        Self::String(definition)
+    }
+}
+
+impl From<TableDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: TableDefinition) -> Self {
+        Self::Table(definition)
+    }
+}
+
+impl From<TableWithUnitsDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: TableWithUnitsDefinition) -> Self {
+        Self::TableWithUnits(definition)
+    }
+}
+
+impl From<UnitDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn from(definition: UnitDefinition) -> Self {
+        Self::Unit(definition)
+    }
+}
+
+impl MapItemDefinition {
+    /// Returns a new `MapItemDefinition` with strings laundered through the provided store.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        match self {
+            Self::Boolean(def) => Self::Boolean(def.launder(store)),
+            Self::Choice(def) => Self::Choice(def.launder(store)),
+            Self::File(def) => Self::File(def.launder(store)),
+            Self::Integer(def) => Self::Integer(def.launder(store)),
+            Self::Number(def) => Self::Number(def.launder(store)),
+            Self::NumberWithUnits(def) => Self::NumberWithUnits(def.launder(store)),
+            Self::String(def) => Self::String(def.launder(store)),
+            Self::Table(def) => Self::Table(def.launder(store)),
+            Self::TableWithUnits(def) => Self::TableWithUnits(def.launder(store)),
+            Self::Unit(def) => Self::Unit(def.launder(store)),
+        }
+    }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; the variant must match and its structure must be merge compatible.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Boolean(_), Self::Boolean(_))
+            | (Self::Integer(_), Self::Integer(_))
+            | (Self::Number(_), Self::Number(_))
+            | (Self::String(_), Self::String(_)) => true,
+            (Self::Choice(a), Self::Choice(b)) => a.is_merge_compatible(b),
+            (Self::File(a), Self::File(b)) => a.is_merge_compatible(b),
+            (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.is_merge_compatible(b),
+            (Self::Table(a), Self::Table(b)) => a.is_merge_compatible(b),
+            (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.is_merge_compatible(b),
+            (Self::Unit(a), Self::Unit(b)) => a.is_merge_compatible(b),
+            _ => false,
+        }
+    }
+}
+
+impl PartialEq<&MapItemDefinition> for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &&MapItemDefinition) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapItemDefinition> for &MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &MapItemDefinition) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapItemDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        match self {
+            MapItemDefinition::Boolean(boolean) => boolean.tree_print(f, label, prefix, last),
+            MapItemDefinition::Choice(choice) => choice.tree_print(f, label, prefix, last),
+            MapItemDefinition::File(file) => file.tree_print(f, label, prefix, last),
+            MapItemDefinition::Integer(integer) => integer.tree_print(f, label, prefix, last),
+            MapItemDefinition::Number(number) => number.tree_print(f, label, prefix, last),
+            MapItemDefinition::NumberWithUnits(number_with_units) => {
+                number_with_units.tree_print(f, label, prefix, last)
+            }
+            MapItemDefinition::String(string) => string.tree_print(f, label, prefix, last),
+            MapItemDefinition::Table(table) => table.tree_print(f, label, prefix, last),
+            MapItemDefinition::TableWithUnits(table_with_units) => {
+                table_with_units.tree_print(f, label, prefix, last)
+            }
+            MapItemDefinition::Unit(unit) => unit.tree_print(f, label, prefix, last),
+        }
+    }
+}
+
+/// Definition for a map parameter where keys are strings and values follow a fixed schema of
+/// named `MapItemDefinition`s.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MapDefinition {
+    /// Human-readable description of this map parameter.
+    description: ShareableString,
+    /// Keys in insertion order, used to preserve deterministic iteration.
+    ordered_keys: Vec<StoreKey>,
+    /// Schema of the map entries, keyed by item name.
+    item_type: Arc<BTreeMap<StoreKey, MapItemDefinition>>,
+    /// Optional default map entries.
+    default_map: Option<BTreeMap<StoreKey, MapEntryDefault>>,
+}
+
+impl MapDefinition {
+    /// Creates a new `MapDefinition` with a description and a list of entry items.
+    ///
+    /// If duplicate keys are provided, the last occurrence will be used, and the order of the keys will
+    /// reflect the order of their last occurrence.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new<S1: Into<ShareableString>, K: Into<StoreKey>, I: Into<MapItemDefinition>>(
+        description: S1,
+        item_type: Vec<(K, I)>,
+    ) -> Self {
+        let mut items = BTreeMap::new();
+        let mut ordered_keys = Vec::new();
+        for (k, v) in item_type {
+            let key = k.into();
+            ordered_keys.retain(|existing_key| existing_key != &key);
+            ordered_keys.push(key.clone());
+            items.insert(key, v.into());
+        }
+        Self {
+            description: description.into(),
+            ordered_keys,
+            item_type: Arc::new(items),
+            default_map: None,
+        }
+    }
+
+    /// Creates a new `MapDefinition` with default map entries.
+    ///
+    /// Items omitted from a default entry inherit the default from their item definition.
+    /// Extra items and defaults whose scalar/table kind does not match the corresponding
+    /// definition are ignored when the map is materialized.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_default<
+        S1: Into<ShareableString>,
+        K: Into<StoreKey>,
+        I: Into<MapItemDefinition>,
+    >(
+        description: S1,
+        item_type: Vec<(K, I)>,
+        default_map: BTreeMap<StoreKey, MapEntryDefault>,
+    ) -> Self {
+        let mut definition = Self::new(description, item_type);
+        let item_definitions: Vec<_> = definition.iter().map(|(_, item)| item).collect();
+        definition.default_map = Some(
+            default_map
+                .into_iter()
+                .map(|(key, entry)| {
+                    let entry = entry
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, default)| {
+                            default.normalized(item_definitions.get(index).copied())
+                        })
+                        .collect();
+                    (key, entry)
+                })
+                .collect(),
+        );
+        definition
+    }
+
+    /// Returns the description of the map.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn description(&self) -> ShareableString {
+        self.description.clone()
+    }
+
+    /// Returns a reference to the map item definition for the specified key.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn get<S: Into<ShareableString>>(&self, key: S) -> Option<&MapItemDefinition> {
+        self.item_type.get(&key.into())
+    }
+
+    /// Returns a reference to the map item definition for the specified key string.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn get_str(&self, key: &str) -> Option<&MapItemDefinition> {
+        self.item_type.get(key)
+    }
+
+    /// Returns true if the map's entry schema contains an item with the specified key.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn contains_key<S: Into<ShareableString>>(&self, key: S) -> bool {
+        self.item_type.contains_key(&key.into())
+    }
+
+    /// Returns an iterator over the keys of the map's entry schema.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn keys(&self) -> impl Iterator<Item = &StoreKey> {
+        self.ordered_keys.iter()
+    }
+
+    /// Returns true if the map's entry schema contains an item with the specified key string.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn contains_key_str(&self, key: &str) -> bool {
+        self.item_type.contains_key(key)
+    }
+
+    /// Returns an iterator over the map's entry item definitions.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn iter(&self) -> impl Iterator<Item = (&StoreKey, &MapItemDefinition)> {
+        self.ordered_keys
+            .iter()
+            .filter_map(move |key| self.item_type.get(key).map(|v| (key, v)))
+    }
+
+    /// Returns the number of items in the map's entry schema.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn count(&self) -> usize {
+        self.item_type.len()
+    }
+
+    /// Returns a reference to the map's entry item type.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn item_type(&self) -> &BTreeMap<StoreKey, MapItemDefinition> {
+        &self.item_type
+    }
+
+    /// Returns the default map entries, if configured.
+    #[must_use]
+    pub const fn default_map(&self) -> Option<&BTreeMap<StoreKey, MapEntryDefault>> {
+        self.default_map.as_ref()
+    }
+
+    /// Returns a reference to the description.
+    #[must_use]
+    pub const fn description_ref(&self) -> &ShareableString {
+        &self.description
+    }
+
+    /// Returns a new `MapDefinition` with strings laundered through the provided store.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn launder(&self, store: &SharedStringStore) -> Self {
+        Self {
+            description: store.launder(&self.description),
+            item_type: Arc::new(
+                self.item_type
+                    .iter()
+                    .map(|(k, v)| (k.launder(store), v.launder(store)))
+                    .collect(),
+            ),
+            ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
+            default_map: self.default_map.as_ref().map(|entries| {
+                entries
+                    .iter()
+                    .map(|(entry_key, entry)| {
+                        (
+                            entry_key.launder(store),
+                            entry.iter().map(|value| value.launder(store)).collect(),
+                        )
+                    })
+                    .collect()
+            }),
+        }
+    }
+
+    /// Returns true if values of `other` can safely replace values of `self` during a merge.
+    ///
+    /// Descriptions and defaults are ignored; entry items must match in order and be merge compatible.
+    #[must_use]
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn is_merge_compatible(&self, other: &Self) -> bool {
+        self.ordered_keys == other.ordered_keys
+            && self
+                .iter()
+                .zip(other.iter())
+                .all(|((_, a), (_, b))| a.is_merge_compatible(b))
+    }
+}
+
+impl PartialEq<&MapDefinition> for MapDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &&MapDefinition) -> bool {
+        self == *other
+    }
+}
+
+impl PartialEq<MapDefinition> for &MapDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn eq(&self, other: &MapDefinition) -> bool {
+        *self == other
+    }
+}
+
+impl TreePrint for MapDefinition {
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn tree_print(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+        label: &str,
+        prefix: &str,
+        last: bool,
+    ) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}{}{} ({}) Map",
+            prefix,
+            Self::branch_char(last),
+            label,
+            self.description(),
+        )?;
+
+        let child_prefix = Self::child_prefix(prefix, last);
+
+        let mut item_iter = self.item_type.iter().peekable();
+
+        while let Some((key, item)) = item_iter.next() {
+            let is_last = item_iter.peek().is_none();
+            item.tree_print(f, key.as_str(), &child_prefix, is_last)?;
+        }
+
+        Ok(())
+    }
+}

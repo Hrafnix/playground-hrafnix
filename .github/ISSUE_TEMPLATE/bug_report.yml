@@ -54,7 +54,7 @@ body:
     attributes:
       label: Affected crate or component
       description: Name the crate or component where the problem occurs.
-      placeholder: "For example: expression_engine"
+      placeholder: "For example: hrafnix_expression_engine"
     validations:
       required: true
   - type: textarea
