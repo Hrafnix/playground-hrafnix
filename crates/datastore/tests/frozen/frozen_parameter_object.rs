@@ -491,11 +491,11 @@ fn test_parameter_object_merge_from_copies_values_and_keeps_definitions() {
     assert_eq!(string.value(), "b");
     assert_eq!(string.definition().description(), "Old string");
 
-    // Integer constraints differ, so the value is left unchanged.
+    // Integer constraints are ignored during frozen merges, so the value is updated.
     let ItemFrozen::Integer(integer) = target.get("p_i").unwrap() else {
         panic!("expected integer");
     };
-    assert_eq!(integer.value(), "1");
+    assert_eq!(integer.value(), "7");
 
     // Merging again changes nothing.
     let merged_hash = target.hash();

@@ -24,36 +24,6 @@ fn test_merge_compatible_rejects_different_variants() {
 }
 
 #[test]
-fn test_merge_compatible_number_constraint_tolerance() {
-    // Why: Floating-point noise in bounds should not block a merge, but real changes should.
-    let range = |min: f64, min_inclusive: bool| {
-        NumberDefinition::new_with_constraint(
-            "A",
-            NumberConstraint::range(min, 1.0, min_inclusive, true),
-        )
-    };
-    let noisy = range(0.1 + 0.2, true);
-    let exact = range(0.3, true);
-    assert_ne!(noisy, exact);
-    assert!(noisy.is_merge_compatible(&exact));
-
-    assert!(!exact.is_merge_compatible(&range(0.31, true)));
-    assert!(!exact.is_merge_compatible(&range(0.3, false)));
-
-    let min_only = NumberDefinition::new_with_constraint("A", NumberConstraint::min(0.3, true));
-    assert!(!exact.is_merge_compatible(&min_only));
-}
-
-#[test]
-fn test_merge_compatible_integer_constraint_exact() {
-    let a = IntegerDefinition::new_with_constraint("A", IntegerConstraint::min(0, true));
-    let b = IntegerDefinition::new_with_constraint("B", IntegerConstraint::min(0, true));
-    let c = IntegerDefinition::new_with_constraint("A", IntegerConstraint::min(1, true));
-    assert!(a.is_merge_compatible(&b));
-    assert!(!a.is_merge_compatible(&c));
-}
-
-#[test]
 fn test_merge_compatible_choice_ids() {
     // Why: Choice IDs determine valid values; labels and order do not.
     let a = ChoiceDefinition::new(

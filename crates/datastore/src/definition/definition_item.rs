@@ -172,15 +172,15 @@ impl ItemDefinitionType {
     pub fn is_merge_compatible(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Boolean(_), Self::Boolean(_))
+            | (Self::Integer(_), Self::Integer(_))
+            | (Self::Number(_), Self::Number(_))
             | (Self::String(_), Self::String(_))
-            | (Self::Tab(_), Self::Tab(_))
-            | (Self::Separator(_), Self::Separator(_)) => true,
+            | (Self::Separator(_), Self::Separator(_))
+            | (Self::Tab(_), Self::Tab(_)) => true,
             (Self::Choice(a), Self::Choice(b)) => a.is_merge_compatible(b),
             (Self::File(a), Self::File(b)) => a.is_merge_compatible(b),
             (Self::Folder(a), Self::Folder(b)) => a.is_merge_compatible(b),
-            (Self::Integer(a), Self::Integer(b)) => a.is_merge_compatible(b),
             (Self::Map(a), Self::Map(b)) => a.is_merge_compatible(b),
-            (Self::Number(a), Self::Number(b)) => a.is_merge_compatible(b),
             (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.is_merge_compatible(b),
             (Self::Table(a), Self::Table(b)) => a.is_merge_compatible(b),
             (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.is_merge_compatible(b),

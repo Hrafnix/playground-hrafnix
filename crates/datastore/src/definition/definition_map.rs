@@ -187,11 +187,12 @@ impl MapItemDefinition {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn is_merge_compatible(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Boolean(_), Self::Boolean(_)) | (Self::String(_), Self::String(_)) => true,
+            (Self::Boolean(_), Self::Boolean(_))
+            | (Self::Integer(_), Self::Integer(_))
+            | (Self::Number(_), Self::Number(_))
+            | (Self::String(_), Self::String(_)) => true,
             (Self::Choice(a), Self::Choice(b)) => a.is_merge_compatible(b),
             (Self::File(a), Self::File(b)) => a.is_merge_compatible(b),
-            (Self::Integer(a), Self::Integer(b)) => a.is_merge_compatible(b),
-            (Self::Number(a), Self::Number(b)) => a.is_merge_compatible(b),
             (Self::NumberWithUnits(a), Self::NumberWithUnits(b)) => a.is_merge_compatible(b),
             (Self::Table(a), Self::Table(b)) => a.is_merge_compatible(b),
             (Self::TableWithUnits(a), Self::TableWithUnits(b)) => a.is_merge_compatible(b),
