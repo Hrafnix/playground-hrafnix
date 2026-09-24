@@ -168,7 +168,6 @@ impl NumberWithUnitsDefinition {
     #[must_use]
     pub const fn is_merge_compatible(&self, other: &Self) -> bool {
         self.preferred_units.family_id().to_u8() == other.preferred_units.family_id().to_u8()
-            && self.constraint.is_merge_compatible(&other.constraint)
     }
 }
 
