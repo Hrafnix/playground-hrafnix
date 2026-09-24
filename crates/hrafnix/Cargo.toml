@@ -8,8 +8,8 @@ publish.workspace = true
 
 [dependencies]
 clap.workspace = true
-shareable_string.workspace = true
-translation.workspace = true
+hrafnix_shareable_string.workspace = true
+hrafnix_translation.workspace = true
 
 [lints]
 workspace = true
