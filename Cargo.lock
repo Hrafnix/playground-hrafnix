@@ -296,6 +296,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hrafnix_built_in_registry"
+version = "0.1.0"
+dependencies = [
+ "hotpath",
+]
+
+[[package]]
 name = "hrafnix_common"
 version = "0.1.0"
 
@@ -324,6 +331,13 @@ dependencies = [
  "hrafnix_translation",
  "hrafnix_units",
  "libm",
+]
+
+[[package]]
+name = "hrafnix_files"
+version = "0.1.0"
+dependencies = [
+ "hotpath",
 ]
 
 [[package]]
