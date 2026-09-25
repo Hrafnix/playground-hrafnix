@@ -22,10 +22,10 @@ rustc-hash = "2.1.3"
 hotpath = { version = "0.25.1", default-features = false }
 
 hrafnix_built_in_registry = { path = "crates/hrafnix_built_in_registry" }
-hrafnix_datastore = { path = "crates/hrafnix_datastore" }
 hrafnix_common = { path = "crates/hrafnix_common" }
-hrafnix_files = { path = "crates/hrafnix_files" }
+hrafnix_datastore = { path = "crates/hrafnix_datastore" }
 hrafnix_expression_engine = { path = "crates/hrafnix_expression_engine" }
+hrafnix_files = { path = "crates/hrafnix_files" }
 hrafnix_keys = { path = "crates/hrafnix_keys" }
 hrafnix_message = { path = "crates/hrafnix_message" }
 hrafnix_shareable_string = { path = "crates/hrafnix_shareable_string" }
