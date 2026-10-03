@@ -133,7 +133,7 @@ pub fn localized_error(error: &clap::Error, command: &mut Command, language: Lan
     };
     let message = match error.kind() {
         ErrorKind::InvalidSubcommand => context_string(error, ContextKind::InvalidSubcommand)
-            .map_or_else(&invalid_input, |value| {
+            .map_or_else(invalid_input, |value| {
                 interpolate(
                     &translation(
                         &translations,
@@ -145,7 +145,7 @@ pub fn localized_error(error: &clap::Error, command: &mut Command, language: Lan
                 )
             }),
         ErrorKind::UnknownArgument => {
-            context_string(error, ContextKind::InvalidArg).map_or_else(&invalid_input, |value| {
+            context_string(error, ContextKind::InvalidArg).map_or_else(invalid_input, |value| {
                 interpolate(
                     &translation(&translations, language, "hrafnix_error_unexpected_argument"),
                     "value",
@@ -157,8 +157,7 @@ pub fn localized_error(error: &clap::Error, command: &mut Command, language: Lan
             invalid_value()
         }
         ErrorKind::NoEquals | ErrorKind::TooFewValues => {
-            context_string(error, ContextKind::InvalidArg)
-                .map_or_else(&invalid_input, missing_value)
+            context_string(error, ContextKind::InvalidArg).map_or_else(invalid_input, missing_value)
         }
         ErrorKind::MissingRequiredArgument => context_strings(error, ContextKind::InvalidArg)
             .map_or_else(invalid_input, |arguments| {

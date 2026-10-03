@@ -378,7 +378,7 @@ mod tests {
                 "duplicate family key: {key}"
             );
             assert_eq!(UnitFamilyId::from_u8(value), Some(family));
-            assert!(!family.description().is_empty());
+            assert_ne!(family.description(), "");
             assert!(!family.description().contains(['(', ')']));
 
             let description = match family {
@@ -445,9 +445,9 @@ mod tests {
             assert_eq!(value / 100, u16::from(family.to_u8()));
             assert!(family.unit_ids().contains(unit_id));
             if *unit_id != UnitId::None {
-                assert!(!unit_id.description().is_empty());
+                assert_ne!(unit_id.description(), "");
             }
-            assert!(!unit_id.documentation().is_empty());
+            assert_ne!(unit_id.documentation(), "");
             assert_ne!(unit_id.documentation(), unit_id.description());
             assert!(!unit_id.description().contains(['(', ')']));
         }
