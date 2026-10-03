@@ -196,7 +196,7 @@ mod tests {
         let path: Path = ("obj", "prop", "key").into();
         let obj_path = path.get_object();
         assert_eq!(obj_path.to_string(), "obj");
-        assert!(obj_path.segments().is_empty());
+        assert_eq!(obj_path.segments().as_slice(), &[] as &[ShareableString]);
     }
 
     #[test]

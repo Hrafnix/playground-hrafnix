@@ -1,0 +1,36 @@
+name: Rust - Sanitizers
+on: [pull_request, workflow_dispatch]
+
+jobs:
+  rust-sanitizers:
+    name: ${{ matrix.sanitizer }} (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sanitizer: address
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - sanitizer: leak
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - sanitizer: memory
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - sanitizer: realtime
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - sanitizer: thread
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: -Zsanitizer=${{ matrix.sanitizer }} -D warnings
+      RUSTDOCFLAGS: -Zsanitizer=${{ matrix.sanitizer }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install nightly Rust and standard library sources
+        run: rustup toolchain install nightly --component rust-src --profile minimal
+      - name: Test Rust workspace with sanitizer
+        run: cargo +nightly test --workspace -Zbuild-std --target ${{ matrix.target }}

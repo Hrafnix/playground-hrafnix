@@ -2662,7 +2662,7 @@ mod tests {
         let input_data = BTreeMap::new();
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
     }
 
     #[test]
@@ -2672,7 +2672,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_boolean(&result["x"], true);
     }
@@ -2687,7 +2687,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_boolean(&result["x"], true);
     }
@@ -2706,7 +2706,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_boolean(&result["a"], false);
         check_boolean(&result["b"], true);
@@ -2723,7 +2723,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_integer(&result["x"], 42);
     }
@@ -2736,7 +2736,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_integer(&result["x"], 7);
     }
@@ -2762,7 +2762,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_integer(&result["a"], 3);
         check_number_integer(&result["b"], -1);
@@ -2798,7 +2798,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_float(&result["x"], 42.0);
     }
@@ -2810,7 +2810,7 @@ mod tests {
         let (result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         match result.get("x") {
             Some(ComputedItem::Float(value)) => assert_eq!(value.to_bits(), 0.0_f64.to_bits()),
             other => panic!("expected normalized float output, got {other:?}"),
@@ -2825,7 +2825,7 @@ mod tests {
         let (result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         match result.get("x") {
             Some(ComputedItem::Float(value)) => assert_eq!(value.to_bits(), 3.75_f64.to_bits()),
             other => panic!("expected exact float output, got {other:?}"),
@@ -2842,7 +2842,7 @@ mod tests {
         let (result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         match result.get("distance") {
             Some(ComputedItem::FloatWithUnit { value, unit }) => {
                 assert!((*value - 3.280_839_895_013_123).abs() < f64::EPSILON);
@@ -2866,7 +2866,7 @@ mod tests {
         let (result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         assert_eq!(
             result.get("temperature"),
             Some(&ComputedItem::FloatWithUnit {
@@ -2909,7 +2909,10 @@ mod tests {
 
         let (distance, distance_errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
-        assert!(distance_errors.is_empty());
+        assert_eq!(
+            distance_errors,
+            [] as [hrafnix_datastore::prelude::Message; 0]
+        );
         assert_eq!(distance.get("distance"), Some(&ComputedItem::Float(2.0)));
 
         let (result, errors) = evaluator(
@@ -2917,7 +2920,7 @@ mod tests {
             &FunctionDefinitions::new(),
             &operation_input,
         );
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         assert_eq!(result.get("speed"), Some(&ComputedItem::Float(0.5)));
     }
 
@@ -2949,7 +2952,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_float(&result["x"], 7.0);
     }
@@ -2975,7 +2978,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
         assert!(!result.is_empty());
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_float(&result["a"], 3.0);
         check_number_float(&result["b"], -1.0);
@@ -3164,7 +3167,7 @@ mod tests {
             BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_float(&result["x"], 9.0);
     }
@@ -3179,7 +3182,7 @@ mod tests {
             BTreeMap::from([("x".into(), create_number_basic_input_data("t[1][col]"))]);
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         check_number_float(&result["x"], 9.0);
     }
@@ -3247,7 +3250,7 @@ mod tests {
             BTreeMap::from([("x".into(), create_number_basic_input_data("constant()"))]);
 
         let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         match result.get("x") {
             Some(ComputedItem::Float(v)) => assert_eq!(*v, 42.0),
             other => panic!("expected float 42.0, got {other:?}"),
@@ -3268,7 +3271,7 @@ mod tests {
         )]);
 
         let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         check_number_float(&result["x"], 6.5);
     }
 
@@ -3285,7 +3288,7 @@ mod tests {
             BTreeMap::from([("x".into(), create_number_basic_input_data("sum(a, 2.0)"))]);
 
         let (result, errors) = evaluator(&computed_data, &functions, &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         check_number_float(&result["x"], 3.5);
     }
 
@@ -3303,7 +3306,7 @@ mod tests {
         )]);
 
         let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         check_number_float(&result["x"], 10.0);
     }
 
@@ -3321,7 +3324,7 @@ mod tests {
         )]);
 
         let (result, errors) = evaluator(&BTreeMap::new(), &functions, &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         check_number_float(&result["x"], 10.0);
     }
 
@@ -3380,7 +3383,7 @@ mod tests {
         let input_data = BTreeMap::from([("table".into(), table_input_data)]);
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
 
         if let ComputedItem::Table(computed_table) = &result["table"] {
             assert_eq!(computed_table.rows().len(), 2);
@@ -3418,7 +3421,7 @@ mod tests {
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         let ComputedItem::TableWithUnits(table) = &result["target"] else {
             panic!("Expected a computed table with units");
         };
@@ -3446,7 +3449,7 @@ mod tests {
         let (result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         let ComputedItem::Table(table) = &result["table"] else {
             panic!("Expected a unitless computed table");
         };
@@ -3473,7 +3476,7 @@ mod tests {
         let (result, errors) =
             evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
 
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         let ComputedItem::TableWithUnits(table) = &result["table"] else {
             panic!("Expected a computed table with units");
         };
