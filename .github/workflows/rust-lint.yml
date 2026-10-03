@@ -3,13 +3,13 @@ on: [ pull_request ]
 jobs:
   rust-lint:
     runs-on: ubuntu-24.04
-    env:
-      RUSTFLAGS: -D warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Update Rust
         run: rustup update
+      - name: Preserve target Rust flags
+        run: python .github/scripts/set-ci-rustflags.py
       - name: Add Clippy
         run: rustup component add clippy
       - name: Build Rust project
@@ -17,4 +17,4 @@ jobs:
       - name: Rust Format check
         run: cargo fmt -- --check
       - name: Rust Clippy check
-        run: cargo clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
