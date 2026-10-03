@@ -8,13 +8,13 @@ jobs:
         os: [ubuntu-24.04, macos-26, windows-2025, ubuntu-24.04-arm, windows-11-arm]
         profile: [debug, release]
     runs-on: ${{ matrix.os }}
-    env:
-      RUSTFLAGS: -D warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Update Rust
         run: rustup update
+      - name: Preserve target Rust flags
+        run: python .github/scripts/set-ci-rustflags.py
       - name: Build Rust project
         run: cargo build ${{ matrix.profile == 'release' && '--release' || '' }}
       - name: Test Rust project

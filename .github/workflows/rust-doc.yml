@@ -1,0 +1,18 @@
+name: Rust - Documentation
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  rust-doc:
+    runs-on: ubuntu-24.04
+    env:
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install stable Rust
+        run: rustup toolchain install stable --profile minimal
+      - name: Build documentation
+        run: cargo +stable doc --workspace --all-features --no-deps --locked
