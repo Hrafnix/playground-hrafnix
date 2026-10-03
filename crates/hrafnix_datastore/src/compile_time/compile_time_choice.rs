@@ -286,10 +286,11 @@ mod tests {
     #[test]
     #[allow(clippy::disallowed_methods)]
     fn hidden_constructors_run_at_runtime() {
-        let choices = Box::leak(Box::new([
-            ChoiceItemCompileTime::__new(store_key!("first"), std::hint::black_box("First")),
-            ChoiceItemCompileTime::__new(store_key!("second"), std::hint::black_box("Second")),
-        ]));
+        static CHOICES: [ChoiceItemCompileTime; 2] = [
+            ChoiceItemCompileTime::__new(store_key!("first"), "First"),
+            ChoiceItemCompileTime::__new(store_key!("second"), "Second"),
+        ];
+        let choices = std::hint::black_box(&CHOICES[..]);
         let item = ChoiceItemCompileTime::__new(
             store_key!("runtime_choice"),
             std::hint::black_box("Runtime choice"),
