@@ -1,5 +1,9 @@
 name: Rust - Lint
 on: [ pull_request ]
+
+permissions:
+  contents: read
+
 jobs:
   rust-lint:
     runs-on: ubuntu-24.04
@@ -12,9 +16,7 @@ jobs:
         run: rustup update
       - name: Add Clippy
         run: rustup component add clippy
-      - name: Build Rust project
-        run: cargo build
       - name: Rust Format check
         run: cargo fmt -- --check
       - name: Rust Clippy check
-        run: cargo clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked

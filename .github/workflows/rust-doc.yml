@@ -1,0 +1,19 @@
+name: Rust - Documentation
+on: [ pull_request ]
+
+permissions:
+  contents: read
+
+jobs:
+  rust-doc:
+    runs-on: ubuntu-24.04
+    env:
+      RUSTFLAGS: -D warnings
+      RUSTDOCFLAGS: -D warnings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Update Rust
+        run: rustup update
+      - name: Build documentation
+        run: cargo doc --workspace --all-features --no-deps --locked
