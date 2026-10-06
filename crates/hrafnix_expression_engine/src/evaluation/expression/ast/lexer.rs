@@ -393,12 +393,11 @@ impl Lexer {
             _ => return,
         }
 
-        if let Some(&(_, sign)) = lookahead.peek() {
-            if sign == '+' || sign == '-' {
-                if let Some((_, next_char)) = lookahead.next() {
-                    exponent.push(next_char);
-                }
-            }
+        if let Some(&(_, sign)) = lookahead.peek()
+            && (sign == '+' || sign == '-')
+            && let Some((_, next_char)) = lookahead.next()
+        {
+            exponent.push(next_char);
         }
 
         let mut has_digit = false;

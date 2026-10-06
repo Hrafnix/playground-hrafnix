@@ -2163,25 +2163,25 @@ fn evaluate_table_with_units_expression(
                 Some(SpanSet::from_span(parameter_span)),
             )]);
         }
-        if let Some(units) = &source_units {
-            if units.len() != referenced_table.column_count() {
-                return Err(vec![create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_table_unit_count_mismatch".into(),
-                    [
-                        ("parameter".into(), parameter.to_string().into()),
-                        ("actual".into(), units.len().to_string().into()),
-                        (
-                            "expected".into(),
-                            referenced_table.column_count().to_string().into(),
-                        ),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(parameter_source),
-                    Some(SpanSet::from_span(parameter_span)),
-                )]);
-            }
+        if let Some(units) = &source_units
+            && units.len() != referenced_table.column_count()
+        {
+            return Err(vec![create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_table_unit_count_mismatch".into(),
+                [
+                    ("parameter".into(), parameter.to_string().into()),
+                    ("actual".into(), units.len().to_string().into()),
+                    (
+                        "expected".into(),
+                        referenced_table.column_count().to_string().into(),
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+                Some(parameter_source),
+                Some(SpanSet::from_span(parameter_span)),
+            )]);
         }
         let mut errors = Vec::new();
 

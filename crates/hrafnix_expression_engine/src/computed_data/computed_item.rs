@@ -42,10 +42,10 @@ impl ComputedTable {
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn get_cell(&self, row_index: usize, column_index: usize) -> Option<f64> {
-        if let Some(row) = self.rows.get(row_index) {
-            if let Some(&value) = row.get(column_index) {
-                return Some(value);
-            }
+        if let Some(row) = self.rows.get(row_index)
+            && let Some(&value) = row.get(column_index)
+        {
+            return Some(value);
         }
 
         None
