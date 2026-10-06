@@ -248,11 +248,11 @@ impl Parser {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn parse_call_arguments(lexer: &mut Lexer) -> Result<Vec<ParserToken>, Message> {
         let mut arguments = Vec::new();
-        if let LexerToken::Operator(_index, value) = lexer.peek() {
-            if value == ")" {
-                lexer.next();
-                return Ok(arguments);
-            }
+        if let LexerToken::Operator(_index, value) = lexer.peek()
+            && value == ")"
+        {
+            lexer.next();
+            return Ok(arguments);
         }
 
         loop {

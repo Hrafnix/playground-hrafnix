@@ -30,10 +30,10 @@ pub(crate) fn create_error_message(
     marks: Option<SpanSet>,
 ) -> Message {
     let mut extra_detail = None;
-    if let Some(source) = source {
-        if let Some(marks) = marks {
-            extra_detail = Some(underline_string(source, &marks));
-        }
+    if let Some(source) = source
+        && let Some(marks) = marks
+    {
+        extra_detail = Some(underline_string(source, &marks));
     }
 
     Message::new_with_params(MessageLevel::Error, category, key, params, extra_detail)
