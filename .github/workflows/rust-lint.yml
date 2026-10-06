@@ -12,8 +12,6 @@ jobs:
         run: rustup update
       - name: Add Clippy
         run: rustup component add clippy
-      - name: Build Rust project
-        run: cargo build
       - name: Rust Format check
         run: cargo fmt -- --check
       - name: Rust Clippy check
