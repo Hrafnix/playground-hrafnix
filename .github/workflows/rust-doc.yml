@@ -1,5 +1,9 @@
 name: Rust - Documentation
 on: [ pull_request ]
+
+permissions:
+  contents: read
+
 jobs:
   rust-doc:
     runs-on: ubuntu-24.04

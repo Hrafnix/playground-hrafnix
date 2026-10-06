@@ -1,5 +1,9 @@
 name: Rust - Test
 on: [ pull_request ]
+
+permissions:
+  contents: read
+
 jobs:
   rust-test:
     name: ${{ matrix.os }} - ${{ matrix.profile }}

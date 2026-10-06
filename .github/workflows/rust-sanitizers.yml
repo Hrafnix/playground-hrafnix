@@ -1,6 +1,9 @@
 name: Rust - Sanitizers
 on: [pull_request, workflow_dispatch]
 
+permissions:
+  contents: read
+
 jobs:
   rust-sanitizers:
     name: ${{ matrix.sanitizer }} (${{ matrix.target }})

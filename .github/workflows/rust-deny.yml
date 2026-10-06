@@ -1,5 +1,9 @@
 name: Rust - Cargo Deny
 on: [ pull_request ]
+
+permissions:
+  contents: read
+
 jobs:
   rust-cargo-deny:
     runs-on: ubuntu-24.04
