@@ -15,4 +15,4 @@ jobs:
       - name: Rust Format check
         run: cargo fmt -- --check
       - name: Rust Clippy check
-        run: cargo clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked

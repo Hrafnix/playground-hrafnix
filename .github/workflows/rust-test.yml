@@ -16,6 +16,6 @@ jobs:
       - name: Update Rust
         run: rustup update
       - name: Build Rust project
-        run: cargo build ${{ matrix.profile == 'release' && '--release' || '' }}
+        run: cargo build --workspace --all-targets --all-features --locked ${{ matrix.profile == 'release' && '--release' || '' }}
       - name: Test Rust project
-        run: cargo test ${{ matrix.profile == 'release' && '--release' || '' }}
+        run: cargo test --workspace --all-features --locked ${{ matrix.profile == 'release' && '--release' || '' }}

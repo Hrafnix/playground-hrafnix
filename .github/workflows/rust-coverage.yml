@@ -17,7 +17,7 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate coverage report
-        run: cargo llvm-cov --workspace --all-features --html
+        run: cargo llvm-cov --workspace --all-features --locked --html
       - name: Upload coverage report
         uses: actions/upload-artifact@v6
         with:
