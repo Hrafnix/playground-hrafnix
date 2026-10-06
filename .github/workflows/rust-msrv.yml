@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Install Rust 1.86.0
-        run: rustup toolchain install 1.86.0 --profile minimal
-      - name: Check workspace on Rust 1.86.0
-        run: cargo +1.86.0 check --workspace --all-targets --all-features --locked
+      - name: Install Rust 1.88.0
+        run: rustup toolchain install 1.88.0 --profile minimal
+      - name: Check workspace on Rust 1.88.0
+        run: cargo +1.88.0 check --workspace --all-targets --all-features --locked
