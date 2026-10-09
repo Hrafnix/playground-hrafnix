@@ -270,7 +270,7 @@ fn test_parameter_object_definition_print() {
             "    ├── p_p9 (D9) Folder - default: \"\"\n",
             "    ├── p_p10 (D10) Separator\n",
             "    ├── p_p11 (D11) Tab\n",
-            "    └── p_p12 (D12) Unit - default: \"\" [u_length_meter (m), u_length_kilometer (km), u_length_centimeter (cm), u_length_millimeter (mm), u_length_foot (ft), u_length_inch (in), u_length_yard (yd), u_length_mile (mi)]\n",
+            "    └── p_p12 (D12) Unit - default: \"\" [u_length_meter (m), u_length_picometer (pm), u_length_nanometer (nm), u_length_micrometer (μm), u_length_millimeter (mm), u_length_centimeter (cm), u_length_kilometer (km), u_length_foot (ft), u_length_inch (in), u_length_yard (yd), u_length_mile (mi)]\n",
         )
     );
 }
