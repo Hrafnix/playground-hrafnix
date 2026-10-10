@@ -1099,17 +1099,17 @@ define_unit_ids! {
     Volume_CubicMeter = 2300 => (Volume, "u_volume_cubic_meter", "m³", "A cubic meter, the SI base for volume conversions."),
     Volume_CubicCentiMeter = 2301 => (Volume, "u_volume_cubic_centimeter", "cm³", "A cubic centimeter."),
     Volume_CubicMilliMeter = 2302 => (Volume, "u_volume_cubic_millimeter", "mm³", "A cubic millimeter."),
-    Volume_Liter = 2303 => (Volume, "u_volume_liter", "l", "A liter."),
-    Volume_Picoliter = 2304 => (Volume, "u_volume_picoliter", "pl", "A picoliter."),
-    Volume_Nanoliter = 2305 => (Volume, "u_volume_nanoliter", "nl", "A nanoliter."),
-    Volume_Microliter = 2306 => (Volume, "u_volume_microliter", "μl", "A microliter."),
-    Volume_Milliliter = 2307 => (Volume, "u_volume_milliliter", "ml", "A milliliter."),
-    Volume_Kiloliter = 2308 => (Volume, "u_volume_kiloliter", "kl", "A kiloliter."),
-    Volume_Megaliter = 2309 => (Volume, "u_volume_megaliter", "Ml", "A megaliter."),
+    Volume_Liter = 2303 => (Volume, "u_volume_liter", "L", "A liter."),
+    Volume_Picoliter = 2304 => (Volume, "u_volume_picoliter", "pL", "A picoliter."),
+    Volume_Nanoliter = 2305 => (Volume, "u_volume_nanoliter", "nL", "A nanoliter."),
+    Volume_Microliter = 2306 => (Volume, "u_volume_microliter", "μL", "A microliter."),
+    Volume_Milliliter = 2307 => (Volume, "u_volume_milliliter", "mL", "A milliliter."),
+    Volume_Kiloliter = 2308 => (Volume, "u_volume_kiloliter", "kL", "A kiloliter."),
+    Volume_Megaliter = 2309 => (Volume, "u_volume_megaliter", "ML", "A megaliter."),
     Volume_Gallon = 2310 => (Volume, "u_volume_gallon", "gal", "A US liquid gallon."),
-    Volume_ImperialGallon = 2311 => (Volume, "u_volume_imperial_gallon", "gal_uk", "An imperial gallon."),
-    Volume_FluidOunce = 2312 => (Volume, "u_volume_fluid_ounce", "fl_oz", "A US fluid ounce."),
-    Volume_ImperialFluidOunce = 2313 => (Volume, "u_volume_imperial_fluid_ounce", "fl_oz_uk", "An imperial fluid ounce."),
+    Volume_ImperialGallon = 2311 => (Volume, "u_volume_imperial_gallon", "imp gal", "An imperial gallon."),
+    Volume_FluidOunce = 2312 => (Volume, "u_volume_fluid_ounce", "fl oz", "A US fluid ounce."),
+    Volume_ImperialFluidOunce = 2313 => (Volume, "u_volume_imperial_fluid_ounce", "imp fl oz", "An imperial fluid ounce."),
     Volume_Cup = 2314 => (Volume, "u_volume_cup", "cup", "A US customary cup."),
     Volume_Pint = 2315 => (Volume, "u_volume_pint", "pt", "A US liquid pint."),
     Volume_Quart = 2316 => (Volume, "u_volume_quart", "qt", "A US liquid quart."),
@@ -1143,12 +1143,12 @@ define_unit_ids! {
 
     Density_KilogramPerCubicMeter = 2800 => (Density, "u_density_kilogram_per_cubic_meter", "kg/m³", "A kilogram per cubic meter, the SI unit of mass density."),
     Density_GramPerCubicCentimeter = 2801 => (Density, "u_density_gram_per_cubic_centimeter", "g/cm³", "A gram per cubic centimeter."),
-    Density_GramPerLiter = 2802 => (Density, "u_density_gram_per_liter", "g/l", "A gram per liter."),
-    Density_KilogramPerLiter = 2803 => (Density, "u_density_kilogram_per_liter", "kg/l", "A kilogram per liter."),
+    Density_GramPerLiter = 2802 => (Density, "u_density_gram_per_liter", "g/L", "A gram per liter."),
+    Density_KilogramPerLiter = 2803 => (Density, "u_density_kilogram_per_liter", "kg/L", "A kilogram per liter."),
     Density_PoundPerCubicFoot = 2804 => (Density, "u_density_pound_per_cubic_foot", "lb/ft³", "An international avoirdupois pound per cubic international foot."),
 
     VolumeFlowRate_CubicMeterPerSecond = 2900 => (VolumeFlowRate, "u_volume_flow_rate_cubic_meter_per_second", "m³/s", "A cubic meter per second, the SI unit of volume flow rate."),
-    VolumeFlowRate_LiterPerMinute = 2901 => (VolumeFlowRate, "u_volume_flow_rate_liter_per_minute", "l/min", "A liter per minute."),
+    VolumeFlowRate_LiterPerMinute = 2901 => (VolumeFlowRate, "u_volume_flow_rate_liter_per_minute", "L/min", "A liter per minute."),
 
     DisplacementPerRevolution_CubicMeterPerRevolution = 3000 => (DisplacementPerRevolution, "u_displacement_per_revolution_cubic_meter_per_revolution", "m³/rev", "A cubic meter per revolution, measuring pump or motor displacement."),
     DisplacementPerRevolution_CubicCentimeterPerRevolution = 3001 => (DisplacementPerRevolution, "u_displacement_per_revolution_cubic_centimeter_per_revolution", "cm³/rev", "A cubic centimeter per revolution."),
@@ -1203,7 +1203,7 @@ define_unit_ids! {
     Momentum_NewtonSecond = 4002 => (Momentum, "u_momentum_newton_second", "N·s", "A newton second."),
 
     HydraulicLeakageCoefficient_CubicMeterPerSecondPerPascal = 4100 => (HydraulicLeakageCoefficient, "u_hydraulic_leakage_coefficient_cubic_meter_per_second_per_pascal", "m³/s/Pa", "A cubic meter per second per pascal, the SI unit of hydraulic leakage flow per pressure difference."),
-    HydraulicLeakageCoefficient_LiterPerMinutePerBar = 4101 => (HydraulicLeakageCoefficient, "u_hydraulic_leakage_coefficient_liter_per_minute_per_bar", "l/min/bar", "A liter per minute per bar."),
+    HydraulicLeakageCoefficient_LiterPerMinutePerBar = 4101 => (HydraulicLeakageCoefficient, "u_hydraulic_leakage_coefficient_liter_per_minute_per_bar", "L/min/bar", "A liter per minute per bar."),
 
     SpecificHeatCapacity_JoulePerKilogramKelvin = 4200 => (SpecificHeatCapacity, "u_specific_heat_capacity_joule_per_kilogram_kelvin", "J/kg/K", "A joule per kilogram per kelvin, the SI unit of specific heat capacity, distinct from the specific gas constant."),
     SpecificHeatCapacity_KilojoulePerKilogramKelvin = 4201 => (SpecificHeatCapacity, "u_specific_heat_capacity_kilojoule_per_kilogram_kelvin", "kJ/kg/K", "A kilojoule per kilogram per kelvin."),
@@ -1216,13 +1216,13 @@ define_unit_ids! {
     ThermalConductance_KilowattPerKelvin = 4402 => (ThermalConductance, "u_thermal_conductance_kilowatt_per_kelvin", "kW/K", "A kilowatt per kelvin."),
 
     HydraulicResistance_PascalSecondPerCubicMeter = 4500 => (HydraulicResistance, "u_hydraulic_resistance_pascal_second_per_cubic_meter", "Pa·s/m³", "A pascal second per cubic meter, the SI unit of hydraulic resistance or hydraulic characteristic impedance, reciprocal in dimension to a hydraulic leakage coefficient."),
-    HydraulicResistance_BarMinutePerLiter = 4501 => (HydraulicResistance, "u_hydraulic_resistance_bar_minute_per_liter", "bar·min/l", "A bar minute per liter."),
+    HydraulicResistance_BarMinutePerLiter = 4501 => (HydraulicResistance, "u_hydraulic_resistance_bar_minute_per_liter", "bar·min/L", "A bar minute per liter."),
 
     PneumaticCharacteristicImpedance_PascalSecondPerJoule = 4600 => (PneumaticCharacteristicImpedance, "u_pneumatic_characteristic_impedance_pascal_second_per_joule", "Pa·s/J", "A pascal second per joule, the SI unit of pneumatic pressure per energy flow, distinct from hydraulic impedance."),
     PneumaticCharacteristicImpedance_SecondPerCubicMeter = 4601 => (PneumaticCharacteristicImpedance, "u_pneumatic_characteristic_impedance_second_per_cubic_meter", "s/m³", "A second per cubic meter."),
 
     TurbulentFlowCoefficient_CubicMeterPerSecondPerSquareRootPascal = 4700 => (TurbulentFlowCoefficient, "u_turbulent_flow_coefficient_cubic_meter_per_second_per_square_root_pascal", "m³/s/√Pa", "A cubic meter per second per square root of a pascal, measuring turbulent flow per square root of pressure difference, distinct from linear leakage."),
-    TurbulentFlowCoefficient_LiterPerMinutePerSquareRootBar = 4701 => (TurbulentFlowCoefficient, "u_turbulent_flow_coefficient_liter_per_minute_per_square_root_bar", "l/min/√bar", "A liter per minute per square root of a bar."),
+    TurbulentFlowCoefficient_LiterPerMinutePerSquareRootBar = 4701 => (TurbulentFlowCoefficient, "u_turbulent_flow_coefficient_liter_per_minute_per_square_root_bar", "L/min/√bar", "A liter per minute per square root of a bar."),
 
     MotorBackEmfConstant_VoltSecondPerRadian = 4800 => (MotorBackEmfConstant, "u_motor_back_emf_constant_volt_second_per_radian", "V·s/rad", "A volt second per radian, measuring motor back electromotive force per angular velocity."),
     MotorBackEmfConstant_MillivoltSecondPerRadian = 4801 => (MotorBackEmfConstant, "u_motor_back_emf_constant_millivolt_second_per_radian", "mV·s/rad", "A millivolt second per radian."),
@@ -1236,7 +1236,7 @@ define_unit_ids! {
     ThrustSpecificFuelConsumption_KilogramPerKilonewtonHour = 5001 => (ThrustSpecificFuelConsumption, "u_thrust_specific_fuel_consumption_kilogram_per_kilonewton_hour", "kg/kN/h", "A kilogram per kilonewton per hour."),
 
     VolumeFlowAcceleration_CubicMeterPerSecondSquared = 5100 => (VolumeFlowAcceleration, "u_volume_flow_acceleration_cubic_meter_per_second_squared", "m³/s²", "A cubic meter per second squared, the SI unit of the time derivative of volume flow."),
-    VolumeFlowAcceleration_LiterPerMinutePerSecond = 5101 => (VolumeFlowAcceleration, "u_volume_flow_acceleration_liter_per_minute_per_second", "l/min/s", "A liter per minute per second."),
+    VolumeFlowAcceleration_LiterPerMinutePerSecond = 5101 => (VolumeFlowAcceleration, "u_volume_flow_acceleration_liter_per_minute_per_second", "L/min/s", "A liter per minute per second."),
 }
 
 #[cfg(test)]
@@ -1333,7 +1333,7 @@ mod tests {
                 UnitId::VolumeFlowRate_LiterPerMinute,
                 "u_volume_flow_rate_liter_per_minute",
                 2901,
-                "l/min",
+                "L/min",
             ),
             (
                 UnitId::DisplacementPerRevolution_CubicMeterPerRevolution,
@@ -1478,8 +1478,23 @@ mod tests {
             (
                 UnitFamilyId::Volume,
                 &[
-                    "m³", "cm³", "mm³", "l", "pl", "nl", "μl", "ml", "kl", "Ml", "gal", "gal_uk",
-                    "fl_oz", "fl_oz_uk", "cup", "pt", "qt",
+                    "m³",
+                    "cm³",
+                    "mm³",
+                    "L",
+                    "pL",
+                    "nL",
+                    "μL",
+                    "mL",
+                    "kL",
+                    "ML",
+                    "gal",
+                    "imp gal",
+                    "fl oz",
+                    "imp fl oz",
+                    "cup",
+                    "pt",
+                    "qt",
                 ],
             ),
             (
@@ -1500,7 +1515,7 @@ mod tests {
             ),
             (
                 UnitFamilyId::Density,
-                &["kg/m³", "g/cm³", "g/l", "kg/l", "lb/ft³"],
+                &["kg/m³", "g/cm³", "g/L", "kg/L", "lb/ft³"],
             ),
             (
                 UnitFamilyId::AngularFrequency,
