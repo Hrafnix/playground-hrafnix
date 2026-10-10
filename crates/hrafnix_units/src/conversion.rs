@@ -21,7 +21,7 @@ const fn convert_to_base(unit: UnitId) -> f64 {
         UnitId::Length_Foot => 0.3048,
         UnitId::Length_Inch => 0.0254,
         UnitId::Length_Yard => 0.9144,
-        UnitId::Length_Mile => 1609.34,
+        UnitId::Length_Mile => 1609.344,
 
         UnitId::Mass_Kilogram => 1.0,
         UnitId::Mass_Gram => 0.001,
@@ -31,16 +31,16 @@ const fn convert_to_base(unit: UnitId) -> f64 {
         UnitId::Mass_Milligram => 0.000_001,
         UnitId::Mass_Megagram => 1000.0,
         UnitId::Mass_Tonne => 1000.0,
-        UnitId::Mass_Pound => 0.453_592,
-        UnitId::Mass_Ounce => 0.028_349_5,
-        UnitId::Mass_Stone => 6.35029,
+        UnitId::Mass_Pound => 0.453_592_37,
+        UnitId::Mass_Ounce => 0.028_349_523_125,
+        UnitId::Mass_Stone => 6.350_293_18,
 
         UnitId::Time_Second => 1.0,
-        UnitId::Time_PicoSecond => 0.000_000_000_001,
-        UnitId::Time_NanoSecond => 0.000_000_001,
-        UnitId::Time_MicroSecond => 0.000_001,
-        UnitId::Time_MilliSecond => 0.001,
-        UnitId::Time_KiloSecond => 1000.0,
+        UnitId::Time_Picosecond => 0.000_000_000_001,
+        UnitId::Time_Nanosecond => 0.000_000_001,
+        UnitId::Time_Microsecond => 0.000_001,
+        UnitId::Time_Millisecond => 0.001,
+        UnitId::Time_Kilosecond => 1000.0,
         UnitId::Time_Minute => 60.0,
         UnitId::Time_Hour => 3600.0,
         UnitId::Time_Day => 86400.0,
@@ -223,19 +223,19 @@ const fn convert_to_base(unit: UnitId) -> f64 {
         UnitId::MagneticFlux_Teraweber => 1_000_000_000_000.0,
 
         UnitId::Area_SquareMeter => 1.0,
-        UnitId::Area_SquareMicroMeter => 0.000_000_000_001,
-        UnitId::Area_SquareMilliMeter => 0.000_001,
-        UnitId::Area_SquareCentiMeter => 0.0001,
-        UnitId::Area_SquareKiloMeter => 1_000_000.0,
-        UnitId::Area_SquareFoot => 0.092_903,
+        UnitId::Area_SquareMicrometer => 0.000_000_000_001,
+        UnitId::Area_SquareMillimeter => 0.000_001,
+        UnitId::Area_SquareCentimeter => 0.0001,
+        UnitId::Area_SquareKilometer => 1_000_000.0,
+        UnitId::Area_SquareFoot => 0.092_903_04,
         UnitId::Area_SquareInch => 0.000_645_16,
-        UnitId::Area_Acre => 4046.86,
+        UnitId::Area_Acre => 4_046.856_422_4,
         UnitId::Area_Hectare => 10000.0,
-        UnitId::Area_SquareMile => 2_589_988.11,
+        UnitId::Area_SquareMile => 2_589_988.110_336,
 
         UnitId::Volume_CubicMeter => 1.0,
-        UnitId::Volume_CubicCentiMeter => 0.000_001,
-        UnitId::Volume_CubicMilliMeter => 0.000_000_001,
+        UnitId::Volume_CubicCentimeter => 0.000_001,
+        UnitId::Volume_CubicMillimeter => 0.000_000_001,
         UnitId::Volume_Liter => 0.001,
         UnitId::Volume_Picoliter => 0.000_000_000_000_001,
         UnitId::Volume_Nanoliter => 0.000_000_000_001,
@@ -243,13 +243,13 @@ const fn convert_to_base(unit: UnitId) -> f64 {
         UnitId::Volume_Milliliter => 0.000_001,
         UnitId::Volume_Kiloliter => 1.0,
         UnitId::Volume_Megaliter => 1000.0,
-        UnitId::Volume_Gallon => 0.003_785_41,
+        UnitId::Volume_Gallon => 0.003_785_411_784,
         UnitId::Volume_ImperialGallon => 0.004_546_09,
-        UnitId::Volume_FluidOunce => 0.000_029_573_5,
-        UnitId::Volume_ImperialFluidOunce => 0.000_028_413_1,
+        UnitId::Volume_FluidOunce => 0.000_029_573_529_562_5,
+        UnitId::Volume_ImperialFluidOunce => 0.000_028_413_062_5,
         UnitId::Volume_Cup => 0.000_236_588_236_5,
-        UnitId::Volume_Pint => 0.000_473_176,
-        UnitId::Volume_Quart => 0.000_946_353,
+        UnitId::Volume_Pint => 0.000_473_176_473,
+        UnitId::Volume_Quart => 0.000_946_352_946,
 
         UnitId::Speed_MeterPerSecond => 1.0,
         UnitId::Speed_MillimeterPerSecond => 0.001,
@@ -702,8 +702,8 @@ mod tests {
         );
         let cases = [
             (UnitId::Volume_CubicMeter, 1.0),
-            (UnitId::Volume_CubicCentiMeter, 1e-6),
-            (UnitId::Volume_CubicMilliMeter, 1e-9),
+            (UnitId::Volume_CubicCentimeter, 1e-6),
+            (UnitId::Volume_CubicMillimeter, 1e-9),
             (UnitId::Volume_Liter, 1e-3),
             (UnitId::Volume_Picoliter, 1e-15),
             (UnitId::Volume_Nanoliter, 1e-12),
@@ -711,13 +711,13 @@ mod tests {
             (UnitId::Volume_Milliliter, 1e-6),
             (UnitId::Volume_Kiloliter, 1.0),
             (UnitId::Volume_Megaliter, 1e3),
-            (UnitId::Volume_Gallon, 0.003_785_41),
+            (UnitId::Volume_Gallon, 0.003_785_411_784),
             (UnitId::Volume_ImperialGallon, 0.004_546_09),
-            (UnitId::Volume_FluidOunce, 0.000_029_573_5),
-            (UnitId::Volume_ImperialFluidOunce, 0.000_028_413_1),
+            (UnitId::Volume_FluidOunce, 0.000_029_573_529_562_5),
+            (UnitId::Volume_ImperialFluidOunce, 0.000_028_413_062_5),
             (UnitId::Volume_Cup, 0.000_236_588_236_5),
-            (UnitId::Volume_Pint, 0.000_473_176),
-            (UnitId::Volume_Quart, 0.000_946_353),
+            (UnitId::Volume_Pint, 0.000_473_176_473),
+            (UnitId::Volume_Quart, 0.000_946_352_946),
         ];
         assert_eq!(cases.len(), UnitFamilyId::Volume.unit_ids().len());
 
@@ -872,7 +872,7 @@ mod tests {
         let cases = [
             (
                 1.0,
-                UnitId::Area_SquareKiloMeter,
+                UnitId::Area_SquareKilometer,
                 UnitId::Area_Hectare,
                 100.0,
             ),
@@ -891,7 +891,7 @@ mod tests {
                 UnitId::Volume_Liter,
                 4.54609,
             ),
-            (1.0, UnitId::Mass_Stone, UnitId::Mass_Kilogram, 6.35029),
+            (1.0, UnitId::Mass_Stone, UnitId::Mass_Kilogram, 6.350_293_18),
         ];
 
         for (value, from_unit, to_unit, expected) in cases {
@@ -939,7 +939,7 @@ mod tests {
     fn converts_practical_prefixes_in_existing_families() {
         let cases = [
             (
-                UnitId::Area_SquareMicroMeter,
+                UnitId::Area_SquareMicrometer,
                 UnitId::Area_SquareMeter,
                 1e-12,
             ),
@@ -947,8 +947,8 @@ mod tests {
             (UnitId::Length_Picometer, UnitId::Length_Meter, 1e-12),
             (UnitId::Length_Nanometer, UnitId::Length_Meter, 1e-9),
             (UnitId::Length_Micrometer, UnitId::Length_Meter, 1e-6),
-            (UnitId::Time_PicoSecond, UnitId::Time_Second, 1e-12),
-            (UnitId::Time_KiloSecond, UnitId::Time_Second, 1e3),
+            (UnitId::Time_Picosecond, UnitId::Time_Second, 1e-12),
+            (UnitId::Time_Kilosecond, UnitId::Time_Second, 1e3),
             (UnitId::Volume_Picoliter, UnitId::Volume_Liter, 1e-12),
             (UnitId::Volume_Nanoliter, UnitId::Volume_Liter, 1e-9),
             (UnitId::Volume_Microliter, UnitId::Volume_Liter, 1e-6),
@@ -970,8 +970,8 @@ mod tests {
         assert_approx_eq(
             convert(
                 1.0,
-                UnitId::Area_SquareMicroMeter,
-                UnitId::Area_SquareMilliMeter,
+                UnitId::Area_SquareMicrometer,
+                UnitId::Area_SquareMillimeter,
             )
             .unwrap(),
             1e-6,
@@ -1252,8 +1252,8 @@ mod tests {
                 30.48,
             ),
             (UnitId::Volume_CubicMeter, UnitId::Volume_Liter, 1000.0),
-            (UnitId::Volume_CubicCentiMeter, UnitId::Volume_Liter, 0.001),
-            (UnitId::Volume_CubicMilliMeter, UnitId::Volume_Liter, 1e-6),
+            (UnitId::Volume_CubicCentimeter, UnitId::Volume_Liter, 0.001),
+            (UnitId::Volume_CubicMillimeter, UnitId::Volume_Liter, 1e-6),
             (
                 UnitId::Angle_Turn,
                 UnitId::Angle_Radian,
@@ -1408,18 +1408,18 @@ mod tests {
             (
                 1.0,
                 UnitId::Volume_CubicMeter,
-                UnitId::Volume_CubicCentiMeter,
+                UnitId::Volume_CubicCentimeter,
                 1e6,
             ),
             (
                 1.0,
-                UnitId::Volume_CubicCentiMeter,
+                UnitId::Volume_CubicCentimeter,
                 UnitId::Volume_Milliliter,
                 1.0,
             ),
             (
                 1.0,
-                UnitId::Volume_CubicMilliMeter,
+                UnitId::Volume_CubicMillimeter,
                 UnitId::Volume_Microliter,
                 1.0,
             ),
