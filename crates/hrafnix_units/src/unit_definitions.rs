@@ -859,7 +859,7 @@ macro_rules! define_unit_ids {
             }
 
             /// Returns the documentation corresponding to the given `UnitId`.
-            #[allow(dead_code, reason = "This is to check that the documentation is not empty for each unit.")]
+            #[cfg(test)]
             const fn documentation(&self) -> &'static str {
                 match self {
                     $(
