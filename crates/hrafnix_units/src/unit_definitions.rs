@@ -1443,6 +1443,20 @@ mod tests {
     }
 
     #[test]
+    fn unit_symbols_are_unique_within_each_family() {
+        for family in UnitFamilyId::ALL {
+            let mut symbols = HashSet::new();
+            for unit in family.unit_ids() {
+                let symbol = unit.description();
+                assert!(
+                    symbols.insert(symbol),
+                    "duplicate symbol {symbol:?} in {family:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn unit_family_id_from_u8_returns_none_for_invalid_values() {
         let invalid_values = [52, 53, 55, 56, 255];
         for &value in &invalid_values {
