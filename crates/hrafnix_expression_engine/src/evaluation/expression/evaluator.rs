@@ -123,6 +123,73 @@ fn is_signed_float_literal(expression: &Expression) -> bool {
     }
 }
 
+/// Returns `right_value` expressed in `left_unit` for operators that combine or compare like
+/// quantities (`+`, `-`, and comparisons). Units from different families are rejected. Other
+/// operators (e.g., `*` and `/`) may combine any units, so the value is returned unchanged.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn align_right_operand_unit(
+    operator: &Operators,
+    left_unit: UnitId,
+    right_value: f64,
+    right_unit: UnitId,
+    source: &ShareableString,
+    span: Span,
+) -> Result<f64, Message> {
+    // Check for operators that require compatible units. Other operators can combine any units.
+    match operator {
+        Operators::Add
+        | Operators::Subtract
+        | Operators::Equal
+        | Operators::NotEqual
+        | Operators::LessThan
+        | Operators::LessThanOrEqual
+        | Operators::GreaterThan
+        | Operators::GreaterThanOrEqual => {}
+        Operators::Multiply
+        | Operators::Divide
+        | Operators::Modulus
+        | Operators::Power
+        | Operators::Negate
+        | Operators::And
+        | Operators::Or
+        | Operators::Not => return Ok(right_value),
+    }
+
+    // Check that the units are the same family. If not, throw an error.
+    if left_unit.family_id() != right_unit.family_id() {
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_incompatible_units".into(),
+            [
+                ("operator".into(), operator.to_string().into()),
+                ("left".into(), left_unit.description().into()),
+                ("right".into(), right_unit.description().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        ));
+    }
+
+    // If the units are the same, no conversion is needed.
+    if left_unit == right_unit {
+        return Ok(right_value);
+    }
+
+    // Convert the right value to the left unit.
+    let converted = convert(right_value, right_unit, left_unit).map_err(|error| {
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_unit_conversion_failed".into(),
+            [("error".into(), error.into())].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        )
+    })?;
+    finite_float(converted, source, span)
+}
+
 /// Applies a unary `operator` to `operand_value`, returning the result or an error.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_unary_operation(
@@ -910,6 +977,42 @@ fn evaluate_expression(
                         Some(SpanSet::from_span(operator_span)),
                     )),
                 },
+                (
+                    ComputedItem::FloatWithUnit {
+                        value: left_float,
+                        unit: left_unit,
+                    },
+                    ComputedItem::FloatWithUnit {
+                        value: right_float,
+                        unit: right_unit,
+                    },
+                ) => {
+                    let right_float = align_right_operand_unit(
+                        &operator,
+                        left_unit,
+                        right_float,
+                        right_unit,
+                        source,
+                        operator_span,
+                    )?;
+                    let result = evaluate_float_binary_operation(
+                        &operator,
+                        left_float,
+                        right_float,
+                        source,
+                        operator_span,
+                    )?;
+                    // A sum or difference of two like quantities is itself that quantity, so
+                    // keep the (left) unit once the right operand has been aligned to it.
+                    let keeps_left_unit = matches!(operator, Operators::Add | Operators::Subtract)
+                        && left_unit != UnitId::None
+                        && right_unit != UnitId::None;
+                    if let (true, ComputedItem::Float(value)) = (keeps_left_unit, &result) {
+                        Ok(computed_float(*value, left_unit))
+                    } else {
+                        Ok(result)
+                    }
+                }
                 (
                     ComputedItem::Float(left_float)
                     | ComputedItem::FloatWithUnit {
@@ -3691,7 +3794,11 @@ mod tests {
         )]);
         let input_data = BTreeMap::from([(
             "distance".into(),
-            create_number_with_units_input_data("-p_meters", "u_length_meter", UnitId::Length_Meter),
+            create_number_with_units_input_data(
+                "-p_meters",
+                "u_length_meter",
+                UnitId::Length_Meter,
+            ),
         )]);
 
         let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
@@ -3704,5 +3811,126 @@ mod tests {
                 unit: UnitId::Length_Meter,
             })
         );
+    }
+
+    fn unit_data() -> BTreeMap<ShareableString, ComputedItem> {
+        BTreeMap::from([
+            (
+                "p_meters".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Length_Meter,
+                },
+            ),
+            (
+                "p_feet".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Length_Foot,
+                },
+            ),
+            (
+                "p_seconds".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Time_Second,
+                },
+            ),
+        ])
+    }
+
+    #[test]
+    fn adding_or_comparing_incompatible_units_is_an_error() {
+        let input_data = BTreeMap::from([
+            (
+                "a".into(),
+                create_number_basic_input_data("p_meters + p_seconds"),
+            ),
+            (
+                "b".into(),
+                create_number_basic_input_data("p_meters - p_seconds"),
+            ),
+            (
+                "c".into(),
+                create_boolean_basic_input_data("p_meters < p_seconds"),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&unit_data(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 3);
+        for error in &errors {
+            assert_eq!(
+                message_key(error),
+                "expression_engine_evaluation_incompatible_units"
+            );
+        }
+    }
+
+    #[test]
+    fn same_family_units_are_converted_to_the_left_unit() {
+        let input_data = BTreeMap::from([
+            (
+                "sum".into(),
+                create_number_with_units_input_data(
+                    "p_meters + p_feet",
+                    "u_length_meter",
+                    UnitId::Length_Meter,
+                ),
+            ),
+            (
+                "difference".into(),
+                create_number_with_units_input_data(
+                    "p_feet - p_meters",
+                    "u_length_foot",
+                    UnitId::Length_Foot,
+                ),
+            ),
+            (
+                "a".into(),
+                create_boolean_basic_input_data("p_meters > p_feet"),
+            ),
+            (
+                "b".into(),
+                create_boolean_basic_input_data("p_feet > p_meters"),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&unit_data(), &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        let Some(ComputedItem::FloatWithUnit { value: sum, unit }) = result.get("sum") else {
+            panic!("expected a float with units");
+        };
+        assert_eq!(*unit, UnitId::Length_Meter);
+        assert!((sum - 1.3048).abs() < 1e-12, "{sum}");
+        let Some(ComputedItem::FloatWithUnit {
+            value: difference,
+            unit,
+        }) = result.get("difference")
+        else {
+            panic!("expected a float with units");
+        };
+        assert_eq!(*unit, UnitId::Length_Foot);
+        assert!(
+            (difference - (1.0 - 3.280_839_895_013_123)).abs() < 1e-12,
+            "{difference}"
+        );
+        check_boolean(&result["a"], true);
+        check_boolean(&result["b"], false);
+    }
+
+    #[test]
+    fn multiplying_and_dividing_mixed_units_is_allowed() {
+        let input_data = BTreeMap::from([(
+            "ratio".into(),
+            create_number_basic_input_data("p_meters / p_seconds"),
+        )]);
+
+        let (result, errors) = evaluator(&unit_data(), &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        check_number_float(&result["ratio"], 1.0);
     }
 }

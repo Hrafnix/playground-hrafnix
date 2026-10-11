@@ -892,6 +892,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_evaluation_incompatible_units",
+        HashMap::from([
+            ("en", "Cannot apply '%{operator}' to incompatible units %{left} and %{right}"),
+            ("zh", "无法对不兼容的单位 %{left} 和 %{right} 应用“%{operator}”"),
+            ("de", "'%{operator}' kann nicht auf die inkompatiblen Einheiten %{left} und %{right} angewendet werden"),
+            ("es", "No se puede aplicar '%{operator}' a las unidades incompatibles %{left} y %{right}"),
+            ("fr", "Impossible d'appliquer « %{operator} » aux unités incompatibles %{left} et %{right}"),
+            ("ja", "互換性のない単位 %{left} と %{right} に「%{operator}」を適用できません"),
+            ("ko", "호환되지 않는 단위 %{left}와(과) %{right}에 '%{operator}'을(를) 적용할 수 없습니다"),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_evaluation_expected_number_with_units_definition",
         HashMap::from([
             ("en", "Expected a number-with-units definition."),
