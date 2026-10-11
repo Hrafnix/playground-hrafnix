@@ -4215,4 +4215,25 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn drop_units_allows_combining_incompatible_units() {
+        let functions =
+            crate::evaluation::expression::function_definitions_default::default_function_definitions();
+        let input_data = BTreeMap::from([(
+            "sum".into(),
+            create_number_basic_input_data("p_meters + drop_units(p_seconds)"),
+        )]);
+
+        let (result, errors) = evaluator(&unit_data(), &functions, &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        assert_eq!(
+            result.get("sum"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: 2.0,
+                unit: UnitId::Length_Meter,
+            })
+        );
+    }
 }

@@ -596,6 +596,13 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     }
 }
 
+/// Returns the numeric value of a float argument without its unit.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn drop_units(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
+    let value = as_float(arg(args, 0, "drop_units")?, "drop_units")?;
+    Ok(ComputedItem::Float(value))
+}
+
 /// Converts a numeric argument to a float, returning an error for integers outside the
 /// exactly representable range.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
@@ -816,6 +823,12 @@ pub(crate) fn default_function_definitions() -> FunctionDefinitions {
             "converts a number to a float",
             ArgumentCount::Exact { count: 1 },
             to_float,
+        ))
+        .with(FunctionDefinition::new(
+            store_key!("drop_units"),
+            "returns the numeric value of a float without its unit",
+            ArgumentCount::Exact { count: 1 },
+            drop_units,
         ))
         .with(FunctionDefinition::new(
             store_key!("if"),
@@ -1548,5 +1561,24 @@ mod tests {
     #[test]
     fn len_counts_characters_not_bytes() {
         assert_integer_eq("len", &[ComputedItem::String("héllo".into())], 5);
+    }
+
+    #[test]
+    fn drop_units_returns_the_plain_value() {
+        let meters = ComputedItem::FloatWithUnit {
+            value: 2.5,
+            unit: UnitId::Length_Meter,
+        };
+        assert_eq!(call("drop_units", &[meters]), ComputedItem::Float(2.5));
+        assert_eq!(
+            call("drop_units", &[ComputedItem::Float(1.5)]),
+            ComputedItem::Float(1.5)
+        );
+        assert_error(
+            "drop_units",
+            &[ComputedItem::Integer(1)],
+            "expression_engine_function_argument_must_be_float",
+            Some("drop_units"),
+        );
     }
 }
