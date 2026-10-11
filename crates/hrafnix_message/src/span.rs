@@ -122,9 +122,8 @@ impl SpanSet {
     }
 
     /// Returns `true` if this set contains no spans.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.indices.is_empty()
     }
 

@@ -63,8 +63,7 @@ impl MissingRequirements {
     }
 
     /// Returns `true` if any required globals, parameters, variables, or functions are missing.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn missing_requirements_exist(&self) -> bool {
+    pub(crate) const fn missing_requirements_exist(&self) -> bool {
         !self.globals.is_empty()
             || !self.parameters.is_empty()
             || !self.variables.is_empty()
@@ -72,50 +71,42 @@ impl MissingRequirements {
     }
 
     /// Returns the names of missing globals.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn globals(&self) -> &[ShareableString] {
-        &self.globals
+    pub(crate) const fn globals(&self) -> &[ShareableString] {
+        self.globals.as_slice()
     }
 
     /// Returns `true` if any globals are missing.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn missing_globals(&self) -> bool {
+    pub(crate) const fn missing_globals(&self) -> bool {
         !self.globals.is_empty()
     }
 
     /// Returns the names of missing parameters.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn parameters(&self) -> &[ShareableString] {
-        &self.parameters
+    pub(crate) const fn parameters(&self) -> &[ShareableString] {
+        self.parameters.as_slice()
     }
 
     /// Returns `true` if any parameters are missing.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn missing_parameters(&self) -> bool {
+    pub(crate) const fn missing_parameters(&self) -> bool {
         !self.parameters.is_empty()
     }
 
     /// Returns the names of missing variables.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn variables(&self) -> &[ShareableString] {
-        &self.variables
+    pub(crate) const fn variables(&self) -> &[ShareableString] {
+        self.variables.as_slice()
     }
 
     /// Returns `true` if any variables are missing.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn missing_variables(&self) -> bool {
+    pub(crate) const fn missing_variables(&self) -> bool {
         !self.variables.is_empty()
     }
 
     /// Returns the names of missing functions.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn functions(&self) -> &[ShareableString] {
-        &self.functions
+    pub(crate) const fn functions(&self) -> &[ShareableString] {
+        self.functions.as_slice()
     }
 
     /// Returns `true` if any functions are missing.
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub(crate) fn missing_functions(&self) -> bool {
+    pub(crate) const fn missing_functions(&self) -> bool {
         !self.functions.is_empty()
     }
 }

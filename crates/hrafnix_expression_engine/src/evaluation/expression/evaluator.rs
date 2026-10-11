@@ -96,10 +96,9 @@ fn lookup_variable(
 }
 
 /// Creates a computed float with unit metadata only when the unit is concrete.
-#[cfg_attr(feature = "hotpath", hotpath::measure)]
-fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
+const fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
     let value = canonicalize_f64(value);
-    if unit == UnitId::None {
+    if matches!(unit, UnitId::None) {
         ComputedItem::Float(value)
     } else {
         ComputedItem::FloatWithUnit { value, unit }

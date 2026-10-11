@@ -63,9 +63,8 @@ impl TableEditable {
 
     /// Returns a reference to all rows in the table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn rows(&self) -> &[Vec<ShareableString>] {
-        &self.rows
+    pub const fn rows(&self) -> &[Vec<ShareableString>] {
+        self.rows.as_slice()
     }
 
     /// Returns a reference to the table definition.
@@ -76,8 +75,7 @@ impl TableEditable {
 
     /// Returns the number of rows in the table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn row_count(&self) -> usize {
+    pub const fn row_count(&self) -> usize {
         self.rows.len()
     }
 
