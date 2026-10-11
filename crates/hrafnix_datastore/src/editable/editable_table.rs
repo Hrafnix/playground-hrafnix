@@ -88,7 +88,7 @@ impl TableEditable {
         self.definition.count()
     }
 
-    /// Sets the value of a cell and updates the hash.
+    /// Sets the unevaluated value of a cell.
     ///
     /// # Errors
     ///
@@ -127,7 +127,7 @@ impl TableEditable {
         }
     }
 
-    /// Adds a new row and updates the hash.
+    /// Inserts a row of column default values at `row`, or appends it if `row` is out of bounds.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn add_row(&mut self, row: usize) {
         let mut full_row = Vec::new();
@@ -141,7 +141,7 @@ impl TableEditable {
         }
     }
 
-    /// Removes a row and updates the hash.
+    /// Removes the row at `row`, or the last row if `row` is out of bounds.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn remove_row(&mut self, row: usize) {
         if self.rows.is_empty() {

@@ -8,7 +8,7 @@ use hrafnix_shareable_string::ShareableString;
 pub struct NumberWithUnitsEditable {
     /// Definition metadata for this number value.
     definition: NumberWithUnitsDefinition,
-    /// Current value for this number data, stored as a `ShareableString`.
+    /// Current unevaluated value for this number data, stored as a `ShareableString`.
     value: ShareableString,
     /// Current units for this number data, stored as a `ShareableString`.
     units: ShareableString,
@@ -33,7 +33,7 @@ impl NumberWithUnitsEditable {
         NumberWithUnitsFrozen::new_from_editable(self)
     }
 
-    /// Returns the value as a `ShareableString`.
+    /// Returns the unevaluated value as a `ShareableString`.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
@@ -53,13 +53,13 @@ impl NumberWithUnitsEditable {
         &self.definition
     }
 
-    /// Sets the value and updates the hash.
+    /// Sets the unevaluated value.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set<S: Into<ShareableString>>(&mut self, value: S) {
         self.value = value.into();
     }
 
-    /// Sets the units and updates the hash.
+    /// Sets the unevaluated units.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set_units<S: Into<ShareableString>>(&mut self, units: S) {
         self.units = units.into();

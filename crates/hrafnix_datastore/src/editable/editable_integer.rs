@@ -8,7 +8,7 @@ use hrafnix_shareable_string::ShareableString;
 pub struct IntegerEditable {
     /// Definition metadata for this integer value.
     definition: IntegerDefinition,
-    /// Current value for this integer data, stored as a `ShareableString`.
+    /// Current unevaluated value for this integer data, stored as a `ShareableString`.
     value: ShareableString,
 }
 
@@ -30,7 +30,7 @@ impl IntegerEditable {
         IntegerFrozen::new_from_editable(self)
     }
 
-    /// Returns the value as a `ShareableString`.
+    /// Returns the unevaluated value as a `ShareableString`.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
@@ -43,7 +43,7 @@ impl IntegerEditable {
         &self.definition
     }
 
-    /// Sets the value and updates the hash.
+    /// Sets the unevaluated value.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn set<S: Into<ShareableString>>(&mut self, value: S) {
         self.value = value.into();

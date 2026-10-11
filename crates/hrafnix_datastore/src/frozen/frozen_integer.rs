@@ -8,7 +8,7 @@ use hrafnix_shareable_string::{ShareableString, SharedStringStore};
 pub struct IntegerFrozen {
     /// Definition metadata for this integer value.
     definition: IntegerDefinition,
-    /// Current value for this integer data, stored as a `ShareableString`.
+    /// Current unevaluated value for this integer data, stored as a `ShareableString`.
     value: ShareableString,
     /// Pre-computed BLAKE3 hash of the value for fast diffing.
     hash: [u8; 32],
@@ -86,7 +86,7 @@ impl IntegerFrozen {
         self.hash = *digest.as_bytes();
     }
 
-    /// Returns the value as a `ShareableString`.
+    /// Returns the unevaluated value as a `ShareableString`.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {

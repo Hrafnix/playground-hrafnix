@@ -3,11 +3,17 @@
 //! Declares submodules containing tests organized by topic.
 //! Each submodule focuses on a specific area of the crate's functionality:
 //!
+//! - [`compile_time`] – tests for the `const_*` macros and their conversion into runtime
+//!   definitions.
+//!
 //! - [`definition`] – tests for datastore definition types and their builders, ensuring
 //!   they correctly represent the intended structures and parameters.
 //!
-//! - [`store`] – tests for the dynamic store, covering proxy access, error handling,
-//!   object copying, data recovery, and JSON serialization / deserialization.
+//! - [`frozen`] – tests for immutable snapshots: construction from definitions, hashing,
+//!   and merging values into parameter objects.
+//!
+//! - [`editable`] – tests for the mutable counterpart: thaw / edit / freeze round trips and
+//!   keyed updates via `editable_set_value`.
 
 // Integration tests favor clarity and brevity over the strictness we require of library
 // code: panicking helpers (`unwrap`/`expect`/indexing/`panic!`) and approximate float

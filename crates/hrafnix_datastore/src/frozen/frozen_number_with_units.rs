@@ -8,7 +8,7 @@ use hrafnix_shareable_string::{ShareableString, SharedStringStore};
 pub struct NumberWithUnitsFrozen {
     /// Definition metadata for this number value.
     definition: NumberWithUnitsDefinition,
-    /// Current numeric value as a string.
+    /// Current unevaluated numeric value as a string.
     value: ShareableString,
     /// Current units for this number data.
     units: ShareableString,
@@ -102,7 +102,7 @@ impl NumberWithUnitsFrozen {
         self.hash = *digest.as_bytes();
     }
 
-    /// Returns the value as a `ShareableString`.
+    /// Returns the unevaluated value as a `ShareableString`.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
