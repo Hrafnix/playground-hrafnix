@@ -1,21 +1,35 @@
 //! # Datastore
 //!
-//! A hierarchical, thread-safe, and observable data store with proxy-based access.
+//! Structured, hashable storage for *unevaluated values* and the definitions that describe them.
 //!
-//! ## Core Concepts
+//! ## Layers
 //!
-//! - **Store**: The root container for all data objects. It manages thread safety and persistence.
-//! - **Definitions**: Define the structure of your data (Objects, Structs, Maps, Tables, and Basic values).
-//! - **Proxies**: Lightweight handles to data within the store. They provide a way to read and update data while maintaining sync with the store.
-//! - **Shareable Strings**: Interned, thread-safe strings used throughout the store to reduce memory overhead and enable fast comparisons.
+//! - **`definition`** – The shape of the data: objects (global / parameter / variable), maps,
+//!   tables, and leaf items (boolean, integer, number, string, choice, file, folder, unit, …)
+//!   together with descriptions, defaults, and constraints.
+//! - **`compile_time`** – `const`-constructible mirrors of the definitions, built with the
+//!   `const_*` macros, so a schema can be declared statically and converted to definitions at
+//!   runtime.
+//! - **`frozen`** – Immutable snapshot of definitions plus their current unevaluated values,
+//!   with a pre-computed BLAKE3 hash per node for cheap diffing.
+//! - **`editable`** – Mutable counterpart to `frozen`. `thaw()` a frozen tree, edit it, then
+//!   `freeze()` it back.
 //!
-//! ## Thread Safety and Invariants
+//! ## Values are unevaluated
 //!
-//! - **Thread Safety**: The `Store` is thread-safe (`Send` + `Sync`) and uses internal locking (`parking_lot::RwLock`).
-//! - **Proxy Validity**: A proxy becomes "invalid" (expired) if its underlying data is removed from the store. Use `proxy.is_valid()` to check.
-//! - **Cloning**: Cloning a `Store` or a `Proxy` creates a new handle to the *same* underlying data (shallow copy).
-//! - **Change Tracking**: Use `has_changed()` on a proxy to check if the store has been updated since the proxy was last synced.
-//! - **Updates**: Updates via proxies are pushed to the store. Other proxies must `pull()` to see these changes.
+//! Every leaf stores its value as a [`ShareableString`](hrafnix_shareable_string::ShareableString)
+//! holding an unevaluated expression, not a typed result. The datastore deliberately
+//! knows nothing about `i64`/`f64`/`bool` and never checks constraints:
+//!
+//! - Definitions and frozen data are intended to be read from and written to a file and may
+//!   contain malformed or out-of-range values. The datastore must load them without failing.
+//! - Interpretation, type checking, and constraint enforcement happen exclusively in the
+//!   expression engine, which consumes `frozen` data as input.
+//!
+//! ## Shareable strings
+//!
+//! All text is stored as interned `ShareableString`s. `launder(&SharedStringStore)` re-interns a
+//! tree into a given store so independently loaded data can share storage and compare quickly.
 //!
 
 // Test code favors clarity and brevity over the strictness we require of library code:
@@ -47,9 +61,9 @@ pub mod compile_time;
 pub mod definition;
 /// Editable data implementation.
 pub mod editable;
-/// Frozen data implementation for efficient persistence and access.
+/// Immutable, hashed snapshots of definitions and their unevaluated values.
 pub mod frozen;
 /// Convenience re-exports of the most common types and macros.
 pub mod prelude;
-/// Traits used throughout the store.
+/// Traits used throughout the datastore.
 pub mod traits;

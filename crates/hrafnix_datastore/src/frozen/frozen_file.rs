@@ -8,7 +8,7 @@ use hrafnix_shareable_string::{ShareableString, SharedStringStore};
 pub struct FileFrozen {
     /// Definition metadata for this file value.
     definition: FileDefinition,
-    /// Current value for this file data, stored as a `ShareableString`.
+    /// Current unevaluated value for this file data, stored as a `ShareableString`.
     value: ShareableString,
     /// Pre-computed BLAKE3 hash of the value for fast diffing.
     hash: [u8; 32],
@@ -86,7 +86,7 @@ impl FileFrozen {
         self.hash = *digest.as_bytes();
     }
 
-    /// Returns the value as a `ShareableString`.
+    /// Returns the unevaluated value as a `ShareableString`.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn value(&self) -> ShareableString {
