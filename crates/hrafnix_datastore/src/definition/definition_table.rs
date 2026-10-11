@@ -132,7 +132,10 @@ impl TableDefinition {
     ) -> Option<TableColumnRequirement> {
         let key = key.into();
         self.columns.contains_key(&key).then(|| {
-            self.column_requirements.get(&key).copied().unwrap_or_default()
+            self.column_requirements
+                .get(&key)
+                .copied()
+                .unwrap_or_default()
         })
     }
 
