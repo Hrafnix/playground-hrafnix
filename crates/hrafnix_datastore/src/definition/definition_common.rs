@@ -1,3 +1,26 @@
+/// A requirement comparing adjacent evaluated rows in one table column.
+///
+/// Comparisons use numeric values after unit conversion. Empty and single-row
+/// tables satisfy every requirement. Unordered comparisons (NaN) fail.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum TableColumnRequirement {
+    /// No relationship required between rows.
+    #[default]
+    None,
+    /// Each value must be greater than the preceding value.
+    Increasing {
+        /// If false, equal adjacent values are also allowed.
+        strict: bool,
+    },
+    /// Each value must be less than the preceding value.
+    Decreasing {
+        /// If false, equal adjacent values are also allowed.
+        strict: bool,
+    },
+    /// Adjacent values must be exactly numerically equal, including signed zero.
+    Constant,
+}
+
 /// Definition for a number-based parameter constraint.
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumberConstraintEnum {

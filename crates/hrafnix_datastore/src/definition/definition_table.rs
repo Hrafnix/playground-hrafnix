@@ -1,4 +1,4 @@
-use crate::definition::NumberDefinition;
+use crate::definition::{NumberDefinition, TableColumnRequirement};
 use crate::traits::TreePrint;
 use hrafnix_keys::store_key::StoreKey;
 use hrafnix_shareable_string::{ShareableString, SharedStringStore};
@@ -14,6 +14,8 @@ pub struct TableDefinition {
     ordered_keys: Vec<StoreKey>,
     /// Column definitions keyed by a column name.
     columns: Arc<BTreeMap<StoreKey, NumberDefinition>>,
+    /// Relationships required between adjacent rows, independent of numeric bounds.
+    column_requirements: BTreeMap<StoreKey, TableColumnRequirement>,
     /// Optional default row data.
     default_table: Option<Vec<Vec<ShareableString>>>,
 }
@@ -40,6 +42,7 @@ impl TableDefinition {
             description: description.into(),
             ordered_keys,
             columns: Arc::new(items),
+            column_requirements: BTreeMap::new(),
             default_table: None,
         }
     }
@@ -98,6 +101,47 @@ impl TableDefinition {
         self.ordered_keys
             .get(index)
             .and_then(|key| self.columns.get(key))
+    }
+
+    /// Sets a column's adjacent-row requirement independently of its numeric bounds.
+    ///
+    /// Returns false for an unknown key. Setting `None` removes the requirement.
+    pub fn set_column_requirement<K: Into<StoreKey>>(
+        &mut self,
+        key: K,
+        requirement: TableColumnRequirement,
+    ) -> bool {
+        let key = key.into();
+        if !self.columns.contains_key(&key) {
+            return false;
+        }
+        if requirement == TableColumnRequirement::None {
+            self.column_requirements.remove(&key);
+        } else {
+            self.column_requirements.insert(key, requirement);
+        }
+        true
+    }
+
+    /// Returns the requirement, or `None` for an unknown column.
+    ///
+    /// A known column without a requirement returns `Some(TableColumnRequirement::None)`.
+    pub fn column_requirement<S: Into<ShareableString>>(
+        &self,
+        key: S,
+    ) -> Option<TableColumnRequirement> {
+        let key = key.into();
+        self.columns.contains_key(&key).then(|| {
+            self.column_requirements.get(&key).copied().unwrap_or_default()
+        })
+    }
+
+    /// Returns the requirement in insertion order, or `None` for an unknown index.
+    #[must_use]
+    pub fn column_requirement_by_index(&self, index: usize) -> Option<TableColumnRequirement> {
+        self.ordered_keys
+            .get(index)
+            .and_then(|key| self.column_requirement(key.as_str()))
     }
 
     /// Returns the index of the column with the specified key.
@@ -172,6 +216,11 @@ impl TableDefinition {
                     .collect(),
             ),
             ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
+            column_requirements: self
+                .column_requirements
+                .iter()
+                .map(|(key, requirement)| (key.launder(store), *requirement))
+                .collect(),
             default_table: self.default_table.as_ref().map(|table| {
                 table
                     .iter()
@@ -183,7 +232,7 @@ impl TableDefinition {
 
     /// Returns true if values of `other` can safely replace values of `self` during a merge.
     ///
-    /// Descriptions and defaults are ignored; columns must match in order and be merge compatible.
+    /// Descriptions, defaults, bounds, and row requirements are ignored; column order must match.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn is_merge_compatible(&self, other: &Self) -> bool {
