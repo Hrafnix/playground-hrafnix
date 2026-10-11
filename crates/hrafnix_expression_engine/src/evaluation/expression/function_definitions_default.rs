@@ -185,7 +185,10 @@ fn mixed_numeric_types_error(function_name: &str) -> Message {
 fn abs(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "abs")? {
         ComputedItem::Float(value) => Ok(ComputedItem::Float(libm::fabs(*value))),
-        ComputedItem::Integer(value) => Ok(ComputedItem::Integer(value.abs())),
+        ComputedItem::Integer(value) => value
+            .checked_abs()
+            .map(ComputedItem::Integer)
+            .ok_or_else(|| function_error("expression_engine_evaluation_integer_overflow", [])),
         ComputedItem::Boolean(_)
         | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
@@ -1244,5 +1247,16 @@ mod tests {
         let definitions = default_function_definitions();
         assert!(definitions.get("arccos").is_some());
         assert!(definitions.get("arctan").is_some());
+    }
+
+    #[test]
+    fn abs_of_minimum_integer_reports_overflow() {
+        // Why: `i64::MIN.abs()` panics; it must surface as an evaluation error instead.
+        assert_error(
+            "abs",
+            &[ComputedItem::Integer(i64::MIN)],
+            "expression_engine_evaluation_integer_overflow",
+            None,
+        );
     }
 }
