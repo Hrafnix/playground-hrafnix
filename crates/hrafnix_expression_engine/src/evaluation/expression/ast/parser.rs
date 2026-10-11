@@ -365,7 +365,6 @@ impl Parser {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn infix_binding_power(op: &str) -> Option<(u8, u8)> {
         let res = match op {
-            "=" => (2, 1),
             "||" => (5, 6),
             "&&" => (7, 8),
             "==" | "!=" => (11, 12),
