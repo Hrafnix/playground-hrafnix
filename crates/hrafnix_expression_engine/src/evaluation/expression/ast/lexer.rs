@@ -6,6 +6,10 @@ use std::collections::HashMap;
 use std::iter::{Enumerate, Peekable};
 use std::str::Chars;
 
+/// Non-alphanumeric characters that may start a token: operators, punctuation, `_` for
+/// identifiers, `.` for numbers, and `"` for string literals.
+const SYMBOL_CHARACTERS: &str = "+_-*/()[]<>=!&|%^.,\"";
+
 /// A simple lexer for tokenizing expressions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LexerToken {
@@ -94,7 +98,7 @@ impl Lexer {
             }
 
             // Check for invalid tokens
-            if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,\"".contains(c) {
+            if !c.is_numeric() && !c.is_lowercase() && !SYMBOL_CHARACTERS.contains(c) {
                 return Err(create_error_message(
                     MessageCategory::ExpressionParsing,
                     "expression_engine_lexer_invalid_character".into(),
@@ -796,7 +800,7 @@ mod tests {
             let ch = c as u8 as char;
             if !ch.is_numeric()
                 && !ch.is_lowercase()
-                && !"+_-*/()[]<>=!&|%^.,\"".contains(ch)
+                && !SYMBOL_CHARACTERS.contains(ch)
                 && !ch.is_whitespace()
             {
                 let input = format!("a + b * (c - d) {ch} e");
