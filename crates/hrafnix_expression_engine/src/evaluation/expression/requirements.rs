@@ -29,22 +29,27 @@ impl MissingRequirements {
         let mut missing_functions = Vec::new();
 
         let requirements = ExpressionRequirements::new(expression);
+        let is_available = |name: &ShareableString| {
+            item_keys.contains(name)
+                || (requirements.indexed.contains(name)
+                    && Self::has_map_entry(name.as_str(), item_keys))
+        };
 
-        for global in requirements.globals {
-            if !item_keys.contains(&global) {
-                missing_globals.push(global);
+        for global in &requirements.globals {
+            if !is_available(global) {
+                missing_globals.push(global.clone());
             }
         }
 
-        for parameter in requirements.parameters {
-            if !item_keys.contains(&parameter) {
-                missing_parameters.push(parameter);
+        for parameter in &requirements.parameters {
+            if !is_available(parameter) {
+                missing_parameters.push(parameter.clone());
             }
         }
 
-        for variable in requirements.variables {
-            if !item_keys.contains(&variable) {
-                missing_variables.push(variable);
+        for variable in &requirements.variables {
+            if !is_available(variable) {
+                missing_variables.push(variable.clone());
             }
         }
 
@@ -60,6 +65,16 @@ impl MissingRequirements {
             variables: missing_variables,
             functions: missing_functions,
         }
+    }
+
+    /// Returns whether `item_keys` contains a flattened map entry for `name`
+    /// (i.e., a key of the form `name[entry][field]`).
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    fn has_map_entry(name: &str, item_keys: &HashSet<ShareableString>) -> bool {
+        let prefix = format!("{name}[");
+        item_keys
+            .iter()
+            .any(|key| key.as_str().starts_with(prefix.as_str()))
     }
 
     /// Returns `true` if any required globals, parameters, variables, or functions are missing.
@@ -115,7 +130,7 @@ impl MissingRequirements {
 /// parameters, variables, and functions it references. This struct is used to analyze
 /// an expression and determine its dependencies, which can be useful for validation,
 /// optimization, and ensuring that all necessary resources are available for evaluation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub(crate) struct ExpressionRequirements {
     /// The global variables referenced by the expression.
     globals: Vec<ShareableString>,
@@ -125,152 +140,116 @@ pub(crate) struct ExpressionRequirements {
     variables: Vec<ShareableString>,
     /// The functions referenced by the expression.
     functions: Vec<ShareableString>,
+    /// Names referenced as the target of an index expression (e.g. `p_map` in
+    /// `p_map[entry][field]`), which may be satisfied by flattened map entries.
+    indexed: HashSet<ShareableString>,
+    /// Names already recorded, used to avoid duplicates.
+    seen_names: HashSet<ShareableString>,
+    /// Function names already recorded, used to avoid duplicates.
+    seen_functions: HashSet<ShareableString>,
 }
 
 impl ExpressionRequirements {
     /// Walks `expression` and collects all referenced globals, parameters, variables, and functions.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub(crate) fn new(expression: &Expression) -> Self {
-        let mut global = Vec::new();
-        let mut parameters = Vec::new();
-        let mut variables = Vec::new();
-        let mut functions = Vec::new();
-        let mut seen_names = HashSet::new();
-        let mut seen_functions = HashSet::new();
-
-        Self::collect_requirements(
-            expression,
-            &mut global,
-            &mut parameters,
-            &mut variables,
-            &mut functions,
-            &mut seen_names,
-            &mut seen_functions,
-        );
-
-        Self {
-            globals: global,
-            parameters,
-            variables,
-            functions,
-        }
+        let mut requirements = Self::default();
+        requirements.collect(expression);
+        requirements
     }
 
     /// Classifies a name (e.g. `g_foo`, `p_bar`, `v_baz`) into the appropriate
     /// requirement bucket based on its prefix, recording it only the first time
     /// it is encountered.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn record_name(
-        name: &str,
-        global: &mut Vec<ShareableString>,
-        parameters: &mut Vec<ShareableString>,
-        variables: &mut Vec<ShareableString>,
-        seen_names: &mut HashSet<ShareableString>,
-    ) {
+    fn record_name(&mut self, name: &str) {
         let key = ShareableString::from(name);
-        if !seen_names.insert(key.clone()) {
+        if !self.seen_names.insert(key.clone()) {
             return;
         }
 
         if name.starts_with("g_") {
-            global.push(key);
+            self.globals.push(key);
         } else if name.starts_with("p_") {
-            parameters.push(key);
+            self.parameters.push(key);
         } else if name.starts_with("v_") {
-            variables.push(key);
+            self.variables.push(key);
         }
     }
 
     /// Recursively walks an `Expression` tree, collecting the globals,
     /// parameters, variables, and function names it references.
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    fn collect_requirements(
-        expression: &Expression,
-        global: &mut Vec<ShareableString>,
-        parameters: &mut Vec<ShareableString>,
-        variables: &mut Vec<ShareableString>,
-        functions: &mut Vec<ShareableString>,
-        seen_names: &mut HashSet<ShareableString>,
-        seen_functions: &mut HashSet<ShareableString>,
-    ) {
+    fn collect(&mut self, expression: &Expression) {
         match expression {
-            Expression::Literal(_, Literal::Identifier(name)) => {
-                Self::record_name(name, global, parameters, variables, seen_names);
-            }
+            Expression::Literal(_, Literal::Identifier(name)) => self.record_name(name),
             Expression::Literal(_, _) => {}
             Expression::BinaryOperation { left, right, .. } => {
-                Self::collect_requirements(
-                    left,
-                    global,
-                    parameters,
-                    variables,
-                    functions,
-                    seen_names,
-                    seen_functions,
-                );
-                Self::collect_requirements(
-                    right,
-                    global,
-                    parameters,
-                    variables,
-                    functions,
-                    seen_names,
-                    seen_functions,
-                );
+                self.collect(left);
+                self.collect(right);
             }
-            Expression::UnaryOperation { operand, .. } => {
-                Self::collect_requirements(
-                    operand,
-                    global,
-                    parameters,
-                    variables,
-                    functions,
-                    seen_names,
-                    seen_functions,
-                );
-            }
+            Expression::UnaryOperation { operand, .. } => self.collect(operand),
             Expression::FunctionCall {
                 name, arguments, ..
             } => {
                 let key = ShareableString::from(name.as_str());
-                if seen_functions.insert(key.clone()) {
-                    functions.push(key);
+                if self.seen_functions.insert(key.clone()) {
+                    self.functions.push(key);
                 }
                 for argument in arguments {
-                    Self::collect_requirements(
-                        argument,
-                        global,
-                        parameters,
-                        variables,
-                        functions,
-                        seen_names,
-                        seen_functions,
-                    );
+                    self.collect(argument);
                 }
             }
             Expression::Index { name, index, .. } => {
-                Self::record_name(name, global, parameters, variables, seen_names);
+                self.record_name(name);
+                self.indexed.insert(ShareableString::from(name.as_str()));
                 for index_expression in index {
-                    // A bare string literal used as an index (e.g., the `col` in
-                    // `t[0][col]`) is a literal field name, not a reference to a
-                    // variable, so it is not treated as a requirement here.
+                    // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) may be
+                    // a literal field name rather than a variable reference, so it is not treated
+                    // as a requirement here.
                     if matches!(
                         index_expression,
                         Expression::Literal(_, Literal::Identifier(_))
                     ) {
                         continue;
                     }
-                    Self::collect_requirements(
-                        index_expression,
-                        global,
-                        parameters,
-                        variables,
-                        functions,
-                        seen_names,
-                        seen_functions,
-                    );
+                    self.collect(index_expression);
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::expression::ast::ast_helper::string_to_expression;
+
+    fn missing(expression: &str, item_keys: &[&str]) -> MissingRequirements {
+        let expression = string_to_expression(&ShareableString::from(expression)).unwrap();
+        let item_keys = item_keys
+            .iter()
+            .map(|key| ShareableString::from(*key))
+            .collect();
+        MissingRequirements::new(&expression, &item_keys, &HashSet::new())
+    }
+
+    #[test]
+    fn indexed_map_reference_is_satisfied_by_flattened_entries() {
+        // Why: Map items are flattened to `name[entry][field]` keys, so `name` itself never exists.
+        let result = missing("p_map[entry][field] + 1.0", &["p_map[entry][field]"]);
+        assert!(!result.missing_requirements_exist());
+    }
+
+    #[test]
+    fn bare_map_reference_is_not_satisfied_by_flattened_entries() {
+        let result = missing("p_map + 1.0", &["p_map[entry][field]"]);
+        assert_eq!(result.parameters(), [ShareableString::from("p_map")]);
+    }
+
+    #[test]
+    fn missing_indexed_reference_is_reported() {
+        let result = missing("p_table[0][a]", &["p_other"]);
+        assert_eq!(result.parameters(), [ShareableString::from("p_table")]);
     }
 }
