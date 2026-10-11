@@ -26,16 +26,14 @@ impl ComputedTable {
 
     /// Returns a reference to the keys of the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn keys(&self) -> &[ShareableString] {
-        &self.keys
+    pub const fn keys(&self) -> &[ShareableString] {
+        self.keys.as_slice()
     }
 
     /// Returns a reference to the rows of the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn rows(&self) -> &[Vec<f64>] {
-        &self.rows
+    pub const fn rows(&self) -> &[Vec<f64>] {
+        self.rows.as_slice()
     }
 
     /// Returns the value of a cell by row and column index.
@@ -68,15 +66,13 @@ impl ComputedTable {
 
     /// Returns the number of rows in the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn row_count(&self) -> usize {
+    pub const fn row_count(&self) -> usize {
         self.rows.len()
     }
 
     /// Returns the number of columns in the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn column_count(&self) -> usize {
+    pub const fn column_count(&self) -> usize {
         self.keys.len()
     }
 }
@@ -125,16 +121,14 @@ impl ComputedTableWithUnits {
 
     /// Returns a reference to the keys of the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn keys(&self) -> &[ShareableString] {
+    pub const fn keys(&self) -> &[ShareableString] {
         self.table.keys()
     }
 
     /// Returns the canonical units of the table columns, in key order.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn units(&self) -> &[UnitId] {
-        &self.units
+    pub const fn units(&self) -> &[UnitId] {
+        self.units.as_slice()
     }
 
     /// Returns the unit associated with a column index.
@@ -158,8 +152,7 @@ impl ComputedTableWithUnits {
 
     /// Returns a reference to the rows of the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn rows(&self) -> &[Vec<f64>] {
+    pub const fn rows(&self) -> &[Vec<f64>] {
         self.table.rows()
     }
 
@@ -182,15 +175,13 @@ impl ComputedTableWithUnits {
 
     /// Returns the number of rows in the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn row_count(&self) -> usize {
+    pub const fn row_count(&self) -> usize {
         self.table.row_count()
     }
 
     /// Returns the number of columns in the computed table.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn column_count(&self) -> usize {
+    pub const fn column_count(&self) -> usize {
         self.table.column_count()
     }
 }

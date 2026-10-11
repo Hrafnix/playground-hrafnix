@@ -1,7 +1,7 @@
 /// Canonicalize a given f64 value to ensure that `-0.0` is converted to `0.0`.
 #[inline]
 #[must_use]
-pub fn canonicalize_f64(value: f64) -> f64 {
+pub const fn canonicalize_f64(value: f64) -> f64 {
     if value == 0.0 { 0.0 } else { value }
 }
 

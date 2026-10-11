@@ -93,9 +93,8 @@ impl ChoiceDefinition {
 
     /// Returns a reference to the list of choices.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn choices(&self) -> &[ChoiceItemDefinition] {
-        &self.choices
+    pub const fn choices(&self) -> &[ChoiceItemDefinition] {
+        self.choices.as_slice()
     }
 
     /// Returns true if the given value is a valid choice.

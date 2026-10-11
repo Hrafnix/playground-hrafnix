@@ -184,10 +184,14 @@ fn mixed_numeric_types_error(function_name: &str) -> Message {
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn abs(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "abs")? {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(libm::fabs(*value))),
-        ComputedItem::Integer(value) => Ok(ComputedItem::Integer(value.abs())),
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+            Ok(ComputedItem::Float(libm::fabs(*value)))
+        }
+        ComputedItem::Integer(value) => value
+            .checked_abs()
+            .map(ComputedItem::Integer)
+            .ok_or_else(|| function_error("expression_engine_evaluation_integer_overflow", [])),
         ComputedItem::Boolean(_)
-        | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
         | ComputedItem::Path(_)
@@ -211,10 +215,11 @@ fn sqrt(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "ceil")? {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(libm::ceil(*value))),
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+            Ok(ComputedItem::Float(libm::ceil(*value)))
+        }
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
         ComputedItem::Boolean(_)
-        | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
         | ComputedItem::Path(_)
@@ -231,10 +236,11 @@ fn ceil(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn floor(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "floor")? {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(libm::floor(*value))),
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+            Ok(ComputedItem::Float(libm::floor(*value)))
+        }
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
         ComputedItem::Boolean(_)
-        | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
         | ComputedItem::Path(_)
@@ -251,10 +257,11 @@ fn floor(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn round(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "round")? {
-        ComputedItem::Float(value) => Ok(ComputedItem::Float(libm::round(*value))),
+        ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+            Ok(ComputedItem::Float(libm::round(*value)))
+        }
         ComputedItem::Integer(value) => Ok(ComputedItem::Integer(*value)),
         ComputedItem::Boolean(_)
-        | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
         | ComputedItem::Path(_)
@@ -271,14 +278,15 @@ fn round(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn min(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "min")? {
-        ComputedItem::Float(first) => {
+        ComputedItem::Float(first) | ComputedItem::FloatWithUnit { value: first, .. } => {
             let mut result = *first;
             for arg in args.get(1..).unwrap_or_default() {
                 match arg {
-                    ComputedItem::Float(value) => result = result.min(*value),
+                    ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+                        result = result.min(*value);
+                    }
                     ComputedItem::Boolean(_)
                     | ComputedItem::Integer(_)
-                    | ComputedItem::FloatWithUnit { .. }
                     | ComputedItem::String(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Path(_)
@@ -308,7 +316,6 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
             Ok(ComputedItem::Integer(result))
         }
         ComputedItem::Boolean(_)
-        | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
         | ComputedItem::Path(_)
@@ -325,14 +332,15 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn max(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "max")? {
-        ComputedItem::Float(first) => {
+        ComputedItem::Float(first) | ComputedItem::FloatWithUnit { value: first, .. } => {
             let mut result = *first;
             for arg in args.get(1..).unwrap_or_default() {
                 match arg {
-                    ComputedItem::Float(value) => result = result.max(*value),
+                    ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
+                        result = result.max(*value);
+                    }
                     ComputedItem::Boolean(_)
                     | ComputedItem::Integer(_)
-                    | ComputedItem::FloatWithUnit { .. }
                     | ComputedItem::String(_)
                     | ComputedItem::Identifier(_)
                     | ComputedItem::Path(_)
@@ -362,7 +370,6 @@ fn max(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
             Ok(ComputedItem::Integer(result))
         }
         ComputedItem::Boolean(_)
-        | ComputedItem::FloatWithUnit { .. }
         | ComputedItem::String(_)
         | ComputedItem::Identifier(_)
         | ComputedItem::Path(_)
@@ -384,9 +391,15 @@ fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
         arg(args, 2, "clamp")?,
     ) {
         (
-            ComputedItem::Float(value),
-            ComputedItem::Float(min_value),
-            ComputedItem::Float(max_value),
+            ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. },
+            ComputedItem::Float(min_value)
+            | ComputedItem::FloatWithUnit {
+                value: min_value, ..
+            },
+            ComputedItem::Float(max_value)
+            | ComputedItem::FloatWithUnit {
+                value: max_value, ..
+            },
         ) => {
             if min_value > max_value {
                 return Err(function_error(
@@ -497,7 +510,7 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 
     match arg {
         ComputedItem::String(value) => {
-            let len = i64::try_from(value.as_str().len()).map_err(|_| {
+            let len = i64::try_from(value.as_str().chars().count()).map_err(|_| {
                 function_error("expression_engine_function_length_result_too_large", [])
             })?;
             Ok(ComputedItem::Integer(len))
@@ -1244,5 +1257,41 @@ mod tests {
         let definitions = default_function_definitions();
         assert!(definitions.get("arccos").is_some());
         assert!(definitions.get("arctan").is_some());
+    }
+
+    #[test]
+    fn abs_of_minimum_integer_reports_overflow() {
+        // Why: `i64::MIN.abs()` panics; it must surface as an evaluation error instead.
+        assert_error(
+            "abs",
+            &[ComputedItem::Integer(i64::MIN)],
+            "expression_engine_evaluation_integer_overflow",
+            None,
+        );
+    }
+
+    #[test]
+    fn rounding_and_extrema_accept_unit_bearing_floats() {
+        // Why: Like the other float functions, these accept unit-bearing floats and drop the unit.
+        let meters = |value| ComputedItem::FloatWithUnit {
+            value,
+            unit: hrafnix_units::UnitId::Length_Meter,
+        };
+        assert_float_eq("abs", &[meters(-2.5)], 2.5);
+        assert_float_eq("ceil", &[meters(2.5)], 3.0);
+        assert_float_eq("floor", &[meters(2.5)], 2.0);
+        assert_float_eq("round", &[meters(2.5)], 3.0);
+        assert_float_eq("min", &[meters(2.0), ComputedItem::Float(1.0)], 1.0);
+        assert_float_eq("max", &[ComputedItem::Float(1.0), meters(2.0)], 2.0);
+        assert_float_eq(
+            "clamp",
+            &[meters(5.0), ComputedItem::Float(0.0), meters(3.0)],
+            3.0,
+        );
+    }
+
+    #[test]
+    fn len_counts_characters_not_bytes() {
+        assert_integer_eq("len", &[ComputedItem::String("héllo".into())], 5);
     }
 }

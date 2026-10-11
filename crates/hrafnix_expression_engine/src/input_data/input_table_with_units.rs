@@ -39,16 +39,14 @@ impl TableWithUnitsInputData {
 
     /// Returns a reference to the units of the table input data.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn units(&self) -> &[ShareableString] {
-        &self.units
+    pub const fn units(&self) -> &[ShareableString] {
+        self.units.as_slice()
     }
 
     /// Returns a reference to the data of the table input data.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn data(&self) -> &[Vec<ShareableString>] {
-        &self.data
+    pub const fn data(&self) -> &[Vec<ShareableString>] {
+        self.data.as_slice()
     }
 
     /// Returns a reference to the parameter name of the table input data.

@@ -6,6 +6,10 @@ use std::collections::HashMap;
 use std::iter::{Enumerate, Peekable};
 use std::str::Chars;
 
+/// Non-alphanumeric characters that may start a token: operators, punctuation, `_` for
+/// identifiers, `.` for numbers, and `"` for string literals.
+const SYMBOL_CHARACTERS: &str = "+_-*/()[]<>=!&|%^.,\"";
+
 /// A simple lexer for tokenizing expressions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum LexerToken {
@@ -94,7 +98,7 @@ impl Lexer {
             }
 
             // Check for invalid tokens
-            if !c.is_numeric() && !c.is_lowercase() && !"+_-*/()[]<>=!&|%^.,\"".contains(c) {
+            if !c.is_numeric() && !c.is_lowercase() && !SYMBOL_CHARACTERS.contains(c) {
                 return Err(create_error_message(
                     MessageCategory::ExpressionParsing,
                     "expression_engine_lexer_invalid_character".into(),
@@ -110,9 +114,9 @@ impl Lexer {
                 self.tokenize_text(&mut chars, index, input)?;
             } else if c == '.' {
                 self.tokenize_dot_number(&mut chars, index);
-            } else if c.is_numeric() {
+            } else if c.is_ascii_digit() {
                 self.tokenize_number(&mut chars, index, c);
-            } else if c.is_alphanumeric() || c == '_' {
+            } else if c.is_ascii_lowercase() || c == '_' {
                 self.tokenize_identifier(&mut chars, index, c);
             } else {
                 self.tokenize_operator(&mut chars, index, c);
@@ -199,7 +203,7 @@ impl Lexer {
     fn tokenize_dot_number(&mut self, chars: &mut Peekable<Enumerate<Chars<'_>>>, start: usize) {
         let mut s = String::from(".");
         while let Some(&(_, c)) = chars.peek() {
-            if c.is_numeric() || c == '.' {
+            if c.is_ascii_digit() || c == '.' {
                 if let Some((_, next_char)) = chars.next() {
                     s.push(next_char);
                 }
@@ -244,7 +248,7 @@ impl Lexer {
         let mut s = String::new();
         s.push(c);
         while let Some(&(_, c)) = chars.peek() {
-            if c.is_numeric() || c == '.' {
+            if c.is_ascii_digit() || c == '.' {
                 if let Some((_, next_char)) = chars.next() {
                     s.push(next_char);
                 }
@@ -282,7 +286,7 @@ impl Lexer {
         let mut s = String::new();
         s.push(c);
         while let Some(&(_, c)) = chars.peek() {
-            if c.is_alphanumeric() || c == '_' || c == '.' {
+            if c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '.' {
                 if let Some((_, next_char)) = chars.next() {
                     s.push(next_char);
                 }
@@ -402,7 +406,7 @@ impl Lexer {
 
         let mut has_digit = false;
         while let Some(&(_, d)) = lookahead.peek() {
-            if d.is_numeric() {
+            if d.is_ascii_digit() {
                 if let Some((_, next_char)) = lookahead.next() {
                     exponent.push(next_char);
                 }
@@ -796,7 +800,7 @@ mod tests {
             let ch = c as u8 as char;
             if !ch.is_numeric()
                 && !ch.is_lowercase()
-                && !"+_-*/()[]<>=!&|%^.,\"".contains(ch)
+                && !SYMBOL_CHARACTERS.contains(ch)
                 && !ch.is_whitespace()
             {
                 let input = format!("a + b * (c - d) {ch} e");
@@ -1010,5 +1014,69 @@ mod tests {
     fn includes_underline_across_a_multi_char_span() {
         let error = Lexer::new("1.2.3 * 2").unwrap_err();
         assert_eq!(error.extra_detail().unwrap().as_str(), "1.2.3 * 2\n~~~~~");
+    }
+
+    #[test]
+    fn rejects_characters_outside_the_ascii_token_alphabet() {
+        // Why: The identifier, number, and exponent loops consume characters directly, so each
+        // must reject uppercase and non-ASCII characters itself rather than swallow them.
+        let cases = [
+            // (input, rejected character, underline)
+            ("Ab", "A", "Ab\n~"),
+            ("aB", "B", "aB\n ~"),
+            ("a1B", "B", "a1B\n  ~"),
+            ("a_b.C", "C", "a_b.C\n    ~"),
+            ("a\u{e9}", "\u{e9}", "a\u{e9}\n ~"),
+            ("a\u{0663}", "\u{0663}", "a\u{0663}\n ~"),
+            ("\u{0663}", "\u{0663}", "\u{0663}\n~"),
+            ("1\u{0663}", "\u{0663}", "1\u{0663}\n ~"),
+            ("1.5\u{0663}", "\u{0663}", "1.5\u{0663}\n   ~"),
+            (".5\u{0663}", "\u{0663}", ".5\u{0663}\n  ~"),
+            ("1e\u{0663}", "\u{0663}", "1e\u{0663}\n  ~"),
+            ("1e+\u{0663}", "\u{0663}", "1e+\u{0663}\n   ~"),
+        ];
+
+        for (input, character, underline) in cases {
+            let error = Lexer::new(input).unwrap_err();
+            let translate_data = error.translate_data();
+            assert_eq!(
+                translate_data.message_key().as_str(),
+                "expression_engine_lexer_invalid_character",
+                "{input}"
+            );
+            assert_eq!(
+                translate_data
+                    .message_params()
+                    .get("character")
+                    .map(ShareableString::as_str),
+                Some(character),
+                "{input}"
+            );
+            assert_eq!(
+                error.extra_detail().map(ShareableString::as_str),
+                Some(underline),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn tokenizes_ascii_identifiers_and_numbers() {
+        let mut lexer = Lexer::new("a1_b.c + 9 + 1.5 + .5 + 2e10").unwrap();
+        let expected_tokens = [
+            LexerToken::Identifier(Span::new(0, 6), "a1_b.c".to_string()),
+            LexerToken::Operator(Span::new(7, 1), "+".to_string()),
+            LexerToken::Numeric(Span::new(9, 1), "9".to_string()),
+            LexerToken::Operator(Span::new(11, 1), "+".to_string()),
+            LexerToken::Numeric(Span::new(13, 3), "1.5".to_string()),
+            LexerToken::Operator(Span::new(17, 1), "+".to_string()),
+            LexerToken::Numeric(Span::new(19, 2), ".5".to_string()),
+            LexerToken::Operator(Span::new(22, 1), "+".to_string()),
+            LexerToken::Numeric(Span::new(24, 4), "2e10".to_string()),
+        ];
+        for expected in expected_tokens {
+            assert_eq!(lexer.next(), expected);
+        }
+        assert_eq!(lexer.next(), LexerToken::EndOfInput);
     }
 }

@@ -35,9 +35,8 @@ impl TableInputData {
 
     /// Returns a reference to the data of the table input data.
     #[must_use]
-    #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn data(&self) -> &[Vec<ShareableString>] {
-        &self.data
+    pub const fn data(&self) -> &[Vec<ShareableString>] {
+        self.data.as_slice()
     }
 
     /// Returns a reference to the parameter name of the table input data.
