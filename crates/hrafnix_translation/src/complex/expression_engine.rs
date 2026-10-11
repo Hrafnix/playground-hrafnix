@@ -592,6 +592,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_evaluation_table_index_count",
+        HashMap::from([
+            ("en", "Table indexing requires exactly 2 indices, got %{actual}."),
+            ("zh", "表索引正好需要 2 个索引，得到 %{actual}。"),
+            ("de", "Die Tabellenindizierung erfordert genau 2 Indizes, erhalten: %{actual}."),
+            ("es", "La indexación de tablas requiere exactamente 2 índices, se obtuvieron %{actual}."),
+            ("fr", "L'indexation de table nécessite exactement 2 indices, obtenu %{actual}."),
+            ("ja", "テーブルのインデックス作成にはちょうど 2 つのインデックスが必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "테이블 인덱싱에는 정확히 2개의 인덱스가 필요하지만 %{actual}개가 있습니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_evaluation_missing_first_index",
         HashMap::from([
             ("en", "Missing first index."),
