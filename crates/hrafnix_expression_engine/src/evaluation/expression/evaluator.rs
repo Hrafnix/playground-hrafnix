@@ -132,14 +132,17 @@ fn evaluate_unary_operation(
     span: Span,
 ) -> Result<ComputedItem, Message> {
     match (operator, operand_value) {
-        (
-            Operators::Negate,
-            ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, unit: _ },
-        ) => Ok(ComputedItem::Float(finite_float(
+        (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(finite_float(
             value.neg(),
             source,
             span,
         )?)),
+        (Operators::Negate, ComputedItem::FloatWithUnit { value, unit }) => {
+            Ok(ComputedItem::FloatWithUnit {
+                value: finite_float(value.neg(), source, span)?,
+                unit,
+            })
+        }
         (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
             value.checked_mul(-1).ok_or_else(|| {
                 create_error_message(
@@ -3674,6 +3677,32 @@ mod tests {
         assert_eq!(
             message_key(&errors[0]),
             "expression_engine_evaluation_division_by_zero"
+        );
+    }
+
+    #[test]
+    fn negation_keeps_units() {
+        let computed_data = BTreeMap::from([(
+            "p_meters".into(),
+            ComputedItem::FloatWithUnit {
+                value: 1.0,
+                unit: UnitId::Length_Meter,
+            },
+        )]);
+        let input_data = BTreeMap::from([(
+            "distance".into(),
+            create_number_with_units_input_data("-p_meters", "u_length_meter", UnitId::Length_Meter),
+        )]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        assert_eq!(
+            result.get("distance"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: -1.0,
+                unit: UnitId::Length_Meter,
+            })
         );
     }
 }
