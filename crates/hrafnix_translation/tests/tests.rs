@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 const LANGUAGES: [&str; 7] = ["en", "zh", "de", "es", "fr", "ja", "ko"];
 
-const TRANSLATION_KEYS: [&str; 119] = [
+const TRANSLATION_KEYS: [&str; 120] = [
     "datastore_key_empty",
     "datastore_key_invalid_character",
     "datastore_key_invalid_prefix",
@@ -100,6 +100,7 @@ const TRANSLATION_KEYS: [&str; 119] = [
     "expression_engine_function_arguments_mixed_numeric_types",
     "expression_engine_function_argument_must_be_number",
     "expression_engine_function_clamp_minimum_exceeds_maximum",
+    "expression_engine_function_incompatible_units",
     "expression_engine_function_length_result_too_large",
     "expression_engine_function_argument_must_be_string",
     "expression_engine_function_if_condition_must_be_boolean",

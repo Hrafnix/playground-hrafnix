@@ -1267,6 +1267,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_function_incompatible_units",
+        HashMap::from([
+            ("en", "%{function} function cannot combine incompatible units %{left} and %{right}"),
+            ("zh", "%{function} 函数无法组合不兼容的单位 %{left} 和 %{right}"),
+            ("de", "Die Funktion %{function} kann die inkompatiblen Einheiten %{left} und %{right} nicht kombinieren"),
+            ("es", "La función %{function} no puede combinar las unidades incompatibles %{left} y %{right}"),
+            ("fr", "La fonction %{function} ne peut pas combiner les unités incompatibles %{left} et %{right}"),
+            ("ja", "%{function} 関数は互換性のない単位 %{left} と %{right} を組み合わせることができません"),
+            ("ko", "%{function} 함수는 호환되지 않는 단위 %{left}와(과) %{right}을(를) 결합할 수 없습니다"),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_function_length_result_too_large",
         HashMap::from([
             ("en", "len function result is too large to fit in an integer."),
