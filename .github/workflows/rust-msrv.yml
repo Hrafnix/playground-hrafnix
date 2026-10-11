@@ -10,7 +10,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Install Rust 1.88.0
-        run: rustup toolchain install 1.88.0 --profile minimal
-      - name: Check workspace on Rust 1.88.0
-        run: cargo +1.88.0 check --workspace --all-targets --all-features --locked
+      - name: Read MSRV from Cargo.toml
+        id: msrv
+        run: echo "version=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)" >> "$GITHUB_OUTPUT"
+      - name: Install Rust ${{ steps.msrv.outputs.version }}
+        run: rustup toolchain install ${{ steps.msrv.outputs.version }} --profile minimal
+      - name: Check workspace on Rust ${{ steps.msrv.outputs.version }}
+        run: cargo +${{ steps.msrv.outputs.version }} check --workspace --all-targets --all-features --locked

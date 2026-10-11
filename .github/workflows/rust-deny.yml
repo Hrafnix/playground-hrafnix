@@ -10,10 +10,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Read MSRV from Cargo.toml
+        id: msrv
+        run: echo "version=$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)" >> "$GITHUB_OUTPUT"
       - name: Deny
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
-          rust-version: "1.88.0"
+          rust-version: ${{ steps.msrv.outputs.version }}
           log-level: warn
           command: check
           arguments: --all-features
