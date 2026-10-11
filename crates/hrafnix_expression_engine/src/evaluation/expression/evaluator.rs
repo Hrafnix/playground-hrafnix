@@ -18,7 +18,7 @@ use hrafnix_message::message::{Message, MessageCategory};
 use hrafnix_message::span::{Span, SpanSet};
 use hrafnix_shareable_string::ShareableString;
 use hrafnix_units::{UnitId, conversion::convert};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// Rejects floating-point values that cannot be safely represented in computed output.
@@ -246,6 +246,173 @@ fn align_right_operand_unit(
     finite_float(converted, source, span)
 }
 
+/// A value that falls outside a definition's numeric constraint, holding the violated bound.
+enum ConstraintViolation {
+    /// The value is below the minimum (or equal to an exclusive minimum).
+    BelowMinimum(std::string::String),
+    /// The value is above the maximum (or equal to an exclusive maximum).
+    AboveMaximum(std::string::String),
+}
+
+/// Checks `value` against a floating-point constraint.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn number_constraint_violation(
+    value: f64,
+    constraint: &NumberConstraintEnum,
+) -> Option<ConstraintViolation> {
+    let below = |min: f64, inclusive: bool| value < min || (!inclusive && value <= min);
+    let above = |max: f64, inclusive: bool| value > max || (!inclusive && value >= max);
+    match constraint {
+        NumberConstraintEnum::Min { min, inclusive } => {
+            below(*min, *inclusive).then(|| ConstraintViolation::BelowMinimum(min.to_string()))
+        }
+        NumberConstraintEnum::Max { max, inclusive } => {
+            above(*max, *inclusive).then(|| ConstraintViolation::AboveMaximum(max.to_string()))
+        }
+        NumberConstraintEnum::Range {
+            min,
+            max,
+            min_inclusive,
+            max_inclusive,
+        } => {
+            if below(*min, *min_inclusive) {
+                Some(ConstraintViolation::BelowMinimum(min.to_string()))
+            } else if above(*max, *max_inclusive) {
+                Some(ConstraintViolation::AboveMaximum(max.to_string()))
+            } else {
+                None
+            }
+        }
+        NumberConstraintEnum::None => None,
+    }
+}
+
+/// Checks `value` against an integer constraint.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn integer_constraint_violation(
+    value: i64,
+    constraint: &IntegerConstraintEnum,
+) -> Option<ConstraintViolation> {
+    let below = |min: i64, inclusive: bool| value < min || (!inclusive && value == min);
+    let above = |max: i64, inclusive: bool| value > max || (!inclusive && value == max);
+    match constraint {
+        IntegerConstraintEnum::Min { min, inclusive } => {
+            below(*min, *inclusive).then(|| ConstraintViolation::BelowMinimum(min.to_string()))
+        }
+        IntegerConstraintEnum::Max { max, inclusive } => {
+            above(*max, *inclusive).then(|| ConstraintViolation::AboveMaximum(max.to_string()))
+        }
+        IntegerConstraintEnum::Range {
+            min,
+            max,
+            min_inclusive,
+            max_inclusive,
+        } => {
+            if below(*min, *min_inclusive) {
+                Some(ConstraintViolation::BelowMinimum(min.to_string()))
+            } else if above(*max, *max_inclusive) {
+                Some(ConstraintViolation::AboveMaximum(max.to_string()))
+            } else {
+                None
+            }
+        }
+        IntegerConstraintEnum::None => None,
+    }
+}
+
+/// Builds the error for a constraint violation. When `column` is provided, the table-cell
+/// variant of the message is used.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn constraint_violation_error(
+    violation: ConstraintViolation,
+    value: &dyn std::fmt::Display,
+    column: Option<ShareableString>,
+    source: &ShareableString,
+    span: Span,
+) -> Message {
+    let is_table = column.is_some();
+    let (key, bound_name, bound) = match violation {
+        ConstraintViolation::BelowMinimum(min) => (
+            if is_table {
+                "expression_engine_evaluation_table_value_below_minimum"
+            } else {
+                "expression_engine_evaluation_value_below_minimum"
+            },
+            "minimum",
+            min,
+        ),
+        ConstraintViolation::AboveMaximum(max) => (
+            if is_table {
+                "expression_engine_evaluation_table_value_above_maximum"
+            } else {
+                "expression_engine_evaluation_value_above_maximum"
+            },
+            "maximum",
+            max,
+        ),
+    };
+
+    let mut params: HashMap<ShareableString, ShareableString> = HashMap::from([
+        ("value".into(), value.to_string().into()),
+        (bound_name.into(), bound.into()),
+    ]);
+    if let Some(column) = column {
+        params.insert("column".into(), column);
+    }
+
+    create_error_message(
+        MessageCategory::ExpressionEvaluation,
+        key.into(),
+        params,
+        Some(source.clone()),
+        Some(SpanSet::from_span(span)),
+    )
+}
+
+/// Builds the error returned when a computed value doesn't match its definition's type.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn expected_definition_value_error(
+    expected: &str,
+    computed: &ComputedItem,
+    source: &ShareableString,
+    span: Span,
+) -> Message {
+    create_error_message(
+        MessageCategory::ExpressionEvaluation,
+        "expression_engine_evaluation_expected_definition_value".into(),
+        [
+            ("expected".into(), expected.into()),
+            ("actual".into(), computed.describe().into()),
+        ]
+        .into_iter()
+        .collect(),
+        Some(source.clone()),
+        Some(SpanSet::from_span(span)),
+    )
+}
+
+/// Builds the error returned when `operator` isn't supported for operands of `type_name`.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn unsupported_operator_error(
+    operator: &Operators,
+    type_name: &str,
+    source: &ShareableString,
+    span: Span,
+) -> Message {
+    create_error_message(
+        MessageCategory::ExpressionEvaluation,
+        "expression_engine_evaluation_unsupported_operator".into(),
+        [
+            ("operator".into(), operator.to_string().into()),
+            ("type".into(), type_name.into()),
+        ]
+        .into_iter()
+        .collect(),
+        Some(source.clone()),
+        Some(SpanSet::from_span(span)),
+    )
+}
+
 /// Applies a unary `operator` to `operand_value`, returning the result or an error.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_unary_operation(
@@ -313,17 +480,8 @@ fn evaluate_boolean_binary_operation(
         | Operators::LessThanOrEqual
         | Operators::GreaterThan
         | Operators::GreaterThanOrEqual
-        | Operators::Not => Err(create_error_message(
-            MessageCategory::ExpressionEvaluation,
-            "expression_engine_evaluation_unsupported_operator".into(),
-            [
-                ("operator".into(), format!("{operator:?}").into()),
-                ("type".into(), "boolean".to_string().into()),
-            ]
-            .into_iter()
-            .collect(),
-            Some(source.clone()),
-            Some(SpanSet::from_span(span)),
+        | Operators::Not => Err(unsupported_operator_error(
+            operator, "boolean", source, span,
         )),
     }
 }
@@ -401,18 +559,7 @@ fn evaluate_float_binary_operation(
         | Operators::NotEqual
         | Operators::And
         | Operators::Or
-        | Operators::Not => Err(create_error_message(
-            MessageCategory::ExpressionEvaluation,
-            "expression_engine_evaluation_unsupported_operator".into(),
-            [
-                ("operator".into(), format!("{operator:?}").into()),
-                ("type".into(), "float".to_string().into()),
-            ]
-            .into_iter()
-            .collect(),
-            Some(source.clone()),
-            Some(SpanSet::from_span(span)),
-        )),
+        | Operators::Not => Err(unsupported_operator_error(operator, "float", source, span)),
     }
 }
 
@@ -545,20 +692,9 @@ fn evaluate_integer_binary_operation(
         Operators::LessThanOrEqual => Ok(ComputedItem::Boolean(left_value <= right_value)),
         Operators::GreaterThan => Ok(ComputedItem::Boolean(left_value > right_value)),
         Operators::GreaterThanOrEqual => Ok(ComputedItem::Boolean(left_value >= right_value)),
-        Operators::Negate | Operators::Not | Operators::And | Operators::Or => {
-            Err(create_error_message(
-                MessageCategory::ExpressionEvaluation,
-                "expression_engine_evaluation_unsupported_operator".into(),
-                [
-                    ("operator".into(), format!("{operator:?}").into()),
-                    ("type".into(), "integer".to_string().into()),
-                ]
-                .into_iter()
-                .collect(),
-                Some(source.clone()),
-                Some(SpanSet::from_span(span)),
-            ))
-        }
+        Operators::Negate | Operators::Not | Operators::And | Operators::Or => Err(
+            unsupported_operator_error(operator, "integer", source, span),
+        ),
     }
 }
 
@@ -587,18 +723,7 @@ fn evaluate_string_binary_operation(
         | Operators::Multiply
         | Operators::Divide
         | Operators::Modulus
-        | Operators::Power => Err(create_error_message(
-            MessageCategory::ExpressionEvaluation,
-            "expression_engine_evaluation_unsupported_operator".into(),
-            [
-                ("operator".into(), format!("{operator:?}").into()),
-                ("type".into(), "string".to_string().into()),
-            ]
-            .into_iter()
-            .collect(),
-            Some(source.clone()),
-            Some(SpanSet::from_span(span)),
-        )),
+        | Operators::Power => Err(unsupported_operator_error(operator, "string", source, span)),
     }
 }
 
@@ -870,7 +995,7 @@ fn evaluate_index_operation(
                 return Err(create_error_message(
                     MessageCategory::ExpressionEvaluation,
                     "expression_engine_evaluation_expected_table_row_index".into(),
-                    [("actual".into(), format!("{index_1:?}").into())]
+                    [("actual".into(), index_1.describe().into())]
                         .into_iter()
                         .collect(),
                     Some(source.clone()),
@@ -942,7 +1067,7 @@ fn evaluate_index_operation(
             | ComputedItem::Unit(_)) => Err(create_error_message(
                 MessageCategory::ExpressionEvaluation,
                 "expression_engine_evaluation_expected_table_field_index".into(),
-                [("actual".into(), format!("{other:?}").into())]
+                [("actual".into(), other.describe().into())]
                     .into_iter()
                     .collect(),
                 Some(source.clone()),
@@ -1021,17 +1146,11 @@ fn evaluate_expression(
                     | Operators::GreaterThanOrEqual
                     | Operators::And
                     | Operators::Or
-                    | Operators::Not => Err(create_error_message(
-                        MessageCategory::ExpressionEvaluation,
-                        "expression_engine_evaluation_unsupported_operator".into(),
-                        [
-                            ("operator".into(), format!("{operator:?}").into()),
-                            ("type".into(), "file".to_string().into()),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        Some(source.clone()),
-                        Some(SpanSet::from_span(operator_span)),
+                    | Operators::Not => Err(unsupported_operator_error(
+                        &operator,
+                        "file",
+                        source,
+                        operator_span,
                     )),
                 },
                 (
@@ -1110,33 +1229,21 @@ fn evaluate_expression(
                     | Operators::GreaterThanOrEqual
                     | Operators::And
                     | Operators::Or
-                    | Operators::Not => Err(create_error_message(
-                        MessageCategory::ExpressionEvaluation,
-                        "expression_engine_evaluation_unsupported_operator".into(),
-                        [
-                            ("operator".into(), format!("{operator:?}").into()),
-                            ("type".into(), "unit".to_string().into()),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        Some(source.clone()),
-                        Some(SpanSet::from_span(operator_span)),
+                    | Operators::Not => Err(unsupported_operator_error(
+                        &operator,
+                        "unit",
+                        source,
+                        operator_span,
                     )),
                 },
                 (
                     ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
                     ComputedItem::Table(_) | ComputedItem::TableWithUnits(_),
-                ) => Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_unsupported_operator".into(),
-                    [
-                        ("operator".into(), format!("{operator:?}").into()),
-                        ("type".into(), "table".to_string().into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(operator_span)),
+                ) => Err(unsupported_operator_error(
+                    &operator,
+                    "table",
+                    source,
+                    operator_span,
                 )),
 
                 (
@@ -1219,17 +1326,11 @@ fn evaluate_expression(
                     | ComputedItem::String(_)
                     | ComputedItem::Table(_)
                     | ComputedItem::TableWithUnits(_),
-                ) => Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_unsupported_operator".into(),
-                    [
-                        ("operator".into(), format!("{operator:?}").into()),
-                        ("type".into(), "mixed type".to_string().into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(operator_span)),
+                ) => Err(unsupported_operator_error(
+                    &operator,
+                    "mixed type",
+                    source,
+                    operator_span,
                 )),
             }
         }
@@ -1309,7 +1410,7 @@ fn validate_unit_value(
             return Err(create_error_message(
                 MessageCategory::ExpressionEvaluation,
                 "expression_engine_evaluation_expected_unit_value".into(),
-                [("actual".into(), format!("{computed:?}").into())]
+                [("actual".into(), computed.describe().into())]
                     .into_iter()
                     .collect(),
                 Some(source.clone()),
@@ -1378,17 +1479,8 @@ fn evaluate_basic_expression(
             if let ComputedItem::Boolean(_value) = &computed {
                 Ok(computed)
             } else {
-                Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "boolean".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
+                Err(expected_definition_value_error(
+                    "boolean", &computed, source, span,
                 ))
             }
         }
@@ -1409,17 +1501,11 @@ fn evaluate_basic_expression(
                     ))
                 }
             } else {
-                Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "choice string".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
+                Err(expected_definition_value_error(
+                    "choice string",
+                    &computed,
+                    source,
+                    span,
                 ))
             }
         }
@@ -1431,17 +1517,11 @@ fn evaluate_basic_expression(
             } else if let ComputedItem::String(value) = &computed {
                 Ok(ComputedItem::Path(value.clone()))
             } else {
-                Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "file path".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
+                Err(expected_definition_value_error(
+                    "file path",
+                    &computed,
+                    source,
+                    span,
                 ))
             }
         }
@@ -1453,421 +1533,86 @@ fn evaluate_basic_expression(
             } else if let ComputedItem::String(value) = &computed {
                 Ok(ComputedItem::Path(value.clone()))
             } else {
-                Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "folder path".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
+                Err(expected_definition_value_error(
+                    "folder path",
+                    &computed,
+                    source,
+                    span,
                 ))
             }
         }
         Integer(integer_definition) => {
-            // Validate that the computed value is an integer
-            if let ComputedItem::Integer(value) = &computed {
-                let constraint = integer_definition.constraint();
-                match constraint {
-                    IntegerConstraintEnum::Min { min, inclusive } => {
-                        if *value < min || (!inclusive && *value == min) {
-                            return Err(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_value_below_minimum".into(),
-                                [
-                                    ("value".into(), value.to_string().into()),
-                                    ("minimum".into(), min.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(source.clone()),
-                                Some(SpanSet::from_span(span)),
-                            ));
-                        }
-                        Ok(computed)
-                    }
-                    IntegerConstraintEnum::Max { max, inclusive } => {
-                        if *value > max || (!inclusive && *value == max) {
-                            return Err(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_value_above_maximum".into(),
-                                [
-                                    ("value".into(), value.to_string().into()),
-                                    ("maximum".into(), max.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(source.clone()),
-                                Some(SpanSet::from_span(span)),
-                            ));
-                        }
-                        Ok(computed)
-                    }
-                    IntegerConstraintEnum::Range {
-                        min,
-                        max,
-                        min_inclusive,
-                        max_inclusive,
-                    } => {
-                        if *value < min || (!min_inclusive && *value == min) {
-                            return Err(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_value_below_minimum".into(),
-                                [
-                                    ("value".into(), value.to_string().into()),
-                                    ("minimum".into(), min.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(source.clone()),
-                                Some(SpanSet::from_span(span)),
-                            ));
-                        }
-                        if *value > max || (!max_inclusive && *value == max) {
-                            return Err(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_value_above_maximum".into(),
-                                [
-                                    ("value".into(), value.to_string().into()),
-                                    ("maximum".into(), max.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(source.clone()),
-                                Some(SpanSet::from_span(span)),
-                            ));
-                        }
-                        Ok(computed)
-                    }
-                    IntegerConstraintEnum::None => Ok(computed),
-                }
-            } else {
-                Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "integer".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
-                ))
+            let ComputedItem::Integer(value) = &computed else {
+                return Err(expected_definition_value_error(
+                    "integer", &computed, source, span,
+                ));
+            };
+            if let Some(violation) =
+                integer_constraint_violation(*value, &integer_definition.constraint())
+            {
+                return Err(constraint_violation_error(
+                    violation, value, None, source, span,
+                ));
             }
+            Ok(computed)
         }
         Number(number_definition) => {
-            // Validate that the computed value is a number (integer or float)
-            match &computed {
-                ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
-                    let constraint = number_definition.constraint();
-                    match constraint {
-                        NumberConstraintEnum::Min { min, inclusive } => {
-                            if (*value) < min || (!inclusive && (*value) <= min) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_below_minimum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("minimum".into(), min.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::Max { max, inclusive } => {
-                            if (*value) > max || (!inclusive && (*value) >= max) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_above_maximum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("maximum".into(), max.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::Range {
-                            min,
-                            max,
-                            min_inclusive,
-                            max_inclusive,
-                        } => {
-                            if (*value) < min || (!min_inclusive && (*value) <= min) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_below_minimum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("minimum".into(), min.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            if (*value) > max || (!max_inclusive && (*value) >= max) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_above_maximum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("maximum".into(), max.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::None => Ok(computed),
-                    }
-                }
-                ComputedItem::Boolean(_)
-                | ComputedItem::Integer(_)
-                | ComputedItem::String(_)
-                | ComputedItem::Identifier(_)
-                | ComputedItem::Path(_)
-                | ComputedItem::Table(_)
-                | ComputedItem::TableWithUnits(_)
-                | ComputedItem::Unit(_) => Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "number".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
-                )),
+            let (ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. }) =
+                &computed
+            else {
+                return Err(expected_definition_value_error(
+                    "number", &computed, source, span,
+                ));
+            };
+            if let Some(violation) =
+                number_constraint_violation(*value, &number_definition.constraint())
+            {
+                return Err(constraint_violation_error(
+                    violation, value, None, source, span,
+                ));
             }
+            Ok(computed)
         }
         NumberWithUnits(number_definition) => {
-            // Validate that the computed value is a number (integer or float)
-            match &computed {
+            let preferred_units = number_definition.preferred_units();
+            let (computed, value) = match computed {
                 ComputedItem::Float(value) => {
-                    if number_definition.preferred_units() != UnitId::None {
-                        return Err(create_error_message(
-                            MessageCategory::ExpressionEvaluation,
-                            "expression_engine_evaluation_expected_definition_value".into(),
-                            [
-                                ("expected".into(), "number with units".to_string().into()),
-                                ("actual".into(), format!("{computed:?}").into()),
-                            ]
-                            .into_iter()
-                            .collect(),
-                            Some(source.clone()),
-                            Some(SpanSet::from_span(span)),
+                    if preferred_units != UnitId::None {
+                        return Err(expected_definition_value_error(
+                            "number with units",
+                            &computed,
+                            source,
+                            span,
                         ));
                     }
-
-                    let constraint = number_definition.constraint();
-                    match constraint {
-                        NumberConstraintEnum::Min { min, inclusive } => {
-                            if (*value) < min || (!inclusive && (*value) <= min) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_below_minimum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("minimum".into(), min.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::Max { max, inclusive } => {
-                            if (*value) > max || (!inclusive && (*value) >= max) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_above_maximum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("maximum".into(), max.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::Range {
-                            min,
-                            max,
-                            min_inclusive,
-                            max_inclusive,
-                        } => {
-                            if (*value) < min || (!min_inclusive && (*value) <= min) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_below_minimum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("minimum".into(), min.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            if (*value) > max || (!max_inclusive && (*value) >= max) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_above_maximum".into(),
-                                    [
-                                        ("value".into(), value.to_string().into()),
-                                        ("maximum".into(), max.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::None => Ok(computed),
-                    }
+                    (computed, value)
                 }
                 ComputedItem::FloatWithUnit { value, unit } => {
-                    if number_definition.preferred_units().family_id() != unit.family_id() {
-                        return Err(create_error_message(
-                            MessageCategory::ExpressionEvaluation,
-                            "expression_engine_evaluation_expected_definition_value".into(),
-                            [
-                                ("expected".into(), "number with units".to_string().into()),
-                                ("actual".into(), format!("{computed:?}").into()),
-                            ]
-                            .into_iter()
-                            .collect(),
-                            Some(source.clone()),
-                            Some(SpanSet::from_span(span)),
+                    if preferred_units.family_id() != unit.family_id() {
+                        return Err(expected_definition_value_error(
+                            "number with units",
+                            &computed,
+                            source,
+                            span,
                         ));
                     }
-
                     let converted_value =
-                        convert(*value, *unit, number_definition.preferred_units()).map_err(
-                            |error| {
-                                create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_unit_conversion_failed".into(),
-                                    [("error".into(), error.into())].into_iter().collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                )
-                            },
-                        )?;
-
-                    let computed = ComputedItem::FloatWithUnit {
-                        value: converted_value,
-                        unit: number_definition.preferred_units(),
-                    };
-
-                    let constraint = number_definition.constraint();
-                    match constraint {
-                        NumberConstraintEnum::Min { min, inclusive } => {
-                            if (converted_value) < min || (!inclusive && (converted_value) <= min) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_below_minimum".into(),
-                                    [
-                                        ("value".into(), converted_value.to_string().into()),
-                                        ("minimum".into(), min.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::Max { max, inclusive } => {
-                            if (converted_value) > max || (!inclusive && (converted_value) >= max) {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_above_maximum".into(),
-                                    [
-                                        ("value".into(), converted_value.to_string().into()),
-                                        ("maximum".into(), max.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::Range {
-                            min,
-                            max,
-                            min_inclusive,
-                            max_inclusive,
-                        } => {
-                            if (converted_value) < min
-                                || (!min_inclusive && (converted_value) <= min)
-                            {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_below_minimum".into(),
-                                    [
-                                        ("value".into(), converted_value.to_string().into()),
-                                        ("minimum".into(), min.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-                            if (converted_value) > max
-                                || (!max_inclusive && (converted_value) >= max)
-                            {
-                                return Err(create_error_message(
-                                    MessageCategory::ExpressionEvaluation,
-                                    "expression_engine_evaluation_value_above_maximum".into(),
-                                    [
-                                        ("value".into(), converted_value.to_string().into()),
-                                        ("maximum".into(), max.to_string().into()),
-                                    ]
-                                    .into_iter()
-                                    .collect(),
-                                    Some(source.clone()),
-                                    Some(SpanSet::from_span(span)),
-                                ));
-                            }
-
-                            Ok(computed)
-                        }
-                        NumberConstraintEnum::None => Ok(computed),
-                    }
+                        convert(value, unit, preferred_units).map_err(|error| {
+                            create_error_message(
+                                MessageCategory::ExpressionEvaluation,
+                                "expression_engine_evaluation_unit_conversion_failed".into(),
+                                [("error".into(), error.into())].into_iter().collect(),
+                                Some(source.clone()),
+                                Some(SpanSet::from_span(span)),
+                            )
+                        })?;
+                    (
+                        ComputedItem::FloatWithUnit {
+                            value: converted_value,
+                            unit: preferred_units,
+                        },
+                        converted_value,
+                    )
                 }
                 ComputedItem::Boolean(_)
                 | ComputedItem::Integer(_)
@@ -1876,19 +1621,20 @@ fn evaluate_basic_expression(
                 | ComputedItem::Path(_)
                 | ComputedItem::Table(_)
                 | ComputedItem::TableWithUnits(_)
-                | ComputedItem::Unit(_) => Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "number".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
-                )),
+                | ComputedItem::Unit(_) => {
+                    return Err(expected_definition_value_error(
+                        "number", &computed, source, span,
+                    ));
+                }
+            };
+            if let Some(violation) =
+                number_constraint_violation(value, &number_definition.constraint())
+            {
+                return Err(constraint_violation_error(
+                    violation, &value, None, source, span,
+                ));
             }
+            Ok(computed)
         }
         String(_string_definition) => {
             // Validate that the computed value is a string
@@ -1901,17 +1647,8 @@ fn evaluate_basic_expression(
             } else if let ComputedItem::Integer(value) = &computed {
                 Ok(ComputedItem::String(value.to_string().into()))
             } else {
-                Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_definition_value".into(),
-                    [
-                        ("expected".into(), "string".to_string().into()),
-                        ("actual".into(), format!("{computed:?}").into()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
+                Err(expected_definition_value_error(
+                    "string", &computed, source, span,
                 ))
             }
         }
@@ -1972,17 +1709,8 @@ fn evaluate_number_with_units_expression(
         | ComputedItem::Table(_)
         | ComputedItem::TableWithUnits(_)
         | ComputedItem::Unit(_) => {
-            return Err(create_error_message(
-                MessageCategory::ExpressionEvaluation,
-                "expression_engine_evaluation_expected_definition_value".into(),
-                [
-                    ("expected".into(), "number".to_string().into()),
-                    ("actual".into(), format!("{computed:?}").into()),
-                ]
-                .into_iter()
-                .collect(),
-                Some(source.clone()),
-                Some(SpanSet::from_span(span)),
+            return Err(expected_definition_value_error(
+                "number", &computed, source, span,
             ));
         }
     };
@@ -2086,83 +1814,16 @@ fn evaluate_table_expression(
                             continue;
                         };
                         let data = canonicalize_f64(*data);
-                        match column_definition.constraint() {
-                            NumberConstraintEnum::Min { min, inclusive } => {
-                                if data < min || (!inclusive && data <= min) {
-                                    errors.push(create_error_message(
-                                        MessageCategory::ExpressionEvaluation,
-                                        "expression_engine_evaluation_table_value_below_minimum"
-                                            .into(),
-                                        [
-                                            ("value".into(), data.to_string().into()),
-                                            ("column".into(), column_definition.description()),
-                                            ("minimum".into(), min.to_string().into()),
-                                        ]
-                                        .into_iter()
-                                        .collect(),
-                                        Some(parameter_source.clone()),
-                                        Some(SpanSet::from_span(parameter_span)),
-                                    ));
-                                }
-                            }
-                            NumberConstraintEnum::Max { max, inclusive } => {
-                                if data > max || (!inclusive && data >= max) {
-                                    errors.push(create_error_message(
-                                        MessageCategory::ExpressionEvaluation,
-                                        "expression_engine_evaluation_table_value_above_maximum"
-                                            .into(),
-                                        [
-                                            ("value".into(), data.to_string().into()),
-                                            ("column".into(), column_definition.description()),
-                                            ("maximum".into(), max.to_string().into()),
-                                        ]
-                                        .into_iter()
-                                        .collect(),
-                                        Some(parameter_source.clone()),
-                                        Some(SpanSet::from_span(parameter_span)),
-                                    ));
-                                }
-                            }
-                            NumberConstraintEnum::Range {
-                                min,
-                                max,
-                                min_inclusive,
-                                max_inclusive,
-                            } => {
-                                if data < min || (!min_inclusive && data <= min) {
-                                    errors.push(create_error_message(
-                                        MessageCategory::ExpressionEvaluation,
-                                        "expression_engine_evaluation_table_value_below_minimum"
-                                            .into(),
-                                        [
-                                            ("value".into(), data.to_string().into()),
-                                            ("column".into(), column_definition.description()),
-                                            ("minimum".into(), min.to_string().into()),
-                                        ]
-                                        .into_iter()
-                                        .collect(),
-                                        Some(parameter_source.clone()),
-                                        Some(SpanSet::from_span(parameter_span)),
-                                    ));
-                                }
-                                if data > max || (!max_inclusive && data >= max) {
-                                    errors.push(create_error_message(
-                                        MessageCategory::ExpressionEvaluation,
-                                        "expression_engine_evaluation_table_value_above_maximum"
-                                            .into(),
-                                        [
-                                            ("value".into(), data.to_string().into()),
-                                            ("column".into(), column_definition.description()),
-                                            ("maximum".into(), max.to_string().into()),
-                                        ]
-                                        .into_iter()
-                                        .collect(),
-                                        Some(parameter_source.clone()),
-                                        Some(SpanSet::from_span(parameter_span)),
-                                    ));
-                                }
-                            }
-                            NumberConstraintEnum::None => {}
+                        if let Some(violation) =
+                            number_constraint_violation(data, &column_definition.constraint())
+                        {
+                            errors.push(constraint_violation_error(
+                                violation,
+                                &data,
+                                Some(column_definition.description()),
+                                &parameter_source,
+                                parameter_span,
+                            ));
                         }
                         converted_row.push(data);
                     }
@@ -2188,7 +1849,7 @@ fn evaluate_table_expression(
                 "expression_engine_evaluation_expected_table_parameter".into(),
                 [
                     ("parameter".into(), parameter.to_string().into()),
-                    ("actual".into(), format!("{other:?}").into()),
+                    ("actual".into(), other.describe().into()),
                 ]
                 .into_iter()
                 .collect(),
@@ -2232,7 +1893,7 @@ fn evaluate_table_expression(
                     return Err(vec![create_error_message(
                         MessageCategory::ExpressionEvaluation,
                         "expression_engine_evaluation_expected_table_cell_number".into(),
-                        [("actual".into(), format!("{other:?}").into())]
+                        [("actual".into(), other.describe().into())]
                             .into_iter()
                             .collect(),
                         Some(cell_source),
@@ -2287,7 +1948,7 @@ fn evaluate_table_with_units_expression(
                     "expression_engine_evaluation_expected_table_parameter".into(),
                     [
                         ("parameter".into(), parameter.to_string().into()),
-                        ("actual".into(), format!("{other:?}").into()),
+                        ("actual".into(), other.describe().into()),
                     ]
                     .into_iter()
                     .collect(),
@@ -2393,79 +2054,16 @@ fn evaluate_table_with_units_expression(
                         continue;
                     }
                 };
-                match column_definition.constraint() {
-                    NumberConstraintEnum::Min { min, inclusive } => {
-                        if data < min || (!inclusive && data <= min) {
-                            errors.push(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_table_value_below_minimum".into(),
-                                [
-                                    ("value".into(), data.to_string().into()),
-                                    ("column".into(), column_definition.description()),
-                                    ("minimum".into(), min.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(parameter_source.clone()),
-                                Some(SpanSet::from_span(parameter_span)),
-                            ));
-                        }
-                    }
-                    NumberConstraintEnum::Max { max, inclusive } => {
-                        if data > max || (!inclusive && data >= max) {
-                            errors.push(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_table_value_above_maximum".into(),
-                                [
-                                    ("value".into(), data.to_string().into()),
-                                    ("column".into(), column_definition.description()),
-                                    ("maximum".into(), max.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(parameter_source.clone()),
-                                Some(SpanSet::from_span(parameter_span)),
-                            ));
-                        }
-                    }
-                    NumberConstraintEnum::Range {
-                        min,
-                        max,
-                        min_inclusive,
-                        max_inclusive,
-                    } => {
-                        if data < min || (!min_inclusive && data <= min) {
-                            errors.push(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_table_value_below_minimum".into(),
-                                [
-                                    ("value".into(), data.to_string().into()),
-                                    ("column".into(), column_definition.description()),
-                                    ("minimum".into(), min.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(parameter_source.clone()),
-                                Some(SpanSet::from_span(parameter_span)),
-                            ));
-                        }
-                        if data > max || (!max_inclusive && data >= max) {
-                            errors.push(create_error_message(
-                                MessageCategory::ExpressionEvaluation,
-                                "expression_engine_evaluation_table_value_above_maximum".into(),
-                                [
-                                    ("value".into(), data.to_string().into()),
-                                    ("column".into(), column_definition.description()),
-                                    ("maximum".into(), max.to_string().into()),
-                                ]
-                                .into_iter()
-                                .collect(),
-                                Some(parameter_source.clone()),
-                                Some(SpanSet::from_span(parameter_span)),
-                            ));
-                        }
-                    }
-                    NumberConstraintEnum::None => {}
+                if let Some(violation) =
+                    number_constraint_violation(data, &column_definition.constraint())
+                {
+                    errors.push(constraint_violation_error(
+                        violation,
+                        &data,
+                        Some(column_definition.description()),
+                        &parameter_source,
+                        parameter_span,
+                    ));
                 }
                 converted_row.push(data);
             }
@@ -2532,7 +2130,7 @@ fn evaluate_table_with_units_expression(
                     return Err(vec![create_error_message(
                         MessageCategory::ExpressionEvaluation,
                         "expression_engine_evaluation_expected_table_cell_number".into(),
-                        [("actual".into(), format!("{other:?}").into())]
+                        [("actual".into(), other.describe().into())]
                             .into_iter()
                             .collect(),
                         Some(cell_source),
@@ -4234,6 +3832,45 @@ mod tests {
                 value: 2.0,
                 unit: UnitId::Length_Meter,
             })
+        );
+    }
+
+    fn evaluate_str(
+        computed_data: &BTreeMap<ShareableString, ComputedItem>,
+        expression: &str,
+    ) -> Result<ComputedItem, Message> {
+        let source = ShareableString::from(expression);
+        let parsed = string_to_expression(&source)?;
+        let functions =
+            crate::evaluation::expression::function_definitions_default::default_function_definitions();
+        evaluate_expression(computed_data, &functions, &source, parsed)
+    }
+
+    #[test]
+    fn unsupported_operator_error_uses_operator_symbol() {
+        // Why: Error parameters should be user-facing, not Rust `Debug` output.
+        let error = evaluate_str(&BTreeMap::new(), "true + false").unwrap_err();
+        assert_eq!(
+            error
+                .translate_data()
+                .message_params()
+                .get("operator")
+                .map(ShareableString::as_str),
+            Some("+")
+        );
+    }
+
+    #[test]
+    fn expected_definition_value_error_describes_actual_value() {
+        let input_data = BTreeMap::from([("x".into(), create_number_basic_input_data("2"))]);
+        let (_, errors) = evaluator(&BTreeMap::new(), &FunctionDefinitions::new(), &input_data);
+        assert_eq!(
+            errors[0]
+                .translate_data()
+                .message_params()
+                .get("actual")
+                .map(ShareableString::as_str),
+            Some("integer 2")
         );
     }
 }

@@ -217,6 +217,30 @@ pub enum ComputedItem {
 }
 
 impl ComputedItem {
+    /// Returns a short description of this item's type and value, for use in error messages.
+    #[must_use]
+    pub(crate) fn describe(&self) -> String {
+        match self {
+            Self::Boolean(value) => format!("boolean {value}"),
+            Self::Integer(value) => format!("integer {value}"),
+            Self::Float(_) | Self::FloatWithUnit { .. } => format!("float {self}"),
+            Self::String(value) => format!("string \"{value}\""),
+            Self::Identifier(value) => format!("identifier '{value}'"),
+            Self::Path(value) => format!("path \"{value}\""),
+            Self::Table(table) => format!(
+                "table ({} rows, {} columns)",
+                table.row_count(),
+                table.column_count()
+            ),
+            Self::TableWithUnits(table) => format!(
+                "table ({} rows, {} columns)",
+                table.row_count(),
+                table.column_count()
+            ),
+            Self::Unit(unit) => format!("unit {}", unit.string_id()),
+        }
+    }
+
     /// Normalizes deterministic float representation throughout a computed item.
     #[must_use]
     pub(crate) fn canonicalized(self) -> Self {
