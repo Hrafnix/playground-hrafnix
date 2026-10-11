@@ -126,8 +126,10 @@ impl PartialEq for FunctionDefinition {
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     fn eq(&self, other: &Self) -> bool {
         // The closure itself is opaque, so identity is established by the
-        // function's name and description.
-        self.name == other.name && self.description == other.description
+        // function's name, description, and accepted argument count.
+        self.name == other.name
+            && self.description == other.description
+            && self.argument_count == other.argument_count
     }
 }
 
