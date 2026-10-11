@@ -510,7 +510,7 @@ fn len(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 
     match arg {
         ComputedItem::String(value) => {
-            let len = i64::try_from(value.as_str().len()).map_err(|_| {
+            let len = i64::try_from(value.as_str().chars().count()).map_err(|_| {
                 function_error("expression_engine_function_length_result_too_large", [])
             })?;
             Ok(ComputedItem::Integer(len))
@@ -1288,5 +1288,10 @@ mod tests {
             &[meters(5.0), ComputedItem::Float(0.0), meters(3.0)],
             3.0,
         );
+    }
+
+    #[test]
+    fn len_counts_characters_not_bytes() {
+        assert_integer_eq("len", &[ComputedItem::String("héllo".into())], 5);
     }
 }
