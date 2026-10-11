@@ -904,6 +904,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_evaluation_offset_temperature_arithmetic",
+        HashMap::from([
+            ("en", "Cannot apply '%{operator}' to %{unit} temperatures; use an absolute scale such as kelvin"),
+            ("zh", "无法对 %{unit} 温度应用“%{operator}”；请使用开尔文等绝对温标"),
+            ("de", "'%{operator}' kann nicht auf Temperaturen in %{unit} angewendet werden; verwenden Sie eine absolute Skala wie Kelvin"),
+            ("es", "No se puede aplicar '%{operator}' a temperaturas en %{unit}; use una escala absoluta como el kelvin"),
+            ("fr", "Impossible d'appliquer « %{operator} » à des températures en %{unit} ; utilisez une échelle absolue comme le kelvin"),
+            ("ja", "%{unit} の温度に「%{operator}」を適用できません。ケルビンなどの絶対温度目盛を使用してください"),
+            ("ko", "%{unit} 온도에 '%{operator}'을(를) 적용할 수 없습니다. 켈빈과 같은 절대 온도 단위를 사용하세요"),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_evaluation_expected_number_with_units_definition",
         HashMap::from([
             ("en", "Expected a number-with-units definition."),

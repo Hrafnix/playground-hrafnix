@@ -124,8 +124,9 @@ fn is_signed_float_literal(expression: &Expression) -> bool {
 }
 
 /// Returns `right_value` expressed in `left_unit` for operators that combine or compare like
-/// quantities (`+`, `-`, and comparisons). Units from different families are rejected. Other
-/// operators (e.g., `*` and `/`) may combine any units, so the value is returned unchanged.
+/// quantities (`+`, `-`, and comparisons). Units from different families are rejected, as are
+/// `+` and `-` on Celsius or Fahrenheit values. Other operators (e.g., `*` and `/`) may combine
+/// any units, so the value is returned unchanged.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn align_right_operand_unit(
     operator: &Operators,
@@ -135,16 +136,16 @@ fn align_right_operand_unit(
     source: &ShareableString,
     span: Span,
 ) -> Result<f64, Message> {
-    // Check for operators that require compatible units. Other operators can combine any units.
-    match operator {
-        Operators::Add
-        | Operators::Subtract
-        | Operators::Equal
+    // Categorize the operator into three groups: additive, comparison, and other.
+    // Only additive and comparison operators require unit alignment.
+    let is_additive = match operator {
+        Operators::Add | Operators::Subtract => true,
+        Operators::Equal
         | Operators::NotEqual
         | Operators::LessThan
         | Operators::LessThanOrEqual
         | Operators::GreaterThan
-        | Operators::GreaterThanOrEqual => {}
+        | Operators::GreaterThanOrEqual => false,
         Operators::Multiply
         | Operators::Divide
         | Operators::Modulus
@@ -153,6 +154,39 @@ fn align_right_operand_unit(
         | Operators::And
         | Operators::Or
         | Operators::Not => return Ok(right_value),
+    };
+
+    // Celsius and Fahrenheit are offset scales: absolute temperatures cannot be summed, and a
+    // converted operand would be ambiguous between an absolute temperature and a difference.
+    if is_additive
+        && (matches!(
+            left_unit,
+            UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+        ) || matches!(
+            right_unit,
+            UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+        ))
+    {
+        let offset_unit = if matches!(
+            left_unit,
+            UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+        ) {
+            left_unit
+        } else {
+            right_unit
+        };
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_offset_temperature_arithmetic".into(),
+            [
+                ("operator".into(), operator.to_string().into()),
+                ("unit".into(), offset_unit.description().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        ));
     }
 
     // Check that the units are the same family. If not, throw an error.
@@ -3932,5 +3966,83 @@ mod tests {
 
         assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
         check_number_float(&result["ratio"], 1.0);
+    }
+
+    #[test]
+    fn adding_or_subtracting_offset_temperatures_is_an_error() {
+        let computed_data = BTreeMap::from([
+            (
+                "p_celsius".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 20.0,
+                    unit: UnitId::Temperature_Celsius,
+                },
+            ),
+            (
+                "p_fahrenheit".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 50.0,
+                    unit: UnitId::Temperature_Fahrenheit,
+                },
+            ),
+            (
+                "p_kelvin".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 300.0,
+                    unit: UnitId::Temperature_Kelvin,
+                },
+            ),
+        ]);
+        let input_data = BTreeMap::from([
+            (
+                "a".into(),
+                create_number_basic_input_data("p_celsius + p_celsius"),
+            ),
+            (
+                "b".into(),
+                create_number_basic_input_data("p_celsius - p_celsius"),
+            ),
+            (
+                "c".into(),
+                create_number_basic_input_data("p_celsius + p_fahrenheit"),
+            ),
+            (
+                "d".into(),
+                create_number_basic_input_data("p_kelvin - p_fahrenheit"),
+            ),
+            (
+                "comparison".into(),
+                create_boolean_basic_input_data("p_celsius > p_fahrenheit"),
+            ),
+            (
+                "kelvin_sum".into(),
+                create_number_with_units_input_data(
+                    "p_kelvin + p_kelvin",
+                    "u_temperature_kelvin",
+                    UnitId::Temperature_Kelvin,
+                ),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors.len(), 4);
+        for error in &errors {
+            assert_eq!(
+                message_key(error),
+                "expression_engine_evaluation_offset_temperature_arithmetic"
+            );
+        }
+        for key in ["a", "b", "c", "d"] {
+            assert!(!result.contains_key(key), "{key} should not evaluate");
+        }
+        check_boolean(&result["comparison"], true);
+        assert_eq!(
+            result.get("kelvin_sum"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: 600.0,
+                unit: UnitId::Temperature_Kelvin,
+            })
+        );
     }
 }
