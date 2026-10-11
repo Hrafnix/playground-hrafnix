@@ -1,6 +1,49 @@
 use hrafnix_datastore::prelude::*;
 
 #[test]
+fn column_requirements_are_independent_and_preserved() {
+    let mut definition = TableDefinition::new_with_default(
+        "table",
+        vec![
+            (
+                store_key!("z"),
+                NumberDefinition::new_with_constraint("", NumberConstraint::max(10.0, true)),
+            ),
+            (store_key!("a"), NumberDefinition::new("")),
+        ],
+        vec![vec!["1", "2"]],
+    );
+    let original = definition.clone();
+    assert_eq!(
+        definition.column_requirement("z"),
+        Some(TableColumnRequirement::None)
+    );
+    assert_eq!(definition.column_requirement("missing"), None);
+    assert_eq!(definition.column_requirement_by_index(2), None);
+    assert!(
+        !definition.set_column_requirement(store_key!("missing"), TableColumnRequirement::Constant)
+    );
+    for requirement in [
+        TableColumnRequirement::Increasing { strict: true },
+        TableColumnRequirement::Decreasing { strict: false },
+        TableColumnRequirement::Constant,
+    ] {
+        assert!(definition.set_column_requirement(store_key!("z"), requirement));
+        assert_eq!(definition.column_requirement("z"), Some(requirement));
+        assert_eq!(definition.column_requirement_by_index(0), Some(requirement));
+        assert_eq!(
+            definition.column_requirement_by_index(1),
+            Some(TableColumnRequirement::None)
+        );
+        assert_eq!(definition.launder(&SharedStringStore::new()), definition);
+        assert_eq!(definition.get("z").unwrap(), original.get("z").unwrap());
+        assert!(definition.is_merge_compatible(&original));
+    }
+    assert!(definition.set_column_requirement(store_key!("z"), TableColumnRequirement::None));
+    assert_eq!(definition, original);
+}
+
+#[test]
 fn test_table_definition() {
     // Why: Test table definition creation and parameters.
     let table_def = TableDefinition::new(
