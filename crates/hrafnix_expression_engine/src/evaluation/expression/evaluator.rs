@@ -861,6 +861,13 @@ fn evaluate_expression(
             right,
         } => {
             let left_value = evaluate_expression(computed_data, functions, source, *left)?;
+            // `&&` and `||` short-circuit: the right operand is only evaluated when needed.
+            if let ComputedItem::Boolean(left_bool) = left_value
+                && ((operator == Operators::And && !left_bool)
+                    || (operator == Operators::Or && left_bool))
+            {
+                return Ok(ComputedItem::Boolean(left_bool));
+            }
             let right_value = evaluate_expression(computed_data, functions, source, *right)?;
             match (left_value, right_value) {
                 (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
@@ -3637,6 +3644,37 @@ mod tests {
         assert_eq!(
             message_key(&errors[2]),
             "expression_engine_evaluation_table_value_below_minimum"
+        );
+    }
+
+    #[test]
+    fn logical_operators_short_circuit() {
+        // Why: The right operand must not be evaluated when the left decides the result.
+        let computed_data = BTreeMap::new();
+        let input_data = BTreeMap::from([
+            (
+                "a".into(),
+                create_boolean_basic_input_data("false && (1 / 0 == 0)"),
+            ),
+            (
+                "b".into(),
+                create_boolean_basic_input_data("true || (1 / 0 == 0)"),
+            ),
+            (
+                "c".into(),
+                create_boolean_basic_input_data("true && (1 / 0 == 0)"),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        check_boolean(&result["a"], false);
+        check_boolean(&result["b"], true);
+        assert!(!result.contains_key("c"));
+        assert_eq!(errors.len(), 1);
+        assert_eq!(
+            message_key(&errors[0]),
+            "expression_engine_evaluation_division_by_zero"
         );
     }
 }
