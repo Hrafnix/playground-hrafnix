@@ -23,3 +23,5 @@ jobs:
         run: cargo fmt -- --check
       - name: Rust Clippy check
         run: cargo clippy --workspace --all-targets --all-features --locked
+      - name: Rust Clippy check (without --all-features)
+        run: cargo clippy --workspace --all-targets --locked
