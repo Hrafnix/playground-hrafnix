@@ -1,5 +1,8 @@
 # Hrafnix
 
+[![Rust tests](https://github.com/Hrafnix/playground-hrafnix/actions/workflows/rust-test.yml/badge.svg?branch=main)](https://github.com/Hrafnix/playground-hrafnix/actions/workflows/rust-test.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/Hrafnix/playground-hrafnix#license)
+
 Pronounced RAF-niks.
 
 Hrafnix is an experimental Rust simulation engine.
