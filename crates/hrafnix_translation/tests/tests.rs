@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 const LANGUAGES: [&str; 7] = ["en", "zh", "de", "es", "fr", "ja", "ko"];
 
-const TRANSLATION_KEYS: [&str; 122] = [
+const TRANSLATION_KEYS: [&str; 123] = [
     "datastore_key_empty",
     "datastore_key_invalid_character",
     "datastore_key_invalid_prefix",
@@ -81,6 +81,7 @@ const TRANSLATION_KEYS: [&str; 122] = [
     "expression_engine_evaluation_expected_number_with_units_definition",
     "expression_engine_evaluation_unknown_unit",
     "expression_engine_evaluation_table_column_count_mismatch",
+    "expression_engine_evaluation_table_column_requirement_failed",
     "expression_engine_evaluation_table_missing_column_definition",
     "expression_engine_evaluation_table_value_below_minimum",
     "expression_engine_evaluation_table_value_above_maximum",
@@ -130,6 +131,33 @@ const TRANSLATION_KEYS: [&str; 122] = [
     "hrafnix_error_similar_argument",
     "hrafnix_more_information",
 ];
+
+#[test]
+fn table_column_requirement_diagnostics_translate_all_parameters() {
+    let map = generate_translation_map(&SharedStringStore::new());
+    let params = HashMap::from([
+        ("column".into(), "length".into()),
+        ("row".into(), "2".into()),
+        ("previous".into(), "1.5".into()),
+        ("current".into(), "1.0".into()),
+        ("relation".into(), ">=".into()),
+    ]);
+    for language in LANGUAGES {
+        assert!(
+            map.get_translation(
+                "expression_engine_evaluation_table_column_requirement_failed",
+                language,
+                Some(&params),
+            )
+            .is_some_and(|translation| {
+                !translation.as_str().contains("%{")
+                    && params
+                        .values()
+                        .all(|value| translation.as_str().contains(value.as_str()))
+            })
+        );
+    }
+}
 
 #[test]
 fn generated_map_contains_every_translation_key() {
