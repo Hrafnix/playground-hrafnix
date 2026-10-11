@@ -364,6 +364,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_translator_index_target_must_be_identifier",
+        HashMap::from([
+            ("en", "Only named values can be indexed, found '%{target}'."),
+            ("zh", "只能对命名值进行索引，但找到的是“%{target}”。"),
+            ("de", "Nur benannte Werte können indiziert werden, gefunden wurde '%{target}'."),
+            ("es", "Solo se pueden indexar valores con nombre; se encontró '%{target}'."),
+            ("fr", "Seules les valeurs nommées peuvent être indexées, trouvé '%{target}'."),
+            ("ja", "インデックスを付けられるのは名前付きの値のみですが、'%{target}' が見つかりました。"),
+            ("ko", "이름이 있는 값만 인덱싱할 수 있지만 '%{target}'이(가) 있습니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_translator_invalid_numeric_literal",
         HashMap::from([
             ("en", "Invalid numeric literal: %{value}"),
