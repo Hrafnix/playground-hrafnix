@@ -105,6 +105,22 @@ const fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
     }
 }
 
+/// Returns the unit of a float item; plain floats and non-float items behave as `UnitId::None`.
+const fn float_unit(item: &ComputedItem) -> UnitId {
+    match item {
+        ComputedItem::FloatWithUnit { unit, .. } => *unit,
+        ComputedItem::Float(_)
+        | ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::Path(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => UnitId::None,
+    }
+}
+
 /// Returns whether an expression is a float literal, optionally prefixed with a single negation.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn is_signed_float_literal(expression: &Expression) -> bool {
@@ -124,9 +140,10 @@ fn is_signed_float_literal(expression: &Expression) -> bool {
 }
 
 /// Returns `right_value` expressed in `left_unit` for operators that combine or compare like
-/// quantities (`+`, `-`, and comparisons). Units from different families are rejected, as are
-/// `+` and `-` on Celsius or Fahrenheit values. Other operators (e.g., `*` and `/`) may combine
-/// any units, so the value is returned unchanged.
+/// quantities (`+`, `-`, and comparisons). `+` and `-` are rejected whenever either operand is
+/// Celsius or Fahrenheit, even if the other operand is unitless. Otherwise, if either unit is
+/// `None`, the value is unchanged, and units from different families are rejected. Other
+/// operators (e.g., `*` and `/`) may combine any units, so the value is returned unchanged.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn align_right_operand_unit(
     operator: &Operators,
@@ -156,8 +173,9 @@ fn align_right_operand_unit(
         | Operators::Not => return Ok(right_value),
     };
 
-    // Celsius and Fahrenheit are offset scales: absolute temperatures cannot be summed, and a
-    // converted operand would be ambiguous between an absolute temperature and a difference.
+    // Celsius and Fahrenheit are offset scales: absolute temperatures cannot be summed, and an
+    // added operand (converted or unitless) would be ambiguous between an absolute temperature
+    // and a difference.
     if is_additive
         && (matches!(
             left_unit,
@@ -187,6 +205,10 @@ fn align_right_operand_unit(
             Some(source.clone()),
             Some(SpanSet::from_span(span)),
         ));
+    }
+
+    if matches!(left_unit, UnitId::None) || matches!(right_unit, UnitId::None) {
+        return Ok(right_value);
     }
 
     // Check that the units are the same family. If not, throw an error.
@@ -972,6 +994,7 @@ fn evaluate_expression(
                 return Ok(ComputedItem::Boolean(left_bool));
             }
             let right_value = evaluate_expression(computed_data, functions, source, *right)?;
+            let (left_unit, right_unit) = (float_unit(&left_value), float_unit(&right_value));
             match (left_value, right_value) {
                 (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
                     evaluate_boolean_binary_operation(
@@ -1012,13 +1035,15 @@ fn evaluate_expression(
                     )),
                 },
                 (
-                    ComputedItem::FloatWithUnit {
+                    ComputedItem::Float(left_float)
+                    | ComputedItem::FloatWithUnit {
                         value: left_float,
-                        unit: left_unit,
+                        unit: _,
                     },
-                    ComputedItem::FloatWithUnit {
+                    ComputedItem::Float(right_float)
+                    | ComputedItem::FloatWithUnit {
                         value: right_float,
-                        unit: right_unit,
+                        unit: _,
                     },
                 ) => {
                     let right_float = align_right_operand_unit(
@@ -1036,35 +1061,20 @@ fn evaluate_expression(
                         source,
                         operator_span,
                     )?;
-                    // A sum or difference of two like quantities is itself that quantity, so
-                    // keep the (left) unit once the right operand has been aligned to it.
-                    let keeps_left_unit = matches!(operator, Operators::Add | Operators::Subtract)
-                        && left_unit != UnitId::None
-                        && right_unit != UnitId::None;
-                    if let (true, ComputedItem::Float(value)) = (keeps_left_unit, &result) {
-                        Ok(computed_float(*value, left_unit))
+                    // A sum or difference of like quantities is itself that quantity, so keep
+                    // the concrete unit (left first) once the right operand has been aligned.
+                    let result_unit = if left_unit == UnitId::None {
+                        right_unit
                     } else {
-                        Ok(result)
+                        left_unit
+                    };
+                    match (&operator, &result) {
+                        (Operators::Add | Operators::Subtract, ComputedItem::Float(value)) => {
+                            Ok(computed_float(*value, result_unit))
+                        }
+                        _ => Ok(result),
                     }
                 }
-                (
-                    ComputedItem::Float(left_float)
-                    | ComputedItem::FloatWithUnit {
-                        value: left_float,
-                        unit: _,
-                    },
-                    ComputedItem::Float(right_float)
-                    | ComputedItem::FloatWithUnit {
-                        value: right_float,
-                        unit: _,
-                    },
-                ) => evaluate_float_binary_operation(
-                    &operator,
-                    left_float,
-                    right_float,
-                    source,
-                    operator_span,
-                ),
                 (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
                     evaluate_integer_binary_operation(
                         &operator,
@@ -3871,6 +3881,166 @@ mod tests {
                 },
             ),
         ])
+    }
+
+    #[test]
+    fn none_units_match_plain_float_arithmetic_and_comparisons() {
+        for unit in [
+            UnitId::None,
+            UnitId::Length_Meter,
+            UnitId::Temperature_Celsius,
+            UnitId::Temperature_Fahrenheit,
+        ] {
+            let computed_data = BTreeMap::from([
+                (
+                    "p_value".into(),
+                    ComputedItem::FloatWithUnit { value: 20.0, unit },
+                ),
+                (
+                    "p_none".into(),
+                    ComputedItem::FloatWithUnit {
+                        value: 10.0,
+                        unit: UnitId::None,
+                    },
+                ),
+                ("p_plain".into(), ComputedItem::Float(10.0)),
+            ]);
+            for unitless in ["p_none", "p_plain"] {
+                let input_data = BTreeMap::from([
+                    (
+                        "add".into(),
+                        create_number_basic_input_data(&format!("p_value + {unitless}")),
+                    ),
+                    (
+                        "add_rev".into(),
+                        create_number_basic_input_data(&format!("{unitless} + p_value")),
+                    ),
+                    (
+                        "sub".into(),
+                        create_number_basic_input_data(&format!("p_value - {unitless}")),
+                    ),
+                    (
+                        "sub_rev".into(),
+                        create_number_basic_input_data(&format!("{unitless} - p_value")),
+                    ),
+                    (
+                        "lt".into(),
+                        create_boolean_basic_input_data(&format!("p_value < {unitless}")),
+                    ),
+                    (
+                        "lt_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} < p_value")),
+                    ),
+                    (
+                        "le".into(),
+                        create_boolean_basic_input_data(&format!("p_value <= {unitless}")),
+                    ),
+                    (
+                        "le_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} <= p_value")),
+                    ),
+                    (
+                        "gt".into(),
+                        create_boolean_basic_input_data(&format!("p_value > {unitless}")),
+                    ),
+                    (
+                        "gt_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} > p_value")),
+                    ),
+                    (
+                        "ge".into(),
+                        create_boolean_basic_input_data(&format!("p_value >= {unitless}")),
+                    ),
+                    (
+                        "ge_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} >= p_value")),
+                    ),
+                    (
+                        "eq".into(),
+                        create_boolean_basic_input_data(&format!("p_value == {unitless}")),
+                    ),
+                    (
+                        "eq_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} == p_value")),
+                    ),
+                    (
+                        "ne".into(),
+                        create_boolean_basic_input_data(&format!("p_value != {unitless}")),
+                    ),
+                    (
+                        "ne_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} != p_value")),
+                    ),
+                ]);
+
+                let (result, errors) =
+                    evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+                // The concrete unit (if any) is kept; `None` and plain floats stay plain.
+                // Celsius and Fahrenheit reject `+` and `-` even against unitless operands.
+                let is_offset_scale = matches!(
+                    unit,
+                    UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+                );
+                let additive_keys = [
+                    ("add", 30.0),
+                    ("add_rev", 30.0),
+                    ("sub", 10.0),
+                    ("sub_rev", -10.0),
+                ];
+                for (key, expected) in additive_keys {
+                    if is_offset_scale {
+                        assert!(
+                            !result.contains_key(key),
+                            "{unit:?}: {key} with {unitless} should not evaluate"
+                        );
+                    } else {
+                        assert_eq!(
+                            result.get(key),
+                            Some(&computed_float(expected, unit)),
+                            "{unit:?}: {key} with {unitless}"
+                        );
+                    }
+                }
+                for (key, expected) in [
+                    ("lt", false),
+                    ("lt_rev", true),
+                    ("le", false),
+                    ("le_rev", true),
+                    ("gt", true),
+                    ("gt_rev", false),
+                    ("ge", true),
+                    ("ge_rev", false),
+                ] {
+                    check_boolean(&result[key], expected);
+                }
+                for key in ["eq", "eq_rev", "ne", "ne_rev"] {
+                    assert!(
+                        !result.contains_key(key),
+                        "{unit:?}: {key} with {unitless} should not evaluate"
+                    );
+                }
+                let count = |expected_key: &str| {
+                    errors
+                        .iter()
+                        .filter(|error| message_key(error) == expected_key)
+                        .count()
+                };
+                let offset_errors =
+                    count("expression_engine_evaluation_offset_temperature_arithmetic");
+                assert_eq!(
+                    count("expression_engine_evaluation_unsupported_operator"),
+                    4,
+                    "{unit:?}: {unitless}"
+                );
+                assert_eq!(
+                    offset_errors,
+                    if is_offset_scale { 4 } else { 0 },
+                    "{unit:?}: {unitless}"
+                );
+                assert_eq!(errors.len(), 4 + offset_errors, "{unit:?}: {unitless}");
+            }
+        }
     }
 
     #[test]
