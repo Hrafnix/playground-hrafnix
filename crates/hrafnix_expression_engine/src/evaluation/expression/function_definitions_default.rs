@@ -5,6 +5,7 @@ use crate::evaluation::expression::function_definition::{
 use hrafnix_keys::store_key;
 use hrafnix_message::message::{Message, MessageCategory};
 use hrafnix_shareable_string::ShareableString;
+use hrafnix_units::{UnitId, conversion::convert};
 use std::ops::{Div, Mul};
 
 /// Creates a translated error for a failed built-in function.
@@ -274,28 +275,82 @@ fn round(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     }
 }
 
+/// Returns the float values of `args` together with the unit they are expressed in. Concrete
+/// unit-bearing values are converted to the unit of the first concrete unit-bearing argument so
+/// they can be compared. Plain floats and `None` units are taken as-is, units from different
+/// families are rejected, and any non-float argument is a mixed-type error.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn unit_aligned_floats(
+    args: &[ComputedItem],
+    function_name: &str,
+) -> Result<(Vec<f64>, UnitId), Message> {
+    let mut reference_unit: Option<UnitId> = None;
+    let mut values = Vec::with_capacity(args.len());
+    for arg in args {
+        match arg {
+            ComputedItem::Float(value)
+            | ComputedItem::FloatWithUnit {
+                value,
+                unit: UnitId::None,
+            } => values.push(*value),
+            ComputedItem::FloatWithUnit { value, unit } => match reference_unit {
+                None => {
+                    reference_unit = Some(*unit);
+                    values.push(*value);
+                }
+                Some(reference) if reference == *unit => values.push(*value),
+                Some(reference) => {
+                    if reference.family_id() != unit.family_id() {
+                        return Err(function_error(
+                            "expression_engine_function_incompatible_units",
+                            [
+                                ("function".into(), function_name.into()),
+                                ("left".into(), reference.description().into()),
+                                ("right".into(), unit.description().into()),
+                            ],
+                        ));
+                    }
+                    values.push(convert(*value, *unit, reference).map_err(|error| {
+                        function_error(
+                            "expression_engine_evaluation_unit_conversion_failed",
+                            [("error".into(), error.into())],
+                        )
+                    })?);
+                }
+            },
+            ComputedItem::Boolean(_)
+            | ComputedItem::Integer(_)
+            | ComputedItem::String(_)
+            | ComputedItem::Identifier(_)
+            | ComputedItem::Path(_)
+            | ComputedItem::Table(_)
+            | ComputedItem::TableWithUnits(_)
+            | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error(function_name)),
+        }
+    }
+    Ok((values, reference_unit.unwrap_or(UnitId::None)))
+}
+
+/// Wraps a float result in unit metadata only when the unit is concrete.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn float_with_optional_unit(value: f64, unit: UnitId) -> ComputedItem {
+    if unit == UnitId::None {
+        ComputedItem::Float(value)
+    } else {
+        ComputedItem::FloatWithUnit { value, unit }
+    }
+}
+
 /// Returns the minimum value among one or more numeric arguments of the same type.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn min(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "min")? {
         ComputedItem::Float(first) | ComputedItem::FloatWithUnit { value: first, .. } => {
-            let mut result = *first;
-            for arg in args.get(1..).unwrap_or_default() {
-                match arg {
-                    ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
-                        result = result.min(*value);
-                    }
-                    ComputedItem::Boolean(_)
-                    | ComputedItem::Integer(_)
-                    | ComputedItem::String(_)
-                    | ComputedItem::Identifier(_)
-                    | ComputedItem::Path(_)
-                    | ComputedItem::Table(_)
-                    | ComputedItem::TableWithUnits(_)
-                    | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("min")),
-                }
-            }
-            Ok(ComputedItem::Float(result))
+            let (values, unit) = unit_aligned_floats(args, "min")?;
+            Ok(float_with_optional_unit(
+                values.into_iter().fold(*first, f64::min),
+                unit,
+            ))
         }
         ComputedItem::Integer(first) => {
             let mut result = *first;
@@ -333,23 +388,11 @@ fn min(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
 fn max(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
     match arg(args, 0, "max")? {
         ComputedItem::Float(first) | ComputedItem::FloatWithUnit { value: first, .. } => {
-            let mut result = *first;
-            for arg in args.get(1..).unwrap_or_default() {
-                match arg {
-                    ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. } => {
-                        result = result.max(*value);
-                    }
-                    ComputedItem::Boolean(_)
-                    | ComputedItem::Integer(_)
-                    | ComputedItem::String(_)
-                    | ComputedItem::Identifier(_)
-                    | ComputedItem::Path(_)
-                    | ComputedItem::Table(_)
-                    | ComputedItem::TableWithUnits(_)
-                    | ComputedItem::Unit(_) => return Err(mixed_numeric_types_error("max")),
-                }
-            }
-            Ok(ComputedItem::Float(result))
+            let (values, unit) = unit_aligned_floats(args, "max")?;
+            Ok(float_with_optional_unit(
+                values.into_iter().fold(*first, f64::max),
+                unit,
+            ))
         }
         ComputedItem::Integer(first) => {
             let mut result = *first;
@@ -391,23 +434,24 @@ fn clamp(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
         arg(args, 2, "clamp")?,
     ) {
         (
-            ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. },
-            ComputedItem::Float(min_value)
-            | ComputedItem::FloatWithUnit {
-                value: min_value, ..
-            },
-            ComputedItem::Float(max_value)
-            | ComputedItem::FloatWithUnit {
-                value: max_value, ..
-            },
+            ComputedItem::Float(_) | ComputedItem::FloatWithUnit { .. },
+            ComputedItem::Float(_) | ComputedItem::FloatWithUnit { .. },
+            ComputedItem::Float(_) | ComputedItem::FloatWithUnit { .. },
         ) => {
+            let (values, unit) = unit_aligned_floats(args.get(..3).unwrap_or_default(), "clamp")?;
+            let [value, min_value, max_value] = values.as_slice() else {
+                return Err(mixed_numeric_types_error("clamp"));
+            };
             if min_value > max_value {
                 return Err(function_error(
                     "expression_engine_function_clamp_minimum_exceeds_maximum",
                     [],
                 ));
             }
-            Ok(ComputedItem::Float(value.clamp(*min_value, *max_value)))
+            Ok(float_with_optional_unit(
+                value.clamp(*min_value, *max_value),
+                unit,
+            ))
         }
         (
             ComputedItem::Integer(value),
@@ -550,6 +594,13 @@ fn to_int(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
             "to_int",
         )),
     }
+}
+
+/// Returns the numeric value of a float argument without its unit.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn drop_units(args: &[ComputedItem]) -> Result<ComputedItem, Message> {
+    let value = as_float(arg(args, 0, "drop_units")?, "drop_units")?;
+    Ok(ComputedItem::Float(value))
 }
 
 /// Converts a numeric argument to a float, returning an error for integers outside the
@@ -774,6 +825,12 @@ pub(crate) fn default_function_definitions() -> FunctionDefinitions {
             to_float,
         ))
         .with(FunctionDefinition::new(
+            store_key!("drop_units"),
+            "returns the numeric value of a float without its unit",
+            ArgumentCount::Exact { count: 1 },
+            drop_units,
+        ))
+        .with(FunctionDefinition::new(
             store_key!("if"),
             "conditional function",
             ArgumentCount::Exact { count: 3 },
@@ -797,8 +854,29 @@ mod tests {
     fn assert_float_eq(name: &str, args: &[ComputedItem], expected: f64) {
         let result = call(name, args);
         assert!(
-            matches!(result, ComputedItem::Float(value) if value.sub(expected).abs() < 1e-9),
+            matches!(
+                result,
+                ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, .. }
+                    if value.sub(expected).abs() < 1e-9
+            ),
             "{name} returned {result:?}, expected a float close to {expected}"
+        );
+    }
+
+    fn assert_float_with_unit_eq(
+        name: &str,
+        args: &[ComputedItem],
+        expected: f64,
+        expected_unit: UnitId,
+    ) {
+        let result = call(name, args);
+        assert!(
+            matches!(
+                result,
+                ComputedItem::FloatWithUnit { value, unit }
+                    if value.sub(expected).abs() < 1e-9 && unit == expected_unit
+            ),
+            "{name} returned {result:?}, expected {expected} in {expected_unit:?}"
         );
     }
 
@@ -1275,7 +1353,7 @@ mod tests {
         // Why: Like the other float functions, these accept unit-bearing floats and drop the unit.
         let meters = |value| ComputedItem::FloatWithUnit {
             value,
-            unit: hrafnix_units::UnitId::Length_Meter,
+            unit: UnitId::Length_Meter,
         };
         assert_float_eq("abs", &[meters(-2.5)], 2.5);
         assert_float_eq("ceil", &[meters(2.5)], 3.0);
@@ -1291,7 +1369,216 @@ mod tests {
     }
 
     #[test]
+    fn extrema_convert_units_to_the_first_unit_bearing_argument() {
+        let meters = |value| ComputedItem::FloatWithUnit {
+            value,
+            unit: UnitId::Length_Meter,
+        };
+        let feet = |value| ComputedItem::FloatWithUnit {
+            value,
+            unit: UnitId::Length_Foot,
+        };
+        assert_float_with_unit_eq(
+            "max",
+            &[meters(1.0), feet(4.0)],
+            1.2192,
+            UnitId::Length_Meter,
+        );
+        assert_float_with_unit_eq(
+            "min",
+            &[feet(4.0), meters(1.0)],
+            3.280_839_895_013_123,
+            UnitId::Length_Foot,
+        );
+        assert_float_with_unit_eq(
+            "clamp",
+            &[meters(1.0), feet(0.0), feet(3.0)],
+            0.9144,
+            UnitId::Length_Meter,
+        );
+    }
+
+    #[test]
+    fn extrema_keep_the_reference_unit_and_stay_plain_without_one() {
+        let meters = |value| ComputedItem::FloatWithUnit {
+            value,
+            unit: UnitId::Length_Meter,
+        };
+        let none = |value| ComputedItem::FloatWithUnit {
+            value,
+            unit: UnitId::None,
+        };
+        assert_float_with_unit_eq("min", &[none(2.0), meters(1.0)], 1.0, UnitId::Length_Meter);
+        assert_float_with_unit_eq(
+            "clamp",
+            &[ComputedItem::Float(5.0), none(0.0), meters(3.0)],
+            3.0,
+            UnitId::Length_Meter,
+        );
+        for name in ["min", "max"] {
+            assert_eq!(
+                call(name, &[none(1.0), ComputedItem::Float(1.0)]),
+                ComputedItem::Float(1.0)
+            );
+        }
+        assert_eq!(
+            call("clamp", &[none(2.0), none(0.0), ComputedItem::Float(1.0)]),
+            ComputedItem::Float(1.0)
+        );
+    }
+
+    #[test]
+    fn extrema_accept_none_units_without_changing_the_reference_unit() {
+        let none = |value| ComputedItem::FloatWithUnit {
+            value,
+            unit: UnitId::None,
+        };
+        for unit in [
+            UnitId::Length_Meter,
+            UnitId::Temperature_Celsius,
+            UnitId::Temperature_Fahrenheit,
+        ] {
+            let concrete = |value| ComputedItem::FloatWithUnit { value, unit };
+            for args in [
+                [none(2.0), concrete(1.0)],
+                [concrete(1.0), none(2.0)],
+                [none(2.0), none(1.0)],
+            ] {
+                assert_float_eq("min", &args, 1.0);
+                assert_float_eq("max", &args, 2.0);
+            }
+            assert_float_eq("clamp", &[none(2.0), concrete(0.0), concrete(1.0)], 1.0);
+            assert_float_eq("clamp", &[concrete(2.0), none(0.0), concrete(1.0)], 1.0);
+            assert_float_eq("clamp", &[concrete(2.0), concrete(0.0), none(1.0)], 1.0);
+            assert_float_eq("clamp", &[none(2.0), none(0.0), none(1.0)], 1.0);
+        }
+        let meters = ComputedItem::FloatWithUnit {
+            value: 1.0,
+            unit: UnitId::Length_Meter,
+        };
+        let feet = ComputedItem::FloatWithUnit {
+            value: 4.0,
+            unit: UnitId::Length_Foot,
+        };
+        for args in [
+            [none(2.0), meters.clone(), feet.clone()],
+            [meters.clone(), none(2.0), feet.clone()],
+            [meters, feet, none(2.0)],
+        ] {
+            assert_float_eq("min", &args, 1.0);
+            assert_float_eq("max", &args, 2.0);
+        }
+        assert_float_eq(
+            "clamp",
+            &[
+                none(2.0),
+                ComputedItem::FloatWithUnit {
+                    value: 0.0,
+                    unit: UnitId::Length_Meter,
+                },
+                ComputedItem::FloatWithUnit {
+                    value: 3.0,
+                    unit: UnitId::Length_Foot,
+                },
+            ],
+            0.9144,
+        );
+    }
+
+    #[test]
+    fn extrema_reject_incompatible_units() {
+        let meters = ComputedItem::FloatWithUnit {
+            value: 1.0,
+            unit: UnitId::Length_Meter,
+        };
+        let seconds = ComputedItem::FloatWithUnit {
+            value: 1.0,
+            unit: UnitId::Time_Second,
+        };
+        let definitions = default_function_definitions();
+        for (name, args) in [
+            ("min", vec![meters.clone(), seconds.clone()]),
+            ("max", vec![meters.clone(), seconds.clone()]),
+            (
+                "clamp",
+                vec![meters.clone(), ComputedItem::Float(0.0), seconds.clone()],
+            ),
+            (
+                "min",
+                vec![
+                    ComputedItem::FloatWithUnit {
+                        value: 0.0,
+                        unit: UnitId::None,
+                    },
+                    meters.clone(),
+                    seconds.clone(),
+                ],
+            ),
+            (
+                "max",
+                vec![
+                    meters.clone(),
+                    ComputedItem::FloatWithUnit {
+                        value: 0.0,
+                        unit: UnitId::None,
+                    },
+                    seconds.clone(),
+                ],
+            ),
+            (
+                "clamp",
+                vec![
+                    meters,
+                    seconds,
+                    ComputedItem::FloatWithUnit {
+                        value: 2.0,
+                        unit: UnitId::None,
+                    },
+                ],
+            ),
+        ] {
+            let error = definitions
+                .get(name)
+                .expect("function should be registered")
+                .call(&args)
+                .expect_err("mixed unit families should error");
+            assert_eq!(
+                error.translate_data().message_key().as_str(),
+                "expression_engine_function_incompatible_units",
+                "{name}"
+            );
+            assert_eq!(
+                error
+                    .translate_data()
+                    .message_params()
+                    .get("function")
+                    .map(ShareableString::as_str),
+                Some(name)
+            );
+        }
+    }
+
+    #[test]
     fn len_counts_characters_not_bytes() {
         assert_integer_eq("len", &[ComputedItem::String("héllo".into())], 5);
+    }
+
+    #[test]
+    fn drop_units_returns_the_plain_value() {
+        let meters = ComputedItem::FloatWithUnit {
+            value: 2.5,
+            unit: UnitId::Length_Meter,
+        };
+        assert_eq!(call("drop_units", &[meters]), ComputedItem::Float(2.5));
+        assert_eq!(
+            call("drop_units", &[ComputedItem::Float(1.5)]),
+            ComputedItem::Float(1.5)
+        );
+        assert_error(
+            "drop_units",
+            &[ComputedItem::Integer(1)],
+            "expression_engine_function_argument_must_be_float",
+            Some("drop_units"),
+        );
     }
 }

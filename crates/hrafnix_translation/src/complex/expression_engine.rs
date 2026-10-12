@@ -892,6 +892,30 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_evaluation_incompatible_units",
+        HashMap::from([
+            ("en", "Cannot apply '%{operator}' to incompatible units %{left} and %{right}"),
+            ("zh", "无法对不兼容的单位 %{left} 和 %{right} 应用“%{operator}”"),
+            ("de", "'%{operator}' kann nicht auf die inkompatiblen Einheiten %{left} und %{right} angewendet werden"),
+            ("es", "No se puede aplicar '%{operator}' a las unidades incompatibles %{left} y %{right}"),
+            ("fr", "Impossible d'appliquer « %{operator} » aux unités incompatibles %{left} et %{right}"),
+            ("ja", "互換性のない単位 %{left} と %{right} に「%{operator}」を適用できません"),
+            ("ko", "호환되지 않는 단위 %{left}와(과) %{right}에 '%{operator}'을(를) 적용할 수 없습니다"),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_offset_temperature_arithmetic",
+        HashMap::from([
+            ("en", "Cannot apply '%{operator}' to %{unit} temperatures; use an absolute scale such as kelvin"),
+            ("zh", "无法对 %{unit} 温度应用“%{operator}”；请使用开尔文等绝对温标"),
+            ("de", "'%{operator}' kann nicht auf Temperaturen in %{unit} angewendet werden; verwenden Sie eine absolute Skala wie Kelvin"),
+            ("es", "No se puede aplicar '%{operator}' a temperaturas en %{unit}; use una escala absoluta como el kelvin"),
+            ("fr", "Impossible d'appliquer « %{operator} » à des températures en %{unit} ; utilisez une échelle absolue comme le kelvin"),
+            ("ja", "%{unit} の温度に「%{operator}」を適用できません。ケルビンなどの絶対温度目盛を使用してください"),
+            ("ko", "%{unit} 온도에 '%{operator}'을(를) 적용할 수 없습니다. 켈빈과 같은 절대 온도 단위를 사용하세요"),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_evaluation_expected_number_with_units_definition",
         HashMap::from([
             ("en", "Expected a number-with-units definition."),
@@ -1240,6 +1264,18 @@ pub(crate) fn add_expression_engine_translation_map(
             ("fr", "L’argument minimum de la fonction clamp ne doit pas être supérieur à son argument maximum."),
             ("ja", "クランプ関数の最小引数は最大引数を超えてはなりません。"),
             ("ko", "클램프 함수의 최소 인수는 최대 인수보다 클 수 없습니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_function_incompatible_units",
+        HashMap::from([
+            ("en", "%{function} function cannot combine incompatible units %{left} and %{right}"),
+            ("zh", "%{function} 函数无法组合不兼容的单位 %{left} 和 %{right}"),
+            ("de", "Die Funktion %{function} kann die inkompatiblen Einheiten %{left} und %{right} nicht kombinieren"),
+            ("es", "La función %{function} no puede combinar las unidades incompatibles %{left} y %{right}"),
+            ("fr", "La fonction %{function} ne peut pas combiner les unités incompatibles %{left} et %{right}"),
+            ("ja", "%{function} 関数は互換性のない単位 %{left} と %{right} を組み合わせることができません"),
+            ("ko", "%{function} 함수는 호환되지 않는 단위 %{left}와(과) %{right}을(를) 결합할 수 없습니다"),
         ]),
     );
     translation_map.set_translation_key(

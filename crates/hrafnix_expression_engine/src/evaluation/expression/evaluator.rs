@@ -105,6 +105,22 @@ const fn computed_float(value: f64, unit: UnitId) -> ComputedItem {
     }
 }
 
+/// Returns the unit of a float item; plain floats and non-float items behave as `UnitId::None`.
+const fn float_unit(item: &ComputedItem) -> UnitId {
+    match item {
+        ComputedItem::FloatWithUnit { unit, .. } => *unit,
+        ComputedItem::Float(_)
+        | ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::Path(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => UnitId::None,
+    }
+}
+
 /// Returns whether an expression is a float literal, optionally prefixed with a single negation.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn is_signed_float_literal(expression: &Expression) -> bool {
@@ -123,6 +139,113 @@ fn is_signed_float_literal(expression: &Expression) -> bool {
     }
 }
 
+/// Returns `right_value` expressed in `left_unit` for operators that combine or compare like
+/// quantities (`+`, `-`, and comparisons). `+` and `-` are rejected whenever either operand is
+/// Celsius or Fahrenheit, even if the other operand is unitless. Otherwise, if either unit is
+/// `None`, the value is unchanged, and units from different families are rejected. Other
+/// operators (e.g., `*` and `/`) may combine any units, so the value is returned unchanged.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn align_right_operand_unit(
+    operator: &Operators,
+    left_unit: UnitId,
+    right_value: f64,
+    right_unit: UnitId,
+    source: &ShareableString,
+    span: Span,
+) -> Result<f64, Message> {
+    // Categorize the operator into three groups: additive, comparison, and other.
+    // Only additive and comparison operators require unit alignment.
+    let is_additive = match operator {
+        Operators::Add | Operators::Subtract => true,
+        Operators::Equal
+        | Operators::NotEqual
+        | Operators::LessThan
+        | Operators::LessThanOrEqual
+        | Operators::GreaterThan
+        | Operators::GreaterThanOrEqual => false,
+        Operators::Multiply
+        | Operators::Divide
+        | Operators::Modulus
+        | Operators::Power
+        | Operators::Negate
+        | Operators::And
+        | Operators::Or
+        | Operators::Not => return Ok(right_value),
+    };
+
+    // Celsius and Fahrenheit are offset scales: absolute temperatures cannot be summed, and an
+    // added operand (converted or unitless) would be ambiguous between an absolute temperature
+    // and a difference.
+    if is_additive
+        && (matches!(
+            left_unit,
+            UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+        ) || matches!(
+            right_unit,
+            UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+        ))
+    {
+        let offset_unit = if matches!(
+            left_unit,
+            UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+        ) {
+            left_unit
+        } else {
+            right_unit
+        };
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_offset_temperature_arithmetic".into(),
+            [
+                ("operator".into(), operator.to_string().into()),
+                ("unit".into(), offset_unit.description().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        ));
+    }
+
+    if matches!(left_unit, UnitId::None) || matches!(right_unit, UnitId::None) {
+        return Ok(right_value);
+    }
+
+    // Check that the units are the same family. If not, throw an error.
+    if left_unit.family_id() != right_unit.family_id() {
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_incompatible_units".into(),
+            [
+                ("operator".into(), operator.to_string().into()),
+                ("left".into(), left_unit.description().into()),
+                ("right".into(), right_unit.description().into()),
+            ]
+            .into_iter()
+            .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        ));
+    }
+
+    // If the units are the same, no conversion is needed.
+    if left_unit == right_unit {
+        return Ok(right_value);
+    }
+
+    // Convert the right value to the left unit.
+    let converted = convert(right_value, right_unit, left_unit).map_err(|error| {
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_unit_conversion_failed".into(),
+            [("error".into(), error.into())].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        )
+    })?;
+    finite_float(converted, source, span)
+}
+
 /// Applies a unary `operator` to `operand_value`, returning the result or an error.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_unary_operation(
@@ -132,14 +255,17 @@ fn evaluate_unary_operation(
     span: Span,
 ) -> Result<ComputedItem, Message> {
     match (operator, operand_value) {
-        (
-            Operators::Negate,
-            ComputedItem::Float(value) | ComputedItem::FloatWithUnit { value, unit: _ },
-        ) => Ok(ComputedItem::Float(finite_float(
+        (Operators::Negate, ComputedItem::Float(value)) => Ok(ComputedItem::Float(finite_float(
             value.neg(),
             source,
             span,
         )?)),
+        (Operators::Negate, ComputedItem::FloatWithUnit { value, unit }) => {
+            Ok(ComputedItem::FloatWithUnit {
+                value: finite_float(value.neg(), source, span)?,
+                unit,
+            })
+        }
         (Operators::Negate, ComputedItem::Integer(value)) => Ok(ComputedItem::Integer(
             value.checked_mul(-1).ok_or_else(|| {
                 create_error_message(
@@ -868,6 +994,7 @@ fn evaluate_expression(
                 return Ok(ComputedItem::Boolean(left_bool));
             }
             let right_value = evaluate_expression(computed_data, functions, source, *right)?;
+            let (left_unit, right_unit) = (float_unit(&left_value), float_unit(&right_value));
             match (left_value, right_value) {
                 (ComputedItem::Boolean(left_bool), ComputedItem::Boolean(right_bool)) => {
                     evaluate_boolean_binary_operation(
@@ -918,13 +1045,36 @@ fn evaluate_expression(
                         value: right_float,
                         unit: _,
                     },
-                ) => evaluate_float_binary_operation(
-                    &operator,
-                    left_float,
-                    right_float,
-                    source,
-                    operator_span,
-                ),
+                ) => {
+                    let right_float = align_right_operand_unit(
+                        &operator,
+                        left_unit,
+                        right_float,
+                        right_unit,
+                        source,
+                        operator_span,
+                    )?;
+                    let result = evaluate_float_binary_operation(
+                        &operator,
+                        left_float,
+                        right_float,
+                        source,
+                        operator_span,
+                    )?;
+                    // A sum or difference of like quantities is itself that quantity, so keep
+                    // the concrete unit (left first) once the right operand has been aligned.
+                    let result_unit = if left_unit == UnitId::None {
+                        right_unit
+                    } else {
+                        left_unit
+                    };
+                    match (&operator, &result) {
+                        (Operators::Add | Operators::Subtract, ComputedItem::Float(value)) => {
+                            Ok(computed_float(*value, result_unit))
+                        }
+                        _ => Ok(result),
+                    }
+                }
                 (ComputedItem::Integer(left_int), ComputedItem::Integer(right_int)) => {
                     evaluate_integer_binary_operation(
                         &operator,
@@ -3674,6 +3824,416 @@ mod tests {
         assert_eq!(
             message_key(&errors[0]),
             "expression_engine_evaluation_division_by_zero"
+        );
+    }
+
+    #[test]
+    fn negation_keeps_units() {
+        let computed_data = BTreeMap::from([(
+            "p_meters".into(),
+            ComputedItem::FloatWithUnit {
+                value: 1.0,
+                unit: UnitId::Length_Meter,
+            },
+        )]);
+        let input_data = BTreeMap::from([(
+            "distance".into(),
+            create_number_with_units_input_data(
+                "-p_meters",
+                "u_length_meter",
+                UnitId::Length_Meter,
+            ),
+        )]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        assert_eq!(
+            result.get("distance"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: -1.0,
+                unit: UnitId::Length_Meter,
+            })
+        );
+    }
+
+    fn unit_data() -> BTreeMap<ShareableString, ComputedItem> {
+        BTreeMap::from([
+            (
+                "p_meters".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Length_Meter,
+                },
+            ),
+            (
+                "p_feet".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Length_Foot,
+                },
+            ),
+            (
+                "p_seconds".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Time_Second,
+                },
+            ),
+        ])
+    }
+
+    #[test]
+    fn none_units_match_plain_float_arithmetic_and_comparisons() {
+        for unit in [
+            UnitId::None,
+            UnitId::Length_Meter,
+            UnitId::Temperature_Celsius,
+            UnitId::Temperature_Fahrenheit,
+        ] {
+            let computed_data = BTreeMap::from([
+                (
+                    "p_value".into(),
+                    ComputedItem::FloatWithUnit { value: 20.0, unit },
+                ),
+                (
+                    "p_none".into(),
+                    ComputedItem::FloatWithUnit {
+                        value: 10.0,
+                        unit: UnitId::None,
+                    },
+                ),
+                ("p_plain".into(), ComputedItem::Float(10.0)),
+            ]);
+            for unitless in ["p_none", "p_plain"] {
+                let input_data = BTreeMap::from([
+                    (
+                        "add".into(),
+                        create_number_basic_input_data(&format!("p_value + {unitless}")),
+                    ),
+                    (
+                        "add_rev".into(),
+                        create_number_basic_input_data(&format!("{unitless} + p_value")),
+                    ),
+                    (
+                        "sub".into(),
+                        create_number_basic_input_data(&format!("p_value - {unitless}")),
+                    ),
+                    (
+                        "sub_rev".into(),
+                        create_number_basic_input_data(&format!("{unitless} - p_value")),
+                    ),
+                    (
+                        "lt".into(),
+                        create_boolean_basic_input_data(&format!("p_value < {unitless}")),
+                    ),
+                    (
+                        "lt_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} < p_value")),
+                    ),
+                    (
+                        "le".into(),
+                        create_boolean_basic_input_data(&format!("p_value <= {unitless}")),
+                    ),
+                    (
+                        "le_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} <= p_value")),
+                    ),
+                    (
+                        "gt".into(),
+                        create_boolean_basic_input_data(&format!("p_value > {unitless}")),
+                    ),
+                    (
+                        "gt_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} > p_value")),
+                    ),
+                    (
+                        "ge".into(),
+                        create_boolean_basic_input_data(&format!("p_value >= {unitless}")),
+                    ),
+                    (
+                        "ge_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} >= p_value")),
+                    ),
+                    (
+                        "eq".into(),
+                        create_boolean_basic_input_data(&format!("p_value == {unitless}")),
+                    ),
+                    (
+                        "eq_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} == p_value")),
+                    ),
+                    (
+                        "ne".into(),
+                        create_boolean_basic_input_data(&format!("p_value != {unitless}")),
+                    ),
+                    (
+                        "ne_rev".into(),
+                        create_boolean_basic_input_data(&format!("{unitless} != p_value")),
+                    ),
+                ]);
+
+                let (result, errors) =
+                    evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+                // The concrete unit (if any) is kept; `None` and plain floats stay plain.
+                // Celsius and Fahrenheit reject `+` and `-` even against unitless operands.
+                let is_offset_scale = matches!(
+                    unit,
+                    UnitId::Temperature_Celsius | UnitId::Temperature_Fahrenheit
+                );
+                let additive_keys = [
+                    ("add", 30.0),
+                    ("add_rev", 30.0),
+                    ("sub", 10.0),
+                    ("sub_rev", -10.0),
+                ];
+                for (key, expected) in additive_keys {
+                    if is_offset_scale {
+                        assert!(
+                            !result.contains_key(key),
+                            "{unit:?}: {key} with {unitless} should not evaluate"
+                        );
+                    } else {
+                        assert_eq!(
+                            result.get(key),
+                            Some(&computed_float(expected, unit)),
+                            "{unit:?}: {key} with {unitless}"
+                        );
+                    }
+                }
+                for (key, expected) in [
+                    ("lt", false),
+                    ("lt_rev", true),
+                    ("le", false),
+                    ("le_rev", true),
+                    ("gt", true),
+                    ("gt_rev", false),
+                    ("ge", true),
+                    ("ge_rev", false),
+                ] {
+                    check_boolean(&result[key], expected);
+                }
+                for key in ["eq", "eq_rev", "ne", "ne_rev"] {
+                    assert!(
+                        !result.contains_key(key),
+                        "{unit:?}: {key} with {unitless} should not evaluate"
+                    );
+                }
+                let count = |expected_key: &str| {
+                    errors
+                        .iter()
+                        .filter(|error| message_key(error) == expected_key)
+                        .count()
+                };
+                let offset_errors =
+                    count("expression_engine_evaluation_offset_temperature_arithmetic");
+                assert_eq!(
+                    count("expression_engine_evaluation_unsupported_operator"),
+                    4,
+                    "{unit:?}: {unitless}"
+                );
+                assert_eq!(
+                    offset_errors,
+                    if is_offset_scale { 4 } else { 0 },
+                    "{unit:?}: {unitless}"
+                );
+                assert_eq!(errors.len(), 4 + offset_errors, "{unit:?}: {unitless}");
+            }
+        }
+    }
+
+    #[test]
+    fn adding_or_comparing_incompatible_units_is_an_error() {
+        let input_data = BTreeMap::from([
+            (
+                "a".into(),
+                create_number_basic_input_data("p_meters + p_seconds"),
+            ),
+            (
+                "b".into(),
+                create_number_basic_input_data("p_meters - p_seconds"),
+            ),
+            (
+                "c".into(),
+                create_boolean_basic_input_data("p_meters < p_seconds"),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&unit_data(), &FunctionDefinitions::new(), &input_data);
+
+        assert!(result.is_empty());
+        assert_eq!(errors.len(), 3);
+        for error in &errors {
+            assert_eq!(
+                message_key(error),
+                "expression_engine_evaluation_incompatible_units"
+            );
+        }
+    }
+
+    #[test]
+    fn same_family_units_are_converted_to_the_left_unit() {
+        let input_data = BTreeMap::from([
+            (
+                "sum".into(),
+                create_number_with_units_input_data(
+                    "p_meters + p_feet",
+                    "u_length_meter",
+                    UnitId::Length_Meter,
+                ),
+            ),
+            (
+                "difference".into(),
+                create_number_with_units_input_data(
+                    "p_feet - p_meters",
+                    "u_length_foot",
+                    UnitId::Length_Foot,
+                ),
+            ),
+            (
+                "a".into(),
+                create_boolean_basic_input_data("p_meters > p_feet"),
+            ),
+            (
+                "b".into(),
+                create_boolean_basic_input_data("p_feet > p_meters"),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&unit_data(), &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        let Some(ComputedItem::FloatWithUnit { value: sum, unit }) = result.get("sum") else {
+            panic!("expected a float with units");
+        };
+        assert_eq!(*unit, UnitId::Length_Meter);
+        assert!((sum - 1.3048).abs() < 1e-12, "{sum}");
+        let Some(ComputedItem::FloatWithUnit {
+            value: difference,
+            unit,
+        }) = result.get("difference")
+        else {
+            panic!("expected a float with units");
+        };
+        assert_eq!(*unit, UnitId::Length_Foot);
+        assert!(
+            (difference - (1.0 - 3.280_839_895_013_123)).abs() < 1e-12,
+            "{difference}"
+        );
+        check_boolean(&result["a"], true);
+        check_boolean(&result["b"], false);
+    }
+
+    #[test]
+    fn multiplying_and_dividing_mixed_units_is_allowed() {
+        let input_data = BTreeMap::from([(
+            "ratio".into(),
+            create_number_basic_input_data("p_meters / p_seconds"),
+        )]);
+
+        let (result, errors) = evaluator(&unit_data(), &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        check_number_float(&result["ratio"], 1.0);
+    }
+
+    #[test]
+    fn adding_or_subtracting_offset_temperatures_is_an_error() {
+        let computed_data = BTreeMap::from([
+            (
+                "p_celsius".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 20.0,
+                    unit: UnitId::Temperature_Celsius,
+                },
+            ),
+            (
+                "p_fahrenheit".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 50.0,
+                    unit: UnitId::Temperature_Fahrenheit,
+                },
+            ),
+            (
+                "p_kelvin".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 300.0,
+                    unit: UnitId::Temperature_Kelvin,
+                },
+            ),
+        ]);
+        let input_data = BTreeMap::from([
+            (
+                "a".into(),
+                create_number_basic_input_data("p_celsius + p_celsius"),
+            ),
+            (
+                "b".into(),
+                create_number_basic_input_data("p_celsius - p_celsius"),
+            ),
+            (
+                "c".into(),
+                create_number_basic_input_data("p_celsius + p_fahrenheit"),
+            ),
+            (
+                "d".into(),
+                create_number_basic_input_data("p_kelvin - p_fahrenheit"),
+            ),
+            (
+                "comparison".into(),
+                create_boolean_basic_input_data("p_celsius > p_fahrenheit"),
+            ),
+            (
+                "kelvin_sum".into(),
+                create_number_with_units_input_data(
+                    "p_kelvin + p_kelvin",
+                    "u_temperature_kelvin",
+                    UnitId::Temperature_Kelvin,
+                ),
+            ),
+        ]);
+
+        let (result, errors) = evaluator(&computed_data, &FunctionDefinitions::new(), &input_data);
+
+        assert_eq!(errors.len(), 4);
+        for error in &errors {
+            assert_eq!(
+                message_key(error),
+                "expression_engine_evaluation_offset_temperature_arithmetic"
+            );
+        }
+        for key in ["a", "b", "c", "d"] {
+            assert!(!result.contains_key(key), "{key} should not evaluate");
+        }
+        check_boolean(&result["comparison"], true);
+        assert_eq!(
+            result.get("kelvin_sum"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: 600.0,
+                unit: UnitId::Temperature_Kelvin,
+            })
+        );
+    }
+
+    #[test]
+    fn drop_units_allows_combining_incompatible_units() {
+        let functions =
+            crate::evaluation::expression::function_definitions_default::default_function_definitions();
+        let input_data = BTreeMap::from([(
+            "sum".into(),
+            create_number_basic_input_data("p_meters + drop_units(p_seconds)"),
+        )]);
+
+        let (result, errors) = evaluator(&unit_data(), &functions, &input_data);
+
+        assert_eq!(errors, [] as [hrafnix_datastore::prelude::Message; 0]);
+        assert_eq!(
+            result.get("sum"),
+            Some(&ComputedItem::FloatWithUnit {
+                value: 2.0,
+                unit: UnitId::Length_Meter,
+            })
         );
     }
 }
