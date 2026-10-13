@@ -1,0 +1,23 @@
+name: Rust - Beta
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  rust-beta:
+    runs-on: ubuntu-26.04
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install Rust beta
+        run: rustup toolchain install beta --profile minimal
+      - name: Build workspace on Rust beta
+        run: cargo +beta build --workspace --all-targets --all-features --locked
+      - name: Test workspace on Rust beta
+        run: cargo +beta test --workspace --all-features --locked
