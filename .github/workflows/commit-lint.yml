@@ -18,3 +18,15 @@ jobs:
         run: |
           npm install -g @commitlint/config-conventional@21.2.3 @commitlint/cli@21.2.3;
           commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+      - name: Reject co-authored commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          commits=$(git log "$BASE_SHA..$HEAD_SHA" --format='%H' \
+            --regexp-ignore-case --extended-regexp --grep='co-authored[-[:space:]]+by')
+          if [ -n "$commits" ]; then
+            echo "::error::Commit messages must not contain Co-authored-by or Co-authored by."
+            printf 'Rejected commits:\n%s\n' "$commits"
+            exit 1
+          fi
