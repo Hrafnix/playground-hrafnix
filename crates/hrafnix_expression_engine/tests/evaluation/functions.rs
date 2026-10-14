@@ -3,6 +3,8 @@ use hrafnix_expression_engine::prelude::*;
 use hrafnix_message::message::{Message, MessageCategory, MessageLevel};
 use std::ops::{Mul, Sub};
 
+mod determinism;
+
 fn evaluation_message(actual: impl Into<ShareableString>) -> Message {
     Message::new_with_params(
         MessageLevel::Error,
