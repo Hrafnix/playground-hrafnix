@@ -15,14 +15,12 @@ jobs:
         os: [ macos-26, macos-26-intel, ubuntu-26.04, ubuntu-26.04-arm, windows-2025, windows-11-arm ]
         profile: [ debug, release ]
     runs-on: ${{ matrix.os }}
-    env:
-      RUSTFLAGS: -D warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Update Rust
-        run: rustup update
+      - name: Install pinned Rust toolchain
+        run: rustup show
       - name: Build Rust project
-        run: cargo build --workspace --all-targets --all-features --locked ${{ matrix.profile == 'release' && '--release' || '' }}
+        run: cargo --config 'target."cfg(all())".rustflags=["-D", "warnings"]' build --workspace --all-targets --all-features --locked ${{ matrix.profile == 'release' && '--release' || '' }}
       - name: Test Rust project
-        run: cargo test --workspace --all-features --locked ${{ matrix.profile == 'release' && '--release' || '' }}
+        run: cargo --config 'target."cfg(all())".rustflags=["-D", "warnings"]' test --workspace --all-features --locked ${{ matrix.profile == 'release' && '--release' || '' }}

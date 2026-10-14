@@ -35,6 +35,44 @@ Don't expect much. This may not be stable anytime soon.
 cargo test --workspace
 ```
 
+## Floating-point determinism
+
+The target is identical finite `f64` result bits for identical inputs on the
+x86-64 and AArch64 Linux, macOS, and Windows targets configured in
+`.cargo/config.toml`. This is a tested compatibility goal, not a guarantee for
+arbitrary architectures, compiler flags, or custom functions.
+
+- Use the toolchain pinned in `rust-toolchain.toml` and `Cargo.lock` (`--locked`
+  for reproducible builds). The minimum supported Rust version is checked
+  separately; the beta workflow evaluates upcoming compiler changes. Review
+  reference-test results before upgrading the pinned toolchain or `libm`.
+- Keep the configured baseline CPU flags; do not replace them with
+  `target-cpu=native`, fast-math options, or flags that permit reassociation.
+  `RUSTFLAGS` and `CARGO_ENCODED_RUSTFLAGS` override Cargo's configured flags.
+  The test workflow adds warning denial with a matching Cargo `cfg(all())`
+  target configuration, which is combined with the target-triple flags.
+- Expression transcendental functions, powers, and remainders use the pinned
+  `libm` implementation. Ordinary expression multiplication and addition remain
+  separate operations. Temperature conversions intentionally use `f64::mul_add`
+  where written: the product and sum round once, whether implemented in hardware
+  or software. Disabling hardware FMA does not change that API's fused semantics.
+- Evaluation rejects non-finite results and normalizes negative zero to positive
+  zero. Subnormals remain supported; they must not be flushed to zero.
+- Each evaluation thread must use round-to-nearest, ties-to-even, with gradual
+  underflow (no flush-to-zero or denormals-are-zero modes). Native libraries,
+  plugins, and registered custom functions must preserve or restore that
+  environment and follow the same math policy. The engine does not reset
+  thread-local floating-point control registers.
+- Preserve expression grouping and deterministic traversal/update order.
+  Future reductions and parallel simulation updates must use a fixed ordering
+  and reduction tree, not hash-map iteration or task-completion order. Numerical
+  accuracy improvements alone do not establish deterministic results.
+
+Fixed-bit reference tests exercise the evaluation pipeline and unit conversions,
+including fused arithmetic, rounding boundaries, and subnormals. The same tests
+run in debug and release across the six-platform test matrix; tolerance-based
+accuracy tests are retained alongside them.
+
 ## License
 
 Dual-licensed under MIT or Apache-2.0, whichever you prefer.
