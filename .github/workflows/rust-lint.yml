@@ -10,8 +10,6 @@ permissions:
 jobs:
   rust-lint:
     runs-on: ubuntu-26.04
-    env:
-      RUSTFLAGS: -D warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -22,6 +20,6 @@ jobs:
       - name: Rust Format check
         run: cargo fmt -- --check
       - name: Rust Clippy check
-        run: cargo clippy --workspace --all-targets --all-features --locked
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - name: Rust Clippy check (without --all-features)
-        run: cargo clippy --workspace --all-targets --locked
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings

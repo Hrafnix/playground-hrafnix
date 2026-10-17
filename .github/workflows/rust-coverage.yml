@@ -7,8 +7,6 @@ permissions:
 jobs:
   rust-coverage:
     runs-on: ubuntu-26.04
-    env:
-      RUSTFLAGS: -D warnings
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -17,7 +15,12 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate coverage report
-        run: cargo llvm-cov --workspace --all-features --locked --html
+        run: |
+          cargo llvm-cov clean --workspace
+          cargo llvm-cov show-env --sh > "$RUNNER_TEMP/llvm-cov-env.sh"
+          source "$RUNNER_TEMP/llvm-cov-env.sh"
+          cargo test --workspace --all-features --locked --config 'target."cfg(all())".rustflags=["-D", "warnings"]'
+          cargo llvm-cov report --html
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
@@ -25,4 +28,6 @@ jobs:
           path: target/llvm-cov/html
           if-no-files-found: error
       - name: Enforce coverage threshold
-        run: cargo llvm-cov report --fail-under-lines 85
+        run: |
+          source "$RUNNER_TEMP/llvm-cov-env.sh"
+          cargo llvm-cov report --fail-under-lines 85
