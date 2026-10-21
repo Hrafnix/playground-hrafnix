@@ -364,6 +364,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_translator_index_target_must_be_identifier",
+        HashMap::from([
+            ("en", "Only named values can be indexed, found '%{target}'."),
+            ("zh", "只能对命名值进行索引，但找到的是“%{target}”。"),
+            ("de", "Nur benannte Werte können indiziert werden, gefunden wurde '%{target}'."),
+            ("es", "Solo se pueden indexar valores con nombre; se encontró '%{target}'."),
+            ("fr", "Seules les valeurs nommées peuvent être indexées, trouvé '%{target}'."),
+            ("ja", "インデックスを付けられるのは名前付きの値のみですが、'%{target}' が見つかりました。"),
+            ("ko", "이름이 있는 값만 인덱싱할 수 있지만 '%{target}'이(가) 있습니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_translator_invalid_numeric_literal",
         HashMap::from([
             ("en", "Invalid numeric literal: %{value}"),
@@ -589,6 +601,18 @@ pub(crate) fn add_expression_engine_translation_map(
             ("fr", "L'indexation nécessite exactement 2 ou 4 indices, obtenu %{actual}."),
             ("ja", "インデックス作成には 2 つまたは 4 つのインデックスが必要です。%{actual} を取得しました。"),
             ("ko", "인덱싱에는 정확히 2개 또는 4개의 인덱스가 필요합니다. %{actual}가 있습니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_table_index_count",
+        HashMap::from([
+            ("en", "Table indexing requires exactly 2 indices, got %{actual}."),
+            ("zh", "表索引正好需要 2 个索引，得到 %{actual}。"),
+            ("de", "Die Tabellenindizierung erfordert genau 2 Indizes, erhalten: %{actual}."),
+            ("es", "La indexación de tablas requiere exactamente 2 índices, se obtuvieron %{actual}."),
+            ("fr", "L'indexation de table nécessite exactement 2 indices, obtenu %{actual}."),
+            ("ja", "テーブルのインデックス作成にはちょうど 2 つのインデックスが必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "테이블 인덱싱에는 정확히 2개의 인덱스가 필요하지만 %{actual}개가 있습니다."),
         ]),
     );
     translation_map.set_translation_key(

@@ -350,14 +350,23 @@ impl Translator {
                     index,
                 })
             }
+            Expression::Literal(_, Literal::Identifier(name)) => Ok(Expression::Index {
+                span: combined_span,
+                name,
+                index: vec![new_index],
+            }),
             other @ (Expression::Literal(..)
             | Expression::BinaryOperation { .. }
             | Expression::UnaryOperation { .. }
-            | Expression::FunctionCall { .. }) => Ok(Expression::Index {
-                span: combined_span,
-                name: other.to_string(),
-                index: vec![new_index],
-            }),
+            | Expression::FunctionCall { .. }) => Err(create_error_message(
+                MessageCategory::ExpressionParsing,
+                "expression_engine_translator_index_target_must_be_identifier".into(),
+                [("target".into(), other.to_string().into())]
+                    .into_iter()
+                    .collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(expression_span(&other))),
+            )),
         }
     }
 
@@ -758,5 +767,17 @@ mod tests {
             }
             other => panic!("expected BinaryOperation, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn indexing_a_non_identifier_target_is_an_error() {
+        // Why: Non-identifier targets used to be stringified into a bogus variable name.
+        let error = translate_str("abs(1)[0][1]").unwrap_err();
+        assert_parse_error(
+            &error,
+            "expression_engine_translator_index_target_must_be_identifier",
+            vec![("target", "abs(1)")],
+        );
+        assert!(translate_str("(t)[0][1]").is_ok());
     }
 }
