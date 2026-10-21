@@ -28,6 +28,13 @@ impl MissingRequirements {
         let mut missing_variables = Vec::new();
         let mut missing_functions = Vec::new();
 
+        let item_keys: HashSet<ShareableString> = item_keys
+            .iter()
+            .map(|key| match key.as_str().split_once('[') {
+                Some((parent, _)) => ShareableString::from(parent),
+                None => key.clone(),
+            })
+            .collect();
         let requirements = ExpressionRequirements::new(expression);
 
         for global in requirements.globals {
@@ -251,15 +258,6 @@ impl ExpressionRequirements {
             Expression::Index { name, index, .. } => {
                 Self::record_name(name, global, parameters, variables, seen_names);
                 for index_expression in index {
-                    // A bare string literal used as an index (e.g., the `col` in
-                    // `t[0][col]`) is a literal field name, not a reference to a
-                    // variable, so it is not treated as a requirement here.
-                    if matches!(
-                        index_expression,
-                        Expression::Literal(_, Literal::Identifier(_))
-                    ) {
-                        continue;
-                    }
                     Self::collect_requirements(
                         index_expression,
                         global,

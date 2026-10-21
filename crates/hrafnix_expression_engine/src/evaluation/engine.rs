@@ -191,6 +191,11 @@ impl ExpressionEngine {
     /// Checks for missing requirements in the provided expression based on the current state of the engine.
     /// It verifies if all required globals, parameters, variables, and functions are present.
     ///
+    /// For indexed references, checks that the parent exists and collects any
+    /// globals, parameters, variables, or functions used in the indices without
+    /// evaluating them. Unprefixed index names and quoted strings are treated as
+    /// literals. Index validity is checked during evaluation.
+    ///
     /// # Errors
     ///
     /// Returns an error if any required global, parameter, variable, or function is missing.
