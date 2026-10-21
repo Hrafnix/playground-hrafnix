@@ -872,8 +872,8 @@ fn evaluate_index_operation(
 
     let mut indexes = Vec::new();
     for index_expression in index {
-        // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) is a
-        // literal field name, not a reference to a variable, so it is not looked up.
+        // A bare identifier used as an index (e.g., the `col` in `t[0][col]`) resolves to a
+        // variable when one exists; otherwise it is treated as a literal field name.
         let index_value =
             if let Expression::Literal(lit_span, Literal::Identifier(name)) = &index_expression {
                 if let Ok(value) = lookup_variable(computed_data, name, source, *lit_span) {
@@ -914,169 +914,174 @@ fn evaluate_index_operation(
         lookup_variable(computed_data, name, source, span)?
     };
 
-    if matches!(
-        &item,
-        ComputedItem::Table(_) | ComputedItem::TableWithUnits(_)
-    ) {
-        if indexes.is_empty() {
-            return Ok(item);
+    if indexes.is_empty() {
+        return Ok(item);
+    }
+
+    let (table, table_with_units) = match &item {
+        ComputedItem::Table(table) => (table, None),
+        ComputedItem::TableWithUnits(table) => (table.as_table(), Some(table)),
+        ComputedItem::Boolean(_)
+        | ComputedItem::Integer(_)
+        | ComputedItem::Float(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::Path(_)
+        | ComputedItem::Unit(_) => {
+            return Err(create_error_message(
+                MessageCategory::ExpressionEvaluation,
+                "expression_engine_evaluation_expected_table_for_indexing".into(),
+                [].into_iter().collect(),
+                Some(source.clone()),
+                Some(SpanSet::from_span(span)),
+            ));
         }
+    };
 
-        let (table, table_with_units) = match &item {
-            ComputedItem::Table(table) => (table, None),
-            ComputedItem::TableWithUnits(table) => (table.as_table(), Some(table)),
-            ComputedItem::Boolean(_)
-            | ComputedItem::Integer(_)
-            | ComputedItem::Float(_)
-            | ComputedItem::FloatWithUnit { .. }
-            | ComputedItem::String(_)
-            | ComputedItem::Identifier(_)
-            | ComputedItem::Path(_)
-            | ComputedItem::Unit(_) => {
-                return Err(create_error_message(
+    if indexes.len() != 2 {
+        return Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_table_index_count".into(),
+            [("actual".into(), indexes.len().to_string().into())]
+                .into_iter()
+                .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        ));
+    }
+
+    let index_1 = indexes.first().ok_or_else(|| {
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_missing_first_index".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        )
+    })?;
+    let index_2 = indexes.get(1).ok_or_else(|| {
+        create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_missing_second_index".into(),
+            [].into_iter().collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        )
+    })?;
+
+    let row_index = match index_1 {
+        ComputedItem::Integer(i) => {
+            let size = usize::try_from(*i)
+                .ok()
+                .filter(|size| *size < table.row_count());
+
+            size.ok_or_else(|| {
+                create_error_message(
                     MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_table_for_indexing".into(),
-                    [].into_iter().collect(),
+                    "expression_engine_evaluation_table_row_index_out_of_bounds".into(),
+                    [
+                        ("index".into(), i.to_string().into()),
+                        ("count".into(), table.row_count().to_string().into()),
+                    ]
+                    .into_iter()
+                    .collect(),
                     Some(source.clone()),
                     Some(SpanSet::from_span(span)),
-                ));
-            }
-        };
-
-        let index_1 = indexes.first().ok_or_else(|| {
-            create_error_message(
+                )
+            })?
+        }
+        ComputedItem::Boolean(_)
+        | ComputedItem::Float(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::String(_)
+        | ComputedItem::Identifier(_)
+        | ComputedItem::Path(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_) => {
+            return Err(create_error_message(
                 MessageCategory::ExpressionEvaluation,
-                "expression_engine_evaluation_missing_first_index".into(),
-                [].into_iter().collect(),
-                Some(source.clone()),
-                Some(SpanSet::from_span(span)),
-            )
-        })?;
-        let index_2 = indexes.get(1).ok_or_else(|| {
-            create_error_message(
-                MessageCategory::ExpressionEvaluation,
-                "expression_engine_evaluation_missing_second_index".into(),
-                [].into_iter().collect(),
-                Some(source.clone()),
-                Some(SpanSet::from_span(span)),
-            )
-        })?;
-
-        let row_index = match index_1 {
-            ComputedItem::Integer(i) => {
-                let size = usize::try_from(*i)
-                    .ok()
-                    .filter(|size| *size < table.row_count());
-
-                size.ok_or_else(|| {
-                    create_error_message(
-                        MessageCategory::ExpressionEvaluation,
-                        "expression_engine_evaluation_table_row_index_out_of_bounds".into(),
-                        [
-                            ("index".into(), i.to_string().into()),
-                            ("count".into(), table.row_count().to_string().into()),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        Some(source.clone()),
-                        Some(SpanSet::from_span(span)),
-                    )
-                })?
-            }
-            ComputedItem::Boolean(_)
-            | ComputedItem::Float(_)
-            | ComputedItem::FloatWithUnit { .. }
-            | ComputedItem::String(_)
-            | ComputedItem::Identifier(_)
-            | ComputedItem::Path(_)
-            | ComputedItem::Table(_)
-            | ComputedItem::TableWithUnits(_)
-            | ComputedItem::Unit(_) => {
-                return Err(create_error_message(
-                    MessageCategory::ExpressionEvaluation,
-                    "expression_engine_evaluation_expected_table_row_index".into(),
-                    [("actual".into(), index_1.describe().into())]
-                        .into_iter()
-                        .collect(),
-                    Some(source.clone()),
-                    Some(SpanSet::from_span(span)),
-                ));
-            }
-        };
-
-        return match index_2 {
-            ComputedItem::Identifier(s) | ComputedItem::String(s) => {
-                let value = table.get_cell_by_name(row_index, s).ok_or_else(|| {
-                    create_error_message(
-                        MessageCategory::ExpressionEvaluation,
-                        "expression_engine_evaluation_table_field_not_found".into(),
-                        [("field".into(), s.to_string().into())]
-                            .into_iter()
-                            .collect(),
-                        Some(source.clone()),
-                        Some(SpanSet::from_span(span)),
-                    )
-                })?;
-                let unit = table_with_units
-                    .and_then(|table| table.get_unit_by_name(s.clone()))
-                    .unwrap_or(UnitId::None);
-                Ok(computed_float(value, unit))
-            }
-            ComputedItem::Integer(i) => {
-                let size = usize::try_from(*i)
-                    .ok()
-                    .filter(|size| *size < table.column_count());
-
-                let size = size.ok_or_else(|| {
-                    create_error_message(
-                        MessageCategory::ExpressionEvaluation,
-                        "expression_engine_evaluation_table_column_index_out_of_bounds".into(),
-                        [
-                            ("index".into(), i.to_string().into()),
-                            ("count".into(), table.column_count().to_string().into()),
-                        ]
-                        .into_iter()
-                        .collect(),
-                        Some(source.clone()),
-                        Some(SpanSet::from_span(span)),
-                    )
-                })?;
-
-                let value = table.get_cell(row_index, size).ok_or_else(|| {
-                    create_error_message(
-                        MessageCategory::ExpressionEvaluation,
-                        "expression_engine_evaluation_table_field_not_found".into(),
-                        [("field".into(), i.to_string().into())]
-                            .into_iter()
-                            .collect(),
-                        Some(source.clone()),
-                        Some(SpanSet::from_span(span)),
-                    )
-                })?;
-                let unit = table_with_units
-                    .and_then(|table| table.get_unit(size))
-                    .unwrap_or(UnitId::None);
-                Ok(computed_float(value, unit))
-            }
-            other @ (ComputedItem::Boolean(_)
-            | ComputedItem::Float(_)
-            | ComputedItem::FloatWithUnit { .. }
-            | ComputedItem::Path(_)
-            | ComputedItem::Table(_)
-            | ComputedItem::TableWithUnits(_)
-            | ComputedItem::Unit(_)) => Err(create_error_message(
-                MessageCategory::ExpressionEvaluation,
-                "expression_engine_evaluation_expected_table_field_index".into(),
-                [("actual".into(), other.describe().into())]
+                "expression_engine_evaluation_expected_table_row_index".into(),
+                [("actual".into(), index_1.describe().into())]
                     .into_iter()
                     .collect(),
                 Some(source.clone()),
                 Some(SpanSet::from_span(span)),
-            )),
-        };
-    }
+            ));
+        }
+    };
 
-    Ok(item)
+    match index_2 {
+        ComputedItem::Identifier(s) | ComputedItem::String(s) => {
+            let value = table.get_cell_by_name(row_index, s).ok_or_else(|| {
+                create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_field_not_found".into(),
+                    [("field".into(), s.to_string().into())]
+                        .into_iter()
+                        .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
+                )
+            })?;
+            let unit = table_with_units
+                .and_then(|table| table.get_unit_by_name(s.clone()))
+                .unwrap_or(UnitId::None);
+            Ok(computed_float(value, unit))
+        }
+        ComputedItem::Integer(i) => {
+            let size = usize::try_from(*i)
+                .ok()
+                .filter(|size| *size < table.column_count());
+
+            let size = size.ok_or_else(|| {
+                create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_column_index_out_of_bounds".into(),
+                    [
+                        ("index".into(), i.to_string().into()),
+                        ("count".into(), table.column_count().to_string().into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
+                )
+            })?;
+
+            let value = table.get_cell(row_index, size).ok_or_else(|| {
+                create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_field_not_found".into(),
+                    [("field".into(), i.to_string().into())]
+                        .into_iter()
+                        .collect(),
+                    Some(source.clone()),
+                    Some(SpanSet::from_span(span)),
+                )
+            })?;
+            let unit = table_with_units
+                .and_then(|table| table.get_unit(size))
+                .unwrap_or(UnitId::None);
+            Ok(computed_float(value, unit))
+        }
+        other @ (ComputedItem::Boolean(_)
+        | ComputedItem::Float(_)
+        | ComputedItem::FloatWithUnit { .. }
+        | ComputedItem::Path(_)
+        | ComputedItem::Table(_)
+        | ComputedItem::TableWithUnits(_)
+        | ComputedItem::Unit(_)) => Err(create_error_message(
+            MessageCategory::ExpressionEvaluation,
+            "expression_engine_evaluation_expected_table_field_index".into(),
+            [("actual".into(), other.describe().into())]
+                .into_iter()
+                .collect(),
+            Some(source.clone()),
+            Some(SpanSet::from_span(span)),
+        )),
+    }
 }
 
 /// Recursively evaluates an [`Expression`] node against `computed_data` and returns the result.
@@ -3844,6 +3849,42 @@ mod tests {
         let functions =
             crate::evaluation::expression::function_definitions_default::default_function_definitions();
         evaluate_expression(computed_data, &functions, &source, parsed)
+    }
+
+    #[test]
+    fn indexing_a_non_table_value_is_an_error() {
+        // Why: Indexing a scalar used to silently return the scalar itself.
+        let computed_data = BTreeMap::from([("p_int".into(), ComputedItem::Integer(7))]);
+        let error = evaluate_str(&computed_data, "p_int[0][1]").unwrap_err();
+        assert_eq!(
+            message_key(&error),
+            "expression_engine_evaluation_expected_table_for_indexing"
+        );
+    }
+
+    #[test]
+    fn indexing_a_table_with_four_indices_is_an_error() {
+        // Why: Extra indices on a table used to be silently ignored.
+        let computed_data = BTreeMap::from([(
+            "t".into(),
+            create_table_computed_item(vec![vec![("a", 1.0)]]),
+        )]);
+        let error = evaluate_str(&computed_data, "t[0][a][0][a]").unwrap_err();
+        assert_eq!(
+            message_key(&error),
+            "expression_engine_evaluation_table_index_count"
+        );
+    }
+
+    #[test]
+    fn map_entry_holding_a_table_can_be_indexed_further() {
+        // Why: A flattened map entry consumes the first two indices; the rest index into it.
+        let computed_data = BTreeMap::from([(
+            "m[entry][field]".into(),
+            create_table_computed_item(vec![vec![("a", 4.0)]]),
+        )]);
+        let result = evaluate_str(&computed_data, "m[entry][field][0][a]").unwrap();
+        check_number_float(&result, 4.0);
     }
 
     #[test]
