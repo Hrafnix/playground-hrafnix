@@ -48,7 +48,7 @@ fn localizes_help_for_each_supported_language() {
             "de",
             "Hrafnix-Projekte erstellen, formatieren und simulieren.",
         ),
-        ("es", "Crea, da formato y simula proyectos de Hrafnix."),
+        ("es", "Cree, dé formato y simule proyectos de Hrafnix."),
         ("fr", "Crée, formate et simule des projets Hrafnix."),
         (
             "ja",
@@ -115,7 +115,7 @@ fn localizes_invalid_subcommand_errors_for_each_supported_language() {
         ),
         (
             "fr",
-            "sous-commande non reconnue «new2»",
+            "sous-commande non reconnue « new2 »",
             "conseil:",
             "Utilisation :",
         ),
