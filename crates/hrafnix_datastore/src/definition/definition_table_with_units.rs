@@ -1,4 +1,4 @@
-use crate::definition::NumberWithUnitsDefinition;
+use crate::definition::{NumberWithUnitsDefinition, TableColumnRequirement};
 use crate::traits::TreePrint;
 use hrafnix_keys::store_key::StoreKey;
 use hrafnix_shareable_string::{ShareableString, SharedStringStore};
@@ -14,6 +14,8 @@ pub struct TableWithUnitsDefinition {
     ordered_keys: Vec<StoreKey>,
     /// Column definitions keyed by a column name.
     columns: Arc<BTreeMap<StoreKey, NumberWithUnitsDefinition>>,
+    /// Relationships required between adjacent rows, independent of numeric bounds.
+    column_requirements: BTreeMap<StoreKey, TableColumnRequirement>,
     /// Optional default row data.
     default_table: Option<Vec<Vec<ShareableString>>>,
 }
@@ -28,18 +30,42 @@ impl TableWithUnitsDefinition {
         description: S1,
         columns: Vec<(K, NumberWithUnitsDefinition)>,
     ) -> Self {
+        Self::new_with_column_requirements(
+            description,
+            columns
+                .into_iter()
+                .map(|(key, definition)| (key, definition, TableColumnRequirement::None))
+                .collect(),
+        )
+    }
+
+    /// Creates a table with each column's adjacent-row requirement fixed at construction.
+    ///
+    /// Duplicate keys use the last definition and requirement, in last-occurrence order.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_column_requirements<S: Into<ShareableString>, K: Into<StoreKey>>(
+        description: S,
+        columns: Vec<(K, NumberWithUnitsDefinition, TableColumnRequirement)>,
+    ) -> Self {
         let mut items = BTreeMap::new();
         let mut ordered_keys = Vec::new();
-        for (k, v) in columns {
+        let mut column_requirements = BTreeMap::new();
+        for (k, v, requirement) in columns {
             let key = k.into();
             ordered_keys.retain(|existing_key| existing_key != &key);
             ordered_keys.push(key.clone());
+            if requirement == TableColumnRequirement::None {
+                column_requirements.remove(&key);
+            } else {
+                column_requirements.insert(key.clone(), requirement);
+            }
             items.insert(key, v);
         }
         Self {
             description: description.into(),
             ordered_keys,
             columns: Arc::new(items),
+            column_requirements,
             default_table: None,
         }
     }
@@ -55,7 +81,31 @@ impl TableWithUnitsDefinition {
         columns: Vec<(K, NumberWithUnitsDefinition)>,
         default_table: Vec<Vec<S2>>,
     ) -> Self {
-        let mut definition = Self::new(description, columns);
+        Self::new_with_column_requirements_and_default(
+            description,
+            columns
+                .into_iter()
+                .map(|(key, definition)| (key, definition, TableColumnRequirement::None))
+                .collect(),
+            default_table,
+        )
+    }
+
+    /// Creates a table with fixed column requirements and default rows.
+    ///
+    /// Duplicate keys use the last definition and requirement, in last-occurrence order.
+    /// Default rows are padded or truncated to the resulting column count.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_column_requirements_and_default<
+        S1: Into<ShareableString>,
+        S2: Into<ShareableString>,
+        K: Into<StoreKey>,
+    >(
+        description: S1,
+        columns: Vec<(K, NumberWithUnitsDefinition, TableColumnRequirement)>,
+        default_table: Vec<Vec<S2>>,
+    ) -> Self {
+        let mut definition = Self::new_with_column_requirements(description, columns);
         let column_count = definition.count();
         definition.default_table = Some(
             default_table
@@ -98,6 +148,30 @@ impl TableWithUnitsDefinition {
         self.ordered_keys
             .get(index)
             .and_then(|key| self.columns.get(key))
+    }
+
+    /// Returns the requirement, or `None` for an unknown column.
+    ///
+    /// A known column without a requirement returns `Some(TableColumnRequirement::None)`.
+    pub fn column_requirement<S: Into<ShareableString>>(
+        &self,
+        key: S,
+    ) -> Option<TableColumnRequirement> {
+        let key = key.into();
+        self.columns.contains_key(&key).then(|| {
+            self.column_requirements
+                .get(&key)
+                .copied()
+                .unwrap_or(TableColumnRequirement::None)
+        })
+    }
+
+    /// Returns the requirement in insertion order, or `None` for an unknown index.
+    #[must_use]
+    pub fn column_requirement_by_index(&self, index: usize) -> Option<TableColumnRequirement> {
+        self.ordered_keys
+            .get(index)
+            .and_then(|key| self.column_requirement(key.as_str()))
     }
 
     /// Returns the index of the column with the specified key.
@@ -169,6 +243,11 @@ impl TableWithUnitsDefinition {
                     .collect(),
             ),
             ordered_keys: self.ordered_keys.iter().map(|k| k.launder(store)).collect(),
+            column_requirements: self
+                .column_requirements
+                .iter()
+                .map(|(key, requirement)| (key.launder(store), *requirement))
+                .collect(),
             default_table: self.default_table.as_ref().map(|table| {
                 table
                     .iter()
@@ -180,7 +259,8 @@ impl TableWithUnitsDefinition {
 
     /// Returns true if values of `other` can safely replace values of `self` during a merge.
     ///
-    /// Descriptions and defaults are ignored; columns must match in order and be merge compatible.
+    /// Descriptions, defaults, bounds, and row requirements are ignored;
+    /// columns must match in order and be merge compatible.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn is_merge_compatible(&self, other: &Self) -> bool {

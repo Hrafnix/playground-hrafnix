@@ -979,6 +979,18 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_failed",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: value %{current} must satisfy current %{relation} previous (previous value %{previous})."),
+            ("zh", "列“%{column}”第 %{row} 行：值 %{current} 必须满足当前值 %{relation} 前值（前值为 %{previous}）。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: Wert %{current} muss aktuell %{relation} vorher erfüllen (vorheriger Wert %{previous})."),
+            ("es", "Columna '%{column}', fila %{row}: el valor %{current} debe cumplir actual %{relation} anterior (valor anterior %{previous})."),
+            ("fr", "Colonne « %{column} », ligne %{row} : la valeur %{current} doit respecter actuel %{relation} précédent (valeur précédente %{previous})."),
+            ("ja", "列「%{column}」、行 %{row}: 値 %{current} は現在値 %{relation} 前の値を満たす必要があります（前の値 %{previous}）。"),
+            ("ko", "'%{column}' 열, %{row}행: 값 %{current}은 현재 값 %{relation} 이전 값을 만족해야 합니다(이전 값 %{previous})."),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_evaluation_table_column_count_mismatch",
         HashMap::from([
             ("en", "Parameter '%{parameter}' references a table with %{actual} columns, but the current table expects %{expected} columns."),

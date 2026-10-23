@@ -41,8 +41,8 @@ pub use crate::definition::{
     IntegerConstraintEnum, IntegerDefinition, ItemDefinitionType, MapDefinition, MapEntryDefault,
     MapItemDefault, MapItemDefinition, NumberConstraint, NumberConstraintEnum, NumberDefinition,
     NumberWithUnitsDefinition, ParameterObjectDefinition, ParameterObjectDefinitionBuilder,
-    StringDefinition, TableDefinition, TableWithUnitsDefinition, UnitDefinition,
-    VariableObjectDefinition, VariableObjectDefinitionBuilder,
+    StringDefinition, TableColumnRequirement, TableDefinition, TableWithUnitsDefinition,
+    UnitDefinition, VariableObjectDefinition, VariableObjectDefinitionBuilder,
 };
 
 // Shareable strings

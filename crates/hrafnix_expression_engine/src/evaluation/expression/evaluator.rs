@@ -13,11 +13,14 @@ use crate::{
     TableInputData, TableWithUnitsInputData,
 };
 use hrafnix_common::math::canonicalize_f64;
-use hrafnix_datastore::definition::{IntegerConstraintEnum, NumberConstraintEnum};
+use hrafnix_datastore::definition::{
+    IntegerConstraintEnum, NumberConstraintEnum, TableColumnRequirement,
+};
 use hrafnix_message::message::{Message, MessageCategory};
 use hrafnix_message::span::{Span, SpanSet};
 use hrafnix_shareable_string::ShareableString;
 use hrafnix_units::{UnitId, conversion::convert};
+use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
@@ -1738,6 +1741,78 @@ fn evaluate_number_with_units_expression(
     Ok(computed_float(value, number_definition.preferred_units()))
 }
 
+/// Validates adjacent values after evaluation and unit conversion.
+#[cfg_attr(feature = "hotpath", hotpath::measure)]
+fn validate_table_column_requirements<'a>(
+    rows: &[Vec<f64>],
+    columns: impl Iterator<Item = (&'a str, TableColumnRequirement)>,
+    source_for_cell: impl Fn(usize, usize) -> ShareableString,
+) -> Result<(), Vec<Message>> {
+    let mut errors = Vec::new();
+    for (column, (key, requirement)) in columns.enumerate() {
+        let relation = match requirement {
+            TableColumnRequirement::None => continue,
+            TableColumnRequirement::Increasing => ">",
+            TableColumnRequirement::ConstantOrIncreasing => ">=",
+            TableColumnRequirement::Decreasing => "<",
+            TableColumnRequirement::ConstantOrDecreasing => "<=",
+            TableColumnRequirement::Constant => "=",
+        };
+        for (previous_row, pair) in rows.windows(2).enumerate() {
+            let [previous_values, current_values] = pair else {
+                continue;
+            };
+            let (Some(&previous), Some(&current)) =
+                (previous_values.get(column), current_values.get(column))
+            else {
+                continue;
+            };
+            let previous = canonicalize_f64(previous);
+            let current = canonicalize_f64(current);
+            let ordering = current.partial_cmp(&previous);
+            let valid = match requirement {
+                TableColumnRequirement::None => true,
+                TableColumnRequirement::Increasing => ordering == Some(Ordering::Greater),
+                TableColumnRequirement::ConstantOrIncreasing => {
+                    matches!(ordering, Some(Ordering::Greater | Ordering::Equal))
+                }
+                TableColumnRequirement::Decreasing => ordering == Some(Ordering::Less),
+                TableColumnRequirement::ConstantOrDecreasing => {
+                    matches!(ordering, Some(Ordering::Less | Ordering::Equal))
+                }
+                TableColumnRequirement::Constant => ordering == Some(Ordering::Equal),
+            };
+            if !valid {
+                let source = source_for_cell(previous_row.saturating_add(1), column);
+                let span = Span::new(0, source.as_str().chars().count());
+                errors.push(create_error_message(
+                    MessageCategory::ExpressionEvaluation,
+                    "expression_engine_evaluation_table_column_requirement_failed".into(),
+                    [
+                        ("column".into(), key.into()),
+                        (
+                            "row".into(),
+                            previous_row.saturating_add(2).to_string().into(),
+                        ),
+                        ("previous".into(), previous.to_string().into()),
+                        ("current".into(), current.to_string().into()),
+                        ("relation".into(), relation.into()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    Some(source),
+                    Some(SpanSet::from_span(span)),
+                ));
+            }
+        }
+    }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors)
+    }
+}
+
 /// Evaluates all cells in a [`TableInputData`] and returns the resulting rows of `f64` values.
 #[cfg_attr(feature = "hotpath", hotpath::measure)]
 fn evaluate_table_expression(
@@ -1839,6 +1914,18 @@ fn evaluate_table_expression(
                     return Err(errors);
                 }
 
+                validate_table_column_requirements(
+                    &converted_rows,
+                    table_definition.keys().enumerate().map(|(index, key)| {
+                        (
+                            key.as_str(),
+                            table_definition
+                                .column_requirement_by_index(index)
+                                .unwrap_or(TableColumnRequirement::None),
+                        )
+                    }),
+                    |_, _| parameter_source.clone(),
+                )?;
                 Ok(converted_rows)
             }
             other @ (ComputedItem::Boolean(_)
@@ -1912,6 +1999,25 @@ fn evaluate_table_expression(
         }
         evaluated_rows.push(evaluated_row);
     }
+    validate_table_column_requirements(
+        &evaluated_rows,
+        definition.keys().enumerate().map(|(index, key)| {
+            (
+                key.as_str(),
+                definition
+                    .column_requirement_by_index(index)
+                    .unwrap_or(TableColumnRequirement::None),
+            )
+        }),
+        |row, column| {
+            table
+                .data()
+                .get(row)
+                .and_then(|row| row.get(column))
+                .cloned()
+                .unwrap_or_default()
+        },
+    )?;
     Ok(evaluated_rows)
 }
 
@@ -2079,6 +2185,18 @@ fn evaluate_table_with_units_expression(
             return Err(errors);
         }
 
+        validate_table_column_requirements(
+            &converted_rows,
+            table_definition.keys().enumerate().map(|(index, key)| {
+                (
+                    key.as_str(),
+                    table_definition
+                        .column_requirement_by_index(index)
+                        .unwrap_or(TableColumnRequirement::None),
+                )
+            }),
+            |_, _| parameter_source.clone(),
+        )?;
         return Ok(converted_rows);
     }
 
@@ -2149,6 +2267,25 @@ fn evaluate_table_with_units_expression(
         }
         evaluated_rows.push(evaluated_row);
     }
+    validate_table_column_requirements(
+        &evaluated_rows,
+        definition.keys().enumerate().map(|(index, key)| {
+            (
+                key.as_str(),
+                definition
+                    .column_requirement_by_index(index)
+                    .unwrap_or(TableColumnRequirement::None),
+            )
+        }),
+        |row, column| {
+            table
+                .data()
+                .get(row)
+                .and_then(|row| row.get(column))
+                .cloned()
+                .unwrap_or_default()
+        },
+    )?;
     Ok(evaluated_rows)
 }
 
@@ -3111,6 +3248,393 @@ mod tests {
     }
 
     use hrafnix_datastore::definition::TableDefinition;
+
+    #[test]
+    fn table_column_requirements_cover_literals_and_references() {
+        use TableColumnRequirement::{
+            Constant, ConstantOrDecreasing, ConstantOrIncreasing, Decreasing, Increasing, None,
+        };
+        let cases = [
+            (None, [2.0, 1.0], true),
+            (Increasing, [1.0, 2.0], true),
+            (Increasing, [1.0, 1.0], false),
+            (Increasing, [2.0, 1.0], false),
+            (ConstantOrIncreasing, [1.0, 1.0], true),
+            (ConstantOrIncreasing, [2.0, 1.0], false),
+            (Decreasing, [2.0, 1.0], true),
+            (Decreasing, [1.0, 1.0], false),
+            (Decreasing, [1.0, 2.0], false),
+            (ConstantOrDecreasing, [1.0, 1.0], true),
+            (ConstantOrDecreasing, [1.0, 2.0], false),
+            (Constant, [1.0, 1.0], true),
+            (Constant, [1.0, 2.0], false),
+            (Constant, [2.0, 1.0], false),
+            (Constant, [-0.0, 0.0], true),
+        ];
+        for (requirement, values, valid) in cases {
+            for referenced in [false, true] {
+                let definition = TableDefinition::new_with_column_requirements(
+                    "",
+                    vec![
+                        (
+                            store_key!("value"),
+                            NumberDefinition::new_with_constraint(
+                                "not the key",
+                                NumberConstraint::range(0.0, 2.0, true, true),
+                            ),
+                            requirement,
+                        ),
+                        (store_key!("free"), NumberDefinition::new(""), None),
+                    ],
+                );
+                let rows = vec![vec![values[0], 9.0], vec![values[1], -9.0]];
+                let computed_data = BTreeMap::from([(
+                    "source".into(),
+                    ComputedItem::Table(ComputedTable::new(
+                        vec!["a".into(), "b".into()],
+                        rows.clone(),
+                    )),
+                )]);
+                let input = TableInputData::new(
+                    definition,
+                    if referenced {
+                        "source".into()
+                    } else {
+                        "".into()
+                    },
+                    rows.into_iter()
+                        .map(|row| {
+                            row.into_iter()
+                                .map(|value| format!("{value:?}").into())
+                                .collect()
+                        })
+                        .collect(),
+                );
+                let result =
+                    evaluate_table_expression(&computed_data, &FunctionDefinitions::new(), &input);
+                assert_eq!(
+                    result.is_ok(),
+                    valid,
+                    "{requirement:?}, reference={referenced}"
+                );
+                if !valid {
+                    let errors = result.unwrap_err();
+                    assert_eq!(errors.len(), 1);
+                    assert_eq!(
+                        message_key(&errors[0]),
+                        "expression_engine_evaluation_table_column_requirement_failed"
+                    );
+                    let params = errors[0].translate_data().message_params();
+                    assert_eq!(params.get("column").unwrap(), "value");
+                    assert_eq!(params.get("row").unwrap(), "2");
+                    assert_eq!(params.get("previous").unwrap(), &values[0].to_string());
+                    assert_eq!(params.get("current").unwrap(), &values[1].to_string());
+                    let source = if referenced {
+                        "source".to_string()
+                    } else {
+                        format!("{:?}", values[1])
+                    };
+                    assert!(errors[0].extra_detail().unwrap().as_str().contains(&source));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn table_column_requirements_treat_both_zero_signs_equally() {
+        for requirement in [
+            TableColumnRequirement::None,
+            TableColumnRequirement::Constant,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::Decreasing,
+        ] {
+            for values in [[-0.0, 0.0], [0.0, -0.0]] {
+                let result = validate_table_column_requirements(
+                    &values.map(|value| vec![value]),
+                    [("value", requirement)].into_iter(),
+                    |_, _| "source".into(),
+                );
+                let requires_change = matches!(
+                    requirement,
+                    TableColumnRequirement::Increasing | TableColumnRequirement::Decreasing
+                );
+                assert_eq!(result.is_err(), requires_change, "{requirement:?}");
+                if let Err(errors) = result {
+                    let params = errors[0].translate_data().message_params();
+                    assert_eq!(params.get("previous").unwrap(), "0");
+                    assert_eq!(params.get("current").unwrap(), "0");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn table_column_requirements_allow_empty_and_single_rows_and_reject_nan() {
+        for requirement in [
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::Decreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
+            TableColumnRequirement::Constant,
+        ] {
+            for rows in [vec![], vec![vec![1.0]]] {
+                for referenced in [false, true] {
+                    let definition = TableDefinition::new_with_column_requirements(
+                        "",
+                        vec![(store_key!("value"), NumberDefinition::new(""), requirement)],
+                    );
+                    let computed_data = BTreeMap::from([(
+                        "source".into(),
+                        ComputedItem::Table(ComputedTable::new(vec!["value".into()], rows.clone())),
+                    )]);
+                    let input = TableInputData::new(
+                        definition,
+                        if referenced {
+                            "source".into()
+                        } else {
+                            "".into()
+                        },
+                        rows.iter()
+                            .map(|row| {
+                                row.iter()
+                                    .map(|value| format!("{value:?}").into())
+                                    .collect()
+                            })
+                            .collect(),
+                    );
+                    assert!(
+                        evaluate_table_expression(
+                            &computed_data,
+                            &FunctionDefinitions::new(),
+                            &input,
+                        )
+                        .is_ok()
+                    );
+                }
+                assert!(
+                    validate_table_column_requirements(
+                        &rows,
+                        [("value", requirement)].into_iter(),
+                        |_, _| "".into(),
+                    )
+                    .is_ok()
+                );
+            }
+            for values in [[f64::NAN, 1.0], [1.0, f64::NAN], [f64::NAN, f64::NAN]] {
+                assert!(
+                    validate_table_column_requirements(
+                        &values
+                            .into_iter()
+                            .map(|value| vec![value])
+                            .collect::<Vec<_>>(),
+                        [("value", requirement)].into_iter(),
+                        |_, _| "source".into(),
+                    )
+                    .is_err()
+                );
+                let definition = TableDefinition::new_with_column_requirements(
+                    "",
+                    vec![(store_key!("value"), NumberDefinition::new(""), requirement)],
+                );
+                let computed_data = BTreeMap::from([(
+                    "source".into(),
+                    ComputedItem::Table(ComputedTable::new(
+                        vec!["value".into()],
+                        values.into_iter().map(|value| vec![value]).collect(),
+                    )),
+                )]);
+                let input = TableInputData::new(definition, "source".into(), vec![]);
+                let errors =
+                    evaluate_table_expression(&computed_data, &FunctionDefinitions::new(), &input)
+                        .unwrap_err();
+                assert_eq!(
+                    message_key(&errors[0]),
+                    "expression_engine_evaluation_floating_point_not_finite"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn table_column_requirements_keep_numeric_bounds() {
+        let definition = TableDefinition::new_with_column_requirements(
+            "",
+            vec![(
+                store_key!("value"),
+                NumberDefinition::new_with_constraint("", NumberConstraint::max(2.0, true)),
+                TableColumnRequirement::Increasing,
+            )],
+        );
+        for referenced in [false, true] {
+            let computed_data = BTreeMap::from([(
+                "source".into(),
+                ComputedItem::Table(ComputedTable::new(
+                    vec!["value".into()],
+                    vec![vec![1.0], vec![3.0]],
+                )),
+            )]);
+            let input = TableInputData::new(
+                definition.clone(),
+                if referenced {
+                    "source".into()
+                } else {
+                    "".into()
+                },
+                vec![vec!["1.0".into()], vec!["3.0".into()]],
+            );
+            let errors =
+                evaluate_table_expression(&computed_data, &FunctionDefinitions::new(), &input)
+                    .unwrap_err();
+            assert!(message_key(&errors[0]).ends_with("value_above_maximum"));
+        }
+    }
+
+    #[test]
+    fn table_with_units_constant_uses_numeric_equality_after_mixed_unit_conversion() {
+        let definition = TableWithUnitsDefinition::new_with_column_requirements(
+            "",
+            vec![(
+                store_key!("length"),
+                NumberWithUnitsDefinition::new("", UnitId::Length_Meter),
+                TableColumnRequirement::Constant,
+            )],
+        );
+        let computed_data = BTreeMap::from([
+            (
+                "centimeters".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 100.0,
+                    unit: UnitId::Length_Centimeter,
+                },
+            ),
+            (
+                "meters".into(),
+                ComputedItem::FloatWithUnit {
+                    value: 1.0,
+                    unit: UnitId::Length_Meter,
+                },
+            ),
+        ]);
+        let input = TableWithUnitsInputData::new(
+            definition,
+            "".into(),
+            vec![UnitId::Length_Meter.string_id().into()],
+            vec![vec!["centimeters".into()], vec!["meters".into()]],
+        );
+        assert_eq!(
+            evaluate_table_with_units_expression(
+                &computed_data,
+                &FunctionDefinitions::new(),
+                &input,
+            )
+            .unwrap(),
+            vec![vec![1.0], vec![1.0]]
+        );
+    }
+
+    #[test]
+    fn table_with_units_column_requirements_compare_converted_values() {
+        for requirement in [
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::Decreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
+            TableColumnRequirement::Constant,
+        ] {
+            for values in [
+                vec![],
+                vec![100.0],
+                vec![100.0, 200.0],
+                vec![200.0, 100.0],
+                vec![100.0, 100.0],
+                vec![-0.0, 0.0],
+                vec![0.0, -0.0],
+            ] {
+                for referenced in [false, true] {
+                    let definition = TableWithUnitsDefinition::new_with_column_requirements(
+                        "",
+                        vec![(
+                            store_key!("length"),
+                            NumberWithUnitsDefinition::new_with_constraint(
+                                "not the key",
+                                NumberConstraint::range(0.0, 2.0, true, true),
+                                UnitId::Length_Meter,
+                            ),
+                            requirement,
+                        )],
+                    );
+                    let expected_rows: Vec<_> = values
+                        .iter()
+                        .map(|value| {
+                            vec![
+                                convert(*value, UnitId::Length_Centimeter, UnitId::Length_Meter)
+                                    .unwrap(),
+                            ]
+                        })
+                        .collect();
+                    let expected = validate_table_column_requirements(
+                        &expected_rows,
+                        [("length", requirement)].into_iter(),
+                        |_, _| "".into(),
+                    );
+                    let computed_data = BTreeMap::from([(
+                        "source".into(),
+                        ComputedItem::TableWithUnits(ComputedTableWithUnits::new(
+                            vec!["a".into()],
+                            vec![UnitId::Length_Centimeter],
+                            values.iter().map(|value| vec![*value]).collect(),
+                        )),
+                    )]);
+                    let input = TableWithUnitsInputData::new(
+                        definition,
+                        if referenced {
+                            "source".into()
+                        } else {
+                            "".into()
+                        },
+                        vec![UnitId::Length_Centimeter.string_id().into()],
+                        values
+                            .iter()
+                            .map(|value| vec![format!("{value:?}").into()])
+                            .collect(),
+                    );
+                    let result = evaluate_table_with_units_expression(
+                        &computed_data,
+                        &FunctionDefinitions::new(),
+                        &input,
+                    );
+                    assert_eq!(
+                        result.is_ok(),
+                        expected.is_ok(),
+                        "{requirement:?}, {values:?}, reference={referenced}"
+                    );
+                    if let Ok(rows) = result {
+                        assert_eq!(rows, expected_rows);
+                    } else {
+                        let errors = result.unwrap_err();
+                        let params = errors[0].translate_data().message_params();
+                        assert_eq!(params.get("column").unwrap(), "length");
+                        assert_eq!(
+                            params.get("current").unwrap(),
+                            &expected_rows[1][0].to_string()
+                        );
+                        assert_eq!(
+                            params.get("previous").unwrap(),
+                            &expected_rows[0][0].to_string()
+                        );
+                        let source = if referenced {
+                            "source".to_string()
+                        } else {
+                            format!("{:?}", values[1])
+                        };
+                        assert!(errors[0].extra_detail().unwrap().as_str().contains(&source));
+                    }
+                }
+            }
+        }
+    }
 
     #[test]
     fn table_parameter_test() {
