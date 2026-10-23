@@ -2,7 +2,7 @@ use hrafnix_datastore::prelude::*;
 
 #[test]
 fn column_requirements_are_independent_and_preserved() {
-    let mut definition = TableDefinition::new_with_default(
+    let original = TableDefinition::new_with_default(
         "table",
         vec![
             (
@@ -13,22 +13,34 @@ fn column_requirements_are_independent_and_preserved() {
         ],
         vec![vec!["1", "2"]],
     );
-    let original = definition.clone();
     assert_eq!(
-        definition.column_requirement("z"),
+        original.column_requirement("z"),
         Some(TableColumnRequirement::None)
     );
-    assert_eq!(definition.column_requirement("missing"), None);
-    assert_eq!(definition.column_requirement_by_index(2), None);
-    assert!(
-        !definition.set_column_requirement(store_key!("missing"), TableColumnRequirement::Constant)
-    );
     for requirement in [
-        TableColumnRequirement::Increasing { strict: true },
-        TableColumnRequirement::Decreasing { strict: false },
+        TableColumnRequirement::None,
+        TableColumnRequirement::Increasing,
+        TableColumnRequirement::ConstantOrDecreasing,
         TableColumnRequirement::Constant,
     ] {
-        assert!(definition.set_column_requirement(store_key!("z"), requirement));
+        let definition = TableDefinition::new_with_column_requirements_and_default(
+            "table",
+            vec![
+                (
+                    store_key!("z"),
+                    original.get("z").unwrap().clone(),
+                    requirement,
+                ),
+                (
+                    store_key!("a"),
+                    original.get("a").unwrap().clone(),
+                    TableColumnRequirement::None,
+                ),
+            ],
+            vec![vec!["1", "2"]],
+        );
+        assert_eq!(definition.column_requirement("missing"), None);
+        assert_eq!(definition.column_requirement_by_index(2), None);
         assert_eq!(definition.column_requirement("z"), Some(requirement));
         assert_eq!(definition.column_requirement_by_index(0), Some(requirement));
         assert_eq!(
@@ -37,10 +49,63 @@ fn column_requirements_are_independent_and_preserved() {
         );
         assert_eq!(definition.launder(&SharedStringStore::new()), definition);
         assert_eq!(definition.get("z").unwrap(), original.get("z").unwrap());
+        assert_eq!(definition.default_table(), original.default_table());
         assert!(definition.is_merge_compatible(&original));
+        assert_eq!(
+            definition == original,
+            requirement == TableColumnRequirement::None
+        );
     }
-    assert!(definition.set_column_requirement(store_key!("z"), TableColumnRequirement::None));
-    assert_eq!(definition, original);
+}
+
+#[test]
+fn column_requirements_use_last_duplicate_and_normalize_defaults() {
+    for requirement in [
+        TableColumnRequirement::None,
+        TableColumnRequirement::Increasing,
+    ] {
+        let columns = vec![
+            (
+                store_key!("z"),
+                NumberDefinition::new("initial"),
+                TableColumnRequirement::Constant,
+            ),
+            (
+                store_key!("a"),
+                NumberDefinition::new("other"),
+                TableColumnRequirement::ConstantOrDecreasing,
+            ),
+            (
+                store_key!("z"),
+                NumberDefinition::new("replacement"),
+                requirement,
+            ),
+        ];
+        let definition = TableDefinition::new_with_column_requirements("table", columns.clone());
+        assert_eq!(definition.default_table(), None);
+        assert_eq!(
+            definition.keys().map(StoreKey::as_str).collect::<Vec<_>>(),
+            vec!["a", "z"]
+        );
+        assert_eq!(
+            definition.get_by_index(1).unwrap().description(),
+            "replacement"
+        );
+        assert_eq!(definition.column_requirement_by_index(1), Some(requirement));
+        assert_eq!(
+            definition.column_requirement_by_index(0),
+            Some(TableColumnRequirement::ConstantOrDecreasing)
+        );
+        let with_defaults = TableDefinition::new_with_column_requirements_and_default(
+            "table",
+            columns,
+            vec![vec!["1"], vec!["2", "3", "4"]],
+        );
+        let expected: Vec<Vec<ShareableString>> =
+            vec![vec!["1".into(), "".into()], vec!["2".into(), "3".into()]];
+        assert_eq!(with_defaults.default_table().unwrap(), expected.as_slice());
+        assert_eq!(with_defaults.column_requirement("z"), Some(requirement));
+    }
 }
 
 #[test]

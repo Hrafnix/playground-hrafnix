@@ -30,19 +30,42 @@ impl TableWithUnitsDefinition {
         description: S1,
         columns: Vec<(K, NumberWithUnitsDefinition)>,
     ) -> Self {
+        Self::new_with_column_requirements(
+            description,
+            columns
+                .into_iter()
+                .map(|(key, definition)| (key, definition, TableColumnRequirement::None))
+                .collect(),
+        )
+    }
+
+    /// Creates a table with each column's adjacent-row requirement fixed at construction.
+    ///
+    /// Duplicate keys use the last definition and requirement, in last-occurrence order.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_column_requirements<S: Into<ShareableString>, K: Into<StoreKey>>(
+        description: S,
+        columns: Vec<(K, NumberWithUnitsDefinition, TableColumnRequirement)>,
+    ) -> Self {
         let mut items = BTreeMap::new();
         let mut ordered_keys = Vec::new();
-        for (k, v) in columns {
+        let mut column_requirements = BTreeMap::new();
+        for (k, v, requirement) in columns {
             let key = k.into();
             ordered_keys.retain(|existing_key| existing_key != &key);
             ordered_keys.push(key.clone());
+            if requirement == TableColumnRequirement::None {
+                column_requirements.remove(&key);
+            } else {
+                column_requirements.insert(key.clone(), requirement);
+            }
             items.insert(key, v);
         }
         Self {
             description: description.into(),
             ordered_keys,
             columns: Arc::new(items),
-            column_requirements: BTreeMap::new(),
+            column_requirements,
             default_table: None,
         }
     }
@@ -58,7 +81,31 @@ impl TableWithUnitsDefinition {
         columns: Vec<(K, NumberWithUnitsDefinition)>,
         default_table: Vec<Vec<S2>>,
     ) -> Self {
-        let mut definition = Self::new(description, columns);
+        Self::new_with_column_requirements_and_default(
+            description,
+            columns
+                .into_iter()
+                .map(|(key, definition)| (key, definition, TableColumnRequirement::None))
+                .collect(),
+            default_table,
+        )
+    }
+
+    /// Creates a table with fixed column requirements and default rows.
+    ///
+    /// Duplicate keys use the last definition and requirement, in last-occurrence order.
+    /// Default rows are padded or truncated to the resulting column count.
+    #[cfg_attr(feature = "hotpath", hotpath::measure)]
+    pub fn new_with_column_requirements_and_default<
+        S1: Into<ShareableString>,
+        S2: Into<ShareableString>,
+        K: Into<StoreKey>,
+    >(
+        description: S1,
+        columns: Vec<(K, NumberWithUnitsDefinition, TableColumnRequirement)>,
+        default_table: Vec<Vec<S2>>,
+    ) -> Self {
+        let mut definition = Self::new_with_column_requirements(description, columns);
         let column_count = definition.count();
         definition.default_table = Some(
             default_table
@@ -103,26 +150,6 @@ impl TableWithUnitsDefinition {
             .and_then(|key| self.columns.get(key))
     }
 
-    /// Sets a column's adjacent-row requirement independently of its numeric bounds.
-    ///
-    /// Returns false for an unknown key. Setting `None` removes the requirement.
-    pub fn set_column_requirement<K: Into<StoreKey>>(
-        &mut self,
-        key: K,
-        requirement: TableColumnRequirement,
-    ) -> bool {
-        let key = key.into();
-        if !self.columns.contains_key(&key) {
-            return false;
-        }
-        if requirement == TableColumnRequirement::None {
-            self.column_requirements.remove(&key);
-        } else {
-            self.column_requirements.insert(key, requirement);
-        }
-        true
-    }
-
     /// Returns the requirement, or `None` for an unknown column.
     ///
     /// A known column without a requirement returns `Some(TableColumnRequirement::None)`.
@@ -135,7 +162,7 @@ impl TableWithUnitsDefinition {
             self.column_requirements
                 .get(&key)
                 .copied()
-                .unwrap_or_default()
+                .unwrap_or(TableColumnRequirement::None)
         })
     }
 

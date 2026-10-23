@@ -2,22 +2,19 @@
 ///
 /// Comparisons use numeric values after unit conversion. Empty and single-row
 /// tables satisfy every requirement. Unordered comparisons (NaN) fail.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableColumnRequirement {
     /// No relationship required between rows.
-    #[default]
     None,
+    /// Each value must be greater than or equal to the preceding value.
+    ConstantOrIncreasing,
     /// Each value must be greater than the preceding value.
-    Increasing {
-        /// If false, equal adjacent values are also allowed.
-        strict: bool,
-    },
+    Increasing,
+    /// Each value must be less than or equal to the preceding value.
+    ConstantOrDecreasing,
     /// Each value must be less than the preceding value.
-    Decreasing {
-        /// If false, equal adjacent values are also allowed.
-        strict: bool,
-    },
-    /// Adjacent values must be exactly numerically equal, including signed zero.
+    Decreasing,
+    /// Adjacent values must be equal.
     Constant,
 }
 

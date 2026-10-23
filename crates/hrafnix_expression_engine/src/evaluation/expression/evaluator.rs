@@ -1752,10 +1752,10 @@ fn validate_table_column_requirements<'a>(
     for (column, (key, requirement)) in columns.enumerate() {
         let relation = match requirement {
             TableColumnRequirement::None => continue,
-            TableColumnRequirement::Increasing { strict: true } => ">",
-            TableColumnRequirement::Increasing { strict: false } => ">=",
-            TableColumnRequirement::Decreasing { strict: true } => "<",
-            TableColumnRequirement::Decreasing { strict: false } => "<=",
+            TableColumnRequirement::Increasing => ">",
+            TableColumnRequirement::ConstantOrIncreasing => ">=",
+            TableColumnRequirement::Decreasing => "<",
+            TableColumnRequirement::ConstantOrDecreasing => "<=",
             TableColumnRequirement::Constant => "=",
         };
         for (previous_row, pair) in rows.windows(2).enumerate() {
@@ -1767,16 +1767,18 @@ fn validate_table_column_requirements<'a>(
             else {
                 continue;
             };
+            let previous = canonicalize_f64(previous);
+            let current = canonicalize_f64(current);
             let ordering = current.partial_cmp(&previous);
             let valid = match requirement {
                 TableColumnRequirement::None => true,
-                TableColumnRequirement::Increasing { strict } => {
-                    ordering == Some(Ordering::Greater)
-                        || (!strict && ordering == Some(Ordering::Equal))
+                TableColumnRequirement::Increasing => ordering == Some(Ordering::Greater),
+                TableColumnRequirement::ConstantOrIncreasing => {
+                    matches!(ordering, Some(Ordering::Greater | Ordering::Equal))
                 }
-                TableColumnRequirement::Decreasing { strict } => {
-                    ordering == Some(Ordering::Less)
-                        || (!strict && ordering == Some(Ordering::Equal))
+                TableColumnRequirement::Decreasing => ordering == Some(Ordering::Less),
+                TableColumnRequirement::ConstantOrDecreasing => {
+                    matches!(ordering, Some(Ordering::Less | Ordering::Equal))
                 }
                 TableColumnRequirement::Constant => ordering == Some(Ordering::Equal),
             };
@@ -1919,7 +1921,7 @@ fn evaluate_table_expression(
                             key.as_str(),
                             table_definition
                                 .column_requirement_by_index(index)
-                                .unwrap_or_default(),
+                                .unwrap_or(TableColumnRequirement::None),
                         )
                     }),
                     |_, _| parameter_source.clone(),
@@ -2004,7 +2006,7 @@ fn evaluate_table_expression(
                 key.as_str(),
                 definition
                     .column_requirement_by_index(index)
-                    .unwrap_or_default(),
+                    .unwrap_or(TableColumnRequirement::None),
             )
         }),
         |row, column| {
@@ -2190,7 +2192,7 @@ fn evaluate_table_with_units_expression(
                     key.as_str(),
                     table_definition
                         .column_requirement_by_index(index)
-                        .unwrap_or_default(),
+                        .unwrap_or(TableColumnRequirement::None),
                 )
             }),
             |_, _| parameter_source.clone(),
@@ -2272,7 +2274,7 @@ fn evaluate_table_with_units_expression(
                 key.as_str(),
                 definition
                     .column_requirement_by_index(index)
-                    .unwrap_or_default(),
+                    .unwrap_or(TableColumnRequirement::None),
             )
         }),
         |row, column| {
@@ -3249,19 +3251,21 @@ mod tests {
 
     #[test]
     fn table_column_requirements_cover_literals_and_references() {
-        use TableColumnRequirement::{Constant, Decreasing, Increasing, None};
+        use TableColumnRequirement::{
+            Constant, ConstantOrDecreasing, ConstantOrIncreasing, Decreasing, Increasing, None,
+        };
         let cases = [
             (None, [2.0, 1.0], true),
-            (Increasing { strict: true }, [1.0, 2.0], true),
-            (Increasing { strict: true }, [1.0, 1.0], false),
-            (Increasing { strict: true }, [2.0, 1.0], false),
-            (Increasing { strict: false }, [1.0, 1.0], true),
-            (Increasing { strict: false }, [2.0, 1.0], false),
-            (Decreasing { strict: true }, [2.0, 1.0], true),
-            (Decreasing { strict: true }, [1.0, 1.0], false),
-            (Decreasing { strict: true }, [1.0, 2.0], false),
-            (Decreasing { strict: false }, [1.0, 1.0], true),
-            (Decreasing { strict: false }, [1.0, 2.0], false),
+            (Increasing, [1.0, 2.0], true),
+            (Increasing, [1.0, 1.0], false),
+            (Increasing, [2.0, 1.0], false),
+            (ConstantOrIncreasing, [1.0, 1.0], true),
+            (ConstantOrIncreasing, [2.0, 1.0], false),
+            (Decreasing, [2.0, 1.0], true),
+            (Decreasing, [1.0, 1.0], false),
+            (Decreasing, [1.0, 2.0], false),
+            (ConstantOrDecreasing, [1.0, 1.0], true),
+            (ConstantOrDecreasing, [1.0, 2.0], false),
             (Constant, [1.0, 1.0], true),
             (Constant, [1.0, 2.0], false),
             (Constant, [2.0, 1.0], false),
@@ -3269,7 +3273,7 @@ mod tests {
         ];
         for (requirement, values, valid) in cases {
             for referenced in [false, true] {
-                let mut definition = TableDefinition::new(
+                let definition = TableDefinition::new_with_column_requirements(
                     "",
                     vec![
                         (
@@ -3278,11 +3282,11 @@ mod tests {
                                 "not the key",
                                 NumberConstraint::range(0.0, 2.0, true, true),
                             ),
+                            requirement,
                         ),
-                        (store_key!("free"), NumberDefinition::new("")),
+                        (store_key!("free"), NumberDefinition::new(""), None),
                     ],
                 );
-                assert!(definition.set_column_requirement(store_key!("value"), requirement));
                 let rows = vec![vec![values[0], 9.0], vec![values[1], -9.0]];
                 let computed_data = BTreeMap::from([(
                     "source".into(),
@@ -3337,21 +3341,50 @@ mod tests {
     }
 
     #[test]
+    fn table_column_requirements_treat_both_zero_signs_equally() {
+        for requirement in [
+            TableColumnRequirement::None,
+            TableColumnRequirement::Constant,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::Decreasing,
+        ] {
+            for values in [[-0.0, 0.0], [0.0, -0.0]] {
+                let result = validate_table_column_requirements(
+                    &values.map(|value| vec![value]),
+                    [("value", requirement)].into_iter(),
+                    |_, _| "source".into(),
+                );
+                let requires_change = matches!(
+                    requirement,
+                    TableColumnRequirement::Increasing | TableColumnRequirement::Decreasing
+                );
+                assert_eq!(result.is_err(), requires_change, "{requirement:?}");
+                if let Err(errors) = result {
+                    let params = errors[0].translate_data().message_params();
+                    assert_eq!(params.get("previous").unwrap(), "0");
+                    assert_eq!(params.get("current").unwrap(), "0");
+                }
+            }
+        }
+    }
+
+    #[test]
     fn table_column_requirements_allow_empty_and_single_rows_and_reject_nan() {
         for requirement in [
-            TableColumnRequirement::Increasing { strict: true },
-            TableColumnRequirement::Increasing { strict: false },
-            TableColumnRequirement::Decreasing { strict: true },
-            TableColumnRequirement::Decreasing { strict: false },
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::Decreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
             TableColumnRequirement::Constant,
         ] {
             for rows in [vec![], vec![vec![1.0]]] {
                 for referenced in [false, true] {
-                    let mut definition = TableDefinition::new(
+                    let definition = TableDefinition::new_with_column_requirements(
                         "",
-                        vec![(store_key!("value"), NumberDefinition::new(""))],
+                        vec![(store_key!("value"), NumberDefinition::new(""), requirement)],
                     );
-                    assert!(definition.set_column_requirement(store_key!("value"), requirement));
                     let computed_data = BTreeMap::from([(
                         "source".into(),
                         ComputedItem::Table(ComputedTable::new(vec!["value".into()], rows.clone())),
@@ -3401,11 +3434,10 @@ mod tests {
                     )
                     .is_err()
                 );
-                let mut definition = TableDefinition::new(
+                let definition = TableDefinition::new_with_column_requirements(
                     "",
-                    vec![(store_key!("value"), NumberDefinition::new(""))],
+                    vec![(store_key!("value"), NumberDefinition::new(""), requirement)],
                 );
-                assert!(definition.set_column_requirement(store_key!("value"), requirement));
                 let computed_data = BTreeMap::from([(
                     "source".into(),
                     ComputedItem::Table(ComputedTable::new(
@@ -3427,17 +3459,14 @@ mod tests {
 
     #[test]
     fn table_column_requirements_keep_numeric_bounds() {
-        let mut definition = TableDefinition::new(
+        let definition = TableDefinition::new_with_column_requirements(
             "",
             vec![(
                 store_key!("value"),
                 NumberDefinition::new_with_constraint("", NumberConstraint::max(2.0, true)),
+                TableColumnRequirement::Increasing,
             )],
         );
-        assert!(definition.set_column_requirement(
-            store_key!("value"),
-            TableColumnRequirement::Increasing { strict: true },
-        ));
         for referenced in [false, true] {
             let computed_data = BTreeMap::from([(
                 "source".into(),
@@ -3464,16 +3493,13 @@ mod tests {
 
     #[test]
     fn table_with_units_constant_uses_numeric_equality_after_mixed_unit_conversion() {
-        let mut definition = TableWithUnitsDefinition::new(
+        let definition = TableWithUnitsDefinition::new_with_column_requirements(
             "",
             vec![(
                 store_key!("length"),
                 NumberWithUnitsDefinition::new("", UnitId::Length_Meter),
+                TableColumnRequirement::Constant,
             )],
-        );
-        assert!(
-            definition
-                .set_column_requirement(store_key!("length"), TableColumnRequirement::Constant)
         );
         let computed_data = BTreeMap::from([
             (
@@ -3511,10 +3537,10 @@ mod tests {
     #[test]
     fn table_with_units_column_requirements_compare_converted_values() {
         for requirement in [
-            TableColumnRequirement::Increasing { strict: true },
-            TableColumnRequirement::Increasing { strict: false },
-            TableColumnRequirement::Decreasing { strict: true },
-            TableColumnRequirement::Decreasing { strict: false },
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::Decreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
             TableColumnRequirement::Constant,
         ] {
             for values in [
@@ -3523,9 +3549,11 @@ mod tests {
                 vec![100.0, 200.0],
                 vec![200.0, 100.0],
                 vec![100.0, 100.0],
+                vec![-0.0, 0.0],
+                vec![0.0, -0.0],
             ] {
                 for referenced in [false, true] {
-                    let mut definition = TableWithUnitsDefinition::new(
+                    let definition = TableWithUnitsDefinition::new_with_column_requirements(
                         "",
                         vec![(
                             store_key!("length"),
@@ -3534,9 +3562,9 @@ mod tests {
                                 NumberConstraint::range(0.0, 2.0, true, true),
                                 UnitId::Length_Meter,
                             ),
+                            requirement,
                         )],
                     );
-                    assert!(definition.set_column_requirement(store_key!("length"), requirement));
                     let expected_rows: Vec<_> = values
                         .iter()
                         .map(|value| {
