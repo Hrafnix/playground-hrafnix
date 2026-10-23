@@ -203,7 +203,7 @@ fn generated_map_substitutes_parameters_in_localized_messages() {
 
     assert_eq!(
         translation.as_ref().map(ShareableString::as_str),
-        Some("Die Funktion „sum“ erfordert genau die Argumente 2 und hat 3.")
+        Some("Die Funktion „sum“ erfordert genau 2 Argumente, erhalten wurden 3.")
     );
 }
 

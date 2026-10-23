@@ -64,7 +64,7 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Unterminated string literal"),
             ("zh", "未终止的字符串字面量"),
-            ("de", "Nicht abgeschlossene Zeichenkette"),
+            ("de", "Nicht abgeschlossenes Zeichenkettenliteral"),
             ("es", "Literal de cadena sin terminar"),
             ("fr", "Littéral de chaîne non terminé"),
             ("ja", "文字列リテラルが終了していません"),
@@ -88,12 +88,12 @@ pub(crate) fn add_expression_engine_translation_map(
         "expression_engine_evaluation_missing_required_global",
         HashMap::from([
             ("en", "Missing required global: %{global}"),
-            ("zh", "缺少必需的全局：%{global}"),
+            ("zh", "缺少必需的全局变量：%{global}"),
             ("de", "Fehlendes erforderliches globales Element: %{global}"),
-            ("es", "Falta global requerido: %{global}"),
-            ("fr", "Global requis manquant : %{global}"),
-            ("ja", "必要なグローバルが欠落しています: %{global}"),
-            ("ko", "필수 전역 누락: %{global}"),
+            ("es", "Falta el valor global requerido: %{global}"),
+            ("fr", "Variable globale requise manquante : %{global}"),
+            ("ja", "必要なグローバル変数がありません: %{global}"),
+            ("ko", "필수 전역 항목 누락: %{global}"),
         ]),
     );
     translation_map.set_translation_key(
@@ -103,8 +103,8 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "缺少必需参数：%{parameter}"),
             ("de", "Fehlender erforderlicher Parameter: %{parameter}"),
             ("es", "Falta el parámetro requerido: %{parameter}"),
-            ("fr", "Paramètre obligatoire manquant : %{parameter}"),
-            ("ja", "必須パラメータが欠落しています: %{parameter}"),
+            ("fr", "Paramètre obligatoire manquant : %{parameter}"),
+            ("ja", "必須パラメーターがありません: %{parameter}"),
             ("ko", "필수 매개변수 누락: %{parameter}"),
         ]),
     );
@@ -115,7 +115,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "缺少必需变量：%{variable}"),
             ("de", "Fehlende erforderliche Variable: %{variable}"),
             ("es", "Falta la variable requerida: %{variable}"),
-            ("fr", "Variable obligatoire manquante : %{variable}"),
+            ("fr", "Variable obligatoire manquante : %{variable}"),
             ("ja", "必要な変数がありません: %{variable}"),
             ("ko", "필수 변수 누락: %{variable}"),
         ]),
@@ -124,12 +124,12 @@ pub(crate) fn add_expression_engine_translation_map(
         "expression_engine_evaluation_missing_required_function",
         HashMap::from([
             ("en", "Missing required function: %{function}"),
-            ("zh", "缺少所需功能：%{function}"),
+            ("zh", "缺少必需函数：%{function}"),
             ("de", "Fehlende erforderliche Funktion: %{function}"),
             ("es", "Falta la función requerida: %{function}"),
-            ("fr", "Fonction requise manquante : %{function}"),
+            ("fr", "Fonction requise manquante : %{function}"),
             ("ja", "必要な関数がありません: %{function}"),
-            ("ko", "필수 기능 누락: %{function}"),
+            ("ko", "필수 함수 누락: %{function}"),
         ]),
     );
     translation_map.set_translation_key(
@@ -142,21 +142,24 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "表达式无效：预期输入结束，但发现 %{token}"),
             (
                 "de",
-                "Ungültiger Ausdruck: erwartetes Ende der Eingabe, gefunden %{token}",
+                "Ungültiger Ausdruck: Ende der Eingabe erwartet, %{token} gefunden",
             ),
             (
                 "es",
-                "Expresión no válida: final esperado de la entrada, encontrado %{token}",
+                "Expresión no válida: se esperaba el final de la entrada, se encontró %{token}",
             ),
             (
                 "fr",
-                "Expression non valide : fin attendue de l'entrée, trouvée %{token}",
+                "Expression non valide : fin de l’entrée attendue, %{token} trouvé",
             ),
             (
                 "ja",
                 "無効な式: 入力の終わりが予期されましたが、%{token} が見つかりました",
             ),
-            ("ko", "잘못된 표현식: 예상된 입력 끝, %{token}가 발견됨"),
+            (
+                "ko",
+                "잘못된 표현식: 입력이 끝나야 하지만 %{token}이(가) 발견되었습니다",
+            ),
         ]),
     );
     translation_map.set_translation_key(
@@ -166,9 +169,9 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "表达式无效：需要标识符、数字或前缀运算符，但找到 %{token}"),
             ("de", "Ungültiger Ausdruck: Erwartet wurde ein Bezeichner, eine Zahl oder ein Präfixoperator. %{token} wurde gefunden"),
             ("es", "Expresión no válida: se esperaba un identificador, un número o un operador de prefijo, se encontró %{token}"),
-            ("fr", "Expression non valide : attendu un identifiant, un nombre ou un opérateur de préfixe, trouvé %{token}"),
-            ("ja", "無効な式: 識別子、数値、または接頭辞演算子が必要でしたが、%{token} が見つかりました。"),
-            ("ko", "잘못된 표현식: 식별자, 숫자 또는 접두사 연산자가 필요합니다. %{token}가 발견되었습니다."),
+            ("fr", "Expression non valide : identifiant, nombre ou opérateur de préfixe attendu, %{token} trouvé"),
+            ("ja", "無効な式: 識別子、数値、または接頭辞演算子が必要でしたが、%{token} が見つかりました"),
+            ("ko", "잘못된 표현식: 식별자, 숫자 또는 전위 연산자가 필요하지만 %{token}이(가) 발견되었습니다"),
         ]),
     );
     translation_map.set_translation_key(
@@ -189,7 +192,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "fr",
-                "Expression non valide : opérateur attendu, %{token} trouvé",
+                "Expression non valide : opérateur attendu, %{token} trouvé",
             ),
             (
                 "ja",
@@ -197,7 +200,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "ko",
-                "잘못된 표현식: 연산자가 필요했지만 %{token}가 발견되었습니다.",
+                "잘못된 표현식: 연산자가 필요하지만 %{token}이(가) 발견되었습니다",
             ),
         ]),
     );
@@ -210,27 +213,27 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "zh",
-                "表达式无效：预期的运算符“%{expected}”，但找到了 %{token}",
+                "表达式无效：预期运算符“%{expected}”，但找到了 %{token}",
             ),
             (
                 "de",
-                "Ungültiger Ausdruck: erwarteter Operator „%{expected}“, gefunden %{token}",
+                "Ungültiger Ausdruck: Operator „%{expected}“ erwartet, %{token} gefunden",
             ),
             (
                 "es",
-                "Expresión no válida: operador esperado '%{expected}', encontrado %{token}",
+                "Expresión no válida: se esperaba el operador '%{expected}', se encontró %{token}",
             ),
             (
                 "fr",
-                "Expression non valide : opérateur attendu '%{expected}', trouvé %{token}",
+                "Expression non valide : opérateur « %{expected} » attendu, %{token} trouvé",
             ),
             (
                 "ja",
-                "無効な式: 予期された演算子 '%{expected}'、%{token} が見つかりました",
+                "無効な式: 演算子 '%{expected}' が必要ですが、%{token} が見つかりました",
             ),
             (
                 "ko",
-                "잘못된 표현식: 예상된 연산자 '%{expected}', 발견된 %{token}",
+                "잘못된 표현식: 연산자 '%{expected}'이(가) 필요하지만 %{token}이(가) 발견되었습니다",
             ),
         ]),
     );
@@ -238,12 +241,12 @@ pub(crate) fn add_expression_engine_translation_map(
         "expression_engine_parser_function_name_required_number",
         HashMap::from([
             ("en", "Invalid expression: function calls require a function name, found number %{value}"),
-            ("zh", "表达式无效：函数调用需要函数名称，找到编号 %{value}"),
-            ("de", "Ungültiger Ausdruck: Funktionsaufrufe erfordern einen Funktionsnamen, gefundene Nummer %{value}"),
-            ("es", "Expresión no válida: las llamadas a funciones requieren un nombre de función, número encontrado %{value}"),
-            ("fr", "Expression non valide : les appels de fonction nécessitent un nom de fonction, numéro trouvé %{value}"),
-            ("ja", "無効な式: 関数呼び出しには関数名が必要ですが、番号 %{value} が見つかりました。"),
-            ("ko", "잘못된 표현식: 함수 호출에는 함수 이름이 필요합니다. 발견된 번호는 %{value}입니다."),
+            ("zh", "表达式无效：函数调用需要函数名称，但找到了数值 %{value}"),
+            ("de", "Ungültiger Ausdruck: Funktionsaufrufe erfordern einen Funktionsnamen, Zahl %{value} gefunden"),
+            ("es", "Expresión no válida: las llamadas a funciones requieren un nombre de función, se encontró el número %{value}"),
+            ("fr", "Expression non valide : les appels de fonction nécessitent un nom de fonction, nombre %{value} trouvé"),
+            ("ja", "無効な式: 関数呼び出しには関数名が必要ですが、数値 %{value} が見つかりました"),
+            ("ko", "잘못된 표현식: 함수 호출에는 함수 이름이 필요하지만 숫자 %{value}이(가) 발견되었습니다"),
         ]),
     );
     translation_map.set_translation_key(
@@ -252,10 +255,10 @@ pub(crate) fn add_expression_engine_translation_map(
             ("en", "Invalid expression: function calls require a function name, found \"%{value}\""),
             ("zh", "表达式无效：函数调用需要函数名称，找到“%{value}”"),
             ("de", "Ungültiger Ausdruck: Funktionsaufrufe erfordern einen Funktionsnamen, gefunden „%{value}“"),
-            ("es", "Expresión no válida: las llamadas a funciones requieren un nombre de función, encontrada \"%{value}\""),
-            ("fr", "Expression non valide : les appels de fonction nécessitent un nom de fonction, trouvé \"%{value}\""),
-            ("ja", "無効な式: 関数呼び出しには関数名が必要です。\"%{value}\" が見つかりました。"),
-            ("ko", "잘못된 표현식: 함수 호출에는 함수 이름이 필요합니다. \"%{value}\"가 발견되었습니다."),
+            ("es", "Expresión no válida: las llamadas a funciones requieren un nombre de función, se encontró \"%{value}\""),
+            ("fr", "Expression non valide : les appels de fonction nécessitent un nom de fonction, \"%{value}\" trouvé"),
+            ("ja", "無効な式: 関数呼び出しには関数名が必要ですが、\"%{value}\" が見つかりました"),
+            ("ko", "잘못된 표현식: 함수 호출에는 함수 이름이 필요하지만 \"%{value}\"이(가) 발견되었습니다"),
         ]),
     );
     translation_map.set_translation_key(
@@ -265,9 +268,9 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "表达式无效：函数调用需要函数名称，找到以运算符 %{operator} 开头的表达式"),
             ("de", "Ungültiger Ausdruck: Funktionsaufrufe erfordern einen Funktionsnamen. Der gefundene Ausdruck beginnt mit dem Operator %{operator}"),
             ("es", "Expresión no válida: las llamadas a funciones requieren un nombre de función; se encontró una expresión que comienza con el operador %{operator}"),
-            ("fr", "Expression non valide : les appels de fonction nécessitent un nom de fonction, expression trouvée commençant par l'opérateur %{operator}"),
+            ("fr", "Expression non valide : les appels de fonction nécessitent un nom de fonction, expression commençant par l’opérateur %{operator} trouvée"),
             ("ja", "無効な式: 関数呼び出しには関数名が必要ですが、演算子 %{operator} で始まる式が見つかりました"),
-            ("ko", "잘못된 표현식: 함수 호출에는 함수 이름이 필요합니다. 연산자 %{operator}로 시작하는 표현식이 발견되었습니다."),
+            ("ko", "잘못된 표현식: 함수 호출에는 함수 이름이 필요합니다. 연산자 %{operator}(으)로 시작하는 표현식이 발견되었습니다"),
         ]),
     );
     translation_map.set_translation_key(
@@ -282,13 +285,10 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "fr",
-                "Opérateur de préfixe non valide dans l'expression : '%{operator}'",
+                "Opérateur de préfixe non valide dans l'expression : '%{operator}'",
             ),
             ("ja", "式内の接頭辞演算子が無効です: '%{operator}'"),
-            (
-                "ko",
-                "표현식의 접두사 연산자가 잘못되었습니다: '%{operator}'",
-            ),
+            ("ko", "표현식의 전위 연산자가 잘못되었습니다: '%{operator}'"),
         ]),
     );
     translation_map.set_translation_key(
@@ -308,11 +308,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Binary operator is missing its right operand."),
             ("zh", "二元运算符缺少右操作数。"),
-            ("de", "Dem Binäroperator fehlt der richtige Operand."),
+            ("de", "Dem Binäroperator fehlt der rechte Operand."),
             ("es", "Al operador binario le falta su operando derecho."),
             ("fr", "L'opérateur binaire n'a pas son opérande droit."),
             ("ja", "二項演算子に右側のオペランドがありません。"),
-            ("ko", "이진 연산자에 오른쪽 피연산자가 없습니다."),
+            ("ko", "이항 연산자에 오른쪽 피연산자가 없습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -344,9 +344,12 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Index operator is missing its target."),
             ("zh", "索引运算符缺少其目标。"),
-            ("de", "Der Indexoperator verfehlt sein Ziel."),
-            ("es", "El operador de índice no ha alcanzado su objetivo."),
-            ("fr", "L'opérateur d'index manque sa cible."),
+            ("de", "Dem Indexoperator fehlt der zu indizierende Wert."),
+            (
+                "es",
+                "Al operador de índice le falta el valor que se debe indexar.",
+            ),
+            ("fr", "L’opérateur d’index n’a pas de cible."),
             ("ja", "インデックス演算子にターゲットがありません。"),
             ("ko", "인덱스 연산자에 대상이 없습니다."),
         ]),
@@ -370,19 +373,19 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "只能对命名值进行索引，但找到的是“%{target}”。"),
             ("de", "Nur benannte Werte können indiziert werden, gefunden wurde '%{target}'."),
             ("es", "Solo se pueden indexar valores con nombre; se encontró '%{target}'."),
-            ("fr", "Seules les valeurs nommées peuvent être indexées, trouvé '%{target}'."),
+            ("fr", "Seules les valeurs nommées peuvent être indexées, « %{target} » trouvé."),
             ("ja", "インデックスを付けられるのは名前付きの値のみですが、'%{target}' が見つかりました。"),
-            ("ko", "이름이 있는 값만 인덱싱할 수 있지만 '%{target}'이(가) 있습니다."),
+            ("ko", "이름이 있는 값만 인덱싱할 수 있지만 '%{target}'이(가) 발견되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_translator_invalid_numeric_literal",
         HashMap::from([
             ("en", "Invalid numeric literal: %{value}"),
-            ("zh", "无效的数字文字：%{value}"),
+            ("zh", "无效的数值字面量：%{value}"),
             ("de", "Ungültiges numerisches Literal: %{value}"),
             ("es", "Literal numérico no válido: %{value}"),
-            ("fr", "Littéral numérique non valide : %{value}"),
+            ("fr", "Littéral numérique non valide : %{value}"),
             ("ja", "無効な数値リテラル: %{value}"),
             ("ko", "잘못된 숫자 리터럴: %{value}"),
         ]),
@@ -394,7 +397,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "不支持的运算符：%{operator}"),
             ("de", "Nicht unterstützter Operator: %{operator}"),
             ("es", "Operador no admitido: %{operator}"),
-            ("fr", "Opérateur non pris en charge : %{operator}"),
+            ("fr", "Opérateur non pris en charge : %{operator}"),
             ("ja", "サポートされていない演算子: %{operator}"),
             ("ko", "지원되지 않는 연산자: %{operator}"),
         ]),
@@ -418,12 +421,12 @@ pub(crate) fn add_expression_engine_translation_map(
         "expression_engine_evaluation_variable_not_found",
         HashMap::from([
             ("en", "Variable '%{variable}' not found in computed data. If you want to use a literal string, wrap it in quotes \"%{variable}\"."),
-            ("zh", "在计算数据中找不到变量“%{variable}”。如果要使用文字字符串，请将其用引号 \"%{variable}\" 括起来。"),
-            ("de", "Die Variable „%{variable}“ wurde in den berechneten Daten nicht gefunden. Wenn Sie eine Literalzeichenfolge verwenden möchten, schließen Sie sie in Anführungszeichen „%{variable}“ ein."),
-            ("es", "La variable '%{variable}' no se encuentra en los datos calculados. Si desea utilizar una cadena literal, envuélvala entre comillas \"%{variable}\"."),
+            ("zh", "在计算数据中找不到变量“%{variable}”。如果要使用字符串字面量，请将其用引号括起来：\"%{variable}\"。"),
+            ("de", "Die Variable „%{variable}“ wurde in den berechneten Daten nicht gefunden. Wenn Sie ein Zeichenkettenliteral verwenden möchten, setzen Sie es in doppelte Anführungszeichen \"%{variable}\"."),
+            ("es", "La variable '%{variable}' no se encuentra en los datos calculados. Si desea utilizar una cadena literal, enciérrela entre comillas \"%{variable}\"."),
             ("fr", "La variable '%{variable}' est introuvable dans les données calculées. Si vous souhaitez utiliser une chaîne littérale, placez-la entre guillemets \"%{variable}\"."),
             ("ja", "変数「%{variable}」が計算データに見つかりません。リテラル文字列を使用する場合は、引用符 \"%{variable}\" で囲みます。"),
-            ("ko", "계산된 데이터에서 변수 '%{variable}'를 찾을 수 없습니다. 리터럴 문자열을 사용하려면 따옴표 \"%{variable}\"로 묶습니다."),
+            ("ko", "계산된 데이터에서 변수 '%{variable}'을(를) 찾을 수 없습니다. 문자열 리터럴을 사용하려면 \"%{variable}\"처럼 따옴표로 묶으세요."),
         ]),
     );
     translation_map.set_translation_key(
@@ -493,12 +496,12 @@ pub(crate) fn add_expression_engine_translation_map(
         "expression_engine_evaluation_modulus_by_zero",
         HashMap::from([
             ("en", "Modulus by zero."),
-            ("zh", "模数为零。"),
-            ("de", "Modul um Null."),
+            ("zh", "取模运算的除数为零。"),
+            ("de", "Modulo durch Null."),
             ("es", "Módulo por cero."),
-            ("fr", "Module par zéro."),
-            ("ja", "ゼロによるモジュラス。"),
-            ("ko", "모듈러스는 0입니다."),
+            ("fr", "Modulo par zéro."),
+            ("ja", "剰余演算の除数がゼロです。"),
+            ("ko", "나머지 연산의 제수가 0입니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -508,10 +511,10 @@ pub(crate) fn add_expression_engine_translation_map(
                 "en",
                 "Integer exponent must be non-negative and fit within u32.",
             ),
-            ("zh", "整数指数必须是非负数并且适合 u32。"),
+            ("zh", "整数指数必须为非负数，且在 u32 的取值范围内。"),
             (
                 "de",
-                "Der ganzzahlige Exponent darf nicht negativ sein und in u32 passen.",
+                "Der ganzzahlige Exponent darf nicht negativ sein und muss im Wertebereich von u32 liegen.",
             ),
             (
                 "es",
@@ -519,15 +522,15 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "fr",
-                "L'exposant entier doit être non négatif et correspondre à u32.",
+                "L’exposant entier doit être non négatif et tenir dans un u32.",
             ),
             (
                 "ja",
-                "整数の指数は負ではなく、u32 内に収まる必要があります。",
+                "整数の指数は非負で、u32 の範囲内である必要があります。",
             ),
             (
                 "ko",
-                "정수 지수는 음수가 아니어야 하며 u32 내에 맞아야 합니다.",
+                "정수 지수는 음수가 아니어야 하며 u32의 범위 안에 있어야 합니다.",
             ),
         ]),
     );
@@ -540,79 +543,79 @@ pub(crate) fn add_expression_engine_translation_map(
             ("es", "La función '%{function}' no está definida."),
             ("fr", "La fonction '%{function}' n'est pas définie."),
             ("ja", "関数「%{function}」が定義されていません。"),
-            ("ko", "'%{function}' 기능이 정의되지 않았습니다."),
+            ("ko", "'%{function}' 함수가 정의되지 않았습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_function_wrong_argument_count_exact",
         HashMap::from([
             ("en", "Function '%{function}' requires exactly %{expected} arguments, got %{actual}."),
-            ("zh", "函数“%{function}”恰好需要 %{expected} 参数，得到 %{actual}。"),
-            ("de", "Die Funktion „%{function}“ erfordert genau die Argumente %{expected} und hat %{actual}."),
-            ("es", "La función '%{function}' requiere exactamente los argumentos %{expected}, obtuvo %{actual}."),
-            ("fr", "La fonction '%{function}' nécessite exactement les arguments %{expected}, j'ai obtenu %{actual}."),
-            ("ja", "関数 '%{function}' には %{expected} 引数が必要ですが、%{actual} を取得しました。"),
-            ("ko", "'%{function}' 함수에는 정확히 %{expected} 인수가 필요하며 %{actual}가 있습니다."),
+            ("zh", "函数“%{function}”需要恰好 %{expected} 个参数，但实际提供了 %{actual} 个。"),
+            ("de", "Die Funktion „%{function}“ erfordert genau %{expected} Argumente, erhalten wurden %{actual}."),
+            ("es", "La función '%{function}' requiere exactamente %{expected} argumentos, se recibieron %{actual}."),
+            ("fr", "La fonction '%{function}' nécessite exactement %{expected} arguments, %{actual} reçus."),
+            ("ja", "関数 '%{function}' にはちょうど %{expected} 個の引数が必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "'%{function}' 함수에는 정확히 %{expected}개의 인수가 필요하지만 %{actual}개가 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_function_wrong_argument_count_minimum",
         HashMap::from([
             ("en", "Function '%{function}' requires at least %{minimum} arguments, got %{actual}."),
-            ("zh", "函数“%{function}”至少需要 %{minimum} 参数，得到 %{actual}。"),
-            ("de", "Die Funktion „%{function}“ erfordert mindestens %{minimum}-Argumente und hat %{actual}."),
-            ("es", "La función '%{function}' requiere al menos argumentos %{minimum}, obtuvo %{actual}."),
-            ("fr", "La fonction '%{function}' nécessite au moins des arguments %{minimum}, a obtenu %{actual}."),
-            ("ja", "関数 '%{function}' には少なくとも %{minimum} 引数が必要です。%{actual} を取得しました。"),
-            ("ko", "함수 '%{function}'에는 최소한 %{minimum} 인수가 필요하며 %{actual}가 있습니다."),
+            ("zh", "函数“%{function}”至少需要 %{minimum} 个参数，但实际提供了 %{actual} 个。"),
+            ("de", "Die Funktion „%{function}“ erfordert mindestens %{minimum} Argumente, erhalten wurden %{actual}."),
+            ("es", "La función '%{function}' requiere al menos %{minimum} argumentos, se recibieron %{actual}."),
+            ("fr", "La fonction '%{function}' nécessite au moins %{minimum} arguments, %{actual} reçus."),
+            ("ja", "関数 '%{function}' には少なくとも %{minimum} 個の引数が必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "함수 '%{function}'에는 최소 %{minimum}개의 인수가 필요하지만 %{actual}개가 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_function_wrong_argument_count_maximum",
         HashMap::from([
             ("en", "Function '%{function}' allows at most %{maximum} arguments, got %{actual}."),
-            ("zh", "函数“%{function}”最多允许 %{maximum} 参数，得到 %{actual}。"),
-            ("de", "Die Funktion „%{function}“ erlaubt höchstens %{maximum}-Argumente und hat %{actual}."),
-            ("es", "La función '%{function}' permite como máximo argumentos %{maximum}, obtuvo %{actual}."),
-            ("fr", "La fonction '%{function}' autorise au plus les arguments %{maximum}, obtenu %{actual}."),
-            ("ja", "関数 '%{function}' は最大 %{maximum} 引数を許可します。%{actual} を取得しました。"),
-            ("ko", "함수 '%{function}'는 최대 %{maximum} 인수를 허용하며 %{actual}를 얻습니다."),
+            ("zh", "函数“%{function}”最多允许 %{maximum} 个参数，但实际提供了 %{actual} 个。"),
+            ("de", "Die Funktion „%{function}“ erlaubt höchstens %{maximum} Argumente, erhalten wurden %{actual}."),
+            ("es", "La función '%{function}' permite como máximo %{maximum} argumentos, se recibieron %{actual}."),
+            ("fr", "La fonction '%{function}' autorise au plus %{maximum} arguments, %{actual} reçus."),
+            ("ja", "関数 '%{function}' に指定できる引数は最大 %{maximum} 個ですが、%{actual} 個が指定されました。"),
+            ("ko", "함수 '%{function}'에 허용되는 인수는 최대 %{maximum}개이지만 %{actual}개가 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_function_wrong_argument_count_range",
         HashMap::from([
             ("en", "Function '%{function}' requires between %{minimum} and %{maximum} arguments, got %{actual}."),
-            ("zh", "函数“%{function}”需要 %{minimum} 和 %{maximum} 之间的参数，得到 %{actual}。"),
-            ("de", "Die Funktion „%{function}“ erfordert Argumente zwischen %{minimum} und %{maximum} und hat %{actual}."),
-            ("es", "La función '%{function}' requiere entre los argumentos %{minimum} y %{maximum}, obtuvo %{actual}."),
-            ("fr", "La fonction '%{function}' nécessite entre les arguments %{minimum} et %{maximum}, a obtenu %{actual}."),
-            ("ja", "関数 '%{function}' には %{minimum} と %{maximum} の間の引数が必要ですが、%{actual} を取得しました。"),
-            ("ko", "'%{function}' 함수에는 %{minimum}와 %{maximum} 인수가 필요하며 %{actual}가 있습니다."),
+            ("zh", "函数“%{function}”需要 %{minimum} 到 %{maximum} 个参数，但实际提供了 %{actual} 个。"),
+            ("de", "Die Funktion „%{function}“ erfordert zwischen %{minimum} und %{maximum} Argumente, erhalten wurden %{actual}."),
+            ("es", "La función '%{function}' requiere entre %{minimum} y %{maximum} argumentos, se recibieron %{actual}."),
+            ("fr", "La fonction '%{function}' nécessite entre %{minimum} et %{maximum} arguments, %{actual} reçus."),
+            ("ja", "関数 '%{function}' には %{minimum} 個以上 %{maximum} 個以下の引数が必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "'%{function}' 함수에는 %{minimum}개 이상 %{maximum}개 이하의 인수가 필요하지만 %{actual}개가 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_invalid_index_count",
         HashMap::from([
             ("en", "Indexing requires exactly 2 or 4 indices, got %{actual}."),
-            ("zh", "索引正好需要 2 或 4 个索引，得到 %{actual}。"),
-            ("de", "Die Indizierung erfordert genau 2 oder 4 Indizes, erhalten Sie %{actual}."),
-            ("es", "La indexación requiere exactamente 2 o 4 índices, obtuve %{actual}."),
-            ("fr", "L'indexation nécessite exactement 2 ou 4 indices, obtenu %{actual}."),
-            ("ja", "インデックス作成には 2 つまたは 4 つのインデックスが必要です。%{actual} を取得しました。"),
-            ("ko", "인덱싱에는 정확히 2개 또는 4개의 인덱스가 필요합니다. %{actual}가 있습니다."),
+            ("zh", "索引操作需要恰好 2 或 4 个索引，但实际提供了 %{actual} 个。"),
+            ("de", "Die Indizierung erfordert genau 2 oder 4 Indizes, erhalten wurden %{actual}."),
+            ("es", "La indexación requiere exactamente 2 o 4 índices, se recibieron %{actual}."),
+            ("fr", "L’indexation nécessite exactement 2 ou 4 indices, %{actual} reçus."),
+            ("ja", "インデックスアクセスにはちょうど 2 個または 4 個のインデックスが必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "인덱싱에는 정확히 2개 또는 4개의 인덱스가 필요하지만 %{actual}개가 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_table_index_count",
         HashMap::from([
             ("en", "Table indexing requires exactly 2 indices, got %{actual}."),
-            ("zh", "表索引正好需要 2 个索引，得到 %{actual}。"),
-            ("de", "Die Tabellenindizierung erfordert genau 2 Indizes, erhalten: %{actual}."),
+            ("zh", "表索引操作需要恰好 2 个索引，但实际提供了 %{actual} 个。"),
+            ("de", "Die Tabellenindizierung erfordert genau 2 Indizes, erhalten wurden %{actual}."),
             ("es", "La indexación de tablas requiere exactamente 2 índices, se obtuvieron %{actual}."),
-            ("fr", "L'indexation de table nécessite exactement 2 indices, obtenu %{actual}."),
-            ("ja", "テーブルのインデックス作成にはちょうど 2 つのインデックスが必要ですが、%{actual} 個が指定されました。"),
-            ("ko", "테이블 인덱싱에는 정확히 2개의 인덱스가 필요하지만 %{actual}개가 있습니다."),
+            ("fr", "L’indexation de table nécessite exactement 2 indices, %{actual} reçus."),
+            ("ja", "テーブルのインデックスアクセスにはちょうど 2 個のインデックスが必要ですが、%{actual} 個が指定されました。"),
+            ("ko", "테이블 인덱싱에는 정확히 2개의 인덱스가 필요하지만 %{actual}개가 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -624,7 +627,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("es", "Falta el primer índice."),
             ("fr", "Premier index manquant."),
             ("ja", "最初のインデックスがありません。"),
-            ("ko", "첫 번째 색인이 누락되었습니다."),
+            ("ko", "첫 번째 인덱스가 누락되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -634,9 +637,9 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "缺少第二个索引。"),
             ("de", "Fehlender zweiter Index."),
             ("es", "Falta el segundo índice."),
-            ("fr", "Manque le deuxième index."),
+            ("fr", "Deuxième index manquant."),
             ("ja", "2 番目のインデックスがありません。"),
-            ("ko", "두 번째 색인이 누락되었습니다."),
+            ("ko", "두 번째 인덱스가 누락되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -649,7 +652,10 @@ pub(crate) fn add_expression_engine_translation_map(
                 "Erwartet wurde eine Tabelle für die Tabellenindizierung.",
             ),
             ("es", "Se esperaba una tabla para indexar tablas."),
-            ("fr", "Attendu une table pour l’indexation des tables."),
+            (
+                "fr",
+                "Une table était attendue pour l’indexation des tables.",
+            ),
             ("ja", "テーブルのインデックス付けにはテーブルが必要です。"),
             ("ko", "테이블 인덱싱을 위한 테이블이 필요합니다."),
         ]),
@@ -659,11 +665,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Row index %{index} is out of bounds for a table with %{count} rows."),
             ("zh", "对于包含 %{count} 行的表，行索引 %{index} 超出范围。"),
-            ("de", "Der Zeilenindex %{index} liegt außerhalb des zulässigen Bereichs für eine Tabelle mit %{count}-Zeilen."),
-            ("es", "El índice de filas %{index} está fuera de los límites de una tabla con filas %{count}."),
-            ("fr", "L'index de ligne %{index} est hors limites pour une table comportant des lignes %{count}."),
+            ("de", "Der Zeilenindex %{index} liegt außerhalb des zulässigen Bereichs für eine Tabelle mit %{count} Zeilen."),
+            ("es", "El índice de fila %{index} está fuera de los límites de una tabla con %{count} filas."),
+            ("fr", "L'index de ligne %{index} est hors limites pour une table comportant %{count} lignes."),
             ("ja", "行インデックス %{index} は、%{count} 行を持つテーブルの範囲外です。"),
-            ("ko", "행 인덱스 %{index}는 %{count} 행이 있는 테이블의 범위를 벗어났습니다."),
+            ("ko", "행 인덱스 %{index}은(는) %{count}개 행이 있는 테이블의 범위를 벗어났습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -676,23 +682,23 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "需要表的整数索引，得到 %{actual}。"),
             (
                 "de",
-                "Erwartete einen ganzzahligen Index für die Tabelle, erhielt %{actual}.",
+                "Für die Tabelle wurde ein ganzzahliger Index erwartet, erhalten wurde %{actual}.",
             ),
             (
                 "es",
-                "Se esperaba un índice entero para la tabla, obtuve %{actual}.",
+                "Se esperaba un índice entero para la tabla, pero se recibió %{actual}.",
             ),
             (
                 "fr",
-                "Attendu un index entier pour la table, j'ai obtenu %{actual}.",
+                "Un index entier était attendu pour la table ; valeur reçue : %{actual}.",
             ),
             (
                 "ja",
-                "テーブルの整数インデックスが予期されましたが、%{actual} を取得しました。",
+                "テーブルには整数のインデックスが必要ですが、%{actual} が指定されました。",
             ),
             (
                 "ko",
-                "테이블에 대한 정수 인덱스가 필요했는데 %{actual}를 얻었습니다.",
+                "테이블에는 정수 인덱스가 필요하지만 %{actual}이(가) 제공되었습니다.",
             ),
         ]),
     );
@@ -711,7 +717,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "fr",
-                "Champ « %{field} » introuvable dans la ligne du tableau.",
+                "Champ « %{field} » introuvable dans la ligne du tableau.",
             ),
             ("ja", "フィールド「%{field}」がテーブル行に見つかりません。"),
             ("ko", "테이블 행에서 '%{field}' 필드를 찾을 수 없습니다."),
@@ -722,11 +728,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Column index %{index} is out of bounds for a table with %{count} columns."),
             ("zh", "对于具有 %{count} 列的表，列索引 %{index} 超出范围。"),
-            ("de", "Der Spaltenindex %{index} liegt außerhalb des zulässigen Bereichs für eine Tabelle mit %{count}-Spalten."),
-            ("es", "El índice de columna %{index} está fuera de los límites de una tabla con columnas %{count}."),
-            ("fr", "L'index de colonne %{index} est hors limites pour une table comportant des colonnes %{count}."),
+            ("de", "Der Spaltenindex %{index} liegt außerhalb des zulässigen Bereichs für eine Tabelle mit %{count} Spalten."),
+            ("es", "El índice de columna %{index} está fuera de los límites de una tabla con %{count} columnas."),
+            ("fr", "L'index de colonne %{index} est hors limites pour une table comportant %{count} colonnes."),
             ("ja", "列インデックス %{index} は、%{count} 列を持つテーブルの範囲外です。"),
-            ("ko", "열 인덱스 %{index}는 %{count} 열이 있는 테이블의 범위를 벗어났습니다."),
+            ("ko", "열 인덱스 %{index}은(는) %{count}개 열이 있는 테이블의 범위를 벗어났습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -734,11 +740,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Expected a string or integer index for the table field, got %{actual}."),
             ("zh", "需要表字段的字符串或整数索引，得到 %{actual}。"),
-            ("de", "Für das Tabellenfeld wurde ein String- oder Integer-Index erwartet, %{actual} erhalten."),
-            ("es", "Se esperaba una cadena o un índice entero para el campo de la tabla, obtuve %{actual}."),
-            ("fr", "Attendu une chaîne ou un index entier pour le champ de la table, j'ai obtenu %{actual}."),
-            ("ja", "テーブル フィールドに文字列または整数のインデックスが必要でしたが、%{actual} を取得しました。"),
-            ("ko", "테이블 필드에 문자열 또는 정수 인덱스가 필요합니다. %{actual}가 있습니다."),
+            ("de", "Für das Tabellenfeld wurde ein Zeichenketten- oder Ganzzahlindex erwartet, erhalten wurde %{actual}."),
+            ("es", "Se esperaba un índice de tipo cadena o entero para el campo de la tabla, pero se recibió %{actual}."),
+            ("fr", "Le champ de la table nécessite une chaîne ou un index entier ; valeur reçue : %{actual}."),
+            ("ja", "テーブルのフィールドには文字列または整数のインデックスが必要ですが、%{actual} が指定されました。"),
+            ("ko", "테이블 필드에는 문자열 또는 정수 인덱스가 필요하지만 %{actual}이(가) 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -748,7 +754,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "值“%{value}”不是有效的选择。"),
             ("de", "Der Wert „%{value}“ ist keine gültige Auswahl."),
             ("es", "El valor '%{value}' no es una opción válida."),
-            ("fr", "La valeur « %{value} » n'est pas un choix valide."),
+            ("fr", "La valeur « %{value} » n'est pas un choix valide."),
             ("ja", "値「%{value}」は有効な選択ではありません。"),
             ("ko", "'%{value}' 값은 유효한 선택이 아닙니다."),
         ]),
@@ -762,10 +768,10 @@ pub(crate) fn add_expression_engine_translation_map(
             ("es", "El valor '%{value}' no es un ID de unidad válido."),
             (
                 "fr",
-                "La valeur « %{value} » n'est pas un ID d'unité valide.",
+                "La valeur « %{value} » n'est pas un ID d'unité valide.",
             ),
-            ("ja", "値「%{value}」は有効なユニット ID ではありません。"),
-            ("ko", "값 '%{value}'는 유효한 장치 ID가 아닙니다."),
+            ("ja", "値「%{value}」は有効な単位 ID ではありません。"),
+            ("ko", "값 '%{value}'은(는) 유효한 단위 ID가 아닙니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -786,15 +792,15 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "fr",
-                "La valeur « %{value} » n'est pas un ID d'unité valide pour %{family}.",
+                "La valeur « %{value} » n'est pas un ID d'unité valide pour %{family}.",
             ),
             (
                 "ja",
-                "値「%{value}」は、%{family} の有効なユニット ID ではありません。",
+                "値「%{value}」は、%{family} の有効な単位 ID ではありません。",
             ),
             (
                 "ko",
-                "값 '%{value}'는 %{family}의 유효한 장치 ID가 아닙니다.",
+                "값 '%{value}'은(는) %{family}의 유효한 단위 ID가 아닙니다.",
             ),
         ]),
     );
@@ -805,45 +811,51 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "预期有一个单位值，但得到的是 %{actual}。"),
             (
                 "de",
-                "Einen Einheitenwert erwartet, aber %{actual} erhalten.",
+                "Es wurde ein Einheitenwert erwartet, erhalten wurde jedoch %{actual}.",
             ),
             (
                 "es",
-                "Se esperaba un valor unitario, pero obtuve %{actual}.",
+                "Se esperaba un valor de unidad, pero se recibió %{actual}.",
             ),
             (
                 "fr",
-                "Je m'attendais à une valeur unitaire, mais j'ai obtenu %{actual}.",
+                "Une valeur d’unité était attendue ; valeur reçue : %{actual}.",
             ),
             (
                 "ja",
-                "ユニット値を予期していましたが、%{actual} を取得しました。",
+                "単位を表す値が必要ですが、%{actual} が指定されました。",
             ),
-            ("ko", "단위 값을 예상했지만 %{actual}를 받았습니다."),
+            (
+                "ko",
+                "단위를 나타내는 값이 필요하지만 %{actual}이(가) 제공되었습니다.",
+            ),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_expected_definition_value",
         HashMap::from([
             ("en", "Expected a %{expected} value, but got %{actual}."),
-            ("zh", "预期值为 %{expected}，但得到的是 %{actual}。"),
+            ("zh", "需要 %{expected} 类型的值，但得到的是 %{actual}。"),
             (
                 "de",
                 "Es wurde ein %{expected}-Wert erwartet, aber %{actual} erhalten.",
             ),
             (
                 "es",
-                "Se esperaba un valor %{expected}, pero obtuve %{actual}.",
+                "Se esperaba un valor de tipo %{expected}, pero se recibió %{actual}.",
             ),
             (
                 "fr",
-                "Attendu une valeur %{expected}, mais j'ai obtenu %{actual}.",
+                "Une valeur de type %{expected} était attendue ; valeur reçue : %{actual}.",
             ),
             (
                 "ja",
-                "%{expected} 値を予期していましたが、%{actual} を取得しました。",
+                "%{expected} 型の値が必要ですが、%{actual} が指定されました。",
             ),
-            ("ko", "%{expected} 값을 예상했지만 %{actual}를 얻었습니다."),
+            (
+                "ko",
+                "%{expected} 유형의 값이 필요하지만 %{actual}이(가) 제공되었습니다.",
+            ),
         ]),
     );
     translation_map.set_translation_key(
@@ -853,7 +865,7 @@ pub(crate) fn add_expression_engine_translation_map(
                 "en",
                 "Value %{value} is less than the minimum allowed value of %{minimum}.",
             ),
-            ("zh", "值 %{value} 小于 %{minimum} 的最小允许值。"),
+            ("zh", "值 %{value} 小于允许的最小值 %{minimum}。"),
             (
                 "de",
                 "Der Wert %{value} ist kleiner als der minimal zulässige Wert von %{minimum}.",
@@ -872,7 +884,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "ko",
-                "%{value} 값은 %{minimum}의 최소 허용 값보다 작습니다.",
+                "%{value} 값은 허용되는 최솟값 %{minimum}보다 작습니다.",
             ),
         ]),
     );
@@ -883,7 +895,7 @@ pub(crate) fn add_expression_engine_translation_map(
                 "en",
                 "Value %{value} is greater than the maximum allowed value of %{maximum}.",
             ),
-            ("zh", "值 %{value} 大于 %{maximum} 的最大允许值。"),
+            ("zh", "值 %{value} 大于允许的最大值 %{maximum}。"),
             (
                 "de",
                 "Der Wert %{value} ist größer als der maximal zulässige Wert von %{maximum}.",
@@ -900,7 +912,7 @@ pub(crate) fn add_expression_engine_translation_map(
                 "ja",
                 "値 %{value} は、許容最大値 %{maximum} を超えています。",
             ),
-            ("ko", "%{value} 값은 %{maximum}의 최대 허용 값보다 큽니다."),
+            ("ko", "%{value} 값은 허용되는 최댓값 %{maximum}보다 큽니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -910,7 +922,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "单位转换失败：%{error}"),
             ("de", "Einheitenumrechnung fehlgeschlagen: %{error}"),
             ("es", "Error en la conversión de unidades: %{error}"),
-            ("fr", "Échec de la conversion d'unité : %{error}"),
+            ("fr", "Échec de la conversion d'unité : %{error}"),
             ("ja", "単位変換に失敗しました: %{error}"),
             ("ko", "단위 변환 실패: %{error}"),
         ]),
@@ -944,12 +956,12 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Expected a number-with-units definition."),
             ("zh", "需要一个带有单位的数字定义。"),
-            ("de", "Erwartet wurde eine Zahlen-mit-Einheiten-Definition."),
-            ("es", "Se esperaba una definición de número con unidades."),
             (
-                "fr",
-                "Je m'attendais à une définition de nombre avec unités.",
+                "de",
+                "Erwartet wurde eine Definition für eine Zahl mit Einheiten.",
             ),
+            ("es", "Se esperaba una definición de número con unidades."),
+            ("fr", "Une définition de nombre avec unités était attendue."),
             ("ja", "単位付きの数値定義が必要です。"),
             ("ko", "단위가 포함된 숫자 정의가 필요합니다."),
         ]),
@@ -962,7 +974,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("de", "Unbekannte Einheit „%{unit}“."),
             ("es", "Unidad desconocida '%{unit}'."),
             ("fr", "Unité inconnue '%{unit}'."),
-            ("ja", "不明なユニット「%{unit}」。"),
+            ("ja", "不明な単位「%{unit}」。"),
             ("ko", "알 수 없는 단위 '%{unit}'."),
         ]),
     );
@@ -971,11 +983,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Parameter '%{parameter}' references a table with %{actual} columns, but the current table expects %{expected} columns."),
             ("zh", "参数“%{parameter}”引用具有 %{actual} 列的表，但当前表需要 %{expected} 列。"),
-            ("de", "Der Parameter „%{parameter}“ verweist auf eine Tabelle mit %{actual}-Spalten, aber die aktuelle Tabelle erwartet %{expected}-Spalten."),
-            ("es", "El parámetro '%{parameter}' hace referencia a una tabla con columnas %{actual}, pero la tabla actual espera columnas %{expected}."),
-            ("fr", "Le paramètre « %{parameter} » fait référence à une table avec des colonnes %{actual}, mais la table actuelle attend des colonnes %{expected}."),
-            ("ja", "パラメーター '%{parameter}' は %{actual} 列を持つテーブルを参照していますが、現在のテーブルは %{expected} 列を想定しています。"),
-            ("ko", "매개변수 '%{parameter}'는 %{actual} 열이 있는 테이블을 참조하지만 현재 테이블에는 %{expected} 열이 필요합니다."),
+            ("de", "Der Parameter „%{parameter}“ verweist auf eine Tabelle mit %{actual} Spalten, aber die aktuelle Tabelle erwartet %{expected} Spalten."),
+            ("es", "El parámetro '%{parameter}' hace referencia a una tabla con %{actual} columnas, pero la tabla actual espera %{expected} columnas."),
+            ("fr", "Le paramètre « %{parameter} » fait référence à une table de %{actual} colonnes, mais la table actuelle attend %{expected} colonnes."),
+            ("ja", "パラメーター「%{parameter}」は %{actual} 列を持つテーブルを参照していますが、現在のテーブルは %{expected} 列を想定しています。"),
+            ("ko", "매개변수 '%{parameter}'은(는) %{actual}개 열이 있는 테이블을 참조하지만 현재 테이블에는 %{expected}개 열이 필요합니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -986,32 +998,32 @@ pub(crate) fn add_expression_engine_translation_map(
             ("de", "Der Parameter „%{parameter}“ verweist auf eine Tabelle ohne Spaltendefinition am Index %{index}."),
             ("es", "El parámetro '%{parameter}' hace referencia a una tabla sin definición de columna en el índice %{index}."),
             ("fr", "Le paramètre '%{parameter}' fait référence à une table sans définition de colonne à l'index %{index}."),
-            ("ja", "パラメータ「%{parameter}」は、インデックス %{index} に列定義のないテーブルを参照しています。"),
-            ("ko", "매개변수 '%{parameter}'는 인덱스 %{index}에서 컬럼 정의가 없는 테이블을 참조합니다."),
+            ("ja", "パラメーター「%{parameter}」は、インデックス %{index} に列定義のないテーブルを参照しています。"),
+            ("ko", "매개변수 '%{parameter}'은(는) 인덱스 %{index}에 열 정의가 없는 테이블을 참조합니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_table_value_below_minimum",
         HashMap::from([
             ("en", "Value %{value} in column '%{column}' is less than the minimum allowed value of %{minimum}."),
-            ("zh", "“%{column}”列中的值 %{value} 小于 %{minimum} 的最小允许值。"),
+            ("zh", "“%{column}”列中的值 %{value} 小于允许的最小值 %{minimum}。"),
             ("de", "Der Wert %{value} in der Spalte „%{column}“ ist kleiner als der minimal zulässige Wert von %{minimum}."),
             ("es", "El valor %{value} en la columna '%{column}' es menor que el valor mínimo permitido de %{minimum}."),
-            ("fr", "La valeur %{value} dans la colonne « %{column} » est inférieure à la valeur minimale autorisée de %{minimum}."),
+            ("fr", "La valeur %{value} dans la colonne « %{column} » est inférieure à la valeur minimale autorisée de %{minimum}."),
             ("ja", "列 '%{column}' の値 %{value} が、許容される最小値 %{minimum} 未満です。"),
-            ("ko", "'%{column}' 열의 %{value} 값이 허용되는 최소 값인 %{minimum}보다 작습니다."),
+            ("ko", "'%{column}' 열의 %{value} 값이 허용되는 최솟값 %{minimum}보다 작습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_table_value_above_maximum",
         HashMap::from([
             ("en", "Value %{value} in column '%{column}' is greater than the maximum allowed value of %{maximum}."),
-            ("zh", "“%{column}”列中的值 %{value} 大于 %{maximum} 的最大允许值。"),
+            ("zh", "“%{column}”列中的值 %{value} 大于允许的最大值 %{maximum}。"),
             ("de", "Der Wert %{value} in der Spalte „%{column}“ ist größer als der maximal zulässige Wert von %{maximum}."),
             ("es", "El valor %{value} en la columna '%{column}' es mayor que el valor máximo permitido de %{maximum}."),
             ("fr", "La valeur %{value} dans la colonne « %{column} » est supérieure à la valeur maximale autorisée de %{maximum}."),
             ("ja", "列 '%{column}' の値 %{value} が、許容最大値 %{maximum} を超えています。"),
-            ("ko", "'%{column}' 열의 %{value} 값이 %{maximum}의 최대 허용 값보다 큽니다."),
+            ("ko", "'%{column}' 열의 %{value} 값이 허용되는 최댓값 %{maximum}보다 큽니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -1019,11 +1031,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Parameter '%{parameter}' is expected to reference a table, but got %{actual}."),
             ("zh", "参数“%{parameter}”应引用表，但得到的是 %{actual}。"),
-            ("de", "Der Parameter „%{parameter}“ soll auf eine Tabelle verweisen, hat aber %{actual}."),
-            ("es", "Se espera que el parámetro '%{parameter}' haga referencia a una tabla, pero obtuvo %{actual}."),
-            ("fr", "Le paramètre « %{parameter} » est censé faire référence à une table, mais a obtenu %{actual}."),
-            ("ja", "パラメータ「%{parameter}」はテーブルを参照する必要がありますが、%{actual} を取得しました。"),
-            ("ko", "'%{parameter}' 매개변수는 테이블을 참조해야 하지만 %{actual}를 가져왔습니다."),
+            ("de", "Der Parameter „%{parameter}“ soll auf eine Tabelle verweisen, erhalten wurde jedoch %{actual}."),
+            ("es", "Se espera que el parámetro '%{parameter}' haga referencia a una tabla, pero se recibió %{actual}."),
+            ("fr", "Le paramètre « %{parameter} » doit faire référence à une table ; valeur reçue : %{actual}."),
+            ("ja", "パラメーター「%{parameter}」はテーブルを参照する必要がありますが、%{actual} が指定されました。"),
+            ("ko", "'%{parameter}' 매개변수는 테이블을 참조해야 하지만 %{actual}이(가) 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -1034,8 +1046,8 @@ pub(crate) fn add_expression_engine_translation_map(
             ("de", "Für die Tabellenzelle am Index %{index} ist keine Spaltendefinition vorhanden."),
             ("es", "No existe ninguna definición de columna para la celda de la tabla en el índice %{index}."),
             ("fr", "Aucune définition de colonne n'existe pour la cellule du tableau à l'index %{index}."),
-            ("ja", "インデックス %{index} のテーブル セルには列定義が存在しません。"),
-            ("ko", "인덱스 %{index}의 테이블 셀에 대한 컬럼 정의가 없습니다."),
+            ("ja", "インデックス %{index} のテーブルセルには列定義が存在しません。"),
+            ("ko", "인덱스 %{index}의 테이블 셀에 대한 열 정의가 없습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -1043,23 +1055,23 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Expected a numeric value for table cell, but got %{actual}."),
             ("zh", "表格单元格需要一个数值，但得到的是 %{actual}。"),
-            ("de", "Es wurde ein numerischer Wert für die Tabellenzelle erwartet, aber %{actual} wurde angezeigt."),
-            ("es", "Se esperaba un valor numérico para la celda de la tabla, pero obtuve %{actual}."),
-            ("fr", "Je m'attendais à une valeur numérique pour la cellule du tableau, mais j'ai obtenu %{actual}."),
-            ("ja", "表のセルには数値が必要ですが、%{actual} が返されました。"),
-            ("ko", "테이블 셀에 숫자 값이 필요했지만 %{actual}가 발생했습니다."),
+            ("de", "Es wurde ein numerischer Wert für die Tabellenzelle erwartet, erhalten wurde jedoch %{actual}."),
+            ("es", "Se esperaba un valor numérico para la celda de la tabla, pero se recibió %{actual}."),
+            ("fr", "Une valeur numérique était attendue pour la cellule de la table ; valeur reçue : %{actual}."),
+            ("ja", "テーブルセルには数値が必要ですが、%{actual} が指定されました。"),
+            ("ko", "테이블 셀에는 숫자 값이 필요하지만 %{actual}이(가) 제공되었습니다."),
         ]),
     );
     translation_map.set_translation_key(
         "expression_engine_evaluation_table_unit_count_mismatch",
         HashMap::from([
             ("en", "Parameter '%{parameter}' references a table with %{actual} units for %{expected} columns."),
-            ("zh", "参数“%{parameter}”引用 %{expected} 列的 %{actual} 单位的表。"),
-            ("de", "Der Parameter „%{parameter}“ verweist auf eine Tabelle mit %{actual}-Einheiten für %{expected}-Spalten."),
-            ("es", "El parámetro '%{parameter}' hace referencia a una tabla con unidades %{actual} para columnas %{expected}."),
-            ("fr", "Le paramètre « %{parameter} » fait référence à une table avec des unités %{actual} pour les colonnes %{expected}."),
-            ("ja", "パラメーター「%{parameter}」は、%{expected} 列の %{actual} 単位を持つテーブルを参照します。"),
-            ("ko", "매개변수 '%{parameter}'는 %{expected} 열에 대해 %{actual} 단위가 있는 테이블을 참조합니다."),
+            ("zh", "参数“%{parameter}”引用的表有 %{expected} 列，但配置的单位数量为 %{actual}。"),
+            ("de", "Der Parameter „%{parameter}“ verweist auf eine Tabelle mit %{actual} Einheiten für %{expected} Spalten."),
+            ("es", "El parámetro '%{parameter}' hace referencia a una tabla con %{actual} unidades para %{expected} columnas."),
+            ("fr", "Le paramètre « %{parameter} » fait référence à une table avec %{actual} unités pour %{expected} colonnes."),
+            ("ja", "パラメーター「%{parameter}」が参照するテーブルには %{expected} 列ありますが、単位の設定数は %{actual} 個です。"),
+            ("ko", "매개변수 '%{parameter}'이(가) 참조하는 테이블에는 %{expected}개의 열이 있지만 설정된 단위는 %{actual}개입니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -1067,11 +1079,11 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "Cannot convert parameter '%{parameter}' column '%{column}' from %{source_unit} to %{target_unit}: %{error}"),
             ("zh", "无法将参数“%{parameter}”列“%{column}”从 %{source_unit} 转换为 %{target_unit}：%{error}"),
-            ("de", "Der Parameter „%{parameter}“ und die Spalte „%{column}“ können nicht von %{source_unit} in %{target_unit} konvertiert werden: %{error}"),
-            ("es", "No se puede convertir el parámetro '%{parameter}' columna '%{column}' de %{source_unit} a %{target_unit}: %{error}"),
-            ("fr", "Impossible de convertir le paramètre « %{parameter} » de la colonne « %{column} » de %{source_unit} en %{target_unit} : %{error}"),
-            ("ja", "パラメータ「%{parameter}」列「%{column}」を %{source_unit} から %{target_unit} に変換できません: %{error}"),
-            ("ko", "매개변수 '%{parameter}' 열 '%{column}'을 %{source_unit}에서 %{target_unit}로 변환할 수 없습니다: %{error}"),
+            ("de", "Die Spalte „%{column}“ des Parameters „%{parameter}“ kann nicht von %{source_unit} in %{target_unit} konvertiert werden: %{error}"),
+            ("es", "No se puede convertir la columna '%{column}' del parámetro '%{parameter}' de %{source_unit} a %{target_unit}: %{error}"),
+            ("fr", "Impossible de convertir la colonne « %{column} » du paramètre « %{parameter} » de %{source_unit} en %{target_unit} : %{error}"),
+            ("ja", "パラメーター「%{parameter}」の列「%{column}」を %{source_unit} から %{target_unit} に変換できません: %{error}"),
+            ("ko", "매개변수 '%{parameter}'의 열 '%{column}'을(를) %{source_unit}에서 %{target_unit}(으)로 변환할 수 없습니다: %{error}"),
         ]),
     );
     translation_map.set_translation_key(
@@ -1093,7 +1105,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "ja",
-                "インデックス %{index} のテーブル セルにはユニットが存在しません。",
+                "インデックス %{index} のテーブルセルには単位が設定されていません。",
             ),
             ("ko", "인덱스 %{index}의 테이블 셀에 대한 단위가 없습니다."),
         ]),
@@ -1105,18 +1117,24 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "sum() 需要数字参数，得到 %{actual}。"),
             (
                 "de",
-                "sum() erwartet numerische Argumente, erhält %{actual}.",
+                "sum() erwartet numerische Argumente, erhalten wurde %{actual}.",
             ),
-            ("es", "sum() espera argumentos numéricos, obtuvo %{actual}."),
+            (
+                "es",
+                "sum() espera argumentos numéricos, se recibió %{actual}.",
+            ),
             (
                 "fr",
-                "sum() attend des arguments numériques, j'ai obtenu %{actual}.",
+                "sum() attend des arguments numériques ; valeur reçue : %{actual}.",
             ),
             (
                 "ja",
-                "sum() は数値引数を必要とします。%{actual} を取得しました。",
+                "sum() には数値の引数が必要ですが、%{actual} が指定されました。",
             ),
-            ("ko", "sum()에는 숫자 인수가 필요하며 %{actual}가 있습니다."),
+            (
+                "ko",
+                "sum()에는 숫자 인수가 필요하지만 %{actual}이(가) 제공되었습니다.",
+            ),
         ]),
     );
     translation_map.set_translation_key(
@@ -1136,7 +1154,10 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "%{function} function argument must be finite."),
             ("zh", "%{function} 函数参数必须是有限的。"),
-            ("de", "Das Funktionsargument %{function} muss endlich sein."),
+            (
+                "de",
+                "Das Argument der Funktion %{function} muss endlich sein.",
+            ),
             (
                 "es",
                 "El argumento de la función %{function} debe ser finito.",
@@ -1154,7 +1175,7 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "%{function} function argument is out of range for an integer."),
             ("zh", "%{function} 函数参数超出整数范围。"),
-            ("de", "Das Funktionsargument %{function} liegt außerhalb des gültigen Bereichs für eine Ganzzahl."),
+            ("de", "Das Argument der Funktion %{function} liegt außerhalb des gültigen Bereichs für eine Ganzzahl."),
             ("es", "El argumento de la función %{function} está fuera del rango para un número entero."),
             ("fr", "L’argument de la fonction %{function} est hors plage pour un nombre entier."),
             ("ja", "%{function} 関数の引数が整数の範囲外です。"),
@@ -1166,7 +1187,7 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "%{function} function argument could not be converted to an integer."),
             ("zh", "%{function} 函数参数无法转换为整数。"),
-            ("de", "Das Funktionsargument %{function} konnte nicht in eine Ganzzahl konvertiert werden."),
+            ("de", "Das Argument der Funktion %{function} konnte nicht in eine Ganzzahl konvertiert werden."),
             ("es", "El argumento de la función %{function} no se pudo convertir a un número entero."),
             ("fr", "L'argument de la fonction %{function} n'a pas pu être converti en nombre entier."),
             ("ja", "%{function} 関数の引数を整数に変換できませんでした。"),
@@ -1178,10 +1199,10 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "%{function} function argument is too large to convert to a float without losing precision."),
             ("zh", "%{function} 函数参数太大，无法在不损失精度的情况下转换为浮点数。"),
-            ("de", "Das Funktionsargument %{function} ist zu groß, um es ohne Präzisionsverlust in einen Gleitkommawert umzuwandeln."),
+            ("de", "Das Argument der Funktion %{function} ist zu groß, um es ohne Präzisionsverlust in eine Gleitkommazahl umzuwandeln."),
             ("es", "El argumento de la función %{function} es demasiado grande para convertirlo en flotante sin perder precisión."),
             ("fr", "L'argument de la fonction %{function} est trop volumineux pour être converti en flottant sans perte de précision."),
-            ("ja", "%{function} 関数の引数が大きすぎるため、精度を失わずに float に変換できません。"),
+            ("ja", "%{function} 関数の引数が大きすぎるため、精度を失わずに浮動小数点数に変換できません。"),
             ("ko", "%{function} 함수 인수가 너무 커서 정밀도를 잃지 않고 부동 소수점으로 변환할 수 없습니다."),
         ]),
     );
@@ -1190,10 +1211,10 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "%{function} function argument could not be converted to a float."),
             ("zh", "%{function} 函数参数无法转换为浮点数。"),
-            ("de", "Das Funktionsargument %{function} konnte nicht in eine Gleitkommazahl konvertiert werden."),
+            ("de", "Das Argument der Funktion %{function} konnte nicht in eine Gleitkommazahl konvertiert werden."),
             ("es", "El argumento de la función %{function} no se pudo convertir en un valor flotante."),
             ("fr", "L'argument de la fonction %{function} n'a pas pu être converti en flottant."),
-            ("ja", "%{function} 関数の引数を float に変換できませんでした。"),
+            ("ja", "%{function} 関数の引数を浮動小数点数に変換できませんでした。"),
             ("ko", "%{function} 함수 인수를 부동 소수점으로 변환할 수 없습니다."),
         ]),
     );
@@ -1215,7 +1236,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "fr",
-                "La fonction %{function} ne dispose pas d'un argument attendu.",
+                "Il manque un argument attendu à la fonction %{function}.",
             ),
             ("ja", "%{function} 関数に予期された引数がありません。"),
             ("ko", "%{function} 함수에 예상 인수가 누락되었습니다."),
@@ -1228,7 +1249,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "%{function} 函数参数必须是浮点数。"),
             (
                 "de",
-                "Das Funktionsargument %{function} muss ein Float sein.",
+                "Das Argument der Funktion %{function} muss eine Gleitkommazahl sein.",
             ),
             (
                 "es",
@@ -1240,7 +1261,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "ja",
-                "%{function} 関数の引数は浮動小数点でなければなりません。",
+                "%{function} 関数の引数は浮動小数点数でなければなりません。",
             ),
             ("ko", "%{function} 함수 인수는 부동 소수점이어야 합니다."),
         ]),
@@ -1250,7 +1271,7 @@ pub(crate) fn add_expression_engine_translation_map(
         HashMap::from([
             ("en", "%{function} function arguments must all be the same numeric type."),
             ("zh", "%{function} 函数参数必须全部为相同的数字类型。"),
-            ("de", "%{function}-Funktionsargumente müssen alle vom gleichen numerischen Typ sein."),
+            ("de", "Die Argumente der Funktion %{function} müssen alle vom gleichen numerischen Typ sein."),
             ("es", "Todos los argumentos de la función %{function} deben ser del mismo tipo numérico."),
             ("fr", "Les arguments de la fonction %{function} doivent tous être du même type numérique."),
             ("ja", "%{function} 関数の引数はすべて同じ数値型である必要があります。"),
@@ -1264,7 +1285,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "%{function} 函数参数必须是数字。"),
             (
                 "de",
-                "Das Funktionsargument %{function} muss eine Zahl sein.",
+                "Das Argument der Funktion %{function} muss eine Zahl sein.",
             ),
             (
                 "es",
@@ -1282,12 +1303,12 @@ pub(crate) fn add_expression_engine_translation_map(
         "expression_engine_function_clamp_minimum_exceeds_maximum",
         HashMap::from([
             ("en", "clamp function minimum argument must not be greater than its maximum argument."),
-            ("zh", "钳位函数的最小参数不得大于其最大参数。"),
-            ("de", "Das minimale Argument der Klemmfunktion darf nicht größer sein als das maximale Argument."),
-            ("es", "El argumento mínimo de la función de sujeción no debe ser mayor que su argumento máximo."),
+            ("zh", "clamp 函数的最小值参数不得大于最大值参数。"),
+            ("de", "Das Minimumargument der Funktion clamp darf nicht größer sein als ihr Maximumargument."),
+            ("es", "El argumento mínimo de la función clamp no debe ser mayor que su argumento máximo."),
             ("fr", "L’argument minimum de la fonction clamp ne doit pas être supérieur à son argument maximum."),
-            ("ja", "クランプ関数の最小引数は最大引数を超えてはなりません。"),
-            ("ko", "클램프 함수의 최소 인수는 최대 인수보다 클 수 없습니다."),
+            ("ja", "clamp 関数の最小値の引数は最大値の引数を超えてはなりません。"),
+            ("ko", "clamp 함수의 최솟값 인수는 최댓값 인수보다 클 수 없습니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -1321,7 +1342,7 @@ pub(crate) fn add_expression_engine_translation_map(
             ("zh", "%{function} 函数参数必须是字符串。"),
             (
                 "de",
-                "Das Funktionsargument %{function} muss eine Zeichenfolge sein.",
+                "Das Argument der Funktion %{function} muss eine Zeichenkette sein.",
             ),
             (
                 "es",
@@ -1346,14 +1367,14 @@ pub(crate) fn add_expression_engine_translation_map(
             ),
             (
                 "es",
-                "si el primer argumento de la función debe ser booleano.",
+                "El primer argumento de la función if debe ser booleano.",
             ),
             (
                 "fr",
-                "si le premier argument de la fonction doit être un booléen.",
+                "Le premier argument de la fonction if doit être un booléen.",
             ),
             ("ja", "if 関数の最初の引数はブール値でなければなりません。"),
-            ("ko", "함수의 첫 번째 인수는 부울이어야 합니다."),
+            ("ko", "if 함수의 첫 번째 인수는 부울 값이어야 합니다."),
         ]),
     );
     translation_map.set_translation_key(
@@ -1366,9 +1387,9 @@ pub(crate) fn add_expression_engine_translation_map(
                 "Benutzerdefinierte Funktion fehlgeschlagen: %{actual}",
             ),
             ("es", "Error en la función personalizada: %{actual}"),
-            ("fr", "Échec de la fonction personnalisée : %{actual}"),
+            ("fr", "Échec de la fonction personnalisée : %{actual}"),
             ("ja", "カスタム関数が失敗しました: %{actual}"),
-            ("ko", "맞춤 기능 실패: %{actual}"),
+            ("ko", "사용자 정의 함수 실패: %{actual}"),
         ]),
     );
 }

@@ -246,7 +246,7 @@ fn quoted_values(values: &[String]) -> String {
 
 /// Replaces a named placeholder in a localized message.
 fn interpolate(template: &str, name: &str, value: &str) -> String {
-    template.replace(&format!("{{{name}}}"), value)
+    template.replace(&format!("%{{{name}}}"), value)
 }
 
 /// Localizes help shared by the root command and its subcommands.

@@ -124,7 +124,7 @@ pub(crate) fn add_datastore_translation_map(translation_map: &mut SharedStringTr
         "datastore_schema_mismatch",
         HashMap::from([
             ("en", "Map items must all use the same entry schema"),
-            ("zh", "映射项必须全部使用相同的条目架构"),
+            ("zh", "映射项必须全部使用相同的条目模式"),
             (
                 "de",
                 "Alle Map-Elemente müssen dasselbe Eintragsschema verwenden",
@@ -135,7 +135,7 @@ pub(crate) fn add_datastore_translation_map(translation_map: &mut SharedStringTr
             ),
             (
                 "fr",
-                "Tous les éléments de la map doivent utiliser le même schéma d’entrée",
+                "Tous les éléments du dictionnaire doivent utiliser le même schéma d’entrée",
             ),
             (
                 "ja",
@@ -148,7 +148,7 @@ pub(crate) fn add_datastore_translation_map(translation_map: &mut SharedStringTr
         "datastore_missing_schema",
         HashMap::from([
             ("en", "Missing schema"),
-            ("zh", "缺少架构"),
+            ("zh", "缺少模式"),
             ("de", "Schema fehlt"),
             ("es", "Falta el esquema"),
             ("fr", "Schéma manquant"),
@@ -177,7 +177,7 @@ pub(crate) fn add_datastore_translation_map(translation_map: &mut SharedStringTr
             ),
             (
                 "fr",
-                "Impossible de définir directement une valeur pour un élément de la map. Utilisez les méthodes appropriées pour modifier la map.",
+                "Impossible de définir directement une valeur pour un élément du dictionnaire. Utilisez les méthodes appropriées pour modifier le dictionnaire.",
             ),
             (
                 "ja",

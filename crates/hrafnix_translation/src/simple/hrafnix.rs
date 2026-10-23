@@ -12,7 +12,7 @@ pub(crate) fn add_hrafnix_translation_map(translation_map: &mut SharedStringTran
                 "de",
                 "Hrafnix-Projekte erstellen, formatieren und simulieren.",
             ),
-            ("es", "Crea, da formato y simula proyectos de Hrafnix."),
+            ("es", "Cree, dé formato y simule proyectos de Hrafnix."),
             ("fr", "Crée, formate et simule des projets Hrafnix."),
             (
                 "ja",
@@ -126,7 +126,7 @@ pub(crate) fn add_hrafnix_translation_map(translation_map: &mut SharedStringTran
             ("en", "Print help (see a summary with '-h')"),
             ("zh", "显示帮助（使用 '-h' 查看摘要）"),
             ("de", "Hilfe anzeigen (Zusammenfassung mit '-h')"),
-            ("es", "Muestra la ayuda (consulta un resumen con '-h')"),
+            ("es", "Muestra la ayuda (consulte un resumen con '-h')"),
             ("fr", "Affiche l’aide (voir le résumé avec '-h')"),
             ("ja", "ヘルプを表示します（概要は '-h' で表示）"),
             ("ko", "도움말을 표시합니다('-h'로 요약 보기)"),
@@ -204,25 +204,25 @@ pub(crate) fn add_hrafnix_translation_map(translation_map: &mut SharedStringTran
     translation_map.set_translation_key(
         "hrafnix_error_unrecognized_subcommand",
         HashMap::from([
-            ("en", "unrecognized subcommand '{value}'"),
-            ("zh", "无法识别的子命令“{value}”"),
-            ("de", "nicht erkannter Unterbefehl „{value}“"),
-            ("es", "subcomando no reconocido «{value}»"),
-            ("fr", "sous-commande non reconnue «{value}»"),
-            ("ja", "認識されないサブコマンド「{value}」"),
-            ("ko", "인식할 수 없는 하위 명령 '{value}'"),
+            ("en", "unrecognized subcommand '%{value}'"),
+            ("zh", "无法识别的子命令“%{value}”"),
+            ("de", "nicht erkannter Unterbefehl „%{value}“"),
+            ("es", "subcomando no reconocido «%{value}»"),
+            ("fr", "sous-commande non reconnue « %{value} »"),
+            ("ja", "認識されないサブコマンド「%{value}」"),
+            ("ko", "인식할 수 없는 하위 명령 '%{value}'"),
         ]),
     );
     translation_map.set_translation_key(
         "hrafnix_error_unexpected_argument",
         HashMap::from([
-            ("en", "unexpected argument '{value}' found"),
-            ("zh", "发现意外的参数“{value}”"),
-            ("de", "unerwartetes Argument „{value}“ gefunden"),
-            ("es", "se encontró el argumento inesperado «{value}»"),
-            ("fr", "argument inattendu «{value}» trouvé"),
-            ("ja", "予期しない引数「{value}」が見つかりました"),
-            ("ko", "예기치 않은 인수 '{value}'을(를) 찾았습니다"),
+            ("en", "unexpected argument '%{value}' found"),
+            ("zh", "发现意外的参数“%{value}”"),
+            ("de", "unerwartetes Argument „%{value}“ gefunden"),
+            ("es", "se encontró el argumento inesperado «%{value}»"),
+            ("fr", "argument inattendu « %{value} » trouvé"),
+            ("ja", "予期しない引数「%{value}」が見つかりました"),
+            ("ko", "예기치 않은 인수 '%{value}'을(를) 찾았습니다"),
         ]),
     );
     translation_map.set_translation_key(
@@ -230,35 +230,41 @@ pub(crate) fn add_hrafnix_translation_map(translation_map: &mut SharedStringTran
         HashMap::from([
             (
                 "en",
-                "a value is required for '{argument}' but none was supplied",
+                "a value is required for '%{argument}' but none was supplied",
             ),
-            ("zh", "“{argument}”需要一个值，但未提供"),
+            ("zh", "“%{argument}”需要一个值，但未提供"),
             (
                 "de",
-                "für „{argument}“ ist ein Wert erforderlich, es wurde jedoch keiner angegeben",
+                "für „%{argument}“ ist ein Wert erforderlich, es wurde jedoch keiner angegeben",
             ),
             (
                 "es",
-                "se requiere un valor para «{argument}», pero no se proporcionó ninguno",
+                "se requiere un valor para «%{argument}», pero no se proporcionó ninguno",
             ),
             (
                 "fr",
-                "une valeur est requise pour «{argument}», mais aucune n’a été fournie",
+                "une valeur est requise pour « %{argument} », mais aucune n’a été fournie",
             ),
-            ("ja", "「{argument}」には値が必要ですが、指定されていません"),
-            ("ko", "'{argument}'에는 값이 필요하지만 제공되지 않았습니다"),
+            (
+                "ja",
+                "「%{argument}」には値が必要ですが、指定されていません",
+            ),
+            (
+                "ko",
+                "'%{argument}'에는 값이 필요하지만 제공되지 않았습니다",
+            ),
         ]),
     );
     translation_map.set_translation_key(
         "hrafnix_error_invalid_value",
         HashMap::from([
-            ("en", "invalid value '{value}' for '{argument}'"),
-            ("zh", "“{argument}”的值“{value}”无效"),
-            ("de", "ungültiger Wert „{value}“ für „{argument}“"),
-            ("es", "valor no válido «{value}» para «{argument}»"),
-            ("fr", "valeur non valide «{value}» pour «{argument}»"),
-            ("ja", "「{argument}」の値「{value}」は無効です"),
-            ("ko", "'{argument}'의 값 '{value}'이(가) 잘못되었습니다"),
+            ("en", "invalid value '%{value}' for '%{argument}'"),
+            ("zh", "“%{argument}”的值“%{value}”无效"),
+            ("de", "ungültiger Wert „%{value}“ für „%{argument}“"),
+            ("es", "valor no válido «%{value}» para «%{argument}»"),
+            ("fr", "valeur non valide « %{value} » pour « %{argument} »"),
+            ("ja", "「%{argument}」の値「%{value}」は無効です"),
+            ("ko", "'%{argument}'의 값 '%{value}'이(가) 잘못되었습니다"),
         ]),
     );
     translation_map.set_translation_key(
@@ -276,25 +282,25 @@ pub(crate) fn add_hrafnix_translation_map(translation_map: &mut SharedStringTran
     translation_map.set_translation_key(
         "hrafnix_error_similar_subcommand",
         HashMap::from([
-            ("en", "a similar subcommand exists: {values}"),
-            ("zh", "存在相似的子命令：{values}"),
-            ("de", "ein ähnlicher Unterbefehl existiert: {values}"),
-            ("es", "existe un subcomando similar: {values}"),
-            ("fr", "une sous-commande similaire existe : {values}"),
-            ("ja", "似たサブコマンドがあります: {values}"),
-            ("ko", "비슷한 하위 명령이 있습니다: {values}"),
+            ("en", "a similar subcommand exists: %{values}"),
+            ("zh", "存在相似的子命令：%{values}"),
+            ("de", "ein ähnlicher Unterbefehl existiert: %{values}"),
+            ("es", "existe un subcomando similar: %{values}"),
+            ("fr", "une sous-commande similaire existe : %{values}"),
+            ("ja", "似たサブコマンドがあります: %{values}"),
+            ("ko", "비슷한 하위 명령이 있습니다: %{values}"),
         ]),
     );
     translation_map.set_translation_key(
         "hrafnix_error_similar_argument",
         HashMap::from([
-            ("en", "a similar argument exists: {values}"),
-            ("zh", "存在相似的参数：{values}"),
-            ("de", "ein ähnliches Argument existiert: {values}"),
-            ("es", "existe un argumento similar: {values}"),
-            ("fr", "un argument similaire existe : {values}"),
-            ("ja", "似た引数があります: {values}"),
-            ("ko", "비슷한 인수가 있습니다: {values}"),
+            ("en", "a similar argument exists: %{values}"),
+            ("zh", "存在相似的参数：%{values}"),
+            ("de", "ein ähnliches Argument existiert: %{values}"),
+            ("es", "existe un argumento similar: %{values}"),
+            ("fr", "un argument similaire existe : %{values}"),
+            ("ja", "似た引数があります: %{values}"),
+            ("ko", "비슷한 인수가 있습니다: %{values}"),
         ]),
     );
     translation_map.set_translation_key(
