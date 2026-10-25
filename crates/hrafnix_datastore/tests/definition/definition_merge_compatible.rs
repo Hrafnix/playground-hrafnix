@@ -85,6 +85,68 @@ fn test_merge_compatible_table_columns() {
 }
 
 #[test]
+fn test_merge_compatible_table_column_requirements() {
+    // Why: Merged rows keep `self`'s definition without re-validation, so rows accepted
+    // under a looser requirement must not land under a stricter one.
+    let none = TableDefinition::new("A", vec![(store_key!("x"), NumberDefinition::new("X"))]);
+    let increasing = TableDefinition::new_with_column_requirements(
+        "B",
+        vec![(
+            store_key!("x"),
+            NumberDefinition::new("X2"),
+            TableColumnRequirement::Increasing,
+        )],
+    );
+    let also_increasing = TableDefinition::new_with_column_requirements(
+        "C",
+        vec![(
+            store_key!("x"),
+            NumberDefinition::new("X3"),
+            TableColumnRequirement::Increasing,
+        )],
+    );
+    let decreasing = TableDefinition::new_with_column_requirements(
+        "D",
+        vec![(
+            store_key!("x"),
+            NumberDefinition::new("X"),
+            TableColumnRequirement::Decreasing,
+        )],
+    );
+    assert!(increasing.is_merge_compatible(&also_increasing));
+    assert!(!none.is_merge_compatible(&increasing));
+    assert!(!increasing.is_merge_compatible(&none));
+    assert!(!increasing.is_merge_compatible(&decreasing));
+
+    let none = TableWithUnitsDefinition::new(
+        "A",
+        vec![(
+            store_key!("x"),
+            NumberWithUnitsDefinition::new("X", UnitId::Length_Meter),
+        )],
+    );
+    let increasing = TableWithUnitsDefinition::new_with_column_requirements(
+        "B",
+        vec![(
+            store_key!("x"),
+            NumberWithUnitsDefinition::new("X", UnitId::Length_Foot),
+            TableColumnRequirement::Increasing,
+        )],
+    );
+    let also_increasing = TableWithUnitsDefinition::new_with_column_requirements(
+        "C",
+        vec![(
+            store_key!("x"),
+            NumberWithUnitsDefinition::new("X", UnitId::Length_Meter),
+            TableColumnRequirement::Increasing,
+        )],
+    );
+    assert!(increasing.is_merge_compatible(&also_increasing));
+    assert!(!none.is_merge_compatible(&increasing));
+    assert!(!increasing.is_merge_compatible(&none));
+}
+
+#[test]
 fn test_merge_compatible_map_items() {
     let a = MapDefinition::new(
         "A",

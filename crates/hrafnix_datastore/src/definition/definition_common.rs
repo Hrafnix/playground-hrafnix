@@ -1,3 +1,37 @@
+/// A requirement comparing adjacent evaluated rows in one table column.
+///
+/// Comparisons use numeric values after unit conversion. Empty tables and single-row
+/// tables with all constrained cells present satisfy every requirement. Missing cells
+/// in constrained columns and unordered comparisons (NaN) fail.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TableColumnRequirement {
+    /// No relationship required between rows.
+    None,
+    /// Each value must be greater than or equal to the preceding value.
+    ConstantOrIncreasing,
+    /// Each value must be greater than the preceding value.
+    Increasing,
+    /// Each value must be less than or equal to the preceding value.
+    ConstantOrDecreasing,
+    /// Each value must be less than the preceding value.
+    Decreasing,
+    /// Adjacent values must be equal.
+    Constant,
+}
+
+impl std::fmt::Display for TableColumnRequirement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::None => "None",
+            Self::ConstantOrIncreasing => "Constant Or Increasing",
+            Self::Increasing => "Increasing",
+            Self::ConstantOrDecreasing => "Constant Or Decreasing",
+            Self::Decreasing => "Decreasing",
+            Self::Constant => "Constant",
+        })
+    }
+}
+
 /// Definition for a number-based parameter constraint.
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumberConstraintEnum {

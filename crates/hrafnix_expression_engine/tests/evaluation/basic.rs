@@ -1,5 +1,6 @@
 use hrafnix_datastore::prelude::*;
 use hrafnix_expression_engine::prelude::*;
+use hrafnix_units::UnitId;
 use std::collections::BTreeMap;
 use std::ops::{Mul, Sub};
 
@@ -341,5 +342,136 @@ fn test_basic_global_data_integer_expression() {
         assert_eq!(*number, 149);
     } else {
         panic!("expected integer data");
+    }
+}
+
+fn table_with_missing_cells(
+    rows: &[Vec<ShareableString>],
+    with_units: bool,
+    requirement: TableColumnRequirement,
+) -> ItemFrozen {
+    if with_units {
+        ItemFrozen::TableWithUnits(TableWithUnitsFrozen::new_from_rows(
+            TableWithUnitsDefinition::new_with_column_requirements(
+                "",
+                vec![
+                    (
+                        store_key!("z"),
+                        NumberWithUnitsDefinition::new("", UnitId::None),
+                        TableColumnRequirement::None,
+                    ),
+                    (
+                        store_key!("a"),
+                        NumberWithUnitsDefinition::new("", UnitId::Length_Meter),
+                        requirement,
+                    ),
+                ],
+            ),
+            rows.to_vec(),
+            vec![
+                UnitId::None.string_id().into(),
+                UnitId::Length_Meter.string_id().into(),
+            ],
+        ))
+    } else {
+        ItemFrozen::Table(TableFrozen::new_from_rows(
+            TableDefinition::new_with_column_requirements(
+                "",
+                vec![
+                    (
+                        store_key!("z"),
+                        NumberDefinition::new(""),
+                        TableColumnRequirement::None,
+                    ),
+                    (store_key!("a"), NumberDefinition::new(""), requirement),
+                ],
+            ),
+            rows.to_vec(),
+        ))
+    }
+}
+
+#[test]
+fn table_column_requirements_reject_missing_cells() {
+    let cases = [
+        (
+            vec![vec!["9.0", "3.0"], vec!["8.0"], vec!["7.0", "1.0"]],
+            vec!["2"],
+        ),
+        (vec![vec!["9.0"], vec!["8.0", "3.0"]], vec!["1"]),
+        (vec![vec!["9.0", "3.0"], vec!["8.0"]], vec!["2"]),
+        (vec![vec!["9.0"]], vec!["1"]),
+        (vec![vec!["9.0"], vec!["8.0"]], vec!["1", "2"]),
+    ];
+    for (rows, missing_rows) in cases {
+        let rows: Vec<Vec<ShareableString>> = rows
+            .into_iter()
+            .map(|row| row.into_iter().map(Into::into).collect())
+            .collect();
+        for with_units in [false, true] {
+            for requirement in [
+                TableColumnRequirement::None,
+                TableColumnRequirement::Increasing,
+                TableColumnRequirement::ConstantOrIncreasing,
+                TableColumnRequirement::Decreasing,
+                TableColumnRequirement::ConstantOrDecreasing,
+                TableColumnRequirement::Constant,
+            ] {
+                for referenced in [false, true] {
+                    let mut engine = ExpressionEngine::new();
+                    let mut table = table_with_missing_cells(&rows, with_units, requirement);
+                    if referenced {
+                        let globals = GlobalObjectFrozen::new_from_items(
+                            "",
+                            BTreeMap::from([(
+                                global_key!("g_source").into(),
+                                table_with_missing_cells(
+                                    &rows,
+                                    with_units,
+                                    TableColumnRequirement::None,
+                                ),
+                            )]),
+                        );
+                        engine
+                            .evaluate_globals(&GlobalObjectInputData::new(&globals))
+                            .unwrap();
+                        table = match table {
+                            ItemFrozen::Table(value) => {
+                                let mut editable = value.thaw();
+                                editable.set_parameter("g_source");
+                                ItemFrozen::Table(editable.freeze())
+                            }
+                            ItemFrozen::TableWithUnits(value) => {
+                                let mut editable = value.thaw();
+                                editable.set_parameter("g_source");
+                                ItemFrozen::TableWithUnits(editable.freeze())
+                            }
+                            _ => panic!("expected a table"),
+                        };
+                    }
+                    let parameters = ParameterObjectFrozen::new_from_items(
+                        "",
+                        BTreeMap::from([(parameter_key!("p_table").into(), table)]),
+                    );
+                    let result =
+                        engine.evaluate_parameters(&ParameterObjectInputData::new(&parameters));
+                    if requirement == TableColumnRequirement::None {
+                        assert!(result.is_ok());
+                        continue;
+                    }
+                    let errors = result.unwrap_err();
+                    assert_eq!(errors.len(), missing_rows.len());
+                    for (error, missing_row) in errors.iter().zip(&missing_rows) {
+                        assert_eq!(
+                            error.translate_data().message_key(),
+                            "expression_engine_evaluation_table_column_requirement_missing_cell"
+                        );
+                        let params = error.translate_data().message_params();
+                        assert_eq!(params.get("column").unwrap(), "a");
+                        assert_eq!(params.get("row").unwrap().as_str(), *missing_row);
+                    }
+                }
+            }
+        }
     }
 }
