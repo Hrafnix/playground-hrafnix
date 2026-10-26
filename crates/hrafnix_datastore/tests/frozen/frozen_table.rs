@@ -1,6 +1,63 @@
 use hrafnix_datastore::prelude::*;
 
 #[test]
+fn table_frozen_from_rows_normalizes_row_widths() {
+    let rows = vec![
+        vec![],
+        vec!["1".into()],
+        vec!["2".into(), "3".into()],
+        vec!["4".into(), "5".into(), "discarded".into()],
+    ];
+    let expected_cases: [Vec<Vec<ShareableString>>; 3] = [
+        vec![vec![]; 4],
+        vec![
+            vec!["".into()],
+            vec!["1".into()],
+            vec!["2".into()],
+            vec!["4".into()],
+        ],
+        vec![
+            vec!["".into(), "".into()],
+            vec!["1".into(), "".into()],
+            vec!["2".into(), "3".into()],
+            vec!["4".into(), "5".into()],
+        ],
+    ];
+    for (column_count, expected_rows) in expected_cases.into_iter().enumerate() {
+        let definition = TableDefinition::new(
+            "Table",
+            [
+                (
+                    store_key!("z"),
+                    NumberDefinition::new_with_default("", "99"),
+                ),
+                (
+                    store_key!("a"),
+                    NumberDefinition::new_with_default("", "99"),
+                ),
+            ]
+            .into_iter()
+            .take(column_count)
+            .collect(),
+        );
+        let table = TableFrozen::new_from_rows(definition.clone(), rows.clone());
+        let expected = TableFrozen::new_from_rows(definition.clone(), expected_rows.clone());
+
+        assert_eq!(table.rows(), expected_rows);
+        assert_eq!(table.row_count(), 4);
+        assert_eq!(table.column_count(), column_count);
+        assert_eq!(table, expected);
+        assert_eq!(table.hash(), expected.hash());
+        assert_eq!(table.thaw().freeze(), table);
+        assert_eq!(table.launder(&SharedStringStore::new()), table);
+        assert_eq!(
+            TableFrozen::new_from_rows(definition, vec![]).row_count(),
+            0
+        );
+    }
+}
+
+#[test]
 fn test_table_frozen() {
     // Why: Test table frozen object creation and parameters.
     let table_frozen = TableFrozen::new(TableDefinition::new(

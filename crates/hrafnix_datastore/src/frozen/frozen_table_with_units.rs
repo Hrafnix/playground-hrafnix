@@ -47,14 +47,19 @@ impl TableWithUnitsFrozen {
 
     /// Creates a new `TableWithUnitsFrozen` with a definition, rows, and column units.
     ///
+    /// Rows are padded with empty strings or truncated to the definition's column count.
     /// `units` must contain one entry per column in definition column order.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
     pub fn new_from_rows(
         definition: TableWithUnitsDefinition,
-        rows: Vec<Vec<ShareableString>>,
+        mut rows: Vec<Vec<ShareableString>>,
         units: Vec<ShareableString>,
     ) -> Self {
+        let column_count = definition.count();
+        for row in &mut rows {
+            row.resize(column_count, ShareableString::default());
+        }
         let mut table = Self {
             definition,
             units,

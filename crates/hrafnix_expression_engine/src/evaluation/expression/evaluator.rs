@@ -3387,6 +3387,45 @@ mod tests {
     }
 
     #[test]
+    fn table_column_requirements_reject_missing_cells() {
+        for requirement in [
+            TableColumnRequirement::None,
+            TableColumnRequirement::Increasing,
+            TableColumnRequirement::ConstantOrIncreasing,
+            TableColumnRequirement::Decreasing,
+            TableColumnRequirement::ConstantOrDecreasing,
+            TableColumnRequirement::Constant,
+        ] {
+            for (rows, missing_rows) in [
+                (vec![vec![3.0], vec![], vec![1.0]], vec!["2"]),
+                (vec![vec![]], vec!["1"]),
+                (vec![vec![], vec![]], vec!["1", "2"]),
+            ] {
+                let result = validate_table_column_requirements(
+                    &rows,
+                    [("value", requirement)].into_iter(),
+                    |_, _| "".into(),
+                );
+                if requirement == TableColumnRequirement::None {
+                    assert!(result.is_ok());
+                    continue;
+                }
+                let errors = result.unwrap_err();
+                assert_eq!(errors.len(), missing_rows.len());
+                for (error, missing_row) in errors.iter().zip(&missing_rows) {
+                    assert_eq!(
+                        message_key(error),
+                        "expression_engine_evaluation_table_column_requirement_missing_cell"
+                    );
+                    let params = error.translate_data().message_params();
+                    assert_eq!(params.get("column").unwrap(), "value");
+                    assert_eq!(params.get("row").unwrap().as_str(), *missing_row);
+                }
+            }
+        }
+    }
+
+    #[test]
     fn table_column_requirements_allow_empty_and_single_rows_and_reject_nan() {
         for requirement in [
             TableColumnRequirement::Increasing,

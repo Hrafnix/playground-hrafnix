@@ -392,18 +392,15 @@ fn table_with_missing_cells(
 }
 
 #[test]
-fn table_column_requirements_reject_missing_cells() {
+fn tables_reject_padded_missing_cells() {
     let cases = [
-        (
-            vec![vec!["9.0", "3.0"], vec!["8.0"], vec!["7.0", "1.0"]],
-            vec!["2"],
-        ),
-        (vec![vec!["9.0"], vec!["8.0", "3.0"]], vec!["1"]),
-        (vec![vec!["9.0", "3.0"], vec!["8.0"]], vec!["2"]),
-        (vec![vec!["9.0"]], vec!["1"]),
-        (vec![vec!["9.0"], vec!["8.0"]], vec!["1", "2"]),
+        vec![vec!["9.0", "3.0"], vec!["8.0"], vec!["7.0", "1.0"]],
+        vec![vec!["9.0"], vec!["8.0", "3.0"]],
+        vec![vec!["9.0", "3.0"], vec!["8.0"]],
+        vec![vec!["9.0"]],
+        vec![vec!["9.0"], vec!["8.0"]],
     ];
-    for (rows, missing_rows) in cases {
+    for rows in cases {
         let rows: Vec<Vec<ShareableString>> = rows
             .into_iter()
             .map(|row| row.into_iter().map(Into::into).collect())
@@ -417,59 +414,31 @@ fn table_column_requirements_reject_missing_cells() {
                 TableColumnRequirement::ConstantOrDecreasing,
                 TableColumnRequirement::Constant,
             ] {
-                for referenced in [false, true] {
+                for global in [false, true] {
                     let mut engine = ExpressionEngine::new();
-                    let mut table = table_with_missing_cells(&rows, with_units, requirement);
-                    if referenced {
+                    let table = table_with_missing_cells(&rows, with_units, requirement);
+                    let errors = if global {
                         let globals = GlobalObjectFrozen::new_from_items(
                             "",
-                            BTreeMap::from([(
-                                global_key!("g_source").into(),
-                                table_with_missing_cells(
-                                    &rows,
-                                    with_units,
-                                    TableColumnRequirement::None,
-                                ),
-                            )]),
+                            BTreeMap::from([(global_key!("g_source").into(), table)]),
                         );
                         engine
                             .evaluate_globals(&GlobalObjectInputData::new(&globals))
-                            .unwrap();
-                        table = match table {
-                            ItemFrozen::Table(value) => {
-                                let mut editable = value.thaw();
-                                editable.set_parameter("g_source");
-                                ItemFrozen::Table(editable.freeze())
-                            }
-                            ItemFrozen::TableWithUnits(value) => {
-                                let mut editable = value.thaw();
-                                editable.set_parameter("g_source");
-                                ItemFrozen::TableWithUnits(editable.freeze())
-                            }
-                            _ => panic!("expected a table"),
-                        };
-                    }
-                    let parameters = ParameterObjectFrozen::new_from_items(
-                        "",
-                        BTreeMap::from([(parameter_key!("p_table").into(), table)]),
-                    );
-                    let result =
-                        engine.evaluate_parameters(&ParameterObjectInputData::new(&parameters));
-                    if requirement == TableColumnRequirement::None {
-                        assert!(result.is_ok());
-                        continue;
-                    }
-                    let errors = result.unwrap_err();
-                    assert_eq!(errors.len(), missing_rows.len());
-                    for (error, missing_row) in errors.iter().zip(&missing_rows) {
-                        assert_eq!(
-                            error.translate_data().message_key(),
-                            "expression_engine_evaluation_table_column_requirement_missing_cell"
+                            .unwrap_err()
+                    } else {
+                        let parameters = ParameterObjectFrozen::new_from_items(
+                            "",
+                            BTreeMap::from([(parameter_key!("p_table").into(), table)]),
                         );
-                        let params = error.translate_data().message_params();
-                        assert_eq!(params.get("column").unwrap(), "a");
-                        assert_eq!(params.get("row").unwrap().as_str(), *missing_row);
-                    }
+                        engine
+                            .evaluate_parameters(&ParameterObjectInputData::new(&parameters))
+                            .unwrap_err()
+                    };
+                    assert_eq!(errors.len(), 1);
+                    assert_eq!(
+                        errors[0].translate_data().message_key(),
+                        "expression_engine_parser_expected_expression"
+                    );
                 }
             }
         }
