@@ -2,6 +2,74 @@ use hrafnix_datastore::prelude::*;
 use hrafnix_units::UnitId;
 
 #[test]
+fn table_with_units_frozen_from_rows_normalizes_row_widths() {
+    let rows = vec![
+        vec![],
+        vec!["1".into()],
+        vec!["2".into(), "3".into()],
+        vec!["4".into(), "5".into(), "discarded".into()],
+    ];
+    let expected_cases: [Vec<Vec<ShareableString>>; 3] = [
+        vec![vec![]; 4],
+        vec![
+            vec!["".into()],
+            vec!["1".into()],
+            vec!["2".into()],
+            vec!["4".into()],
+        ],
+        vec![
+            vec!["".into(), "".into()],
+            vec!["1".into(), "".into()],
+            vec!["2".into(), "3".into()],
+            vec!["4".into(), "5".into()],
+        ],
+    ];
+    for (column_count, expected_rows) in expected_cases.into_iter().enumerate() {
+        let definition = TableWithUnitsDefinition::new(
+            "Table",
+            [
+                (
+                    store_key!("z"),
+                    NumberWithUnitsDefinition::new_with_default("", "99", UnitId::Length_Meter),
+                ),
+                (
+                    store_key!("a"),
+                    NumberWithUnitsDefinition::new_with_default("", "99", UnitId::Time_Second),
+                ),
+            ]
+            .into_iter()
+            .take(column_count)
+            .collect(),
+        );
+        let units: Vec<ShareableString> = [UnitId::Length_Centimeter, UnitId::Time_Second]
+            .into_iter()
+            .take(column_count)
+            .map(|unit| unit.string_id().into())
+            .collect();
+        let table =
+            TableWithUnitsFrozen::new_from_rows(definition.clone(), rows.clone(), units.clone());
+        let expected = TableWithUnitsFrozen::new_from_rows(
+            definition.clone(),
+            expected_rows.clone(),
+            units.clone(),
+        );
+
+        assert_eq!(table.rows(), expected_rows);
+        assert_eq!(table.row_count(), 4);
+        assert_eq!(table.column_count(), column_count);
+        assert_eq!(table.units(), units);
+        assert_eq!(table, expected);
+        assert_eq!(table.hash(), expected.hash());
+        assert_eq!(table.thaw().freeze(), table);
+        assert_eq!(table.launder(&SharedStringStore::new()), table);
+        assert_eq!(
+            TableWithUnitsFrozen::new_from_rows(definition, vec![], units).row_count(),
+            0
+        );
+    }
+}
+
+#[test]
 fn test_table_with_units_frozen() {
     let table = TableWithUnitsFrozen::new(TableWithUnitsDefinition::new(
         "Measurements",

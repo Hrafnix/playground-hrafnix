@@ -1,6 +1,6 @@
 use crate::compile_time::NumberCompileTime;
-use crate::compile_time::compile_time_common::assert_unique_keys;
-use crate::definition::TableDefinition;
+use crate::compile_time::compile_time_common::{assert_unique_keys, const_str_eq};
+use crate::definition::{TableColumnRequirement, TableDefinition};
 use hrafnix_keys::store_key::ConstStoreKey;
 
 /// Compile-time representation of a table.
@@ -10,6 +10,8 @@ pub struct TableCompileTime {
     description: &'static str,
     /// Keyed columns contained in this compile-time table.
     columns: &'static [(ConstStoreKey, NumberCompileTime)],
+    /// Adjacent-row requirements keyed by column; columns absent here have no requirement.
+    column_requirements: &'static [(ConstStoreKey, TableColumnRequirement)],
 }
 
 impl TableCompileTime {
@@ -25,10 +27,46 @@ impl TableCompileTime {
         description: &'static str,
         columns: &'static [(ConstStoreKey, NumberCompileTime)],
     ) -> Self {
+        Self::__new_with_column_requirements(description, columns, &[])
+    }
+
+    /// Hidden backing constructor for
+    /// `const_table!(description, columns, column_requirements)`.
+    ///
+    /// This is an implementation detail; call `const_table!` instead. Every key in
+    /// `column_requirements` must be unique and name a column in `columns`.
+    #[doc(hidden)]
+    #[must_use]
+    pub const fn __new_with_column_requirements(
+        description: &'static str,
+        columns: &'static [(ConstStoreKey, NumberCompileTime)],
+        column_requirements: &'static [(ConstStoreKey, TableColumnRequirement)],
+    ) -> Self {
         assert_unique_keys!(columns, "TableCompileTime column keys must be unique");
+        assert_unique_keys!(
+            column_requirements,
+            "TableCompileTime column requirement keys must be unique"
+        );
+        let mut unchecked = column_requirements;
+        while let [(requirement_key, _), rest @ ..] = unchecked {
+            let mut found = false;
+            let mut candidates = columns;
+            while let [(column_key, _), remaining @ ..] = candidates {
+                if const_str_eq(requirement_key.as_str(), column_key.as_str()) {
+                    found = true;
+                }
+                candidates = remaining;
+            }
+            assert!(
+                found,
+                "TableCompileTime column requirement keys must name an existing column"
+            );
+            unchecked = rest;
+        }
         Self {
             description,
             columns,
+            column_requirements,
         }
     }
 
@@ -42,6 +80,27 @@ impl TableCompileTime {
     #[must_use]
     pub const fn columns(&self) -> &'static [(ConstStoreKey, NumberCompileTime)] {
         self.columns
+    }
+
+    /// Returns the keyed column requirements.
+    #[must_use]
+    pub const fn column_requirements(&self) -> &'static [(ConstStoreKey, TableColumnRequirement)] {
+        self.column_requirements
+    }
+
+    /// Returns the requirement for the given column, or `None` for an unknown column.
+    ///
+    /// A known column without a requirement returns `Some(TableColumnRequirement::None)`.
+    #[must_use]
+    pub fn column_requirement(&self, key: &str) -> Option<TableColumnRequirement> {
+        self.contains_key(key).then(|| {
+            self.column_requirements
+                .iter()
+                .find_map(|(requirement_key, requirement)| {
+                    (requirement_key.as_str() == key).then_some(*requirement)
+                })
+                .unwrap_or(TableColumnRequirement::None)
+        })
     }
 
     /// Returns the number of entries.
@@ -94,11 +153,18 @@ impl TableCompileTime {
     /// Converts this compile-time table into a runtime definition.
     #[must_use]
     pub fn into_definition(self) -> TableDefinition {
-        TableDefinition::new(
+        TableDefinition::new_with_column_requirements(
             self.description,
             self.columns
                 .iter()
-                .map(|(key, column)| (*key, column.into_definition()))
+                .map(|(key, column)| {
+                    (
+                        *key,
+                        column.into_definition(),
+                        self.column_requirement(key.as_str())
+                            .unwrap_or(TableColumnRequirement::None),
+                    )
+                })
                 .collect(),
         )
     }
@@ -118,6 +184,7 @@ impl TableCompileTime {
 /// # Syntax
 /// ```text
 /// const_table!(description, columns)
+/// const_table!(description, columns, column_requirements)
 /// ```
 ///
 /// # Arguments
@@ -125,6 +192,9 @@ impl TableCompileTime {
 /// - `columns`: `&'static [(ConstStoreKey, NumberCompileTime)]` ordered slice of column
 ///   key/definition pairs, typically built with the `store_key!` macro and
 ///   `const_number!`.
+/// - `column_requirements` (optional): `&'static [(ConstStoreKey, TableColumnRequirement)]`
+///   adjacent-row requirements keyed by column. Keys must be unique and name a column in
+///   `columns`; omitted columns have no requirement.
 ///
 /// # Examples
 /// ```rust
@@ -154,6 +224,16 @@ macro_rules! const_table {
             $crate::compile_time::TableCompileTime::__new($description, $columns)
         }
     };
+    ($description:expr, $columns:expr, $column_requirements:expr) => {
+        const {
+            #[allow(clippy::disallowed_methods)]
+            $crate::compile_time::TableCompileTime::__new_with_column_requirements(
+                $description,
+                $columns,
+                $column_requirements,
+            )
+        }
+    };
 }
 
 #[cfg(test)]
@@ -181,5 +261,68 @@ mod tests {
         ];
         #[allow(clippy::disallowed_methods)]
         let _ = TableCompileTime::__new(std::hint::black_box("Duplicates"), DUPLICATES);
+    }
+
+    #[test]
+    fn column_requirements_are_applied_to_definition() {
+        const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] = &[
+            (store_key!("width"), const_number!("Width")),
+            (store_key!("other"), const_number!("Width")),
+        ];
+        const REQUIREMENTS: &[(ConstStoreKey, TableColumnRequirement)] =
+            &[(store_key!("width"), TableColumnRequirement::Increasing)];
+        const TABLE: TableCompileTime = const_table!("Table", COLUMNS, REQUIREMENTS);
+
+        assert_eq!(
+            TABLE.column_requirement("width"),
+            Some(TableColumnRequirement::Increasing)
+        );
+        assert_eq!(
+            TABLE.column_requirement("other"),
+            Some(TableColumnRequirement::None)
+        );
+        assert_eq!(TABLE.column_requirement("missing"), None);
+
+        let definition = TABLE.into_definition();
+        assert_eq!(
+            definition.column_requirement("width"),
+            Some(TableColumnRequirement::Increasing)
+        );
+        assert_eq!(
+            definition.column_requirement("other"),
+            Some(TableColumnRequirement::None)
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "column requirement keys must name an existing column")]
+    fn rejects_requirement_for_unknown_column() {
+        const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] =
+            &[(store_key!("width"), const_number!("Width"))];
+        const REQUIREMENTS: &[(ConstStoreKey, TableColumnRequirement)] =
+            &[(store_key!("missing"), TableColumnRequirement::Increasing)];
+        #[allow(clippy::disallowed_methods)]
+        let _ = TableCompileTime::__new_with_column_requirements(
+            std::hint::black_box("Table"),
+            COLUMNS,
+            REQUIREMENTS,
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "column requirement keys must be unique")]
+    fn rejects_duplicate_requirement_keys() {
+        const COLUMNS: &[(ConstStoreKey, NumberCompileTime)] =
+            &[(store_key!("width"), const_number!("Width"))];
+        const REQUIREMENTS: &[(ConstStoreKey, TableColumnRequirement)] = &[
+            (store_key!("width"), TableColumnRequirement::Increasing),
+            (store_key!("width"), TableColumnRequirement::Decreasing),
+        ];
+        #[allow(clippy::disallowed_methods)]
+        let _ = TableCompileTime::__new_with_column_requirements(
+            std::hint::black_box("Table"),
+            COLUMNS,
+            REQUIREMENTS,
+        );
     }
 }

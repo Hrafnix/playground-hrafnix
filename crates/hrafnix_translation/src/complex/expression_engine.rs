@@ -979,6 +979,78 @@ pub(crate) fn add_expression_engine_translation_map(
         ]),
     );
     translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_failed_increasing",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: value %{current} must be greater than the previous value %{previous}."),
+            ("zh", "列“%{column}”第 %{row} 行：值 %{current} 必须大于前一个值 %{previous}。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: Wert %{current} muss größer als der vorherige Wert %{previous} sein."),
+            ("es", "Columna '%{column}', fila %{row}: el valor %{current} debe ser mayor que el valor anterior %{previous}."),
+            ("fr", "Colonne « %{column} », ligne %{row} : la valeur %{current} doit être supérieure à la valeur précédente %{previous}."),
+            ("ja", "列「%{column}」、行 %{row}: 値 %{current} は前の値 %{previous} より大きい必要があります。"),
+            ("ko", "'%{column}' 열, %{row}행: 값 %{current}은(는) 이전 값 %{previous}보다 커야 합니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_failed_constant_or_increasing",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: value %{current} must be greater than or equal to the previous value %{previous}."),
+            ("zh", "列“%{column}”第 %{row} 行：值 %{current} 必须大于或等于前一个值 %{previous}。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: Wert %{current} muss größer als oder gleich dem vorherigen Wert %{previous} sein."),
+            ("es", "Columna '%{column}', fila %{row}: el valor %{current} debe ser mayor o igual que el valor anterior %{previous}."),
+            ("fr", "Colonne « %{column} », ligne %{row} : la valeur %{current} doit être supérieure ou égale à la valeur précédente %{previous}."),
+            ("ja", "列「%{column}」、行 %{row}: 値 %{current} は前の値 %{previous} 以上である必要があります。"),
+            ("ko", "'%{column}' 열, %{row}행: 값 %{current}은(는) 이전 값 %{previous} 이상이어야 합니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_failed_decreasing",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: value %{current} must be less than the previous value %{previous}."),
+            ("zh", "列“%{column}”第 %{row} 行：值 %{current} 必须小于前一个值 %{previous}。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: Wert %{current} muss kleiner als der vorherige Wert %{previous} sein."),
+            ("es", "Columna '%{column}', fila %{row}: el valor %{current} debe ser menor que el valor anterior %{previous}."),
+            ("fr", "Colonne « %{column} », ligne %{row} : la valeur %{current} doit être inférieure à la valeur précédente %{previous}."),
+            ("ja", "列「%{column}」、行 %{row}: 値 %{current} は前の値 %{previous} より小さい必要があります。"),
+            ("ko", "'%{column}' 열, %{row}행: 값 %{current}은(는) 이전 값 %{previous}보다 작아야 합니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_failed_constant_or_decreasing",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: value %{current} must be less than or equal to the previous value %{previous}."),
+            ("zh", "列“%{column}”第 %{row} 行：值 %{current} 必须小于或等于前一个值 %{previous}。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: Wert %{current} muss kleiner als oder gleich dem vorherigen Wert %{previous} sein."),
+            ("es", "Columna '%{column}', fila %{row}: el valor %{current} debe ser menor o igual que el valor anterior %{previous}."),
+            ("fr", "Colonne « %{column} », ligne %{row} : la valeur %{current} doit être inférieure ou égale à la valeur précédente %{previous}."),
+            ("ja", "列「%{column}」、行 %{row}: 値 %{current} は前の値 %{previous} 以下である必要があります。"),
+            ("ko", "'%{column}' 열, %{row}행: 값 %{current}은(는) 이전 값 %{previous} 이하여야 합니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_failed_constant",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: value %{current} must be equal to the previous value %{previous}."),
+            ("zh", "列“%{column}”第 %{row} 行：值 %{current} 必须等于前一个值 %{previous}。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: Wert %{current} muss gleich dem vorherigen Wert %{previous} sein."),
+            ("es", "Columna '%{column}', fila %{row}: el valor %{current} debe ser igual al valor anterior %{previous}."),
+            ("fr", "Colonne « %{column} », ligne %{row} : la valeur %{current} doit être égale à la valeur précédente %{previous}."),
+            ("ja", "列「%{column}」、行 %{row}: 値 %{current} は前の値 %{previous} と等しい必要があります。"),
+            ("ko", "'%{column}' 열, %{row}행: 값 %{current}은(는) 이전 값 %{previous}와(과) 같아야 합니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
+        "expression_engine_evaluation_table_column_requirement_missing_cell",
+        HashMap::from([
+            ("en", "Column '%{column}', row %{row}: missing value for a constrained column."),
+            ("zh", "列“%{column}”第 %{row} 行：受约束的列缺少值。"),
+            ("de", "Spalte „%{column}“, Zeile %{row}: fehlender Wert in einer Spalte mit Einschränkung."),
+            ("es", "Columna '%{column}', fila %{row}: falta un valor en una columna con restricciones."),
+            ("fr", "Colonne « %{column} », ligne %{row} : valeur manquante dans une colonne soumise à une contrainte."),
+            ("ja", "列「%{column}」、行 %{row}: 制約のある列に値がありません。"),
+            ("ko", "'%{column}' 열, %{row}행: 제약 조건이 있는 열에 값이 없습니다."),
+        ]),
+    );
+    translation_map.set_translation_key(
         "expression_engine_evaluation_table_column_count_mismatch",
         HashMap::from([
             ("en", "Parameter '%{parameter}' references a table with %{actual} columns, but the current table expects %{expected} columns."),

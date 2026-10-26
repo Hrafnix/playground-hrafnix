@@ -1,5 +1,6 @@
 use hrafnix_datastore::prelude::*;
 use hrafnix_expression_engine::prelude::*;
+use hrafnix_units::UnitId;
 use std::collections::BTreeMap;
 use std::ops::{Mul, Sub};
 
@@ -341,5 +342,105 @@ fn test_basic_global_data_integer_expression() {
         assert_eq!(*number, 149);
     } else {
         panic!("expected integer data");
+    }
+}
+
+fn table_with_missing_cells(
+    rows: &[Vec<ShareableString>],
+    with_units: bool,
+    requirement: TableColumnRequirement,
+) -> ItemFrozen {
+    if with_units {
+        ItemFrozen::TableWithUnits(TableWithUnitsFrozen::new_from_rows(
+            TableWithUnitsDefinition::new_with_column_requirements(
+                "",
+                vec![
+                    (
+                        store_key!("z"),
+                        NumberWithUnitsDefinition::new("", UnitId::None),
+                        TableColumnRequirement::None,
+                    ),
+                    (
+                        store_key!("a"),
+                        NumberWithUnitsDefinition::new("", UnitId::Length_Meter),
+                        requirement,
+                    ),
+                ],
+            ),
+            rows.to_vec(),
+            vec![
+                UnitId::None.string_id().into(),
+                UnitId::Length_Meter.string_id().into(),
+            ],
+        ))
+    } else {
+        ItemFrozen::Table(TableFrozen::new_from_rows(
+            TableDefinition::new_with_column_requirements(
+                "",
+                vec![
+                    (
+                        store_key!("z"),
+                        NumberDefinition::new(""),
+                        TableColumnRequirement::None,
+                    ),
+                    (store_key!("a"), NumberDefinition::new(""), requirement),
+                ],
+            ),
+            rows.to_vec(),
+        ))
+    }
+}
+
+#[test]
+fn tables_reject_padded_missing_cells() {
+    let cases = [
+        vec![vec!["9.0", "3.0"], vec!["8.0"], vec!["7.0", "1.0"]],
+        vec![vec!["9.0"], vec!["8.0", "3.0"]],
+        vec![vec!["9.0", "3.0"], vec!["8.0"]],
+        vec![vec!["9.0"]],
+        vec![vec!["9.0"], vec!["8.0"]],
+    ];
+    for rows in cases {
+        let rows: Vec<Vec<ShareableString>> = rows
+            .into_iter()
+            .map(|row| row.into_iter().map(Into::into).collect())
+            .collect();
+        for with_units in [false, true] {
+            for requirement in [
+                TableColumnRequirement::None,
+                TableColumnRequirement::Increasing,
+                TableColumnRequirement::ConstantOrIncreasing,
+                TableColumnRequirement::Decreasing,
+                TableColumnRequirement::ConstantOrDecreasing,
+                TableColumnRequirement::Constant,
+            ] {
+                for global in [false, true] {
+                    let mut engine = ExpressionEngine::new();
+                    let table = table_with_missing_cells(&rows, with_units, requirement);
+                    let errors = if global {
+                        let globals = GlobalObjectFrozen::new_from_items(
+                            "",
+                            BTreeMap::from([(global_key!("g_source").into(), table)]),
+                        );
+                        engine
+                            .evaluate_globals(&GlobalObjectInputData::new(&globals))
+                            .unwrap_err()
+                    } else {
+                        let parameters = ParameterObjectFrozen::new_from_items(
+                            "",
+                            BTreeMap::from([(parameter_key!("p_table").into(), table)]),
+                        );
+                        engine
+                            .evaluate_parameters(&ParameterObjectInputData::new(&parameters))
+                            .unwrap_err()
+                    };
+                    assert_eq!(errors.len(), 1);
+                    assert_eq!(
+                        errors[0].translate_data().message_key(),
+                        "expression_engine_parser_expected_expression"
+                    );
+                }
+            }
+        }
     }
 }

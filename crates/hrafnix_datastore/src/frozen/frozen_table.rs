@@ -33,9 +33,15 @@ impl TableFrozen {
     }
 
     /// Creates a new `TableFrozen` with a definition and rows.
+    ///
+    /// Rows are padded with empty strings or truncated to the definition's column count.
     #[must_use]
     #[cfg_attr(feature = "hotpath", hotpath::measure)]
-    pub fn new_from_rows(definition: TableDefinition, rows: Vec<Vec<ShareableString>>) -> Self {
+    pub fn new_from_rows(definition: TableDefinition, mut rows: Vec<Vec<ShareableString>>) -> Self {
+        let column_count = definition.count();
+        for row in &mut rows {
+            row.resize(column_count, ShareableString::default());
+        }
         let mut s = Self {
             definition,
             rows,
