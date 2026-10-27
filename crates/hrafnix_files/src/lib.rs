@@ -28,3 +28,5 @@ pub mod component;
 pub mod model;
 /// Projects that group models and components.
 pub mod project;
+/// Common data structures for components, models, and projects.
+pub mod common;
