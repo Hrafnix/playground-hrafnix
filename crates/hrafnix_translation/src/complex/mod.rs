@@ -2,13 +2,17 @@
 pub(crate) mod datastore;
 /// This module contains the expression engine translation map.
 pub(crate) mod expression_engine;
+/// This module contains the file translation map.
+pub(crate) mod files;
 
 use crate::complex::datastore::add_datastore_translation_map;
 use crate::complex::expression_engine::add_expression_engine_translation_map;
+use crate::complex::files::add_files_translation_map;
 use hrafnix_shareable_string::SharedStringTranslationMap;
 
 /// Adds complex translations to the provided `SharedStringTranslationMap`.
 pub(crate) fn add_complex_translations(translation_map: &mut SharedStringTranslationMap) {
     add_datastore_translation_map(translation_map);
     add_expression_engine_translation_map(translation_map);
+    add_files_translation_map(translation_map);
 }

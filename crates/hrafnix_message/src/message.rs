@@ -31,6 +31,8 @@ impl fmt::Display for MessageLevel {
 /// A message that is associated with a specific category.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageCategory {
+    /// A message related to reading or writing files.
+    File,
     /// A message related to the datastore.
     Datastore,
     /// A message related to a component.
@@ -44,6 +46,7 @@ pub enum MessageCategory {
 impl fmt::Display for MessageCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
+            MessageCategory::File => "File",
             MessageCategory::Datastore => "Datastore",
             MessageCategory::Component => "Component",
             MessageCategory::ExpressionParsing => "Expression Parsing",

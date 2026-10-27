@@ -16,6 +16,14 @@ hotpath-alloc = ["hotpath", "hotpath/hotpath-alloc"]
 
 [dependencies]
 hotpath = { workspace = true, optional = true }
+camino.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+hrafnix_message.workspace = true
+hrafnix_shareable_string.workspace = true
+
+[dev-dependencies]
+hrafnix_translation.workspace = true
 
 [lints]
 workspace = true

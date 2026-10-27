@@ -22,11 +22,11 @@
     )
 )]
 
+/// Shared file I/O, version detection, and diagnostics for components, models, and projects.
+pub mod common;
 /// Component definitions and behavior.
 pub mod component;
 /// Simulation model definitions.
 pub mod model;
 /// Projects that group models and components.
 pub mod project;
-/// Common data structures for components, models, and projects.
-pub mod common;
