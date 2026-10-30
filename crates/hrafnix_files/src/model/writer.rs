@@ -1,4 +1,5 @@
 use crate::common::write_json_file;
+use crate::metadata::writer::MetadataDocument;
 use crate::model::ROOT;
 use crate::model::data::ModelFile;
 use camino::Utf8Path;
@@ -10,11 +11,16 @@ use serde::Serialize;
 ///
 /// The file version is emitted beside the entry at the top level by [`write_json_file`].
 #[derive(Debug, Serialize)]
-struct ModelDocument {}
+struct ModelDocument<'a> {
+    /// Descriptive information about the model.
+    metadata: MetadataDocument<'a>,
+}
 
-impl From<&ModelFile> for ModelDocument {
-    fn from(_model: &ModelFile) -> Self {
-        Self {}
+impl<'a> From<&'a ModelFile> for ModelDocument<'a> {
+    fn from(model: &'a ModelFile) -> Self {
+        Self {
+            metadata: MetadataDocument::from(&model.metadata),
+        }
     }
 }
 

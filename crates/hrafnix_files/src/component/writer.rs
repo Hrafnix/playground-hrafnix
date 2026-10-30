@@ -1,6 +1,7 @@
 use crate::common::write_json_file;
 use crate::component::ROOT;
 use crate::component::data::ComponentFile;
+use crate::metadata::writer::MetadataDocument;
 use camino::Utf8Path;
 use hrafnix_message::message::Message;
 use serde::Serialize;
@@ -10,11 +11,16 @@ use serde::Serialize;
 ///
 /// The file version is emitted beside the entry at the top level by [`write_json_file`].
 #[derive(Debug, Serialize)]
-struct ComponentDocument {}
+struct ComponentDocument<'a> {
+    /// Descriptive information about the component.
+    metadata: MetadataDocument<'a>,
+}
 
-impl From<&ComponentFile> for ComponentDocument {
-    fn from(_component: &ComponentFile) -> Self {
-        Self {}
+impl<'a> From<&'a ComponentFile> for ComponentDocument<'a> {
+    fn from(component: &'a ComponentFile) -> Self {
+        Self {
+            metadata: MetadataDocument::from(&component.metadata),
+        }
     }
 }
 

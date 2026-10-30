@@ -1,6 +1,7 @@
-use crate::common::read_document;
+use crate::common::{deserialize_object, read_document};
 use crate::component::ROOT;
 use crate::component::data::ComponentFile;
+use crate::metadata::reader::v1::MetadataDocument;
 use camino::Utf8Path;
 use hrafnix_message::message::Message;
 use serde::Deserialize;
@@ -13,11 +14,17 @@ use serde::Deserialize;
 /// dropped when the file is written back, so unexpected content is an error instead.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ComponentDocument {}
+struct ComponentDocument {
+    /// Descriptive information about the component as an object with named fields.
+    #[serde(deserialize_with = "deserialize_object")]
+    metadata: MetadataDocument,
+}
 
 impl From<ComponentDocument> for ComponentFile {
-    fn from(_document: ComponentDocument) -> Self {
-        Self {}
+    fn from(document: ComponentDocument) -> Self {
+        Self {
+            metadata: document.metadata.into(),
+        }
     }
 }
 

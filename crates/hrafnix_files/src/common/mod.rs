@@ -194,27 +194,34 @@ struct RootObject<T> {
 
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for RootObject<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        deserializer.deserialize_map(RootObjectVisitor {
-            document: PhantomData,
-        })
+        deserialize_object(deserializer).map(|document| Self { document })
     }
 }
 
+/// Deserializes an object as `T`, rejecting positional arrays for derived structs.
+pub(crate) fn deserialize_object<'de, T: Deserialize<'de>, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<T, D::Error> {
+    deserializer.deserialize_map(ObjectVisitor {
+        document: PhantomData,
+    })
+}
+
 /// Passes an object's map entries to `T` without buffering away parser positions.
-struct RootObjectVisitor<T> {
-    /// The type of the root entry.
+struct ObjectVisitor<T> {
+    /// The type of the object.
     document: PhantomData<T>,
 }
 
-impl<'de, T: Deserialize<'de>> Visitor<'de> for RootObjectVisitor<T> {
-    type Value = RootObject<T>;
+impl<'de, T: Deserialize<'de>> Visitor<'de> for ObjectVisitor<T> {
+    type Value = T;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("an object")
     }
 
     fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
-        T::deserialize(MapAccessDeserializer::new(map)).map(|document| RootObject { document })
+        T::deserialize(MapAccessDeserializer::new(map))
     }
 }
 
