@@ -1,4 +1,5 @@
-use crate::common::read_document;
+use crate::common::{deserialize_object, read_document};
+use crate::metadata::reader::v1::MetadataDocument;
 use crate::model::ROOT;
 use crate::model::data::ModelFile;
 use camino::Utf8Path;
@@ -13,11 +14,17 @@ use serde::Deserialize;
 /// dropped when the file is written back, so unexpected content is an error instead.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ModelDocument {}
+struct ModelDocument {
+    /// Descriptive information about the model as an object with named fields.
+    #[serde(deserialize_with = "deserialize_object")]
+    metadata: MetadataDocument,
+}
 
 impl From<ModelDocument> for ModelFile {
-    fn from(_document: ModelDocument) -> Self {
-        Self {}
+    fn from(document: ModelDocument) -> Self {
+        Self {
+            metadata: document.metadata.into(),
+        }
     }
 }
 

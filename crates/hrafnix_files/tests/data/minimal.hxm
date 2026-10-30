@@ -1,0 +1,12 @@
+{
+  "file-version": 1,
+  "model": {
+    "metadata": {
+      "display-name": "Example",
+      "description": "An example model.",
+      "author": "Hrafnix",
+      "minimum-version-major": 1,
+      "minimum-version-minor": 2
+    }
+  }
+}

@@ -26,6 +26,8 @@
 pub mod common;
 /// Component definitions and behavior.
 pub mod component;
+/// Metadata shared by model and component files.
+pub mod metadata;
 /// Simulation model definitions.
 pub mod model;
 /// Projects that group models and components.

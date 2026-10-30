@@ -2,10 +2,28 @@
 
 use camino::{Utf8Path, Utf8PathBuf};
 use hrafnix_files::common::MAX_FILE_SIZE;
+use hrafnix_files::metadata::data::Metadata;
 use hrafnix_message::message::Message;
 use std::fs;
 use std::io::ErrorKind;
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Valid version 1 metadata entry.
+pub(super) const METADATA: &str = "{\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": 0}";
+
+/// Valid version 1 contents of a model or component root entry.
+pub(super) const CONTENTS: &str = "{\"metadata\": {\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": 0}}";
+
+/// Returns the metadata stored in the `minimal` test data files for `kind`.
+pub(super) fn metadata(kind: &str) -> Metadata {
+    Metadata {
+        display_name: "Example".to_owned(),
+        description: format!("An example {kind}."),
+        author: "Hrafnix".to_owned(),
+        minimum_version_major: 1,
+        minimum_version_minor: 2,
+    }
+}
 
 /// An isolated directory removed when its test finishes.
 #[derive(Debug)]
@@ -88,7 +106,11 @@ pub(super) fn assert_long_filenames(
 pub(super) fn assert_object_root(root: &str, read: fn(&Utf8Path) -> Result<(), Message>) {
     let directory = TestDirectory::new();
     let path = directory.path.join("root.json");
-    fs::write(&path, format!("{{\"file-version\":1,\"{root}\":{{}}}}")).unwrap();
+    fs::write(
+        &path,
+        format!("{{\"file-version\":1,\"{root}\":{CONTENTS}}}"),
+    )
+    .unwrap();
     read(&path).unwrap();
 
     for body in ["[]", "[{}]", "[1]", "[[]]", "null", "true", "1", "\"text\""] {
@@ -118,8 +140,8 @@ pub(super) fn assert_json_trailing_content(root: &str, read: fn(&Utf8Path) -> Re
     let directory = TestDirectory::new();
     let path = directory.path.join("trailing.json");
     for document in [
-        format!("{{\"file-version\": 1, \"{root}\": {{}}}}"),
-        format!("{{\n  \"file-version\": 1,\n  \"{root}\": {{\n  }}\n}}"),
+        format!("{{\"file-version\": 1, \"{root}\": {CONTENTS}}}"),
+        format!("{{\n  \"file-version\": 1,\n  \"{root}\": {CONTENTS}\n}}"),
     ] {
         for suffix in ["", " \t\r\n", "\n\n"] {
             fs::write(&path, format!("{document}{suffix}")).unwrap();
@@ -172,7 +194,7 @@ pub(super) fn assert_json_trailing_content(root: &str, read: fn(&Utf8Path) -> Re
 pub(super) fn assert_utf8_handling(root: &str, read: fn(&Utf8Path) -> Result<(), Message>) {
     let directory = TestDirectory::new();
     let path = directory.path.join("encoding.json");
-    let document = format!("{{\"file-version\": 1, \"{root}\": {{}}}}");
+    let document = format!("{{\"file-version\": 1, \"{root}\": {CONTENTS}}}");
 
     fs::write(&path, format!("\u{feff}{document}")).unwrap();
     read(&path).unwrap();

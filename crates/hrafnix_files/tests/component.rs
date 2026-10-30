@@ -6,14 +6,27 @@
 mod common;
 
 use camino::Utf8PathBuf;
-use common::TestDirectory;
-use hrafnix_files::common::FILE_VERSION;
+use common::{METADATA, TestDirectory};
 use hrafnix_files::component::{
     data::ComponentFile, reader::read_component_file, writer::write_component_file,
 };
 use hrafnix_shareable_string::{ShareableString, SharedStringStore};
 use hrafnix_translation::generate_translation_map;
 use std::fs;
+
+/// Returns the component stored in `tests/data/minimal.hxc`.
+fn minimal_component() -> ComponentFile {
+    ComponentFile {
+        metadata: common::metadata("component"),
+    }
+}
+
+/// Returns the LF-normalized fixture text for [`minimal_component`].
+fn minimal_text() -> String {
+    fs::read_to_string(Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxc"))
+        .unwrap()
+        .replace("\r\n", "\n")
+}
 
 #[test]
 fn root_must_be_an_object() {
@@ -39,18 +52,22 @@ fn opening_fifo_does_not_block() {
 #[cfg(unix)]
 #[test]
 fn saving_below_fifo_does_not_block() {
-    common::assert_fifo_parent_rejected(|path| write_component_file(path, &ComponentFile {}));
+    common::assert_fifo_parent_rejected(|path| write_component_file(path, &minimal_component()));
 }
 
 #[cfg(unix)]
 #[test]
 fn directory_access_failure_does_not_replace_existing_file() {
-    common::assert_save_error_preserves_file(|path| write_component_file(path, &ComponentFile {}));
+    common::assert_save_error_preserves_file(|path| {
+        write_component_file(path, &minimal_component())
+    });
 }
 
 #[test]
 fn read_only_component_file_is_not_replaced() {
-    common::assert_read_only_file_preserved(|path| write_component_file(path, &ComponentFile {}));
+    common::assert_read_only_file_preserved(|path| {
+        write_component_file(path, &minimal_component())
+    });
 }
 
 #[test]
@@ -64,7 +81,7 @@ fn unknown_content_is_rejected_instead_of_being_dropped() {
     let path = directory.path.join("unknown.hxc");
     fs::write(
         &path,
-        "{\"file-version\": 1, \"component\": {\"unknown\": {}}}",
+        format!("{{\"file-version\": 1, \"component\": {{\"metadata\": {METADATA}, \"unknown\": {{}}}}}}"),
     )
     .unwrap();
 
@@ -79,15 +96,12 @@ fn unknown_content_is_rejected_instead_of_being_dropped() {
 #[test]
 fn component_round_trips_through_the_writer_and_disk() {
     let directory = TestDirectory::new();
-    let source = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/empty.hxc");
+    let source = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxc");
     let destination = directory.path.join("round-trip.hxc");
     let component = read_component_file(&source).unwrap();
     write_component_file(&destination, &component).unwrap();
 
-    assert_eq!(
-        fs::read_to_string(&destination).unwrap(),
-        format!("{{\n  \"file-version\": {FILE_VERSION},\n  \"component\": {{}}\n}}\n")
-    );
+    assert_eq!(fs::read_to_string(&destination).unwrap(), minimal_text());
     assert_eq!(read_component_file(&destination).unwrap(), component);
 }
 
@@ -100,15 +114,12 @@ fn writing_replaces_an_existing_component_file() {
         "old content that must be completely replaced".repeat(10),
     )
     .unwrap();
-    let component = ComponentFile {};
+    let component = minimal_component();
 
     write_component_file(&path, &component).unwrap();
 
-    assert_eq!(
-        fs::read_to_string(&path).unwrap(),
-        format!("{{\n  \"file-version\": {FILE_VERSION},\n  \"component\": {{}}\n}}\n")
-    );
-    assert_eq!(read_component_file(&path).unwrap(), ComponentFile {});
+    assert_eq!(fs::read_to_string(&path).unwrap(), minimal_text());
+    assert_eq!(read_component_file(&path).unwrap(), minimal_component());
     assert_eq!(directory.entries(), ["existing.hxc"]);
 }
 
@@ -117,7 +128,7 @@ fn writing_replaces_an_existing_component_file() {
 fn writing_long_filenames_succeeds() {
     common::assert_long_filenames(
         "hxc",
-        |path| write_component_file(path, &ComponentFile {}),
+        |path| write_component_file(path, &minimal_component()),
         |path| read_component_file(path).map(|_| ()),
     );
 }
@@ -126,7 +137,7 @@ fn writing_long_filenames_succeeds() {
 fn writing_to_a_directory_fails_and_leaves_its_contents_and_no_temporary_file() {
     let directory = TestDirectory::new();
     fs::write(directory.path.join("keep.txt"), "kept").unwrap();
-    let component = ComponentFile {};
+    let component = minimal_component();
 
     let error = write_component_file(&directory.path, &component).unwrap_err();
 
@@ -149,7 +160,7 @@ fn writing_to_a_directory_fails_and_leaves_its_contents_and_no_temporary_file() 
 fn writing_to_a_missing_parent_reports_localized_io_error() {
     let directory = TestDirectory::new();
     let path = directory.path.join("missing").join("component.hxc");
-    let component = ComponentFile {};
+    let component = minimal_component();
     let error = write_component_file(&path, &component).unwrap_err();
     let map = generate_translation_map(&SharedStringStore::new());
 
@@ -171,7 +182,7 @@ fn writing_to_a_missing_parent_reports_localized_io_error() {
 #[test]
 fn writing_to_an_invalid_path_reports_localized_io_error() {
     let path = Utf8PathBuf::from("invalid\0.hxc");
-    let component = ComponentFile {};
+    let component = minimal_component();
     let error = write_component_file(&path, &component).unwrap_err();
 
     assert_eq!(
@@ -250,7 +261,7 @@ fn invalid_path_reports_localized_io_error_without_os_text() {
 
 #[test]
 fn opening_existing_component_succeeds() {
-    let path = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/empty.hxc");
+    let path = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxc");
 
-    assert_eq!(read_component_file(&path).unwrap(), ComponentFile {});
+    assert_eq!(read_component_file(&path).unwrap(), minimal_component());
 }

@@ -44,7 +44,24 @@ mod tests {
     #![allow(clippy::unwrap_used)]
 
     use super::*;
+    use crate::metadata::data::Metadata;
     use hrafnix_shareable_string::ShareableString;
+
+    /// Valid version 1 contents of the root entry.
+    const CONTENTS: &str = "{\"metadata\": {\"display-name\": \"Name\", \"description\": \"Description\", \"author\": \"Author\", \"minimum-version-major\": 1, \"minimum-version-minor\": 2}}";
+
+    /// Returns the component described by [`CONTENTS`].
+    fn expected() -> ComponentFile {
+        ComponentFile {
+            metadata: Metadata {
+                display_name: "Name".to_owned(),
+                description: "Description".to_owned(),
+                author: "Author".to_owned(),
+                minimum_version_major: 1,
+                minimum_version_minor: 2,
+            },
+        }
+    }
 
     /// Returns the named parameter of `error` as text.
     fn param<'a>(error: &'a Message, name: &str) -> Option<&'a str> {
@@ -58,17 +75,17 @@ mod tests {
     #[test]
     fn version_one_documents_succeed() {
         for json in [
-            "{\"file-version\": 1, \"component\": {}}",
-            "{\"file-version\":1,\"component\":{}}",
-            "{\"component\": {}, \"file-version\": 1}",
-            "{\n  \"file-version\": 1,\n  \"component\": {}\n}\n",
-            " \t\r\n{ \"file-version\" : 1 , \"component\" : { } } \t\r\n",
-            "\u{feff}{\"file-version\": 1, \"component\": {}}",
-            "{\"file-version\": 1, \"comp\\u006fnent\": {}}",
+            format!("{{\"file-version\": 1, \"component\": {CONTENTS}}}"),
+            format!("{{\"file-version\":1,\"component\":{CONTENTS}}}"),
+            format!("{{\"component\": {CONTENTS}, \"file-version\": 1}}"),
+            format!("{{\n  \"file-version\": 1,\n  \"component\": {CONTENTS}\n}}\n"),
+            format!(" \t\r\n{{ \"file-version\" : 1 , \"component\" : {CONTENTS} }} \t\r\n"),
+            format!("\u{feff}{{\"file-version\": 1, \"component\": {CONTENTS}}}"),
+            format!("{{\"file-version\": 1, \"comp\\u006fnent\": {CONTENTS}}}"),
         ] {
             assert_eq!(
-                read_component(json, Utf8Path::new("component.hxc")).unwrap(),
-                ComponentFile {},
+                read_component(&json, Utf8Path::new("component.hxc")).unwrap(),
+                expected(),
                 "{json}"
             );
         }
@@ -126,21 +143,6 @@ mod tests {
                 "{\"file-version\": 1, \"component\": {}, \"file-version\": 1}",
                 "files_duplicate_file_version",
                 None,
-            ),
-            (
-                "{\"file-version\": 1, \"component\": {}, \"component\": {}}",
-                "files_duplicate_root",
-                Some(("root", "component")),
-            ),
-            (
-                "{\"file-version\": 1, \"component\": {}, \"other\": \"value\"}",
-                "files_unknown_top_level_key",
-                Some(("key", "other")),
-            ),
-            (
-                "{\"other\": \"value\", \"file-version\": 1, \"component\": {}}",
-                "files_unknown_top_level_key",
-                Some(("key", "other")),
             ),
             (
                 "{\"file-version\": \"1\", \"component\": {}}",
@@ -271,14 +273,37 @@ mod tests {
 
     #[test]
     fn unknown_version_one_contents_are_rejected() {
+        /// Valid metadata with every field present.
+        const METADATA: &str = "{\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": 0}";
+
         for json in [
-            "{\"file-version\": 1, \"component\": {\"extension\": {\"value\": \"ignored\"}}}",
-            "{\"file-version\": 1, \"component\": {\"extra\": \"attribute\"}}",
-            "{\"file-version\": 1, \"component\": {\"file-version\": 1}}",
-            "{\"file-version\": 1, \"component\": \"text\"}",
-            "{\"file-version\": 1, \"component\": null}",
+            format!(
+                "{{\"file-version\": 1, \"component\": {{\"metadata\": {METADATA}, \"extension\": {{\"value\": \"ignored\"}}}}}}"
+            ),
+            format!(
+                "{{\"file-version\": 1, \"component\": {{\"metadata\": {METADATA}, \"extra\": \"attribute\"}}}}"
+            ),
+            format!(
+                "{{\"file-version\": 1, \"component\": {{\"metadata\": {METADATA}, \"file-version\": 1}}}}"
+            ),
+            format!(
+                "{{\"file-version\": 1, \"component\": {{\"metadata\": {METADATA}, \"metadata\": {METADATA}}}}}"
+            ),
+            "{\"file-version\": 1, \"component\": \"text\"}".to_owned(),
+            "{\"file-version\": 1, \"component\": null}".to_owned(),
+            "{\"file-version\": 1, \"component\": {}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": null}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": [\"Name\", \"Description\", \"Author\", 1, 2]}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": 0, \"extra\": \"attribute\"}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"display-name\": 1, \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": 0}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 65536, \"minimum-version-minor\": 0}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": -1}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"display-name\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 1.5, \"minimum-version-minor\": 0}}}".to_owned(),
+            "{\"file-version\": 1, \"component\": {\"metadata\": {\"displayName\": \"\", \"description\": \"\", \"author\": \"\", \"minimum-version-major\": 0, \"minimum-version-minor\": 0}}}".to_owned(),
         ] {
-            let error = read_component(json, Utf8Path::new("component.hxc")).unwrap_err();
+            let error = read_component(&json, Utf8Path::new("component.hxc")).unwrap_err();
 
             assert_eq!(
                 error.translate_data().message_key().as_str(),
@@ -286,7 +311,38 @@ mod tests {
                 "{json}"
             );
             assert_eq!(param(&error, "path"), Some("component.hxc"), "{json}");
+            assert!(param(&error, "line").is_some(), "{json}");
+            assert!(param(&error, "column").is_some(), "{json}");
             assert!(error.extra_detail().is_some(), "{json}");
+        }
+    }
+
+    #[test]
+    fn top_level_errors_after_valid_contents_are_reported() {
+        for (json, key, parameter) in [
+            (
+                format!(
+                    "{{\"file-version\": 1, \"component\": {CONTENTS}, \"component\": {CONTENTS}}}"
+                ),
+                "files_duplicate_root",
+                ("root", "component"),
+            ),
+            (
+                format!("{{\"file-version\": 1, \"component\": {CONTENTS}, \"other\": \"value\"}}"),
+                "files_unknown_top_level_key",
+                ("key", "other"),
+            ),
+            (
+                format!("{{\"other\": \"value\", \"file-version\": 1, \"component\": {CONTENTS}}}"),
+                "files_unknown_top_level_key",
+                ("key", "other"),
+            ),
+        ] {
+            let error = read_component(&json, Utf8Path::new("component.hxc")).unwrap_err();
+
+            assert_eq!(error.translate_data().message_key().as_str(), key, "{json}");
+            assert_eq!(param(&error, "path"), Some("component.hxc"), "{json}");
+            assert_eq!(param(&error, parameter.0), Some(parameter.1), "{json}");
         }
     }
 }

@@ -18,7 +18,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// The file version used by default when writing components and models.
 pub const FILE_VERSION: u32 = 1;
 
-/// The largest file, in bytes, that is read into memory: 256 MiB.
+/// The largest file, in bytes, that can be read or written: 256 MiB.
 pub const MAX_FILE_SIZE: u64 = 256 * 1024 * 1024;
 
 /// The top-level key that carries the file format version, as in
@@ -65,7 +65,7 @@ fn read_file_to_string_with_limit(path: &Utf8Path, limit: u64) -> Result<String,
     String::from_utf8(bytes).map_err(|error| utf8_error(path, &error.utf8_error()))
 }
 
-/// Reports that `path` exceeds the `limit` bytes that may be read.
+/// Reports that `path` exceeds the `limit`-byte file size limit.
 fn file_too_large_error(path: &Utf8Path, limit: u64) -> Message {
     file_io_error(
         path,
@@ -194,27 +194,34 @@ struct RootObject<T> {
 
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for RootObject<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        deserializer.deserialize_map(RootObjectVisitor {
-            document: PhantomData,
-        })
+        deserialize_object(deserializer).map(|document| Self { document })
     }
 }
 
+/// Deserializes an object as `T`, rejecting positional arrays for derived structs.
+pub(crate) fn deserialize_object<'de, T: Deserialize<'de>, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<T, D::Error> {
+    deserializer.deserialize_map(ObjectVisitor {
+        document: PhantomData,
+    })
+}
+
 /// Passes an object's map entries to `T` without buffering away parser positions.
-struct RootObjectVisitor<T> {
-    /// The type of the root entry.
+struct ObjectVisitor<T> {
+    /// The type of the object.
     document: PhantomData<T>,
 }
 
-impl<'de, T: Deserialize<'de>> Visitor<'de> for RootObjectVisitor<T> {
-    type Value = RootObject<T>;
+impl<'de, T: Deserialize<'de>> Visitor<'de> for ObjectVisitor<T> {
+    type Value = T;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("an object")
     }
 
     fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
-        T::deserialize(MapAccessDeserializer::new(map)).map(|document| RootObject { document })
+        T::deserialize(MapAccessDeserializer::new(map))
     }
 }
 
@@ -366,6 +373,10 @@ impl<T: Serialize> Serialize for Document<'_, T> {
 /// carrying the current [`FILE_VERSION`], then atomically replaces its destination
 /// file.
 ///
+/// The complete serialized output, including formatting and its final newline, must
+/// not exceed [`MAX_FILE_SIZE`]. Oversized output is rejected before touching the
+/// destination.
+///
 /// The document is written to a uniquely named temporary file in the destination's
 /// directory and renamed over `path`. Failures before the rename leave any existing
 /// file untouched. A subsequent directory-sync failure explicitly reports that the
@@ -385,12 +396,26 @@ pub(crate) fn write_json_file(
     root: &str,
     document: &impl Serialize,
 ) -> Result<(), Message> {
+    write_json_file_with_limit(path, root, document, MAX_FILE_SIZE)
+}
+
+/// Writes a JSON document only if its complete serialized size is at most `limit` bytes.
+fn write_json_file_with_limit(
+    path: &Utf8Path,
+    root: &str,
+    document: &impl Serialize,
+    limit: u64,
+) -> Result<(), Message> {
     let mut json = serde_json::to_string_pretty(&Document {
         root,
         body: document,
     })
     .map_err(|error| json_serialization_error(path, error))?;
     json.push('\n');
+
+    if u64::try_from(json.len()).map_or(true, |length| length > limit) {
+        return Err(file_too_large_error(path, limit));
+    }
 
     reject_read_only_destination(path).map_err(|error| file_io_error(path, &error))?;
 
@@ -1081,6 +1106,76 @@ mod tests {
             .unwrap(),
             "{\n  \"file-version\": 1,\n  \"component\": {\n    \"name\": \"pump\"\n  }\n}"
         );
+    }
+
+    #[test]
+    fn serialized_size_limits_preserve_existing_files_and_allow_exact_fits() {
+        let body = serde_json::json!({
+            "metadata": {
+                "display-name": "Example",
+                "description": "\u{1f642}\n\"\\\r\t",
+                "author": "Hrafnix",
+                "minimum-version-major": 1,
+                "minimum-version-minor": 2
+            }
+        });
+
+        for root in ["component", "model"] {
+            let document = Document { root, body: &body };
+            let compact = serde_json::to_string(&document).unwrap();
+            let expected = format!("{}\n", serde_json::to_string_pretty(&document).unwrap());
+            let length = u64::try_from(expected.len()).unwrap();
+
+            for limit in [
+                u64::try_from(compact.len()).unwrap(),
+                u64::try_from(expected.chars().count()).unwrap(),
+                length - 1,
+                length,
+                length + 1,
+            ] {
+                let directory = temporary_directory("serialized-size-limit");
+                let path = directory.join(format!("{root}.json"));
+                fs::write(&path, &compact).unwrap();
+                let original = read_file_to_string_with_limit(&path, limit);
+
+                let result = write_json_file_with_limit(&path, root, &body, limit);
+                let contents = read_file_to_string_with_limit(&path, limit);
+                let entries = fs::read_dir(&directory).unwrap().count();
+                drop(fs::remove_dir_all(&directory));
+
+                assert_eq!(original.unwrap(), compact, "{root}: {limit}");
+                assert_eq!(entries, 1, "{root}: {limit}");
+                if limit < length {
+                    let error = result.unwrap_err();
+                    assert_eq!(
+                        error.translate_data().message_key().as_str(),
+                        "files_io_file_too_large",
+                        "{root}: {limit}"
+                    );
+                    assert_eq!(param(&error, "path"), Some(path.as_str()));
+                    assert!(
+                        error.extra_detail().is_some_and(|detail| detail
+                            .as_str()
+                            .contains(&format!("{limit}-byte"))),
+                        "{root}: {limit}"
+                    );
+                    assert_eq!(contents.unwrap(), compact, "{root}: {limit}");
+                } else {
+                    result.unwrap();
+                    let contents = contents.unwrap();
+                    assert_eq!(contents, expected, "{root}: {limit}");
+                    assert_eq!(
+                        read_file_version(&contents, &path, root).unwrap(),
+                        FILE_VERSION
+                    );
+                    assert_eq!(
+                        read_document::<Value>(&contents, &path, root).unwrap(),
+                        body,
+                        "{root}: {limit}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]
