@@ -19,10 +19,11 @@ fn minimal_model() -> ModelFile {
     }
 }
 
-/// Returns the exact text the writer produces for [`minimal_model`].
+/// Returns the LF-normalized fixture text for [`minimal_model`].
 fn minimal_text() -> String {
     fs::read_to_string(Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxm"))
         .unwrap()
+        .replace("\r\n", "\n")
 }
 
 #[test]

@@ -21,10 +21,11 @@ fn minimal_component() -> ComponentFile {
     }
 }
 
-/// Returns the exact text the writer produces for [`minimal_component`].
+/// Returns the LF-normalized fixture text for [`minimal_component`].
 fn minimal_text() -> String {
     fs::read_to_string(Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxc"))
         .unwrap()
+        .replace("\r\n", "\n")
 }
 
 #[test]
