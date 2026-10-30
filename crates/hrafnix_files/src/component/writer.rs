@@ -32,7 +32,8 @@ impl<'a> From<&'a ComponentFile> for ComponentDocument<'a> {
 ///
 /// # Errors
 ///
-/// Returns a localized error if serialization fails, the file cannot be created or written,
+/// Returns a localized error if serialization fails, the complete serialized file exceeds
+/// [`MAX_FILE_SIZE`](crate::common::MAX_FILE_SIZE), the file cannot be created or written,
 /// or an existing file at `path` is read-only.
 /// A directory-sync error explicitly reports that the file has already been replaced,
 /// but persistence across a crash could not be confirmed.
