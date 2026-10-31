@@ -21,10 +21,10 @@ impl Serialize for BackgroundDecorationDocument<'_> {
         let decoration = self.0;
         decoration.validate().map_err(S::Error::custom)?;
         DecorationFields {
-            id: &decoration.id,
-            position: PositionDocument::from(&decoration.position),
-            dimensions: DimensionsDocument::from(&decoration.dimensions),
-            kind: BackgroundDecorationType::from(&decoration.kind),
+            id: decoration.id(),
+            position: PositionDocument::from(&decoration.position()),
+            dimensions: DimensionsDocument::from(&decoration.dimensions()),
+            kind: BackgroundDecorationType::from(decoration.kind()),
         }
         .serialize(serializer)
     }
@@ -138,9 +138,9 @@ struct RectangleStyleDocument<'a> {
 impl<'a> From<&'a RectangleStyle> for RectangleStyleDocument<'a> {
     fn from(style: &'a RectangleStyle) -> Self {
         Self {
-            fill_color: style.fill_color.as_deref(),
-            stroke_color: style.stroke_color.as_deref(),
-            stroke_width: style.stroke_width,
+            fill_color: style.fill_color(),
+            stroke_color: style.stroke_color(),
+            stroke_width: style.stroke_width(),
         }
     }
 }
@@ -166,10 +166,10 @@ struct RoundedRectangleStyleDocument<'a> {
 impl<'a> From<&'a RoundedRectangleStyle> for RoundedRectangleStyleDocument<'a> {
     fn from(style: &'a RoundedRectangleStyle) -> Self {
         Self {
-            fill_color: style.fill_color.as_deref(),
-            stroke_color: style.stroke_color.as_deref(),
-            stroke_width: style.stroke_width,
-            corner_radius: style.corner_radius,
+            fill_color: style.fill_color(),
+            stroke_color: style.stroke_color(),
+            stroke_width: style.stroke_width(),
+            corner_radius: style.corner_radius(),
         }
     }
 }
@@ -189,8 +189,8 @@ struct FrameStyleDocument<'a> {
 impl<'a> From<&'a FrameStyle> for FrameStyleDocument<'a> {
     fn from(style: &'a FrameStyle) -> Self {
         Self {
-            stroke_color: style.stroke_color.as_deref(),
-            stroke_width: style.stroke_width,
+            stroke_color: style.stroke_color(),
+            stroke_width: style.stroke_width(),
         }
     }
 }

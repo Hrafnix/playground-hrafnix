@@ -52,17 +52,17 @@ mod tests {
 
     /// Returns the model described by [`CONTENTS`].
     fn expected() -> ModelFile {
-        ModelFile {
-            metadata: Metadata {
-                display_name: "Name".to_owned(),
-                description: "Description".to_owned(),
-                author: "Author".to_owned(),
-                minimum_version_major: 1,
-                minimum_version_minor: 2,
-            },
-            background_decorations: Vec::new(),
-            foreground_decorations: Vec::new(),
-        }
+        ModelFile::new(
+            Metadata::new(
+                "Name".to_owned(),
+                "Description".to_owned(),
+                "Author".to_owned(),
+                1,
+                2,
+            ),
+            Vec::new(),
+            Vec::new(),
+        )
     }
 
     /// Returns the named parameter of `error` as text.

@@ -14,6 +14,19 @@
 //! Both layers use shared [`Position`](crate::common::gui::Position) and
 //! [`Dimensions`](crate::common::gui::Dimensions) types. Decoration, styling,
 //! and codec types remain layer-specific.
+//!
+//! Data structs have private fields. Construct them with `new(...)` and inspect
+//! them through read-only accessors:
+//!
+//! ```
+//! use hrafnix_files::component::data::ComponentFile;
+//! use hrafnix_files::metadata::data::Metadata;
+//!
+//! let component = ComponentFile::new(Metadata::default(), Vec::new(), Vec::new());
+//! assert_eq!(component.metadata().display_name(), "");
+//! assert!(component.background_decorations().is_empty());
+//! assert!(component.foreground_decorations().is_empty());
+//! ```
 
 // Test code favors clarity and brevity over the strictness we require of library code:
 // panicking helpers (`unwrap`/`expect`/indexing/`panic!`) and approximate float comparisons

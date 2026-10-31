@@ -39,12 +39,12 @@ impl<'de> Deserialize<'de> for ForegroundDecorationDocument {
                 }
             }
         };
-        let decoration = ForegroundDecoration {
-            id: fields.id,
-            position: fields.position.into(),
-            dimensions: fields.dimensions.into(),
-            kind: kind.into(),
-        };
+        let decoration = ForegroundDecoration::new(
+            fields.id,
+            fields.position.into(),
+            fields.dimensions.into(),
+            kind.into(),
+        );
         decoration.validate().map_err(D::Error::custom)?;
         Ok(Self(decoration))
     }
@@ -176,11 +176,11 @@ struct TextStyleDocument {
 
 impl From<TextStyleDocument> for TextStyle {
     fn from(document: TextStyleDocument) -> Self {
-        Self {
-            font_size: document.font_size,
-            font_weight: document.font_weight,
-            text_color: document.text_color,
-        }
+        Self::new(
+            document.font_size,
+            document.font_weight,
+            document.text_color,
+        )
     }
 }
 
@@ -208,14 +208,14 @@ enum ImageFitDocument {
 
 impl From<ImageDocument> for DecorationImage {
     fn from(document: ImageDocument) -> Self {
-        Self {
-            path: document.path.into(),
-            fit: match document.fit {
+        Self::new(
+            document.path.into(),
+            match document.fit {
                 ImageFitDocument::Contain => ImageFit::Contain,
                 ImageFitDocument::Cover => ImageFit::Cover,
                 ImageFitDocument::Fill => ImageFit::Fill,
             },
-        }
+        )
     }
 }
 

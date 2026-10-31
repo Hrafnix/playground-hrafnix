@@ -20,11 +20,11 @@ pub(crate) struct MetadataDocument<'a> {
 impl<'a> From<&'a Metadata> for MetadataDocument<'a> {
     fn from(metadata: &'a Metadata) -> Self {
         Self {
-            display_name: &metadata.display_name,
-            description: &metadata.description,
-            author: &metadata.author,
-            minimum_version_major: metadata.minimum_version_major,
-            minimum_version_minor: metadata.minimum_version_minor,
+            display_name: metadata.display_name(),
+            description: metadata.description(),
+            author: metadata.author(),
+            minimum_version_major: metadata.minimum_version_major(),
+            minimum_version_minor: metadata.minimum_version_minor(),
         }
     }
 }

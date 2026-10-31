@@ -1,16 +1,18 @@
 use crate::common::gui::{Dimensions, Position};
 
 /// A shape behind a model's or component's contents.
+///
+/// Fields are private; use the read-only accessors.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BackgroundDecoration {
     /// Identifier of the decoration.
-    pub id: String,
+    id: String,
     /// Position in drawing coordinates.
-    pub position: Position,
+    position: Position,
     /// Dimensions in drawing coordinates.
-    pub dimensions: Dimensions,
+    dimensions: Dimensions,
     /// The shape of the decoration, including its type-specific style.
-    pub kind: BackgroundDecorationKind,
+    kind: BackgroundDecorationKind,
 }
 
 /// The shapes allowed in a background layer, each with its own optional style.
@@ -50,11 +52,11 @@ pub enum BackgroundDecorationKind {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RectangleStyle {
     /// Fill color, such as `#f0f0f0`.
-    pub fill_color: Option<String>,
+    fill_color: Option<String>,
     /// Outline color.
-    pub stroke_color: Option<String>,
+    stroke_color: Option<String>,
     /// Outline width in drawing coordinates.
-    pub stroke_width: Option<f64>,
+    stroke_width: Option<f64>,
 }
 
 /// Optional fill, outline, and corner styling for a rounded rectangle.
@@ -64,13 +66,13 @@ pub struct RectangleStyle {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RoundedRectangleStyle {
     /// Fill color, such as `#f0f0f0`.
-    pub fill_color: Option<String>,
+    fill_color: Option<String>,
     /// Outline color.
-    pub stroke_color: Option<String>,
+    stroke_color: Option<String>,
     /// Outline width in drawing coordinates.
-    pub stroke_width: Option<f64>,
+    stroke_width: Option<f64>,
     /// Corner radius for rounded rectangles.
-    pub corner_radius: Option<f64>,
+    corner_radius: Option<f64>,
 }
 
 /// Optional outline styling for a frame.
@@ -80,12 +82,52 @@ pub struct RoundedRectangleStyle {
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct FrameStyle {
     /// Outline color.
-    pub stroke_color: Option<String>,
+    stroke_color: Option<String>,
     /// Outline width in drawing coordinates.
-    pub stroke_width: Option<f64>,
+    stroke_width: Option<f64>,
 }
 
 impl BackgroundDecoration {
+    /// Creates a background decoration with geometry and type-specific styling.
+    #[must_use]
+    pub const fn new(
+        id: String,
+        position: Position,
+        dimensions: Dimensions,
+        kind: BackgroundDecorationKind,
+    ) -> Self {
+        Self {
+            id,
+            position,
+            dimensions,
+            kind,
+        }
+    }
+
+    /// Returns the decoration's identifier.
+    #[must_use]
+    pub const fn id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    /// Returns a copy of the position in drawing coordinates.
+    #[must_use]
+    pub const fn position(&self) -> Position {
+        self.position
+    }
+
+    /// Returns a copy of the dimensions in drawing coordinates.
+    #[must_use]
+    pub const fn dimensions(&self) -> Dimensions {
+        self.dimensions
+    }
+
+    /// Returns the shape and its type-specific style.
+    #[must_use]
+    pub const fn kind(&self) -> &BackgroundDecorationKind {
+        &self.kind
+    }
+
     /// Checks numeric styles when reading or writing to avoid invalid values
     /// and JSON's lossy serialization of non-finite floats as `null`.
     pub(super) fn validate(&self) -> Result<(), String> {
@@ -104,6 +146,105 @@ impl BackgroundDecoration {
             | BackgroundDecorationKind::RoundedRectangle { style: None }
             | BackgroundDecorationKind::Frame { style: None } => Ok(()),
         }
+    }
+}
+
+impl RectangleStyle {
+    /// Creates optional fill and outline styling for a rectangle.
+    #[must_use]
+    pub const fn new(
+        fill_color: Option<String>,
+        stroke_color: Option<String>,
+        stroke_width: Option<f64>,
+    ) -> Self {
+        Self {
+            fill_color,
+            stroke_color,
+            stroke_width,
+        }
+    }
+
+    /// Returns the optional fill color.
+    #[must_use]
+    pub fn fill_color(&self) -> Option<&str> {
+        self.fill_color.as_deref()
+    }
+
+    /// Returns the optional outline color.
+    #[must_use]
+    pub fn stroke_color(&self) -> Option<&str> {
+        self.stroke_color.as_deref()
+    }
+
+    /// Returns the optional outline width in drawing coordinates.
+    #[must_use]
+    pub const fn stroke_width(&self) -> Option<f64> {
+        self.stroke_width
+    }
+}
+
+impl RoundedRectangleStyle {
+    /// Creates optional fill, outline, and corner styling for a rounded rectangle.
+    #[must_use]
+    pub const fn new(
+        fill_color: Option<String>,
+        stroke_color: Option<String>,
+        stroke_width: Option<f64>,
+        corner_radius: Option<f64>,
+    ) -> Self {
+        Self {
+            fill_color,
+            stroke_color,
+            stroke_width,
+            corner_radius,
+        }
+    }
+
+    /// Returns the optional fill color.
+    #[must_use]
+    pub fn fill_color(&self) -> Option<&str> {
+        self.fill_color.as_deref()
+    }
+
+    /// Returns the optional outline color.
+    #[must_use]
+    pub fn stroke_color(&self) -> Option<&str> {
+        self.stroke_color.as_deref()
+    }
+
+    /// Returns the optional outline width in drawing coordinates.
+    #[must_use]
+    pub const fn stroke_width(&self) -> Option<f64> {
+        self.stroke_width
+    }
+
+    /// Returns the optional corner radius.
+    #[must_use]
+    pub const fn corner_radius(&self) -> Option<f64> {
+        self.corner_radius
+    }
+}
+
+impl FrameStyle {
+    /// Creates optional outline styling for a frame.
+    #[must_use]
+    pub const fn new(stroke_color: Option<String>, stroke_width: Option<f64>) -> Self {
+        Self {
+            stroke_color,
+            stroke_width,
+        }
+    }
+
+    /// Returns the optional outline color.
+    #[must_use]
+    pub fn stroke_color(&self) -> Option<&str> {
+        self.stroke_color.as_deref()
+    }
+
+    /// Returns the optional outline width in drawing coordinates.
+    #[must_use]
+    pub const fn stroke_width(&self) -> Option<f64> {
+        self.stroke_width
     }
 }
 

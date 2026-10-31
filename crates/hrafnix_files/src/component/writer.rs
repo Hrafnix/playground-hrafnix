@@ -28,14 +28,14 @@ struct ComponentDocument<'a> {
 impl<'a> From<&'a ComponentFile> for ComponentDocument<'a> {
     fn from(component: &'a ComponentFile) -> Self {
         Self {
-            metadata: MetadataDocument::from(&component.metadata),
+            metadata: MetadataDocument::from(component.metadata()),
             background_decorations: component
-                .background_decorations
+                .background_decorations()
                 .iter()
                 .map(BackgroundDecorationDocument::from)
                 .collect(),
             foreground_decorations: component
-                .foreground_decorations
+                .foreground_decorations()
                 .iter()
                 .map(ForegroundDecorationDocument::from)
                 .collect(),

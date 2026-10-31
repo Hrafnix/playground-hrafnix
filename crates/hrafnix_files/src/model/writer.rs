@@ -28,14 +28,14 @@ struct ModelDocument<'a> {
 impl<'a> From<&'a ModelFile> for ModelDocument<'a> {
     fn from(model: &'a ModelFile) -> Self {
         Self {
-            metadata: MetadataDocument::from(&model.metadata),
+            metadata: MetadataDocument::from(model.metadata()),
             background_decorations: model
-                .background_decorations
+                .background_decorations()
                 .iter()
                 .map(BackgroundDecorationDocument::from)
                 .collect(),
             foreground_decorations: model
-                .foreground_decorations
+                .foreground_decorations()
                 .iter()
                 .map(ForegroundDecorationDocument::from)
                 .collect(),

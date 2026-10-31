@@ -42,12 +42,12 @@ impl<'de> Deserialize<'de> for BackgroundDecorationDocument {
                     .map_err(D::Error::custom)?,
             },
         };
-        let decoration = BackgroundDecoration {
-            id: fields.id,
-            position: fields.position.into(),
-            dimensions: fields.dimensions.into(),
-            kind: kind.into(),
-        };
+        let decoration = BackgroundDecoration::new(
+            fields.id,
+            fields.position.into(),
+            fields.dimensions.into(),
+            kind.into(),
+        );
         decoration.validate().map_err(D::Error::custom)?;
         Ok(Self(decoration))
     }
@@ -182,11 +182,11 @@ struct RectangleStyleDocument {
 
 impl From<RectangleStyleDocument> for RectangleStyle {
     fn from(document: RectangleStyleDocument) -> Self {
-        Self {
-            fill_color: document.fill_color,
-            stroke_color: document.stroke_color,
-            stroke_width: document.stroke_width,
-        }
+        Self::new(
+            document.fill_color,
+            document.stroke_color,
+            document.stroke_width,
+        )
     }
 }
 
@@ -210,12 +210,12 @@ struct RoundedRectangleStyleDocument {
 
 impl From<RoundedRectangleStyleDocument> for RoundedRectangleStyle {
     fn from(document: RoundedRectangleStyleDocument) -> Self {
-        Self {
-            fill_color: document.fill_color,
-            stroke_color: document.stroke_color,
-            stroke_width: document.stroke_width,
-            corner_radius: document.corner_radius,
-        }
+        Self::new(
+            document.fill_color,
+            document.stroke_color,
+            document.stroke_width,
+            document.corner_radius,
+        )
     }
 }
 
@@ -233,10 +233,7 @@ struct FrameStyleDocument {
 
 impl From<FrameStyleDocument> for FrameStyle {
     fn from(document: FrameStyleDocument) -> Self {
-        Self {
-            stroke_color: document.stroke_color,
-            stroke_width: document.stroke_width,
-        }
+        Self::new(document.stroke_color, document.stroke_width)
     }
 }
 

@@ -16,13 +16,13 @@ pub(super) const CONTENTS: &str = "{\"metadata\": {\"display-name\": \"\", \"des
 
 /// Returns the metadata stored in the `minimal` test data files for `kind`.
 pub(super) fn metadata(kind: &str) -> Metadata {
-    Metadata {
-        display_name: "Example".to_owned(),
-        description: format!("An example {kind}."),
-        author: "Hrafnix".to_owned(),
-        minimum_version_major: 1,
-        minimum_version_minor: 2,
-    }
+    Metadata::new(
+        "Example".to_owned(),
+        format!("An example {kind}."),
+        "Hrafnix".to_owned(),
+        1,
+        2,
+    )
 }
 
 /// An isolated directory removed when its test finishes.

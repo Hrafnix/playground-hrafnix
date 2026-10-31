@@ -20,10 +20,10 @@ impl Serialize for ForegroundDecorationDocument<'_> {
         let decoration = self.0;
         decoration.validate().map_err(S::Error::custom)?;
         DecorationFields {
-            id: &decoration.id,
-            position: PositionDocument::from(&decoration.position),
-            dimensions: DimensionsDocument::from(&decoration.dimensions),
-            kind: ForegroundDecorationType::from(&decoration.kind),
+            id: decoration.id(),
+            position: PositionDocument::from(&decoration.position()),
+            dimensions: DimensionsDocument::from(&decoration.dimensions()),
+            kind: ForegroundDecorationType::from(decoration.kind()),
         }
         .serialize(serializer)
     }
@@ -130,9 +130,9 @@ struct TextStyleDocument<'a> {
 impl<'a> From<&'a TextStyle> for TextStyleDocument<'a> {
     fn from(style: &'a TextStyle) -> Self {
         Self {
-            font_size: style.font_size,
-            font_weight: style.font_weight.as_deref(),
-            text_color: style.text_color.as_deref(),
+            font_size: style.font_size(),
+            font_weight: style.font_weight(),
+            text_color: style.text_color(),
         }
     }
 }
@@ -149,8 +149,8 @@ struct ImageDocument<'a> {
 impl<'a> From<&'a DecorationImage> for ImageDocument<'a> {
     fn from(image: &'a DecorationImage) -> Self {
         Self {
-            path: image.path.as_str(),
-            fit: match image.fit {
+            path: image.path().as_str(),
+            fit: match image.fit() {
                 ImageFit::Contain => "contain",
                 ImageFit::Cover => "cover",
                 ImageFit::Fill => "fill",

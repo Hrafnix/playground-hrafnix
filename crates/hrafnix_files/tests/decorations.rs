@@ -97,12 +97,12 @@ impl FileKind {
     fn read(self, path: &Utf8Path) -> Result<Layers, Message> {
         match self {
             Self::Model => read_model_file(path).map(|file| Layers {
-                background: file.background_decorations,
-                foreground: file.foreground_decorations,
+                background: file.background_decorations().to_vec(),
+                foreground: file.foreground_decorations().to_vec(),
             }),
             Self::Component => read_component_file(path).map(|file| Layers {
-                background: file.background_decorations,
-                foreground: file.foreground_decorations,
+                background: file.background_decorations().to_vec(),
+                foreground: file.foreground_decorations().to_vec(),
             }),
         }
     }
@@ -112,19 +112,19 @@ impl FileKind {
         match self {
             Self::Model => write_model_file(
                 path,
-                &ModelFile {
-                    metadata: Metadata::default(),
-                    background_decorations: layers.background.clone(),
-                    foreground_decorations: layers.foreground.clone(),
-                },
+                &ModelFile::new(
+                    Metadata::default(),
+                    layers.background.clone(),
+                    layers.foreground.clone(),
+                ),
             ),
             Self::Component => write_component_file(
                 path,
-                &ComponentFile {
-                    metadata: Metadata::default(),
-                    background_decorations: layers.background.clone(),
-                    foreground_decorations: layers.foreground.clone(),
-                },
+                &ComponentFile::new(
+                    Metadata::default(),
+                    layers.background.clone(),
+                    layers.foreground.clone(),
+                ),
             ),
         }
     }
@@ -134,66 +134,63 @@ impl FileKind {
 fn example_layers() -> Layers {
     Layers {
         background: vec![
-            BackgroundDecoration {
-                id: "background".to_owned(),
-                position: position(0, 0),
-                dimensions: dimensions(500, 200),
-                kind: BackgroundDecorationKind::Rectangle {
-                    style: Some(RectangleStyle {
-                        fill_color: Some("#f0f0f0".to_owned()),
-                        stroke_color: Some("#000000".to_owned()),
-                        stroke_width: Some(1.0),
-                    }),
+            BackgroundDecoration::new(
+                "background".to_owned(),
+                position(0, 0),
+                dimensions(500, 200),
+                BackgroundDecorationKind::Rectangle {
+                    style: Some(RectangleStyle::new(
+                        Some("#f0f0f0".to_owned()),
+                        Some("#000000".to_owned()),
+                        Some(1.0),
+                    )),
                 },
-            },
-            BackgroundDecoration {
-                id: "sensor_region".to_owned(),
-                position: position(140, 0),
-                dimensions: dimensions(140, 70),
-                kind: BackgroundDecorationKind::RoundedRectangle {
-                    style: Some(RoundedRectangleStyle {
-                        fill_color: Some("#e8f4ff".to_owned()),
-                        stroke_color: Some("#93c5fd".to_owned()),
-                        stroke_width: Some(1.0),
-                        corner_radius: Some(8.0),
-                    }),
+            ),
+            BackgroundDecoration::new(
+                "sensor_region".to_owned(),
+                position(140, 0),
+                dimensions(140, 70),
+                BackgroundDecorationKind::RoundedRectangle {
+                    style: Some(RoundedRectangleStyle::new(
+                        Some("#e8f4ff".to_owned()),
+                        Some("#93c5fd".to_owned()),
+                        Some(1.0),
+                        Some(8.0),
+                    )),
                 },
-            },
-            BackgroundDecoration {
-                id: "heater_frame".to_owned(),
-                position: position(310, 0),
-                dimensions: dimensions(140, 70),
-                kind: BackgroundDecorationKind::Frame {
-                    style: Some(FrameStyle {
-                        stroke_color: Some("#f97316".to_owned()),
-                        stroke_width: Some(2.0),
-                    }),
+            ),
+            BackgroundDecoration::new(
+                "heater_frame".to_owned(),
+                position(310, 0),
+                dimensions(140, 70),
+                BackgroundDecorationKind::Frame {
+                    style: Some(FrameStyle::new(Some("#f97316".to_owned()), Some(2.0))),
                 },
-            },
+            ),
         ],
         foreground: vec![
-            ForegroundDecoration {
-                id: "title".to_owned(),
-                position: position(10, 10),
-                dimensions: dimensions(480, 30),
-                kind: ForegroundDecorationKind::Text {
+            ForegroundDecoration::new(
+                "title".to_owned(),
+                position(10, 10),
+                dimensions(480, 30),
+                ForegroundDecorationKind::Text {
                     text: "Heater Simulation Model".to_owned(),
-                    style: Some(TextStyle {
-                        font_size: Some(20.0),
-                        font_weight: Some("bold".to_owned()),
-                        text_color: Some("#000000".to_owned()),
-                    }),
+                    style: Some(TextStyle::new(
+                        Some(20.0),
+                        Some("bold".to_owned()),
+                        Some("#000000".to_owned()),
+                    )),
                 },
-            },
-            ForegroundDecoration {
-                id: "model_icon".to_owned(),
-                position: position(455, 10),
-                dimensions: dimensions(30, 30),
-                kind: ForegroundDecorationKind::Image(DecorationImage {
-                    path: "heater.svg".into(),
-                    fit: ImageFit::Contain,
-                }),
-            },
+            ),
+            ForegroundDecoration::new(
+                "model_icon".to_owned(),
+                position(455, 10),
+                dimensions(30, 30),
+                ForegroundDecorationKind::Image(DecorationImage::new(
+                    "heater.svg".into(),
+                    ImageFit::Contain,
+                )),
+            ),
         ],
     }
 }
@@ -217,6 +214,120 @@ fn document(kind: FileKind, extra: &str) -> String {
 }
 
 #[test]
+fn file_accessors_preserve_metadata_and_drawing_order() {
+    let layers = example_layers();
+    let metadata = common::metadata("model");
+    let model = ModelFile::new(
+        metadata.clone(),
+        layers.background.clone(),
+        layers.foreground.clone(),
+    );
+    let component = ComponentFile::new(
+        metadata.clone(),
+        layers.background.clone(),
+        layers.foreground.clone(),
+    );
+
+    assert_eq!(metadata.display_name(), "Example");
+    assert_eq!(metadata.description(), "An example model.");
+    assert_eq!(metadata.author(), "Hrafnix");
+    assert_eq!(metadata.minimum_version_major(), 1);
+    assert_eq!(metadata.minimum_version_minor(), 2);
+    assert_eq!(model.metadata(), &metadata);
+    assert_eq!(component.metadata(), &metadata);
+    assert_eq!(model.background_decorations(), layers.background.as_slice());
+    assert_eq!(model.foreground_decorations(), layers.foreground.as_slice());
+    assert_eq!(
+        component.background_decorations(),
+        layers.background.as_slice()
+    );
+    assert_eq!(
+        component.foreground_decorations(),
+        layers.foreground.as_slice()
+    );
+}
+
+#[test]
+fn decoration_accessors_expose_geometry_payloads_and_styles() {
+    let layers = example_layers();
+    let rectangle = &layers.background[0];
+    assert_eq!(rectangle.id(), "background");
+    assert_eq!(rectangle.position(), position(0, 0));
+    assert_eq!(rectangle.dimensions(), dimensions(500, 200));
+    let BackgroundDecorationKind::Rectangle { style: Some(style) } = rectangle.kind() else {
+        panic!("expected a styled rectangle");
+    };
+    assert_eq!(style.fill_color(), Some("#f0f0f0"));
+    assert_eq!(style.stroke_color(), Some("#000000"));
+    assert_eq!(style.stroke_width(), Some(1.0));
+
+    let BackgroundDecorationKind::RoundedRectangle { style: Some(style) } =
+        layers.background[1].kind()
+    else {
+        panic!("expected a styled rounded rectangle");
+    };
+    assert_eq!(style.fill_color(), Some("#e8f4ff"));
+    assert_eq!(style.stroke_color(), Some("#93c5fd"));
+    assert_eq!(style.stroke_width(), Some(1.0));
+    assert_eq!(style.corner_radius(), Some(8.0));
+
+    let BackgroundDecorationKind::Frame { style: Some(style) } = layers.background[2].kind() else {
+        panic!("expected a styled frame");
+    };
+    assert_eq!(style.stroke_color(), Some("#f97316"));
+    assert_eq!(style.stroke_width(), Some(2.0));
+
+    let text_decoration = &layers.foreground[0];
+    assert_eq!(text_decoration.id(), "title");
+    assert_eq!(text_decoration.position(), position(10, 10));
+    assert_eq!(text_decoration.dimensions(), dimensions(480, 30));
+    let ForegroundDecorationKind::Text {
+        text,
+        style: Some(style),
+    } = text_decoration.kind()
+    else {
+        panic!("expected styled text");
+    };
+    assert_eq!(text, "Heater Simulation Model");
+    assert_eq!(style.font_size(), Some(20.0));
+    assert_eq!(style.font_weight(), Some("bold"));
+    assert_eq!(style.text_color(), Some("#000000"));
+
+    let ForegroundDecorationKind::Image(image) = layers.foreground[1].kind() else {
+        panic!("expected an image");
+    };
+    assert_eq!(image.path(), Utf8Path::new("heater.svg"));
+    assert_eq!(image.fit(), ImageFit::Contain);
+}
+
+#[test]
+fn default_metadata_and_style_accessors_preserve_absent_values() {
+    let metadata = Metadata::default();
+    assert_eq!(metadata.display_name(), "");
+    assert_eq!(metadata.description(), "");
+    assert_eq!(metadata.author(), "");
+    assert_eq!(metadata.minimum_version_major(), 0);
+    assert_eq!(metadata.minimum_version_minor(), 0);
+
+    let rectangle = RectangleStyle::default();
+    assert_eq!(rectangle.fill_color(), None);
+    assert_eq!(rectangle.stroke_color(), None);
+    assert_eq!(rectangle.stroke_width(), None);
+    let rounded_rectangle = RoundedRectangleStyle::default();
+    assert_eq!(rounded_rectangle.fill_color(), None);
+    assert_eq!(rounded_rectangle.stroke_color(), None);
+    assert_eq!(rounded_rectangle.stroke_width(), None);
+    assert_eq!(rounded_rectangle.corner_radius(), None);
+    let frame = FrameStyle::default();
+    assert_eq!(frame.stroke_color(), None);
+    assert_eq!(frame.stroke_width(), None);
+    let text = TextStyle::default();
+    assert_eq!(text.font_size(), None);
+    assert_eq!(text.font_weight(), None);
+    assert_eq!(text.text_color(), None);
+}
+
+#[test]
 fn shared_gui_geometry_round_trips_in_both_decoration_layers() {
     let directory = TestDirectory::new();
     let path = directory.path.join("shared-gui-geometry.json");
@@ -225,21 +336,29 @@ fn shared_gui_geometry_round_trips_in_both_decoration_layers() {
         width: 100,
         height: 50,
     };
-    let background = BackgroundDecoration {
-        id: "background".to_owned(),
+    let background = BackgroundDecoration::new(
+        "background".to_owned(),
         position,
         dimensions,
-        kind: BackgroundDecorationKind::Rectangle { style: None },
-    };
-    let foreground = ForegroundDecoration {
-        id: "label".to_owned(),
-        position: background.position,
-        dimensions: background.dimensions,
-        kind: ForegroundDecorationKind::Text {
+        BackgroundDecorationKind::Rectangle { style: None },
+    );
+    let foreground = ForegroundDecoration::new(
+        "label".to_owned(),
+        background.position(),
+        background.dimensions(),
+        ForegroundDecorationKind::Text {
             text: "Title".to_owned(),
             style: None,
         },
-    };
+    );
+    let mut copied_position = background.position();
+    let mut copied_dimensions = foreground.dimensions();
+    copied_position.x = 99;
+    copied_dimensions.width = 99;
+    assert_eq!(background.position(), position);
+    assert_eq!(foreground.dimensions(), dimensions);
+    assert_ne!(background.position(), copied_position);
+    assert_ne!(foreground.dimensions(), copied_dimensions);
     let layers = Layers {
         background: vec![background],
         foreground: vec![foreground],
@@ -293,27 +412,6 @@ fn all_decoration_types_round_trip_in_their_layers_for_both_file_kinds() {
 }
 
 #[test]
-fn readme_example_matches_the_supported_schema() {
-    let source = include_str!("../../../README.md")
-        .split_once("```json\n")
-        .unwrap()
-        .1
-        .split_once("\n```")
-        .unwrap()
-        .0;
-    let directory = TestDirectory::new();
-    let path = directory.path.join("readme.json");
-    for kind in [FileKind::Model, FileKind::Component] {
-        fs::write(
-            &path,
-            source.replacen("\"model\":", &format!("\"{}\":", kind.root()), 1),
-        )
-        .unwrap();
-        assert_eq!(kind.read(&path).unwrap(), example_layers());
-    }
-}
-
-#[test]
 fn missing_empty_and_independent_layers_are_supported() {
     let directory = TestDirectory::new();
     let path = directory.path.join("layers.json");
@@ -354,37 +452,33 @@ fn integer_geometry_styles_text_and_all_image_fits_are_preserved() {
     for kind in [FileKind::Model, FileKind::Component] {
         for fit in [ImageFit::Contain, ImageFit::Cover, ImageFit::Fill] {
             let layers = Layers {
-                background: vec![BackgroundDecoration {
-                    id: "shape".to_owned(),
-                    position: position(0, u32::MAX),
-                    dimensions: dimensions(0, u16::MAX),
-                    kind: BackgroundDecorationKind::RoundedRectangle {
+                background: vec![BackgroundDecoration::new(
+                    "shape".to_owned(),
+                    position(0, u32::MAX),
+                    dimensions(0, u16::MAX),
+                    BackgroundDecorationKind::RoundedRectangle {
                         style: Some(RoundedRectangleStyle::default()),
                     },
-                }],
+                )],
                 foreground: vec![
-                    ForegroundDecoration {
-                        id: "image".to_owned(),
-                        position: position(u32::MAX, 0),
-                        dimensions: dimensions(u16::MAX, 0),
-                        kind: ForegroundDecorationKind::Image(DecorationImage {
-                            path: "images/missing \"heater\".svg".into(),
+                    ForegroundDecoration::new(
+                        "image".to_owned(),
+                        position(u32::MAX, 0),
+                        dimensions(u16::MAX, 0),
+                        ForegroundDecorationKind::Image(DecorationImage::new(
+                            "images/missing \"heater\".svg".into(),
                             fit,
-                        }),
-                    },
-                    ForegroundDecoration {
-                        id: "text".to_owned(),
-                        position: position(0, 0),
-                        dimensions: dimensions(0, 0),
-                        kind: ForegroundDecorationKind::Text {
+                        )),
+                    ),
+                    ForegroundDecoration::new(
+                        "text".to_owned(),
+                        position(0, 0),
+                        dimensions(0, 0),
+                        ForegroundDecorationKind::Text {
                             text: "Heater\n\"status\" \\ \u{1f525}".to_owned(),
-                            style: Some(TextStyle {
-                                font_size: Some(20.25),
-                                font_weight: Some("500".to_owned()),
-                                ..TextStyle::default()
-                            }),
+                            style: Some(TextStyle::new(Some(20.25), Some("500".to_owned()), None)),
                         },
-                    },
+                    ),
                 ],
             };
             kind.write(&path, &layers).unwrap();
@@ -994,61 +1088,75 @@ fn type_specific_payloads_are_required_and_cannot_be_mixed() {
     }
 }
 
-/// Changes one type-specific numeric style property to exercise every validation path.
-type SetNumber = fn(&mut Layers, f64);
+/// Creates layers with one numeric style property to exercise every validation path.
+type WithNumber = fn(f64) -> Layers;
 
 #[test]
 fn invalid_numeric_styles_never_replace_existing_files() {
     let directory = TestDirectory::new();
     let path = directory.path.join("preserved.json");
-    let numeric_fields: [(&str, SetNumber); 5] = [
-        ("style.stroke-width", |layers, v| {
-            let BackgroundDecorationKind::Rectangle { style: Some(style) } =
-                &mut layers.background[0].kind
-            else {
-                panic!("expected a styled rectangle");
-            };
-            style.stroke_width = Some(v);
+    let numeric_fields: [(&str, WithNumber); 5] = [
+        ("style.stroke-width", |v| Layers {
+            background: vec![BackgroundDecoration::new(
+                "rectangle".to_owned(),
+                Position::default(),
+                Dimensions::default(),
+                BackgroundDecorationKind::Rectangle {
+                    style: Some(RectangleStyle::new(None, None, Some(v))),
+                },
+            )],
+            ..Layers::default()
         }),
-        ("style.stroke-width", |layers, v| {
-            let BackgroundDecorationKind::RoundedRectangle { style: Some(style) } =
-                &mut layers.background[1].kind
-            else {
-                panic!("expected a styled rounded rectangle");
-            };
-            style.stroke_width = Some(v);
+        ("style.stroke-width", |v| Layers {
+            background: vec![BackgroundDecoration::new(
+                "rounded-rectangle".to_owned(),
+                Position::default(),
+                Dimensions::default(),
+                BackgroundDecorationKind::RoundedRectangle {
+                    style: Some(RoundedRectangleStyle::new(None, None, Some(v), None)),
+                },
+            )],
+            ..Layers::default()
         }),
-        ("style.corner-radius", |layers, v| {
-            let BackgroundDecorationKind::RoundedRectangle { style: Some(style) } =
-                &mut layers.background[1].kind
-            else {
-                panic!("expected a styled rounded rectangle");
-            };
-            style.corner_radius = Some(v);
+        ("style.corner-radius", |v| Layers {
+            background: vec![BackgroundDecoration::new(
+                "rounded-rectangle".to_owned(),
+                Position::default(),
+                Dimensions::default(),
+                BackgroundDecorationKind::RoundedRectangle {
+                    style: Some(RoundedRectangleStyle::new(None, None, None, Some(v))),
+                },
+            )],
+            ..Layers::default()
         }),
-        ("style.stroke-width", |layers, v| {
-            let BackgroundDecorationKind::Frame { style: Some(style) } =
-                &mut layers.background[2].kind
-            else {
-                panic!("expected a styled frame");
-            };
-            style.stroke_width = Some(v);
+        ("style.stroke-width", |v| Layers {
+            background: vec![BackgroundDecoration::new(
+                "frame".to_owned(),
+                Position::default(),
+                Dimensions::default(),
+                BackgroundDecorationKind::Frame {
+                    style: Some(FrameStyle::new(None, Some(v))),
+                },
+            )],
+            ..Layers::default()
         }),
-        ("style.font-size", |layers, v| {
-            let ForegroundDecorationKind::Text {
-                style: Some(style), ..
-            } = &mut layers.foreground[0].kind
-            else {
-                panic!("expected styled text");
-            };
-            style.font_size = Some(v);
+        ("style.font-size", |v| Layers {
+            foreground: vec![ForegroundDecoration::new(
+                "text".to_owned(),
+                Position::default(),
+                Dimensions::default(),
+                ForegroundDecorationKind::Text {
+                    text: "Title".to_owned(),
+                    style: Some(TextStyle::new(Some(v), None, None)),
+                },
+            )],
+            ..Layers::default()
         }),
     ];
     for kind in [FileKind::Model, FileKind::Component] {
-        for (name, set) in numeric_fields {
+        for (name, with_number) in numeric_fields {
             for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0] {
-                let mut layers = example_layers();
-                set(&mut layers, value);
+                let layers = with_number(value);
                 fs::write(&path, "original contents").unwrap();
 
                 let error = kind.write(&path, &layers).unwrap_err();

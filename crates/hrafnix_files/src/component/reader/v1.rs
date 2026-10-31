@@ -32,19 +32,19 @@ struct ComponentDocument {
 
 impl From<ComponentDocument> for ComponentFile {
     fn from(document: ComponentDocument) -> Self {
-        Self {
-            metadata: document.metadata.into(),
-            background_decorations: document
+        Self::new(
+            document.metadata.into(),
+            document
                 .background_decorations
                 .into_iter()
                 .map(BackgroundDecoration::from)
                 .collect(),
-            foreground_decorations: document
+            document
                 .foreground_decorations
                 .into_iter()
                 .map(ForegroundDecoration::from)
                 .collect(),
-        }
+        )
     }
 }
 
