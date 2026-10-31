@@ -1,3 +1,6 @@
+/// Shared GUI geometry types.
+pub mod gui;
+
 use camino::{Utf8Path, Utf8PathBuf};
 use hrafnix_message::message::{Message, MessageCategory, MessageLevel};
 use hrafnix_shareable_string::ShareableString;

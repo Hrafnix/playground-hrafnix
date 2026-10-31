@@ -18,6 +18,8 @@ use std::fs;
 fn minimal_component() -> ComponentFile {
     ComponentFile {
         metadata: common::metadata("component"),
+        background_decorations: Vec::new(),
+        foreground_decorations: Vec::new(),
     }
 }
 

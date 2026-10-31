@@ -60,6 +60,8 @@ mod tests {
                 minimum_version_major: 1,
                 minimum_version_minor: 2,
             },
+            background_decorations: Vec::new(),
+            foreground_decorations: Vec::new(),
         }
     }
 

@@ -1,4 +1,19 @@
 //! Project, model, and component files.
+//!
+//! Background and foreground decorations are independent types:
+//!
+//! ```compile_fail
+//! use hrafnix_files::background_decoration::data::BackgroundDecoration;
+//! use hrafnix_files::foreground_decoration::data::ForegroundDecoration;
+//!
+//! fn wrong_layer(foreground: ForegroundDecoration) -> BackgroundDecoration {
+//!     foreground
+//! }
+//! ```
+//!
+//! Both layers use shared [`Position`](crate::common::gui::Position) and
+//! [`Dimensions`](crate::common::gui::Dimensions) types. Decoration, styling,
+//! and codec types remain layer-specific.
 
 // Test code favors clarity and brevity over the strictness we require of library code:
 // panicking helpers (`unwrap`/`expect`/indexing/`panic!`) and approximate float comparisons
@@ -22,10 +37,14 @@
     )
 )]
 
+/// Background decorations for models and components.
+pub mod background_decoration;
 /// Shared file I/O, version detection, and diagnostics for components, models, and projects.
 pub mod common;
 /// Component definitions and behavior.
 pub mod component;
+/// Foreground decorations for models and components.
+pub mod foreground_decoration;
 /// Metadata shared by model and component files.
 pub mod metadata;
 /// Simulation model definitions.

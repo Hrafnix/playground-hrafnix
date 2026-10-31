@@ -16,6 +16,8 @@ use std::fs;
 fn minimal_model() -> ModelFile {
     ModelFile {
         metadata: common::metadata("model"),
+        background_decorations: Vec::new(),
+        foreground_decorations: Vec::new(),
     }
 }
 

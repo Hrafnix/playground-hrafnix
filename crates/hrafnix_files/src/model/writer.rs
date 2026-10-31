@@ -1,4 +1,6 @@
+use crate::background_decoration::writer::BackgroundDecorationDocument;
 use crate::common::write_json_file;
+use crate::foreground_decoration::writer::ForegroundDecorationDocument;
 use crate::metadata::writer::MetadataDocument;
 use crate::model::ROOT;
 use crate::model::data::ModelFile;
@@ -11,15 +13,32 @@ use serde::Serialize;
 ///
 /// The file version is emitted beside the entry at the top level by [`write_json_file`].
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
 struct ModelDocument<'a> {
     /// Descriptive information about the model.
     metadata: MetadataDocument<'a>,
+    /// Background decorations, omitted when empty for compatibility with older files.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    background_decorations: Vec<BackgroundDecorationDocument<'a>>,
+    /// Foreground decorations, omitted when empty for compatibility with older files.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    foreground_decorations: Vec<ForegroundDecorationDocument<'a>>,
 }
 
 impl<'a> From<&'a ModelFile> for ModelDocument<'a> {
     fn from(model: &'a ModelFile) -> Self {
         Self {
             metadata: MetadataDocument::from(&model.metadata),
+            background_decorations: model
+                .background_decorations
+                .iter()
+                .map(BackgroundDecorationDocument::from)
+                .collect(),
+            foreground_decorations: model
+                .foreground_decorations
+                .iter()
+                .map(ForegroundDecorationDocument::from)
+                .collect(),
         }
     }
 }
@@ -32,9 +51,9 @@ impl<'a> From<&'a ModelFile> for ModelDocument<'a> {
 ///
 /// # Errors
 ///
-/// Returns a localized error if serialization fails, the complete serialized file exceeds
-/// [`MAX_FILE_SIZE`](crate::common::MAX_FILE_SIZE), the file cannot be created or written,
-/// or an existing file at `path` is read-only.
+/// Returns a localized error if numeric decoration styles are invalid, serialization fails,
+/// the complete serialized file exceeds [`MAX_FILE_SIZE`](crate::common::MAX_FILE_SIZE),
+/// the file cannot be created or written, or an existing file at `path` is read-only.
 /// A directory-sync error explicitly reports that the file has already been replaced,
 /// but persistence across a crash could not be confirmed.
 ///
