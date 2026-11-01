@@ -1,3 +1,6 @@
+/// Shared GUI geometry types.
+pub mod gui;
+
 use camino::{Utf8Path, Utf8PathBuf};
 use hrafnix_message::message::{Message, MessageCategory, MessageLevel};
 use hrafnix_shareable_string::ShareableString;
@@ -700,8 +703,8 @@ pub(crate) fn json_error(path: &Utf8Path, error: serde_json::Error) -> Message {
 
 /// Maps a JSON serialization error to a localized diagnostic.
 ///
-/// Serializing to a string has no positions, so apart from I/O every failure comes
-/// from a `Serialize` implementation and is retained as extra detail.
+/// Serialization failures have no positions and are retained as extra detail.
+/// I/O failures keep their localized I/O diagnostic.
 pub(crate) fn json_serialization_error(path: &Utf8Path, error: serde_json::Error) -> Message {
     if error.classify() == Category::Io {
         return file_io_error(path, &io::Error::from(error));

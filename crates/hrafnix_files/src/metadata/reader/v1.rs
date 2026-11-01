@@ -23,12 +23,12 @@ pub(crate) struct MetadataDocument {
 
 impl From<MetadataDocument> for Metadata {
     fn from(document: MetadataDocument) -> Self {
-        Self {
-            display_name: document.display_name,
-            description: document.description,
-            author: document.author,
-            minimum_version_major: document.minimum_version_major,
-            minimum_version_minor: document.minimum_version_minor,
-        }
+        Self::new(
+            document.display_name,
+            document.description,
+            document.author,
+            document.minimum_version_major,
+            document.minimum_version_minor,
+        )
     }
 }

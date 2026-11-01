@@ -14,9 +14,7 @@ use std::fs;
 
 /// Returns the model stored in `tests/data/minimal.hxm`.
 fn minimal_model() -> ModelFile {
-    ModelFile {
-        metadata: common::metadata("model"),
-    }
+    ModelFile::new(common::metadata("model"), Vec::new(), Vec::new())
 }
 
 /// Returns the LF-normalized fixture text for [`minimal_model`].
@@ -257,6 +255,10 @@ fn invalid_path_reports_localized_io_error_without_os_text() {
 #[test]
 fn opening_existing_model_succeeds() {
     let path = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxm");
+    let model = read_model_file(&path).unwrap();
 
-    assert_eq!(read_model_file(&path).unwrap(), minimal_model());
+    assert_eq!(model, minimal_model());
+    assert_eq!(model.metadata(), &common::metadata("model"));
+    assert_eq!(model.background_decorations(), []);
+    assert_eq!(model.foreground_decorations(), []);
 }

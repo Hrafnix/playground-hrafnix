@@ -16,9 +16,7 @@ use std::fs;
 
 /// Returns the component stored in `tests/data/minimal.hxc`.
 fn minimal_component() -> ComponentFile {
-    ComponentFile {
-        metadata: common::metadata("component"),
-    }
+    ComponentFile::new(common::metadata("component"), Vec::new(), Vec::new())
 }
 
 /// Returns the LF-normalized fixture text for [`minimal_component`].
@@ -262,6 +260,10 @@ fn invalid_path_reports_localized_io_error_without_os_text() {
 #[test]
 fn opening_existing_component_succeeds() {
     let path = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/minimal.hxc");
+    let component = read_component_file(&path).unwrap();
 
-    assert_eq!(read_component_file(&path).unwrap(), minimal_component());
+    assert_eq!(component, minimal_component());
+    assert_eq!(component.metadata(), &common::metadata("component"));
+    assert_eq!(component.background_decorations(), []);
+    assert_eq!(component.foreground_decorations(), []);
 }
