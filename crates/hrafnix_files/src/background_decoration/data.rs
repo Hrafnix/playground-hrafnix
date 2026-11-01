@@ -47,44 +47,44 @@ pub enum BackgroundDecorationKind {
 
 /// Optional fill and outline styling for a rectangle.
 ///
-/// Omitted properties leave presentation defaults unspecified. Numeric properties
-/// must be finite and non-negative.
+/// Omitted properties leave presentation defaults unspecified. Outline width is
+/// stored in hundredths of a drawing unit: `100` represents `1.00`.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RectangleStyle {
     /// Fill color, such as `#f0f0f0`.
     fill_color: Option<String>,
     /// Outline color.
     stroke_color: Option<String>,
-    /// Outline width in drawing coordinates.
-    stroke_width: Option<f64>,
+    /// Outline width in hundredths of a drawing unit.
+    stroke_width: Option<u16>,
 }
 
 /// Optional fill, outline, and corner styling for a rounded rectangle.
 ///
 /// Omitted properties leave presentation defaults unspecified. Numeric properties
-/// must be finite and non-negative.
+/// are stored in hundredths of a drawing unit: `100` represents `1.00`.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct RoundedRectangleStyle {
     /// Fill color, such as `#f0f0f0`.
     fill_color: Option<String>,
     /// Outline color.
     stroke_color: Option<String>,
-    /// Outline width in drawing coordinates.
-    stroke_width: Option<f64>,
-    /// Corner radius for rounded rectangles.
-    corner_radius: Option<f64>,
+    /// Outline width in hundredths of a drawing unit.
+    stroke_width: Option<u16>,
+    /// Corner radius in hundredths of a drawing unit.
+    corner_radius: Option<u16>,
 }
 
 /// Optional outline styling for a frame.
 ///
-/// Omitted properties leave presentation defaults unspecified. Outline width must
-/// be finite and non-negative.
+/// Omitted properties leave presentation defaults unspecified. Outline width is
+/// stored in hundredths of a drawing unit: `100` represents `1.00`.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct FrameStyle {
     /// Outline color.
     stroke_color: Option<String>,
-    /// Outline width in drawing coordinates.
-    stroke_width: Option<f64>,
+    /// Outline width in hundredths of a drawing unit.
+    stroke_width: Option<u16>,
 }
 
 impl BackgroundDecoration {
@@ -127,26 +127,6 @@ impl BackgroundDecoration {
     pub const fn kind(&self) -> &BackgroundDecorationKind {
         &self.kind
     }
-
-    /// Checks numeric styles when reading or writing to avoid invalid values
-    /// and JSON's lossy serialization of non-finite floats as `null`.
-    pub(super) fn validate(&self) -> Result<(), String> {
-        match &self.kind {
-            BackgroundDecorationKind::Rectangle { style: Some(style) } => {
-                validate_non_negative("style.stroke-width", style.stroke_width)
-            }
-            BackgroundDecorationKind::RoundedRectangle { style: Some(style) } => {
-                validate_non_negative("style.stroke-width", style.stroke_width)?;
-                validate_non_negative("style.corner-radius", style.corner_radius)
-            }
-            BackgroundDecorationKind::Frame { style: Some(style) } => {
-                validate_non_negative("style.stroke-width", style.stroke_width)
-            }
-            BackgroundDecorationKind::Rectangle { style: None }
-            | BackgroundDecorationKind::RoundedRectangle { style: None }
-            | BackgroundDecorationKind::Frame { style: None } => Ok(()),
-        }
-    }
 }
 
 impl RectangleStyle {
@@ -155,7 +135,7 @@ impl RectangleStyle {
     pub const fn new(
         fill_color: Option<String>,
         stroke_color: Option<String>,
-        stroke_width: Option<f64>,
+        stroke_width: Option<u16>,
     ) -> Self {
         Self {
             fill_color,
@@ -176,9 +156,9 @@ impl RectangleStyle {
         self.stroke_color.as_deref()
     }
 
-    /// Returns the optional outline width in drawing coordinates.
+    /// Returns the optional outline width in hundredths of a drawing unit.
     #[must_use]
-    pub const fn stroke_width(&self) -> Option<f64> {
+    pub const fn stroke_width(&self) -> Option<u16> {
         self.stroke_width
     }
 }
@@ -189,8 +169,8 @@ impl RoundedRectangleStyle {
     pub const fn new(
         fill_color: Option<String>,
         stroke_color: Option<String>,
-        stroke_width: Option<f64>,
-        corner_radius: Option<f64>,
+        stroke_width: Option<u16>,
+        corner_radius: Option<u16>,
     ) -> Self {
         Self {
             fill_color,
@@ -212,15 +192,15 @@ impl RoundedRectangleStyle {
         self.stroke_color.as_deref()
     }
 
-    /// Returns the optional outline width in drawing coordinates.
+    /// Returns the optional outline width in hundredths of a drawing unit.
     #[must_use]
-    pub const fn stroke_width(&self) -> Option<f64> {
+    pub const fn stroke_width(&self) -> Option<u16> {
         self.stroke_width
     }
 
-    /// Returns the optional corner radius.
+    /// Returns the optional corner radius in hundredths of a drawing unit.
     #[must_use]
-    pub const fn corner_radius(&self) -> Option<f64> {
+    pub const fn corner_radius(&self) -> Option<u16> {
         self.corner_radius
     }
 }
@@ -228,7 +208,7 @@ impl RoundedRectangleStyle {
 impl FrameStyle {
     /// Creates optional outline styling for a frame.
     #[must_use]
-    pub const fn new(stroke_color: Option<String>, stroke_width: Option<f64>) -> Self {
+    pub const fn new(stroke_color: Option<String>, stroke_width: Option<u16>) -> Self {
         Self {
             stroke_color,
             stroke_width,
@@ -241,18 +221,9 @@ impl FrameStyle {
         self.stroke_color.as_deref()
     }
 
-    /// Returns the optional outline width in drawing coordinates.
+    /// Returns the optional outline width in hundredths of a drawing unit.
     #[must_use]
-    pub const fn stroke_width(&self) -> Option<f64> {
+    pub const fn stroke_width(&self) -> Option<u16> {
         self.stroke_width
-    }
-}
-
-/// Checks an optional numeric style property.
-fn validate_non_negative(name: &str, value: Option<f64>) -> Result<(), String> {
-    if value.is_none_or(|value| value.is_finite() && value >= 0.0) {
-        Ok(())
-    } else {
-        Err(format!("{name} must be a finite, non-negative number"))
     }
 }

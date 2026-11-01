@@ -1,8 +1,6 @@
 use crate::common::deserialize_object;
 use crate::common::gui::{Dimensions, Position};
-use crate::foreground_decoration::data::{
-    DecorationImage, ForegroundDecoration, ForegroundDecorationKind, ImageFit, TextStyle,
-};
+use crate::foreground_decoration::data::{ForegroundDecoration, ImageFit};
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer};
 
@@ -23,29 +21,35 @@ impl<'de> Deserialize<'de> for ForegroundDecorationDocument {
                 "`image` is only allowed on image decorations",
             ));
         }
-        let kind = match fields.tag {
-            ForegroundDecorationTag::Text => ForegroundDecorationType::Text {
-                text: fields.text.ok_or_else(|| D::Error::missing_field("text"))?,
-                style: fields.style,
-            },
+        let decoration = match fields.tag {
+            ForegroundDecorationTag::Text => {
+                let style = fields.style.unwrap_or_default();
+                ForegroundDecoration::Text {
+                    id: fields.id,
+                    position: fields.position.into(),
+                    dimensions: fields.dimensions.into(),
+                    text: fields.text.ok_or_else(|| D::Error::missing_field("text"))?,
+                    font_size: style.font_size,
+                    font_weight: style.font_weight,
+                    text_color: style.text_color,
+                }
+            }
             ForegroundDecorationTag::Image => {
                 if fields.style.is_some() {
                     return Err(D::Error::custom("image decorations cannot contain style"));
                 }
-                ForegroundDecorationType::Image {
-                    image: fields
-                        .image
-                        .ok_or_else(|| D::Error::missing_field("image"))?,
+                let image = fields
+                    .image
+                    .ok_or_else(|| D::Error::missing_field("image"))?;
+                ForegroundDecoration::Image {
+                    id: fields.id,
+                    position: fields.position.into(),
+                    dimensions: fields.dimensions.into(),
+                    path: image.path.into(),
+                    fit: image.fit.into(),
                 }
             }
         };
-        let decoration = ForegroundDecoration::new(
-            fields.id,
-            fields.position.into(),
-            fields.dimensions.into(),
-            kind.into(),
-        );
-        decoration.validate().map_err(D::Error::custom)?;
         Ok(Self(decoration))
     }
 }
@@ -80,35 +84,6 @@ struct DecorationFields {
     /// Source required for image decorations.
     #[serde(default, deserialize_with = "deserialize_optional_object")]
     image: Option<ImageDocument>,
-}
-
-/// Supported version 1 foreground decoration types and their payloads.
-#[derive(Debug)]
-enum ForegroundDecorationType {
-    /// Text content with font and color styling.
-    Text {
-        /// Displayed text.
-        text: String,
-        /// Explicit text style, if present.
-        style: Option<TextStyleDocument>,
-    },
-    /// Image content without styling.
-    Image {
-        /// Source and fitting mode.
-        image: ImageDocument,
-    },
-}
-
-impl From<ForegroundDecorationType> for ForegroundDecorationKind {
-    fn from(kind: ForegroundDecorationType) -> Self {
-        match kind {
-            ForegroundDecorationType::Text { text, style } => Self::Text {
-                text,
-                style: style.map(TextStyle::from),
-            },
-            ForegroundDecorationType::Image { image } => Self::Image(image.into()),
-        }
-    }
 }
 
 /// Foreground type tags, read separately so object field order is unrestricted.
@@ -160,28 +135,18 @@ impl From<DimensionsDocument> for Dimensions {
 }
 
 /// Text font and color styling in version 1.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 struct TextStyleDocument {
-    /// Font size.
+    /// Font size in stored hundredths.
     #[serde(default, deserialize_with = "deserialize_optional")]
-    font_size: Option<f64>,
+    font_size: Option<u16>,
     /// Font weight.
     #[serde(default, deserialize_with = "deserialize_optional")]
     font_weight: Option<String>,
     /// Text color.
     #[serde(default, deserialize_with = "deserialize_optional")]
     text_color: Option<String>,
-}
-
-impl From<TextStyleDocument> for TextStyle {
-    fn from(document: TextStyleDocument) -> Self {
-        Self::new(
-            document.font_size,
-            document.font_weight,
-            document.text_color,
-        )
-    }
 }
 
 /// Image source and fitting mode in version 1.
@@ -206,16 +171,13 @@ enum ImageFitDocument {
     Fill,
 }
 
-impl From<ImageDocument> for DecorationImage {
-    fn from(document: ImageDocument) -> Self {
-        Self::new(
-            document.path.into(),
-            match document.fit {
-                ImageFitDocument::Contain => ImageFit::Contain,
-                ImageFitDocument::Cover => ImageFit::Cover,
-                ImageFitDocument::Fill => ImageFit::Fill,
-            },
-        )
+impl From<ImageFitDocument> for ImageFit {
+    fn from(fit: ImageFitDocument) -> Self {
+        match fit {
+            ImageFitDocument::Contain => Self::Contain,
+            ImageFitDocument::Cover => Self::Cover,
+            ImageFitDocument::Fill => Self::Fill,
+        }
     }
 }
 

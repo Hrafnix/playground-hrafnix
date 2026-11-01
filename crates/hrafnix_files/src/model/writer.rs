@@ -51,7 +51,7 @@ impl<'a> From<&'a ModelFile> for ModelDocument<'a> {
 ///
 /// # Errors
 ///
-/// Returns a localized error if numeric decoration styles are invalid, serialization fails,
+/// Returns a localized error if serialization fails,
 /// the complete serialized file exceeds [`MAX_FILE_SIZE`](crate::common::MAX_FILE_SIZE),
 /// the file cannot be created or written, or an existing file at `path` is read-only.
 /// A directory-sync error explicitly reports that the file has already been replaced,

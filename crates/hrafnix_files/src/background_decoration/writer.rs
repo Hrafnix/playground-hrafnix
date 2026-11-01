@@ -3,36 +3,11 @@ use crate::background_decoration::data::{
     RoundedRectangleStyle,
 };
 use crate::common::gui::{Dimensions, Position};
-use serde::ser::Error as _;
-use serde::{Serialize, Serializer};
+use serde::Serialize;
 
-/// A borrowed background decoration validated before its JSON is written.
-#[derive(Debug)]
-pub(crate) struct BackgroundDecorationDocument<'a>(&'a BackgroundDecoration);
-
-impl<'a> From<&'a BackgroundDecoration> for BackgroundDecorationDocument<'a> {
-    fn from(decoration: &'a BackgroundDecoration) -> Self {
-        Self(decoration)
-    }
-}
-
-impl Serialize for BackgroundDecorationDocument<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let decoration = self.0;
-        decoration.validate().map_err(S::Error::custom)?;
-        DecorationFields {
-            id: decoration.id(),
-            position: PositionDocument::from(&decoration.position()),
-            dimensions: DimensionsDocument::from(&decoration.dimensions()),
-            kind: BackgroundDecorationType::from(decoration.kind()),
-        }
-        .serialize(serializer)
-    }
-}
-
-/// Named fields of a background decoration in the current JSON format.
+/// The current JSON representation of a background decoration.
 #[derive(Debug, Serialize)]
-struct DecorationFields<'a> {
+pub(crate) struct BackgroundDecorationDocument<'a> {
     /// Identifier of the decoration.
     id: &'a str,
     /// Position.
@@ -42,6 +17,17 @@ struct DecorationFields<'a> {
     /// Type tag and its applicable style.
     #[serde(flatten)]
     kind: BackgroundDecorationType<'a>,
+}
+
+impl<'a> From<&'a BackgroundDecoration> for BackgroundDecorationDocument<'a> {
+    fn from(decoration: &'a BackgroundDecoration) -> Self {
+        Self {
+            id: decoration.id(),
+            position: PositionDocument::from(&decoration.position()),
+            dimensions: DimensionsDocument::from(&decoration.dimensions()),
+            kind: BackgroundDecorationType::from(decoration.kind()),
+        }
+    }
 }
 
 /// Background type tags and their corresponding style schemas.
@@ -130,9 +116,9 @@ struct RectangleStyleDocument<'a> {
     /// Outline color.
     #[serde(skip_serializing_if = "Option::is_none")]
     stroke_color: Option<&'a str>,
-    /// Outline width.
+    /// Outline width in stored hundredths.
     #[serde(skip_serializing_if = "Option::is_none")]
-    stroke_width: Option<f64>,
+    stroke_width: Option<u16>,
 }
 
 impl<'a> From<&'a RectangleStyle> for RectangleStyleDocument<'a> {
@@ -155,12 +141,12 @@ struct RoundedRectangleStyleDocument<'a> {
     /// Outline color.
     #[serde(skip_serializing_if = "Option::is_none")]
     stroke_color: Option<&'a str>,
-    /// Outline width.
+    /// Outline width in stored hundredths.
     #[serde(skip_serializing_if = "Option::is_none")]
-    stroke_width: Option<f64>,
-    /// Corner radius.
+    stroke_width: Option<u16>,
+    /// Corner radius in stored hundredths.
     #[serde(skip_serializing_if = "Option::is_none")]
-    corner_radius: Option<f64>,
+    corner_radius: Option<u16>,
 }
 
 impl<'a> From<&'a RoundedRectangleStyle> for RoundedRectangleStyleDocument<'a> {
@@ -181,9 +167,9 @@ struct FrameStyleDocument<'a> {
     /// Outline color.
     #[serde(skip_serializing_if = "Option::is_none")]
     stroke_color: Option<&'a str>,
-    /// Outline width.
+    /// Outline width in stored hundredths.
     #[serde(skip_serializing_if = "Option::is_none")]
-    stroke_width: Option<f64>,
+    stroke_width: Option<u16>,
 }
 
 impl<'a> From<&'a FrameStyle> for FrameStyleDocument<'a> {
@@ -192,5 +178,47 @@ impl<'a> From<&'a FrameStyle> for FrameStyleDocument<'a> {
             stroke_color: style.stroke_color(),
             stroke_width: style.stroke_width(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn serializes_without_wrapping_domain_data() {
+        let document = BackgroundDecorationDocument {
+            id: "shape",
+            position: PositionDocument { x: 10, y: 20 },
+            dimensions: DimensionsDocument {
+                width: 100,
+                height: 50,
+            },
+            kind: BackgroundDecorationType::RoundedRectangle {
+                style: Some(RoundedRectangleStyleDocument {
+                    fill_color: Some("#ffffff"),
+                    stroke_color: Some("#000000"),
+                    stroke_width: Some(150),
+                    corner_radius: Some(800),
+                }),
+            },
+        };
+
+        assert_eq!(
+            serde_json::to_value(&document).unwrap(),
+            json!({
+                "id": "shape",
+                "position": {"x": 10, "y": 20},
+                "dimensions": {"width": 100, "height": 50},
+                "type": "rounded-rectangle",
+                "style": {
+                    "fill-color": "#ffffff",
+                    "stroke-color": "#000000",
+                    "stroke-width": 150,
+                    "corner-radius": 800,
+                },
+            })
+        );
     }
 }

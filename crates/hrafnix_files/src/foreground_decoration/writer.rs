@@ -1,37 +1,10 @@
 use crate::common::gui::{Dimensions, Position};
-use crate::foreground_decoration::data::{
-    DecorationImage, ForegroundDecoration, ForegroundDecorationKind, ImageFit, TextStyle,
-};
-use serde::ser::Error as _;
-use serde::{Serialize, Serializer};
+use crate::foreground_decoration::data::{ForegroundDecoration, ImageFit};
+use serde::Serialize;
 
-/// A borrowed foreground decoration validated before its JSON is written.
-#[derive(Debug)]
-pub(crate) struct ForegroundDecorationDocument<'a>(&'a ForegroundDecoration);
-
-impl<'a> From<&'a ForegroundDecoration> for ForegroundDecorationDocument<'a> {
-    fn from(decoration: &'a ForegroundDecoration) -> Self {
-        Self(decoration)
-    }
-}
-
-impl Serialize for ForegroundDecorationDocument<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let decoration = self.0;
-        decoration.validate().map_err(S::Error::custom)?;
-        DecorationFields {
-            id: decoration.id(),
-            position: PositionDocument::from(&decoration.position()),
-            dimensions: DimensionsDocument::from(&decoration.dimensions()),
-            kind: ForegroundDecorationType::from(decoration.kind()),
-        }
-        .serialize(serializer)
-    }
-}
-
-/// Named fields of a foreground decoration in the current JSON format.
+/// The current JSON representation of a foreground decoration.
 #[derive(Debug, Serialize)]
-struct DecorationFields<'a> {
+pub(crate) struct ForegroundDecorationDocument<'a> {
     /// Identifier of the decoration.
     id: &'a str,
     /// Position.
@@ -43,15 +16,26 @@ struct DecorationFields<'a> {
     kind: ForegroundDecorationType<'a>,
 }
 
+impl<'a> From<&'a ForegroundDecoration> for ForegroundDecorationDocument<'a> {
+    fn from(decoration: &'a ForegroundDecoration) -> Self {
+        Self {
+            id: decoration.id(),
+            position: PositionDocument::from(&decoration.position()),
+            dimensions: DimensionsDocument::from(&decoration.dimensions()),
+            kind: ForegroundDecorationType::from(decoration),
+        }
+    }
+}
+
 /// Foreground type tags and their corresponding style and payload schemas.
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 enum ForegroundDecorationType<'a> {
     /// Text content.
     Text {
-        /// Explicit font and color style, if supplied.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        style: Option<TextStyleDocument<'a>>,
+        /// Font and color style, omitted when all properties are unset.
+        #[serde(skip_serializing_if = "TextStyleDocument::is_empty")]
+        style: TextStyleDocument<'a>,
         /// Displayed text.
         text: &'a str,
     },
@@ -62,15 +46,28 @@ enum ForegroundDecorationType<'a> {
     },
 }
 
-impl<'a> From<&'a ForegroundDecorationKind> for ForegroundDecorationType<'a> {
-    fn from(kind: &'a ForegroundDecorationKind) -> Self {
-        match kind {
-            ForegroundDecorationKind::Text { text, style } => Self::Text {
+impl<'a> From<&'a ForegroundDecoration> for ForegroundDecorationType<'a> {
+    fn from(decoration: &'a ForegroundDecoration) -> Self {
+        match decoration {
+            ForegroundDecoration::Text {
                 text,
-                style: style.as_ref().map(TextStyleDocument::from),
+                font_size,
+                font_weight,
+                text_color,
+                ..
+            } => Self::Text {
+                text,
+                style: TextStyleDocument {
+                    font_size: *font_size,
+                    font_weight: font_weight.as_deref(),
+                    text_color: text_color.as_deref(),
+                },
             },
-            ForegroundDecorationKind::Image(image) => Self::Image {
-                image: ImageDocument::from(image),
+            ForegroundDecoration::Image { path, fit, .. } => Self::Image {
+                image: ImageDocument {
+                    path: path.as_str(),
+                    fit: ImageFitDocument::from(*fit),
+                },
             },
         }
     }
@@ -116,9 +113,9 @@ impl From<&Dimensions> for DimensionsDocument {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct TextStyleDocument<'a> {
-    /// Font size.
+    /// Font size in stored hundredths.
     #[serde(skip_serializing_if = "Option::is_none")]
-    font_size: Option<f64>,
+    font_size: Option<u16>,
     /// Font weight.
     #[serde(skip_serializing_if = "Option::is_none")]
     font_weight: Option<&'a str>,
@@ -127,13 +124,10 @@ struct TextStyleDocument<'a> {
     text_color: Option<&'a str>,
 }
 
-impl<'a> From<&'a TextStyle> for TextStyleDocument<'a> {
-    fn from(style: &'a TextStyle) -> Self {
-        Self {
-            font_size: style.font_size(),
-            font_weight: style.font_weight(),
-            text_color: style.text_color(),
-        }
+impl TextStyleDocument<'_> {
+    /// Returns whether no text styling is supplied.
+    const fn is_empty(&self) -> bool {
+        self.font_size.is_none() && self.font_weight.is_none() && self.text_color.is_none()
     }
 }
 
@@ -143,18 +137,69 @@ struct ImageDocument<'a> {
     /// Path stored unchanged.
     path: &'a str,
     /// Fitting mode.
-    fit: &'static str,
+    fit: ImageFitDocument,
 }
 
-impl<'a> From<&'a DecorationImage> for ImageDocument<'a> {
-    fn from(image: &'a DecorationImage) -> Self {
-        Self {
-            path: image.path().as_str(),
-            fit: match image.fit() {
-                ImageFit::Contain => "contain",
-                ImageFit::Cover => "cover",
-                ImageFit::Fill => "fill",
-            },
+/// Image fitting modes in the current JSON format.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum ImageFitDocument {
+    /// Show the whole image.
+    Contain,
+    /// Cover the bounds.
+    Cover,
+    /// Stretch to the bounds.
+    Fill,
+}
+
+impl From<ImageFit> for ImageFitDocument {
+    fn from(fit: ImageFit) -> Self {
+        match fit {
+            ImageFit::Contain => Self::Contain,
+            ImageFit::Cover => Self::Cover,
+            ImageFit::Fill => Self::Fill,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn serializes_without_wrapping_domain_data() {
+        let document = ForegroundDecorationDocument {
+            id: "label",
+            position: PositionDocument { x: 10, y: 20 },
+            dimensions: DimensionsDocument {
+                width: 100,
+                height: 50,
+            },
+            kind: ForegroundDecorationType::Text {
+                text: "Title",
+                style: TextStyleDocument {
+                    font_size: Some(2050),
+                    font_weight: Some("bold"),
+                    text_color: Some("#000000"),
+                },
+            },
+        };
+
+        assert_eq!(
+            serde_json::to_value(&document).unwrap(),
+            json!({
+                "id": "label",
+                "position": {"x": 10, "y": 20},
+                "dimensions": {"width": 100, "height": 50},
+                "type": "text",
+                "style": {
+                    "font-size": 2050,
+                    "font-weight": "bold",
+                    "text-color": "#000000",
+                },
+                "text": "Title",
+            })
+        );
     }
 }

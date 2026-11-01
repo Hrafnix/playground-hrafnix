@@ -15,6 +15,24 @@
 //! [`Dimensions`](crate::common::gui::Dimensions) types. Decoration, styling,
 //! and codec types remain layer-specific.
 //!
+//! Numeric decoration styles use `u16` hundredths: `1234` represents `12.34`.
+//! JSON stores these raw integers in `0..=65535`, representing drawing-unit values
+//! in `0.00..=655.35`. Decimal and exponent-form numbers are rejected, including
+//! whole-valued forms such as `20.0`. Older numeric decoration values must be
+//! migrated to integer hundredths; the file version remains unchanged.
+//! Positions, dimensions, and metadata versions remain unscaled integers.
+//!
+//! Foreground decorations use named `Text` and `Image` enum variants, each with
+//! its own identifier, position, and dimensions.
+//! Text styling fields are stored directly on the `Text` variant. JSON still nests
+//! configured styling under `style`, omitting it when all properties are unset.
+//! An empty text `style` object is read as unset styling and omitted when rewritten.
+//! Image paths and fitting modes are stored directly on `Image`, while JSON
+//! keeps them in the nested `image` payload.
+//!
+//! Writers use their own document structs and enums, borrowing text from data
+//! values.
+//!
 //! Data structs have private fields. Construct them with `new(...)` and inspect
 //! them through read-only accessors:
 //!

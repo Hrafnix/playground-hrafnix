@@ -48,7 +48,6 @@ impl<'de> Deserialize<'de> for BackgroundDecorationDocument {
             fields.dimensions.into(),
             kind.into(),
         );
-        decoration.validate().map_err(D::Error::custom)?;
         Ok(Self(decoration))
     }
 }
@@ -175,9 +174,9 @@ struct RectangleStyleDocument {
     /// Outline color.
     #[serde(default, deserialize_with = "deserialize_optional")]
     stroke_color: Option<String>,
-    /// Outline width.
+    /// Outline width in stored hundredths.
     #[serde(default, deserialize_with = "deserialize_optional")]
-    stroke_width: Option<f64>,
+    stroke_width: Option<u16>,
 }
 
 impl From<RectangleStyleDocument> for RectangleStyle {
@@ -200,12 +199,12 @@ struct RoundedRectangleStyleDocument {
     /// Outline color.
     #[serde(default, deserialize_with = "deserialize_optional")]
     stroke_color: Option<String>,
-    /// Outline width.
+    /// Outline width in stored hundredths.
     #[serde(default, deserialize_with = "deserialize_optional")]
-    stroke_width: Option<f64>,
-    /// Corner radius.
+    stroke_width: Option<u16>,
+    /// Corner radius in stored hundredths.
     #[serde(default, deserialize_with = "deserialize_optional")]
-    corner_radius: Option<f64>,
+    corner_radius: Option<u16>,
 }
 
 impl From<RoundedRectangleStyleDocument> for RoundedRectangleStyle {
@@ -226,9 +225,9 @@ struct FrameStyleDocument {
     /// Outline color.
     #[serde(default, deserialize_with = "deserialize_optional")]
     stroke_color: Option<String>,
-    /// Outline width.
+    /// Outline width in stored hundredths.
     #[serde(default, deserialize_with = "deserialize_optional")]
-    stroke_width: Option<f64>,
+    stroke_width: Option<u16>,
 }
 
 impl From<FrameStyleDocument> for FrameStyle {
@@ -241,6 +240,7 @@ impl From<FrameStyleDocument> for FrameStyle {
 ///
 /// Values are checked while streaming to preserve JSON diagnostic positions;
 /// the selected style document then rejects inapplicable property names.
+/// Numeric entries contain unsigned hundredths, just as they are stored in the file.
 #[derive(Debug)]
 struct StyleProperties(Vec<(&'static str, Value)>);
 
@@ -286,7 +286,7 @@ impl<'de> Visitor<'de> for StylePropertiesVisitor {
                 return Err(A::Error::duplicate_field(field));
             }
             let value = match field {
-                "stroke-width" | "corner-radius" => Value::Number(map.next_value()?),
+                "stroke-width" | "corner-radius" => Value::Number(map.next_value::<u16>()?.into()),
                 _ => Value::String(map.next_value()?),
             };
             properties.push((field, value));
